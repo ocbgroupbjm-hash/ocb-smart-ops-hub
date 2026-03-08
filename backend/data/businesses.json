@@ -25,23 +25,5 @@
     "icon": "smartphone",
     "color": "#1E40AF",
     "created_at": "2026-03-08T13:45:41.729969+00:00"
-  },
-  {
-    "id": "test_biz_639b3bf1",
-    "name": "Test Business Pytest",
-    "db_name": "test_biz_639b3bf1",
-    "description": "Test business",
-    "icon": "store",
-    "color": "#991B1B",
-    "created_at": "2026-03-08T14:01:42.339703+00:00"
-  },
-  {
-    "id": "test_biz_595fe2ed",
-    "name": "Test Business Pytest",
-    "db_name": "test_biz_595fe2ed",
-    "description": "Test business",
-    "icon": "store",
-    "color": "#991B1B",
-    "created_at": "2026-03-08T14:04:05.163500+00:00"
   }
 ]
