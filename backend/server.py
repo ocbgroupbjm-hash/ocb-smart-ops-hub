@@ -38,6 +38,8 @@ from routes.finance import router as finance_router
 from routes.dashboard import router as dashboard_router
 from routes.users import router as users_router
 from routes.reports import router as reports_router
+from routes.roles import router as roles_router
+from routes.ai_business import router as ai_business_router
 
 # Mount all routers under /api
 app.include_router(auth_router, prefix="/api")
@@ -50,6 +52,8 @@ app.include_router(finance_router, prefix="/api")
 app.include_router(dashboard_router, prefix="/api")
 app.include_router(users_router, prefix="/api")
 app.include_router(reports_router, prefix="/api")
+app.include_router(roles_router, prefix="/api")
+app.include_router(ai_business_router, prefix="/api")
 
 # Health check
 @app.get("/api/health")

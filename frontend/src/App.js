@@ -16,6 +16,8 @@ import Accounting from './pages/Accounting';
 import Reports from './pages/Reports';
 import Branches from './pages/Branches';
 import Users from './pages/Users';
+import RolePermission from './pages/RolePermission';
+import AIBusiness from './pages/AIBusiness';
 import Settings from './pages/Settings';
 import './index.css';
 
@@ -32,6 +34,15 @@ const PrivateRoute = ({ children }) => {
 
   return user ? children : <Navigate to="/login" />;
 };
+
+// Access denied component
+const AccessDenied = () => (
+  <div className="flex flex-col items-center justify-center h-64 text-center">
+    <div className="text-6xl mb-4">🚫</div>
+    <h2 className="text-2xl font-bold text-red-400 mb-2">Akses Ditolak</h2>
+    <p className="text-gray-400">Anda tidak memiliki izin untuk mengakses halaman ini.</p>
+  </div>
+);
 
 function App() {
   return (
@@ -58,9 +69,12 @@ function App() {
             <Route path="keuangan" element={<Finance />} />
             <Route path="akuntansi" element={<Accounting />} />
             <Route path="laporan" element={<Reports />} />
+            <Route path="ai-bisnis" element={<AIBusiness />} />
             <Route path="cabang" element={<Branches />} />
             <Route path="pengguna" element={<Users />} />
+            <Route path="hak-akses" element={<RolePermission />} />
             <Route path="pengaturan" element={<Settings />} />
+            <Route path="akses-ditolak" element={<AccessDenied />} />
           </Route>
         </Routes>
       </BrowserRouter>

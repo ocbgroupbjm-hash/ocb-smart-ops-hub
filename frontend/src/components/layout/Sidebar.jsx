@@ -2,8 +2,8 @@ import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, ShoppingCart, Package, Boxes, Users, Building2, 
-  FileText, Settings, LogOut, DollarSign, Truck, UserCog, Warehouse,
-  BarChart3, Receipt, Calculator
+  Settings, LogOut, DollarSign, Truck, UserCog, Warehouse,
+  BarChart3, Calculator, Brain, Shield
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -27,8 +27,10 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     { name: 'Keuangan', icon: DollarSign, path: '/keuangan', roles: ['owner', 'admin', 'finance'] },
     { name: 'Akuntansi', icon: Calculator, path: '/akuntansi', roles: ['owner', 'admin', 'finance'] },
     { name: 'Laporan', icon: BarChart3, path: '/laporan', roles: ['owner', 'admin', 'supervisor', 'finance'] },
+    { name: 'AI Bisnis', icon: Brain, path: '/ai-bisnis', roles: ['owner', 'admin', 'supervisor', 'finance'] },
     { name: 'Cabang', icon: Building2, path: '/cabang', roles: ['owner', 'admin'] },
     { name: 'Pengguna', icon: UserCog, path: '/pengguna', roles: ['owner', 'admin'] },
+    { name: 'Hak Akses', icon: Shield, path: '/hak-akses', roles: ['owner', 'admin'] },
     { name: 'Pengaturan', icon: Settings, path: '/pengaturan', roles: ['owner', 'admin', 'supervisor'] },
   ];
 
@@ -75,7 +77,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                 key={item.path}
                 to={item.path}
                 onClick={() => setIsOpen(false)}
-                data-testid={`nav-${item.name.toLowerCase()}`}
+                data-testid={`nav-${item.name.toLowerCase().replace(/\s/g, '-')}`}
                 className={({ isActive }) =>
                   `flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
                     isActive
@@ -98,7 +100,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-amber-100 truncate">{user?.name}</p>
-                <p className="text-xs text-red-300/50">{roleLabels[user?.role] || 'Kasir'} • {user?.branch?.code || 'HQ'}</p>
+                <p className="text-xs text-red-300/50">{roleLabels[user?.role] || user?.role} • {user?.branch?.code || 'HQ'}</p>
               </div>
             </div>
             <button

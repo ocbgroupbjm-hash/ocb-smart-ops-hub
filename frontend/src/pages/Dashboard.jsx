@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { 
-  TrendingUp, DollarSign, ShoppingCart, Users, Package, 
-  AlertTriangle, Building2, ArrowUpRight, ArrowDownRight, RefreshCw
+  TrendingUp, TrendingDown, DollarSign, ShoppingCart, Users, Package, 
+  AlertTriangle, Building2, ArrowUpRight, ArrowDownRight, RefreshCw, Brain, Store, ShoppingBag
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -11,10 +11,12 @@ const Dashboard = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [salesTrend, setSalesTrend] = useState([]);
+  const [aiInsights, setAiInsights] = useState([]);
 
   useEffect(() => {
     loadDashboard();
     loadSalesTrend();
+    loadAIInsights();
   }, []);
 
   const loadDashboard = async () => {
@@ -36,6 +38,18 @@ const Dashboard = () => {
     try {
       const res = await api('/api/dashboard/sales-trend?days=7');
       if (res.ok) setSalesTrend((await res.json()).data || []);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const loadAIInsights = async () => {
+    try {
+      const res = await api('/api/ai-bisnis/dashboard-widget');
+      if (res.ok) {
+        const result = await res.json();
+        setAiInsights(result.insights || []);
+      }
     } catch (err) {
       console.error(err);
     }
@@ -63,10 +77,52 @@ const Dashboard = () => {
           <h1 className="text-2xl font-bold text-amber-100">Dashboard</h1>
           <p className="text-gray-400">{branchName} • {formatDate()}</p>
         </div>
-        <button onClick={() => { loadDashboard(); loadSalesTrend(); }} className="p-2 hover:bg-red-900/20 rounded-lg">
+        <button onClick={() => { loadDashboard(); loadSalesTrend(); loadAIInsights(); }} className="p-2 hover:bg-red-900/20 rounded-lg">
           <RefreshCw className="h-5 w-5 text-gray-400" />
         </button>
       </div>
+
+      {/* AI Insights Widget */}
+      {aiInsights.length > 0 && (
+        <div className="bg-gradient-to-r from-purple-900/20 via-blue-900/20 to-purple-900/20 border border-purple-700/30 rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Brain className="h-5 w-5 text-purple-400" />
+            <span className="font-semibold text-purple-300">AI Insights</span>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
+            {aiInsights.map((insight, idx) => {
+              const iconMap = { 
+                trending_up: TrendingUp, 
+                trending_down: TrendingDown, 
+                warning: AlertTriangle, 
+                store: Store, 
+                alert: AlertTriangle,
+                shopping_cart: ShoppingBag
+              };
+              const colorMap = {
+                green: 'text-green-400 bg-green-900/20 border-green-700/30',
+                red: 'text-red-400 bg-red-900/20 border-red-700/30',
+                amber: 'text-amber-400 bg-amber-900/20 border-amber-700/30',
+                blue: 'text-blue-400 bg-blue-900/20 border-blue-700/30',
+                purple: 'text-purple-400 bg-purple-900/20 border-purple-700/30'
+              };
+              const Icon = iconMap[insight.icon] || TrendingUp;
+              const colorClass = colorMap[insight.color] || colorMap.blue;
+              
+              return (
+                <div key={idx} className={`p-3 rounded-lg border ${colorClass}`}>
+                  <div className="flex items-center gap-2 mb-1">
+                    <Icon className="h-4 w-4" />
+                    <span className="text-xs font-medium">{insight.title}</span>
+                  </div>
+                  <div className="text-lg font-bold">{insight.value}</div>
+                  <div className="text-xs opacity-70">{insight.description}</div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Kartu Statistik */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
