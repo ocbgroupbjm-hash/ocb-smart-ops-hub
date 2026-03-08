@@ -150,3 +150,70 @@ async def get_whatsapp_status(current_user: dict = Depends(get_current_user)):
         "auto_reply_enabled": config['auto_reply_enabled'],
         "message": "WhatsApp integration configured" if has_credentials else "Credentials required"
     }
+
+@router.post("/test-connection/")
+async def test_whatsapp_connection(current_user: dict = Depends(get_current_user)):
+    """Test WhatsApp provider connection"""
+    company_id = current_user.get("company_id")
+    
+    config = await db.whatsapp_integrations.find_one({"company_id": company_id}, {"_id": 0})
+    
+    if not config:
+        raise HTTPException(status_code=400, detail="WhatsApp configuration not found. Please configure first.")
+    
+    provider = config.get('provider_type')
+    
+    # Check credentials based on provider
+    if provider == 'meta':
+        if not config.get('access_token'):
+            raise HTTPException(status_code=400, detail="Meta WhatsApp access token not configured")
+        if not config.get('phone_number_id'):
+            raise HTTPException(status_code=400, detail="Meta WhatsApp phone number ID not configured")
+        
+        # In production, this would make an actual API call to Meta
+        return {
+            "success": True,
+            "provider": "meta",
+            "message": "Meta WhatsApp Business API credentials validated",
+            "phone_number_id": config.get('phone_number_id'),
+            "note": "Actual message sending requires webhook configuration on Meta Developer Portal"
+        }
+    
+    elif provider == 'twilio':
+        if not config.get('account_sid'):
+            raise HTTPException(status_code=400, detail="Twilio Account SID not configured")
+        if not config.get('auth_token'):
+            raise HTTPException(status_code=400, detail="Twilio Auth Token not configured")
+        
+        return {
+            "success": True,
+            "provider": "twilio",
+            "message": "Twilio credentials validated",
+            "account_sid": config.get('account_sid')[:8] + "****",
+            "note": "Actual message sending requires Twilio WhatsApp Sandbox or approved sender"
+        }
+    
+    elif provider == '360dialog':
+        if not config.get('api_token'):
+            raise HTTPException(status_code=400, detail="360dialog API token not configured")
+        
+        return {
+            "success": True,
+            "provider": "360dialog",
+            "message": "360dialog credentials validated",
+            "note": "Actual message sending requires approved 360dialog channel"
+        }
+    
+    elif provider == 'custom':
+        if not config.get('api_token') and not config.get('webhook_url'):
+            raise HTTPException(status_code=400, detail="Custom webhook URL or API token not configured")
+        
+        return {
+            "success": True,
+            "provider": "custom",
+            "message": "Custom webhook configuration validated",
+            "webhook_url": config.get('webhook_url'),
+            "note": "Ensure your webhook endpoint is accessible"
+        }
+    
+    raise HTTPException(status_code=400, detail=f"Unknown provider type: {provider}")

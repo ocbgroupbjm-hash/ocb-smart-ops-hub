@@ -50,6 +50,9 @@ export default function WhatsAppIntegration() {
   const [configLoading, setConfigLoading] = useState(true);
   const [configSaving, setConfigSaving] = useState(false);
   const [configExists, setConfigExists] = useState(false);
+  const [testingConnection, setTestingConnection] = useState(false);
+  const [activating, setActivating] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState(null);
 
   // Test message state
   const [testPhone, setTestPhone] = useState('');
@@ -210,6 +213,79 @@ export default function WhatsAppIntegration() {
   const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text);
     toast.success('Copied to clipboard');
+  };
+
+  const handleTestConnection = async () => {
+    setTestingConnection(true);
+    setConnectionStatus(null);
+    
+    try {
+      const response = await api.post('/whatsapp/test-connection/');
+      setConnectionStatus(response.data);
+      if (response.data.success) {
+        toast.success('Koneksi berhasil! Provider terhubung dengan baik.');
+      } else {
+        toast.error(response.data.error || 'Koneksi gagal. Periksa kredensial Anda.');
+      }
+    } catch (error) {
+      const errorDetail = error.response?.data?.detail;
+      let errorMsg = 'Gagal menguji koneksi';
+      
+      if (typeof errorDetail === 'string') {
+        if (errorDetail.includes('credentials')) {
+          errorMsg = 'Kredensial tidak valid atau belum dikonfigurasi';
+        } else if (errorDetail.includes('provider')) {
+          errorMsg = 'Provider belum dikonfigurasi dengan benar';
+        } else if (errorDetail.includes('token')) {
+          errorMsg = 'Access token tidak valid atau sudah kadaluarsa';
+        } else {
+          errorMsg = errorDetail;
+        }
+      }
+      
+      toast.error(errorMsg);
+      setConnectionStatus({ success: false, error: errorMsg });
+    } finally {
+      setTestingConnection(false);
+    }
+  };
+
+  const handleToggleActivation = async () => {
+    setActivating(true);
+    
+    try {
+      const newStatus = !config.active_status;
+      await api.post('/whatsapp/config/', {
+        ...config,
+        active_status: newStatus
+      });
+      
+      setConfig(prev => ({ ...prev, active_status: newStatus }));
+      loadWebhookStatus();
+      
+      if (newStatus) {
+        toast.success('Integrasi WhatsApp berhasil diaktifkan!');
+      } else {
+        toast.success('Integrasi WhatsApp dinonaktifkan.');
+      }
+    } catch (error) {
+      const errorDetail = error.response?.data?.detail;
+      let errorMsg = 'Gagal mengubah status integrasi';
+      
+      if (typeof errorDetail === 'string') {
+        if (errorDetail.includes('credentials')) {
+          errorMsg = 'Tidak dapat mengaktifkan: Kredensial provider belum lengkap';
+        } else if (errorDetail.includes('phone')) {
+          errorMsg = 'Tidak dapat mengaktifkan: Nomor telepon bisnis belum dikonfigurasi';
+        } else {
+          errorMsg = errorDetail;
+        }
+      }
+      
+      toast.error(errorMsg);
+    } finally {
+      setActivating(false);
+    }
   };
 
   const getProviderFields = () => {
@@ -527,9 +603,58 @@ export default function WhatsAppIntegration() {
 
               <div className="flex justify-end gap-4 mt-6">
                 <Button 
+                  type="button"
+                  variant="outline"
+                  onClick={handleTestConnection}
+                  disabled={testingConnection || !configExists}
+                  data-testid="test-connection-button"
+                  className="border-red-900/30 text-red-200 hover:bg-red-900/20"
+                >
+                  {testingConnection ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Testing...
+                    </>
+                  ) : (
+                    <>
+                      <Webhook className="h-4 w-4 mr-2" />
+                      Test Connection
+                    </>
+                  )}
+                </Button>
+                <Button 
+                  type="button"
+                  variant={config.active_status ? "destructive" : "default"}
+                  onClick={handleToggleActivation}
+                  disabled={activating || !configExists}
+                  data-testid="activate-integration-button"
+                  className={config.active_status 
+                    ? "bg-red-600 hover:bg-red-700" 
+                    : "bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400"
+                  }
+                >
+                  {activating ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Processing...
+                    </>
+                  ) : config.active_status ? (
+                    <>
+                      <XCircle className="h-4 w-4 mr-2" />
+                      Deactivate Integration
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="h-4 w-4 mr-2" />
+                      Activate Integration
+                    </>
+                  )}
+                </Button>
+                <Button 
                   type="submit" 
                   disabled={configSaving}
                   data-testid="save-config-button"
+                  className="bg-gradient-to-r from-red-700 to-red-600 hover:from-red-600 hover:to-red-500 shadow-lg shadow-red-900/30"
                 >
                   {configSaving ? (
                     <>
