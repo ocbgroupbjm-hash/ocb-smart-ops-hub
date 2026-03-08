@@ -1,0 +1,29 @@
+[
+  {
+    "id": "default",
+    "name": "OCB GROUP",
+    "db_name": "ocb_titan",
+    "description": "Database utama",
+    "icon": "building",
+    "color": "#991B1B",
+    "created_at": "2026-03-08T13:45:41.499969+00:00"
+  },
+  {
+    "id": "toko_baju",
+    "name": "Toko Baju Kita",
+    "db_name": "ocb_baju",
+    "description": "Bisnis fashion retail",
+    "icon": "shirt",
+    "color": "#5B21B6",
+    "created_at": "2026-03-08T13:45:41.613318+00:00"
+  },
+  {
+    "id": "counter_hp",
+    "name": "Counter HP",
+    "db_name": "ocb_counter",
+    "description": "Bisnis counter handphone & pulsa",
+    "icon": "smartphone",
+    "color": "#1E40AF",
+    "created_at": "2026-03-08T13:45:41.729969+00:00"
+  }
+]

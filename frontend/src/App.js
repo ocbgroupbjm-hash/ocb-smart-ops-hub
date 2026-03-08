@@ -20,6 +20,7 @@ import RolePermission from './pages/RolePermission';
 import AIBusiness from './pages/AIBusiness';
 import HalloAI from './pages/HalloAI';
 import Settings from './pages/Settings';
+import BusinessManager from './pages/BusinessManager';
 
 // Master Data Pages
 import { 
@@ -213,6 +214,8 @@ function App() {
             <Route path="settings/system-analysis" element={<Settings />} />
             <Route path="settings/help" element={<Settings />} />
             <Route path="settings/info" element={<Settings />} />
+            <Route path="settings/business" element={<BusinessManager />} />
+            <Route path="kelola-bisnis" element={<BusinessManager />} />
           </Route>
         </Routes>
       </BrowserRouter>

@@ -199,6 +199,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
         { name: 'Import Excel', icon: Upload, path: '/settings/import' },
         { name: 'Export Excel', icon: Download, path: '/settings/export' },
         { name: 'Backup & Restore', icon: HardDrive, path: '/settings/backup' },
+        { name: 'Kelola Bisnis', icon: Building2, path: '/kelola-bisnis' },
         { divider: true },
         { name: 'Log Aktivitas', icon: Clock, path: '/settings/activity-log' },
         { name: 'Analisa Sistem', icon: AlertCircle, path: '/settings/system-analysis' },

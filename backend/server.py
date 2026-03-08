@@ -48,6 +48,7 @@ from routes.backup import router as backup_router
 from routes.print_settings import router as print_router
 from routes.serial_number import router as serial_router
 from routes.assembly import router as assembly_router
+from routes.business import router as business_router
 
 # Mount all routers under /api
 app.include_router(auth_router, prefix="/api")
@@ -70,6 +71,7 @@ app.include_router(backup_router)
 app.include_router(print_router)
 app.include_router(serial_router)
 app.include_router(assembly_router)
+app.include_router(business_router)
 
 # Health check
 @app.get("/api/health")
