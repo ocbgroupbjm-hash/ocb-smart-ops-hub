@@ -19,7 +19,7 @@ from routes import auth, ai_chat, crm, branches, knowledge, analytics
 
 # Import OCB AI routes
 try:
-    from routes_ocb import pos_products, pos_transactions, attendance, kpi, whatsapp, whatsapp_test
+    from routes_ocb import pos_products, pos_transactions, attendance, kpi, whatsapp, whatsapp_test, waha_routes
     OCB_ROUTES_AVAILABLE = True
 except ImportError:
     OCB_ROUTES_AVAILABLE = False
@@ -40,6 +40,7 @@ if OCB_ROUTES_AVAILABLE:
     api_router.include_router(kpi.router)
     api_router.include_router(whatsapp.router)
     api_router.include_router(whatsapp_test.router)
+    api_router.include_router(waha_routes.router)
 
 # Health check
 @api_router.get("/")

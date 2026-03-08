@@ -10,7 +10,8 @@ import {
   BookOpen,
   Settings,
   X,
-  MessageCircle
+  MessageCircle,
+  Zap
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
@@ -24,6 +25,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     { name: 'Inventory', icon: Package, path: '/inventory' },
     { name: 'Knowledge Base', icon: BookOpen, path: '/knowledge' },
     { name: 'WhatsApp', icon: MessageCircle, path: '/whatsapp' },
+    { name: 'WAHA Monitor', icon: Zap, path: '/waha' },
     { name: 'Settings', icon: Settings, path: '/settings' },
   ];
 
