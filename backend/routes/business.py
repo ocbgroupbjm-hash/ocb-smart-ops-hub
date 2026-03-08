@@ -5,6 +5,7 @@ from typing import List, Optional
 from datetime import datetime, timezone
 import os
 import json
+from database import set_active_db_name, get_active_db_name
 
 router = APIRouter(prefix="/api/business", tags=["Business Management"])
 
@@ -55,8 +56,8 @@ def save_businesses(businesses: List[dict]):
 async def list_businesses():
     """List all available businesses/databases"""
     businesses = load_businesses()
-    # Get current active database
-    current_db = os.environ.get('DB_NAME', 'ocb_titan')
+    # Get current active database from memory
+    current_db = get_active_db_name()
     return {
         "businesses": businesses,
         "current_db": current_db
@@ -130,7 +131,10 @@ async def switch_business(db_name: str):
     if not business:
         raise HTTPException(status_code=404, detail="Database bisnis tidak ditemukan")
     
-    # Update .env file
+    # Update active database in memory (RUNTIME SWITCH - no restart needed!)
+    set_active_db_name(db_name)
+    
+    # Also update .env file for persistence across restarts
     env_path = "/app/backend/.env"
     
     try:
@@ -156,7 +160,7 @@ async def switch_business(db_name: str):
             "message": f"Berhasil switch ke bisnis '{business['name']}'",
             "db_name": db_name,
             "business": business,
-            "restart_required": True
+            "restart_required": False  # No restart needed anymore!
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Gagal switch database: {str(e)}")
@@ -164,7 +168,7 @@ async def switch_business(db_name: str):
 @router.get("/current")
 async def get_current_business():
     """Get current active business"""
-    current_db = os.environ.get('DB_NAME', 'ocb_titan')
+    current_db = get_active_db_name()
     businesses = load_businesses()
     
     business = next((b for b in businesses if b['db_name'] == current_db), None)

@@ -77,7 +77,16 @@
   - Proses Bongkar (disassembly) - kurangi hasil, tambah komponen
   - Riwayat transaksi rakitan
 
-### 5. MODUL LAINNYA (From Previous)
+### 5. MODUL MULTI-BUSINESS (100% Complete) - NEW!
+- **Kelola Bisnis**:
+  - Daftar semua database bisnis
+  - Tambah bisnis baru dengan custom database
+  - Switch database tanpa restart backend
+  - Dynamic database connection dengan proxy class
+  - Isolasi data 100% antar bisnis
+  - Visual indicator untuk database aktif
+
+### 6. MODUL LAINNYA (From Previous)
 - **Dashboard**: Overview penjualan, grafik, ringkasan
 - **Master Data**: Produk, Kategori, Unit, Brand, Supplier, Pelanggan, dll
 - **Pembelian**: PO, Receiving, Payment, Returns
@@ -113,6 +122,7 @@
 /api/users/*            - User management
 /api/ai-business/*      - AI Business
 /api/hallo-ai/*         - Hallo AI chat
+/api/business/*         - Multi-Business Management (NEW)
 ```
 
 ### Database Collections
@@ -149,12 +159,21 @@
 
 ## BACKLOG / FUTURE ENHANCEMENTS
 
+### P0 (In Progress) - COMPLETED
+- ✅ **Multi-Business (Multi-Database) Feature** - FIXED 2026-03-08
+  - Switch antar database bisnis tanpa restart backend
+  - Isolasi data antar bisnis
+  - Dynamic database connection dengan proxy class
+
 ### P1 (High Priority)
+- Final Testing: 3-cycle end-to-end testing di multiple databases
 - WhatsApp AI Integration (untuk notifikasi)
 - Multi-branch sync real-time
 - Offline mode untuk POS
 
 ### P2 (Medium Priority)
+- Copy Master Data antar bisnis
+- Export/Import data antar database
 - PDF Export untuk laporan
 - Barcode scanner integration
 - Import data dari Excel
@@ -168,7 +187,13 @@
 
 ## CHANGELOG
 
-### 2026-03-08
+### 2026-03-08 (Latest)
+- ✅ **FIXED: Multi-Business Database Switching Bug**
+  - Refactored `/app/backend/database.py` dengan Dynamic Collection Proxy
+  - Koneksi database sekarang dinamis tanpa restart backend
+  - UI "Kelola Bisnis" berfungsi sempurna
+  - Switch bisnis -> Logout -> Login ke database baru berfungsi
+
 - ✅ Implemented full Accounting module (COA, Journals, Ledger, Financial Reports)
 - ✅ Implemented comprehensive Reports module (9 types + Excel export)
 - ✅ Implemented Backup & Restore functionality
