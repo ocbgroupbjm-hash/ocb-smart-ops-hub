@@ -13,15 +13,14 @@ class WAHAService:
     """WAHA WhatsApp HTTP API Service for OCB AI"""
     
     def __init__(self):
-        self.base_url = "https://waha-as0dv2f9yagn.cgk-hello.sumopod.my.id"
-        self.api_key = "eHFxMagfx2s6BEp1sI909zPoomX2UouH"
+        self.base_url = "https://waha-5uexh7skrwaw.cgk-moto.sumopod.my.id"
+        self.api_key = "E9qyiFBRWKToEZReNTvNyq8VCfPjyXzb"
         self.timeout = 30.0
         self.session = "default"
         
     def _get_headers(self) -> Dict[str, str]:
-        """Get headers with multiple auth methods support"""
+        """Get headers with X-Api-Key authentication"""
         return {
-            "Authorization": f"Bearer {self.api_key}",
             "X-Api-Key": self.api_key,
             "Content-Type": "application/json"
         }
@@ -51,12 +50,7 @@ class WAHAService:
         chat_id = self.phone_to_chat_id(phone)
         session = session or self.session
         
-        # Try multiple WAHA endpoints
-        endpoints = [
-            f"{self.base_url}/api/sendText",
-            f"{self.base_url}/api/{session}/sendText",
-            f"{self.base_url}/api/messages/send",
-        ]
+        url = f"{self.base_url}/api/sendText"
         
         payload = {
             "chatId": chat_id,
@@ -64,43 +58,44 @@ class WAHAService:
             "session": session
         }
         
-        last_error = None
-        
-        for url in endpoints:
-            try:
-                async with httpx.AsyncClient(timeout=self.timeout) as client:
-                    response = await client.post(
-                        url,
-                        json=payload,
-                        headers=self._get_headers()
-                    )
-                    
-                    if response.status_code in [200, 201]:
-                        logger.info(f"WAHA: Message sent successfully to {phone} via {url}")
-                        return {
-                            "success": True,
-                            "chat_id": chat_id,
-                            "endpoint": url,
-                            "response": response.json() if response.text else {}
-                        }
-                    else:
-                        last_error = f"Status {response.status_code}: {response.text}"
-                        logger.warning(f"WAHA endpoint {url} failed: {last_error}")
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                response = await client.post(
+                    url,
+                    json=payload,
+                    headers=self._get_headers()
+                )
+                
+                logger.info(f"WAHA Response: Status={response.status_code}, Body={response.text[:500]}")
+                
+                if response.status_code in [200, 201]:
+                    logger.info(f"WAHA: Message sent successfully to {phone}")
+                    return {
+                        "success": True,
+                        "chat_id": chat_id,
+                        "response": response.json() if response.text else {}
+                    }
+                else:
+                    error_msg = f"Status {response.status_code}: {response.text}"
+                    logger.error(f"WAHA send failed: {error_msg}")
+                    return {
+                        "success": False,
+                        "error": error_msg,
+                        "chat_id": chat_id
+                    }
                         
-            except httpx.TimeoutException:
-                last_error = "Timeout"
-                logger.warning(f"WAHA endpoint {url} timeout")
-            except Exception as e:
-                last_error = str(e)
-                logger.warning(f"WAHA endpoint {url} error: {last_error}")
-        
-        # All endpoints failed
-        logger.error(f"WAHA: All endpoints failed for {phone}. Last error: {last_error}")
-        return {
-            "success": False,
-            "error": f"WAHA send failed: {last_error}",
-            "chat_id": chat_id
-        }
+        except httpx.TimeoutException:
+            logger.error(f"WAHA: Timeout sending message to {phone}")
+            return {
+                "success": False,
+                "error": "WAHA server timeout"
+            }
+        except Exception as e:
+            logger.error(f"WAHA: Exception sending message: {str(e)}")
+            return {
+                "success": False,
+                "error": str(e)
+            }
     
     async def get_status(self, session: str = None) -> Dict[str, Any]:
         """Get WAHA session status"""
@@ -131,40 +126,34 @@ class WAHAService:
     
     async def check_connection(self) -> Dict[str, Any]:
         """Check if WAHA server is reachable"""
-        urls = [
-            f"{self.base_url}/api/sessions",
-            f"{self.base_url}/api/",
-            f"{self.base_url}/health",
-        ]
+        url = f"{self.base_url}/api/sessions"
         
-        for url in urls:
-            try:
-                async with httpx.AsyncClient(timeout=10.0) as client:
-                    response = await client.get(url, headers=self._get_headers())
-                    
-                    if response.status_code == 200:
-                        return {
-                            "success": True,
-                            "connected": True,
-                            "sessions": response.json() if response.text else [],
-                            "message": "WAHA server connected"
-                        }
-                    elif response.status_code == 401:
-                        # Server is reachable but needs auth
-                        return {
-                            "success": True,
-                            "connected": True,
-                            "auth_required": True,
-                            "message": "WAHA server reachable (auth may need verification)"
-                        }
-            except Exception as e:
-                continue
-        
-        return {
-            "success": False,
-            "connected": False,
-            "error": "Cannot connect to WAHA server"
-        }
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.get(url, headers=self._get_headers())
+                
+                logger.info(f"WAHA status check: {response.status_code} - {response.text[:200]}")
+                
+                if response.status_code == 200:
+                    return {
+                        "success": True,
+                        "connected": True,
+                        "sessions": response.json() if response.text else [],
+                        "message": "WAHA server connected"
+                    }
+                else:
+                    return {
+                        "success": False,
+                        "connected": False,
+                        "error": f"WAHA returned status {response.status_code}: {response.text[:100]}"
+                    }
+        except Exception as e:
+            logger.error(f"WAHA connection check failed: {str(e)}")
+            return {
+                "success": False,
+                "connected": False,
+                "error": f"Cannot connect to WAHA: {str(e)}"
+            }
 
 
 # Global instance

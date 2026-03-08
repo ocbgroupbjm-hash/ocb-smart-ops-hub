@@ -281,7 +281,7 @@ async def process_incoming_message(phone: str, message_text: str, company_id: st
     # Send response via WAHA
     send_result = await waha_service.send_message(normalized_phone, ai_response)
     
-    # Update delivery status
+    # Update delivery status based on result
     if send_result.get("success"):
         await db.whatsapp_messages.update_one(
             {"id": outgoing_msg["id"]},
@@ -299,17 +299,18 @@ async def process_incoming_message(phone: str, message_text: str, company_id: st
             "timestamp": datetime.now(timezone.utc).isoformat()
         })
     else:
+        error_msg = send_result.get("error", "Unknown error")
         await db.whatsapp_messages.update_one(
             {"id": outgoing_msg["id"]},
-            {"$set": {"delivery_status": "failed", "error": send_result.get("error")}}
+            {"$set": {"delivery_status": "waha_pending", "error": error_msg}}
         )
         
         await db.whatsapp_logs.insert_one({
             "id": str(uuid.uuid4()),
             "company_id": company_id,
-            "log_type": "waha_error",
+            "log_type": "waha_pending",
             "phone_number": normalized_phone,
-            "message": f"WAHA send failed: {send_result.get('error')}",
+            "message": f"WAHA send pending: {error_msg}. Message queued for retry.",
             "provider": "waha",
             "success": False,
             "timestamp": datetime.now(timezone.utc).isoformat()
@@ -321,7 +322,8 @@ async def process_incoming_message(phone: str, message_text: str, company_id: st
         "customer_id": customer_id,
         "crm_auto_created": crm_auto_created,
         "ai_response": ai_response,
-        "waha_sent": send_result.get("success", False)
+        "waha_sent": send_result.get("success", False),
+        "waha_error": send_result.get("error") if not send_result.get("success") else None
     }
 
 
@@ -499,3 +501,71 @@ async def get_whatsapp_customers(limit: int = 50):
     ).sort("created_at", -1).limit(limit).to_list(limit)
     
     return customers
+
+
+class WAHAConfigUpdate(BaseModel):
+    """Update WAHA configuration"""
+    base_url: Optional[str] = None
+    api_key: Optional[str] = None
+
+
+@router.get("/config/")
+async def get_waha_config():
+    """Get current WAHA server configuration"""
+    return {
+        "base_url": waha_service.base_url,
+        "api_key_set": bool(waha_service.api_key),
+        "api_key_preview": waha_service.api_key[:8] + "****" if waha_service.api_key else None,
+        "session": waha_service.session
+    }
+
+
+@router.post("/config/")
+async def update_waha_config(config: WAHAConfigUpdate):
+    """Update WAHA server configuration"""
+    if config.base_url:
+        waha_service.base_url = config.base_url.rstrip('/')
+    if config.api_key:
+        waha_service.api_key = config.api_key
+    
+    # Test the new configuration
+    status = await waha_service.check_connection()
+    
+    return {
+        "success": True,
+        "base_url": waha_service.base_url,
+        "api_key_preview": waha_service.api_key[:8] + "****" if waha_service.api_key else None,
+        "connection_test": status
+    }
+
+
+@router.post("/retry-pending/")
+async def retry_pending_messages():
+    """Retry sending pending WAHA messages"""
+    pending = await db.whatsapp_messages.find(
+        {"provider": "waha", "delivery_status": {"$in": ["waha_pending", "failed"]}},
+        {"_id": 0}
+    ).limit(50).to_list(50)
+    
+    results = []
+    for msg in pending:
+        if msg.get("direction") == "outgoing" and msg.get("message_text"):
+            send_result = await waha_service.send_message(
+                msg["phone_number"], 
+                msg["message_text"]
+            )
+            
+            if send_result.get("success"):
+                await db.whatsapp_messages.update_one(
+                    {"id": msg["id"]},
+                    {"$set": {"delivery_status": "sent"}}
+                )
+                results.append({"id": msg["id"], "status": "sent"})
+            else:
+                results.append({"id": msg["id"], "status": "failed", "error": send_result.get("error")})
+    
+    return {
+        "pending_count": len(pending),
+        "results": results
+    }
+

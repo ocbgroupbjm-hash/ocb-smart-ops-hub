@@ -32,6 +32,7 @@ import { toast } from 'sonner';
 export default function WAHAMonitor() {
   // Connection status
   const [wahaStatus, setWahaStatus] = useState(null);
+  const [wahaConfig, setWahaConfig] = useState(null);
   const [statusLoading, setStatusLoading] = useState(true);
 
   // Messages & Conversations
@@ -55,6 +56,11 @@ export default function WAHAMonitor() {
   const [testMessage, setTestMessage] = useState('');
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState(null);
+
+  // Config update
+  const [newBaseUrl, setNewBaseUrl] = useState('');
+  const [newApiKey, setNewApiKey] = useState('');
+  const [updatingConfig, setUpdatingConfig] = useState(false);
 
   // Filters
   const [phoneFilter, setPhoneFilter] = useState('');
@@ -80,6 +86,7 @@ export default function WAHAMonitor() {
   const loadAll = async () => {
     await Promise.all([
       loadStatus(),
+      loadConfig(),
       loadMessages(),
       loadConversations(),
       loadLogs(),
@@ -96,6 +103,43 @@ export default function WAHAMonitor() {
       setWahaStatus({ connected: false, error: 'Failed to check status' });
     } finally {
       setStatusLoading(false);
+    }
+  };
+
+  const loadConfig = async () => {
+    try {
+      const response = await api.get('/whatsapp/waha/config/');
+      setWahaConfig(response.data);
+    } catch (error) {
+      console.error('WAHA config error:', error);
+    }
+  };
+
+  const handleUpdateConfig = async (e) => {
+    e.preventDefault();
+    setUpdatingConfig(true);
+    
+    try {
+      const payload = {};
+      if (newBaseUrl) payload.base_url = newBaseUrl;
+      if (newApiKey) payload.api_key = newApiKey;
+      
+      const response = await api.post('/whatsapp/waha/config/', payload);
+      
+      if (response.data.connection_test?.connected) {
+        toast.success('WAHA server connected successfully!');
+      } else {
+        toast.warning('Configuration saved. Connection test: ' + (response.data.connection_test?.error || 'pending'));
+      }
+      
+      setNewBaseUrl('');
+      setNewApiKey('');
+      loadConfig();
+      loadStatus();
+    } catch (error) {
+      toast.error('Failed to update config: ' + error.message);
+    } finally {
+      setUpdatingConfig(false);
     }
   };
 
@@ -332,6 +376,10 @@ export default function WAHAMonitor() {
           <TabsTrigger value="logs" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
             <ScrollText className="h-4 w-4 mr-2" />
             System Logs
+          </TabsTrigger>
+          <TabsTrigger value="config" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
+            <Wifi className="h-4 w-4 mr-2" />
+            WAHA Config
           </TabsTrigger>
         </TabsList>
 
@@ -750,6 +798,101 @@ export default function WAHAMonitor() {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Config Tab */}
+        <TabsContent value="config" className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Current Config */}
+            <Card className="bg-gradient-to-br from-red-950/40 to-red-950/20 border-red-900/30">
+              <CardHeader>
+                <CardTitle className="text-amber-100 flex items-center gap-2">
+                  <Wifi className="h-5 w-5 text-amber-400" />
+                  Current WAHA Configuration
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {wahaConfig ? (
+                  <>
+                    <div className="p-3 rounded-lg bg-white/5 border border-border/30">
+                      <Label className="text-xs text-muted-foreground">Base URL</Label>
+                      <p className="text-sm font-mono text-amber-200 break-all">{wahaConfig.base_url}</p>
+                    </div>
+                    <div className="p-3 rounded-lg bg-white/5 border border-border/30">
+                      <Label className="text-xs text-muted-foreground">API Key</Label>
+                      <p className="text-sm font-mono text-amber-200">{wahaConfig.api_key_preview || 'Not set'}</p>
+                    </div>
+                    <div className="p-3 rounded-lg bg-white/5 border border-border/30">
+                      <Label className="text-xs text-muted-foreground">Session</Label>
+                      <p className="text-sm font-mono text-amber-200">{wahaConfig.session}</p>
+                    </div>
+                    <div className="p-3 rounded-lg bg-white/5 border border-border/30">
+                      <Label className="text-xs text-muted-foreground">Connection Status</Label>
+                      {wahaStatus?.connected ? (
+                        <Badge className="bg-green-500/20 text-green-400 mt-1">Connected</Badge>
+                      ) : (
+                        <Badge className="bg-red-500/20 text-red-400 mt-1">
+                          Disconnected: {wahaStatus?.error || 'Check credentials'}
+                        </Badge>
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-center py-8 text-red-300/60">
+                    <Loader2 className="h-8 w-8 mx-auto animate-spin mb-4" />
+                    Loading config...
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Update Config */}
+            <Card className="bg-gradient-to-br from-red-950/40 to-red-950/20 border-red-900/30">
+              <CardHeader>
+                <CardTitle className="text-amber-100">Update WAHA Configuration</CardTitle>
+                <CardDescription className="text-red-300/60">
+                  Change WAHA server URL or API key
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleUpdateConfig} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label className="text-red-200/80">New Base URL (optional)</Label>
+                    <Input
+                      value={newBaseUrl}
+                      onChange={(e) => setNewBaseUrl(e.target.value)}
+                      placeholder="https://waha-server.example.com"
+                      className="bg-red-950/30 border-red-900/30 text-amber-50"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-red-200/80">New API Key (optional)</Label>
+                    <Input
+                      type="password"
+                      value={newApiKey}
+                      onChange={(e) => setNewApiKey(e.target.value)}
+                      placeholder="Enter new API key"
+                      className="bg-red-950/30 border-red-900/30 text-amber-50"
+                    />
+                  </div>
+                  <Button 
+                    type="submit" 
+                    disabled={updatingConfig || (!newBaseUrl && !newApiKey)}
+                    className="w-full bg-gradient-to-r from-red-700 to-red-600 hover:from-red-600 hover:to-red-500"
+                  >
+                    {updatingConfig ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Updating...
+                      </>
+                    ) : (
+                      'Update Configuration'
+                    )}
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
       </Tabs>
     </div>
