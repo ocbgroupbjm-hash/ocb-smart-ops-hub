@@ -435,3 +435,336 @@ async def branch_comparison_report(
         "branches": result,
         "totals": totals
     }
+
+
+
+# ==================== LAPORAN HUTANG (Payables) ====================
+
+@router.get("/payables")
+async def payables_report(
+    supplier_id: str = "",
+    status: str = "",  # unpaid, partial, paid
+    user: dict = Depends(get_current_user)
+):
+    """Accounts Payable Report"""
+    query = {}
+    if supplier_id:
+        query["supplier_id"] = supplier_id
+    if status:
+        if status == "unpaid":
+            query["paid_amount"] = 0
+        elif status == "partial":
+            query["$expr"] = {"$and": [
+                {"$gt": ["$paid_amount", 0]},
+                {"$lt": ["$paid_amount", "$total"]}
+            ]}
+        elif status == "paid":
+            query["$expr"] = {"$gte": ["$paid_amount", "$total"]}
+    
+    items = await purchase_orders.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    
+    # Calculate totals
+    total_payable = sum(max(0, item.get("total", 0) - item.get("paid_amount", 0)) for item in items)
+    total_paid = sum(item.get("paid_amount", 0) for item in items)
+    
+    return {
+        "items": items,
+        "total_payable": total_payable,
+        "total_paid": total_paid,
+        "total_purchase": sum(item.get("total", 0) for item in items)
+    }
+
+# ==================== LAPORAN PIUTANG (Receivables) ====================
+
+@router.get("/receivables")
+async def receivables_report(
+    customer_id: str = "",
+    user: dict = Depends(get_current_user)
+):
+    """Accounts Receivable Report"""
+    query = {"credit_balance": {"$gt": 0}}
+    if customer_id:
+        query["id"] = customer_id
+    
+    items = await customers.find(query, {"_id": 0}).sort("credit_balance", -1).to_list(1000)
+    
+    total_receivable = sum(item.get("credit_balance", 0) for item in items)
+    
+    return {
+        "items": items,
+        "total_receivable": total_receivable,
+        "customer_count": len(items)
+    }
+
+# ==================== LAPORAN KAS (Cash Report) ====================
+
+@router.get("/cash")
+async def cash_report(
+    date_from: str,
+    date_to: str,
+    branch_id: str = "",
+    user: dict = Depends(get_current_user)
+):
+    """Cash flow report"""
+    from database import db
+    
+    query = {
+        "date": {"$gte": date_from, "$lte": date_to}
+    }
+    if branch_id:
+        query["$or"] = [{"account_id": branch_id}, {"branch_id": branch_id}]
+    
+    cash_transactions_coll = db["cash_transactions"]
+    items = await cash_transactions_coll.find(query, {"_id": 0}).sort("date", -1).to_list(1000)
+    
+    total_in = sum(t.get("amount", 0) for t in items if t.get("transaction_type") == "cash_in")
+    total_out = sum(t.get("amount", 0) for t in items if t.get("transaction_type") == "cash_out")
+    
+    return {
+        "period": {"from": date_from, "to": date_to},
+        "items": items,
+        "total_in": total_in,
+        "total_out": total_out,
+        "net_flow": total_in - total_out
+    }
+
+# ==================== LAPORAN SUPPLIER ====================
+
+@router.get("/suppliers")
+async def supplier_report(
+    user: dict = Depends(get_current_user)
+):
+    """Supplier performance report"""
+    # Get all suppliers with their purchase totals
+    pipeline = [
+        {"$match": {"status": {"$in": ["received", "partial"]}}},
+        {
+            "$group": {
+                "_id": "$supplier_id",
+                "supplier_name": {"$first": "$supplier_name"},
+                "total_purchases": {"$sum": "$total"},
+                "total_orders": {"$sum": 1},
+                "total_paid": {"$sum": "$paid_amount"},
+                "avg_order": {"$avg": "$total"}
+            }
+        },
+        {"$sort": {"total_purchases": -1}}
+    ]
+    
+    result = await purchase_orders.aggregate(pipeline).to_list(500)
+    
+    # Add supplier details
+    for item in result:
+        supplier = await suppliers.find_one({"id": item["_id"]}, {"_id": 0})
+        if supplier:
+            item["supplier_code"] = supplier.get("code", "")
+            item["debt_balance"] = supplier.get("debt_balance", 0)
+            item["phone"] = supplier.get("phone", "")
+    
+    return {
+        "items": result,
+        "total_suppliers": len(result),
+        "total_purchases": sum(r.get("total_purchases", 0) for r in result)
+    }
+
+# ==================== LAPORAN BEST SELLERS ====================
+
+@router.get("/best-sellers")
+async def best_sellers_report(
+    date_from: str,
+    date_to: str,
+    limit: int = 20,
+    branch_id: str = "",
+    user: dict = Depends(get_current_user)
+):
+    """Top selling products report"""
+    match_query = {
+        "status": "completed",
+        "created_at": {"$gte": date_from, "$lte": date_to + "T23:59:59"}
+    }
+    
+    if branch_id:
+        match_query["branch_id"] = branch_id
+    
+    pipeline = [
+        {"$match": match_query},
+        {"$unwind": "$items"},
+        {
+            "$group": {
+                "_id": "$items.product_id",
+                "product_name": {"$first": "$items.product_name"},
+                "product_code": {"$first": "$items.product_code"},
+                "quantity_sold": {"$sum": "$items.quantity"},
+                "revenue": {"$sum": "$items.total"},
+                "profit": {"$sum": {"$subtract": [
+                    "$items.total",
+                    {"$multiply": ["$items.quantity", "$items.cost_price"]}
+                ]}}
+            }
+        },
+        {"$sort": {"quantity_sold": -1}},
+        {"$limit": limit}
+    ]
+    
+    result = await transactions.aggregate(pipeline).to_list(limit)
+    
+    return {
+        "period": {"from": date_from, "to": date_to},
+        "items": result,
+        "total_items": len(result)
+    }
+
+# ==================== LAPORAN KASIR ====================
+
+@router.get("/cashiers")
+async def cashier_report(
+    date_from: str,
+    date_to: str,
+    branch_id: str = "",
+    user: dict = Depends(get_current_user)
+):
+    """Cashier performance report"""
+    from database import users
+    
+    match_query = {
+        "status": "completed",
+        "created_at": {"$gte": date_from, "$lte": date_to + "T23:59:59"}
+    }
+    
+    if branch_id:
+        match_query["branch_id"] = branch_id
+    
+    pipeline = [
+        {"$match": match_query},
+        {
+            "$group": {
+                "_id": "$cashier_id",
+                "cashier_name": {"$first": "$cashier_name"},
+                "total_sales": {"$sum": "$total"},
+                "total_transactions": {"$sum": 1},
+                "avg_transaction": {"$avg": "$total"},
+                "total_profit": {"$sum": "$profit"}
+            }
+        },
+        {"$sort": {"total_sales": -1}}
+    ]
+    
+    result = await transactions.aggregate(pipeline).to_list(100)
+    
+    return {
+        "period": {"from": date_from, "to": date_to},
+        "items": result,
+        "total_cashiers": len(result),
+        "total_sales": sum(r.get("total_sales", 0) for r in result)
+    }
+
+# ==================== EXPORT EXCEL ====================
+
+@router.get("/export/excel/{report_type}")
+async def export_excel(
+    report_type: str,
+    date_from: str = "",
+    date_to: str = "",
+    branch_id: str = "",
+    user: dict = Depends(get_current_user)
+):
+    """Export report to Excel"""
+    from fastapi.responses import StreamingResponse
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    import io
+    
+    wb = Workbook()
+    ws = wb.active
+    
+    # Style definitions
+    header_font = Font(bold=True, color="FFFFFF")
+    header_fill = PatternFill(start_color="991B1B", end_color="991B1B", fill_type="solid")
+    border = Border(
+        left=Side(style='thin'),
+        right=Side(style='thin'),
+        top=Side(style='thin'),
+        bottom=Side(style='thin')
+    )
+    
+    if report_type == "sales":
+        ws.title = "Laporan Penjualan"
+        # Get data
+        data = await sales_report(date_from, date_to, branch_id, "day", user)
+        
+        headers = ["Tanggal", "Penjualan Bersih", "Laba", "Transaksi"]
+        for col, header in enumerate(headers, 1):
+            cell = ws.cell(row=1, column=col, value=header)
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.border = border
+        
+        for row_idx, item in enumerate(data.get("data", []), 2):
+            ws.cell(row=row_idx, column=1, value=item.get("_id")).border = border
+            ws.cell(row=row_idx, column=2, value=item.get("net_sales", 0)).border = border
+            ws.cell(row=row_idx, column=3, value=item.get("profit", 0)).border = border
+            ws.cell(row=row_idx, column=4, value=item.get("transactions", 0)).border = border
+    
+    elif report_type == "inventory":
+        ws.title = "Laporan Persediaan"
+        data = await inventory_report(branch_id, "", False, user)
+        
+        headers = ["Kode", "Nama Produk", "Stok", "Nilai Modal", "Nilai Jual", "Status"]
+        for col, header in enumerate(headers, 1):
+            cell = ws.cell(row=1, column=col, value=header)
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.border = border
+        
+        for row_idx, item in enumerate(data.get("data", []), 2):
+            ws.cell(row=row_idx, column=1, value=item.get("product_code")).border = border
+            ws.cell(row=row_idx, column=2, value=item.get("product_name")).border = border
+            ws.cell(row=row_idx, column=3, value=item.get("quantity", 0)).border = border
+            ws.cell(row=row_idx, column=4, value=item.get("stock_value", 0)).border = border
+            ws.cell(row=row_idx, column=5, value=item.get("retail_value", 0)).border = border
+            ws.cell(row=row_idx, column=6, value="Menipis" if item.get("is_low_stock") else "Aman").border = border
+    
+    elif report_type == "products":
+        ws.title = "Laporan Produk"
+        data = await product_performance_report(date_from, date_to, branch_id, 100, user)
+        
+        headers = ["Kode", "Nama Produk", "Qty Terjual", "Pendapatan", "Laba", "Margin %"]
+        for col, header in enumerate(headers, 1):
+            cell = ws.cell(row=1, column=col, value=header)
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.border = border
+        
+        for row_idx, item in enumerate(data.get("data", []), 2):
+            ws.cell(row=row_idx, column=1, value=item.get("product_code")).border = border
+            ws.cell(row=row_idx, column=2, value=item.get("product_name")).border = border
+            ws.cell(row=row_idx, column=3, value=item.get("quantity_sold", 0)).border = border
+            ws.cell(row=row_idx, column=4, value=item.get("net_revenue", 0)).border = border
+            ws.cell(row=row_idx, column=5, value=item.get("profit", 0)).border = border
+            ws.cell(row=row_idx, column=6, value=round(item.get("profit_margin", 0), 1)).border = border
+    
+    # Auto-adjust column widths
+    for column in ws.columns:
+        max_length = 0
+        column_letter = column[0].column_letter
+        for cell in column:
+            try:
+                if len(str(cell.value)) > max_length:
+                    max_length = len(str(cell.value))
+            except:
+                pass
+        adjusted_width = (max_length + 2) * 1.2
+        ws.column_dimensions[column_letter].width = adjusted_width
+    
+    # Save to buffer
+    buffer = io.BytesIO()
+    wb.save(buffer)
+    buffer.seek(0)
+    
+    filename = f"laporan_{report_type}_{date_from}_{date_to}.xlsx"
+    
+    return StreamingResponse(
+        buffer,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )

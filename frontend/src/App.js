@@ -40,9 +40,21 @@ import { SalesList, SalesReturns, SalesDelivery } from './pages/sales';
 
 // Inventory Pages
 import { StockCards, StockMovements, StockTransfers, StockOpname } from './pages/inventory';
+import SerialNumbers from './pages/inventory/SerialNumbers';
+import ProductAssembly from './pages/inventory/ProductAssembly';
 
 // Settings Pages
 import { PrinterSettings } from './pages/settings';
+
+// Accounting Pages
+import ChartOfAccounts from './pages/accounting/ChartOfAccounts';
+import JournalEntries from './pages/accounting/JournalEntries';
+import GeneralLedger from './pages/accounting/GeneralLedger';
+import CashTransactions from './pages/accounting/CashTransactions';
+import TrialBalance from './pages/accounting/TrialBalance';
+import BalanceSheet from './pages/accounting/BalanceSheet';
+import IncomeStatement from './pages/accounting/IncomeStatement';
+import CashFlow from './pages/accounting/CashFlow';
 
 import './index.css';
 
@@ -150,21 +162,25 @@ function App() {
             <Route path="inventory/transfer" element={<StockTransfers />} />
             <Route path="inventory/mutations" element={<StockMovements />} />
             <Route path="inventory/opname" element={<StockOpname />} />
-            <Route path="inventory/serial-numbers" element={<Products />} />
-            <Route path="inventory/assemblies" element={<Products />} />
+            <Route path="inventory/serial-numbers" element={<SerialNumbers />} />
+            <Route path="inventory/assemblies" element={<ProductAssembly />} />
             
             {/* Accounting Routes */}
-            <Route path="accounting/coa" element={<Accounting />} />
-            <Route path="accounting/cash-in" element={<Finance />} />
-            <Route path="accounting/cash-out" element={<Finance />} />
-            <Route path="accounting/cash-transfer" element={<Finance />} />
-            <Route path="accounting/customer-deposit" element={<Finance />} />
-            <Route path="accounting/supplier-deposit" element={<Finance />} />
-            <Route path="accounting/journals" element={<Accounting />} />
-            <Route path="accounting/ledger" element={<Accounting />} />
-            <Route path="accounting/opening-balance" element={<Accounting />} />
-            <Route path="accounting/year-end" element={<Accounting />} />
-            <Route path="accounting/coa-settings" element={<Accounting />} />
+            <Route path="accounting/coa" element={<ChartOfAccounts />} />
+            <Route path="accounting/cash-in" element={<CashTransactions />} />
+            <Route path="accounting/cash-out" element={<CashTransactions />} />
+            <Route path="accounting/cash-transfer" element={<CashTransactions />} />
+            <Route path="accounting/customer-deposit" element={<CashTransactions />} />
+            <Route path="accounting/supplier-deposit" element={<CashTransactions />} />
+            <Route path="accounting/journals" element={<JournalEntries />} />
+            <Route path="accounting/ledger" element={<GeneralLedger />} />
+            <Route path="accounting/trial-balance" element={<TrialBalance />} />
+            <Route path="accounting/balance-sheet" element={<BalanceSheet />} />
+            <Route path="accounting/income-statement" element={<IncomeStatement />} />
+            <Route path="accounting/cash-flow" element={<CashFlow />} />
+            <Route path="accounting/opening-balance" element={<ChartOfAccounts />} />
+            <Route path="accounting/year-end" element={<ChartOfAccounts />} />
+            <Route path="accounting/coa-settings" element={<ChartOfAccounts />} />
             
             {/* Reports Routes */}
             <Route path="reports/sales" element={<Reports />} />

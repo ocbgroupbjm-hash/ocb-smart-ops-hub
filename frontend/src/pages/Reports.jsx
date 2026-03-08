@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { BarChart3, TrendingUp, Package, Users, Building2, Loader2, Download, Calendar, FileText } from 'lucide-react';
+import { BarChart3, TrendingUp, Package, Users, Building2, Loader2, Download, Calendar, FileText, Printer, FileSpreadsheet } from 'lucide-react';
 import { toast } from 'sonner';
 
 const Reports = () => {
@@ -13,6 +13,7 @@ const Reports = () => {
   const [groupBy, setGroupBy] = useState('day');
   const [branchFilter, setBranchFilter] = useState('');
   const [branches, setBranches] = useState([]);
+  const [exporting, setExporting] = useState(false);
 
   const formatRupiah = (num) => `Rp ${(num || 0).toLocaleString('id-ID')}`;
 
@@ -49,6 +50,20 @@ const Reports = () => {
         case 'customers':
           url = `/api/reports/customer-analysis?date_from=${dateFrom}&date_to=${dateTo}`;
           break;
+        case 'best-sellers':
+          url = `/api/reports/best-sellers?date_from=${dateFrom}&date_to=${dateTo}&limit=20`;
+          if (branchFilter) url += `&branch_id=${branchFilter}`;
+          break;
+        case 'cashiers':
+          url = `/api/reports/cashiers?date_from=${dateFrom}&date_to=${dateTo}`;
+          if (branchFilter) url += `&branch_id=${branchFilter}`;
+          break;
+        case 'payables':
+          url = `/api/reports/payables`;
+          break;
+        case 'receivables':
+          url = `/api/reports/receivables`;
+          break;
         default:
           return;
       }
@@ -58,12 +73,46 @@ const Reports = () => {
     finally { setLoading(false); }
   };
 
+  const handleExport = async (type) => {
+    setExporting(true);
+    try {
+      const token = localStorage.getItem('token');
+      const url = `${process.env.REACT_APP_BACKEND_URL}/api/reports/export/excel/${activeTab}?date_from=${dateFrom}&date_to=${dateTo}&branch_id=${branchFilter}`;
+      
+      const res = await fetch(url, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (res.ok) {
+        const blob = await res.blob();
+        const downloadUrl = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = downloadUrl;
+        a.download = `laporan_${activeTab}_${dateFrom}_${dateTo}.xlsx`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(downloadUrl);
+        toast.success('Export berhasil!');
+      } else {
+        toast.error('Gagal export laporan');
+      }
+    } catch (err) {
+      toast.error('Gagal export laporan');
+    }
+    finally { setExporting(false); }
+  };
+
   const tabs = [
     { id: 'sales', label: 'Penjualan', icon: TrendingUp },
     { id: 'products', label: 'Produk', icon: Package },
+    { id: 'best-sellers', label: 'Terlaris', icon: BarChart3 },
     { id: 'inventory', label: 'Stok', icon: BarChart3 },
     { id: 'branch', label: 'Cabang', icon: Building2 },
-    { id: 'customers', label: 'Pelanggan', icon: Users }
+    { id: 'cashiers', label: 'Kasir', icon: Users },
+    { id: 'customers', label: 'Pelanggan', icon: Users },
+    { id: 'payables', label: 'Hutang', icon: FileText },
+    { id: 'receivables', label: 'Piutang', icon: FileText }
   ];
 
   const groupOptions = [
@@ -80,10 +129,20 @@ const Reports = () => {
           <p className="text-gray-400">Analisis bisnis dan performa</p>
         </div>
         <div className="flex gap-2 items-center">
-          <Calendar className="h-4 w-4 text-gray-400" />
-          <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="px-3 py-2 bg-[#1a1214] border border-red-900/30 rounded-lg text-sm" />
-          <span className="text-gray-400">-</span>
-          <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="px-3 py-2 bg-[#1a1214] border border-red-900/30 rounded-lg text-sm" />
+          <button 
+            onClick={() => handleExport('excel')} 
+            disabled={exporting}
+            className="px-3 py-2 bg-green-600/20 text-green-400 rounded-lg flex items-center gap-2 hover:bg-green-600/30 disabled:opacity-50"
+          >
+            <FileSpreadsheet className="h-4 w-4" />
+            {exporting ? 'Exporting...' : 'Export Excel'}
+          </button>
+          <div className="flex gap-2 items-center ml-2">
+            <Calendar className="h-4 w-4 text-gray-400" />
+            <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="px-3 py-2 bg-[#1a1214] border border-red-900/30 rounded-lg text-sm" />
+            <span className="text-gray-400">-</span>
+            <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="px-3 py-2 bg-[#1a1214] border border-red-900/30 rounded-lg text-sm" />
+          </div>
         </div>
       </div>
 
@@ -377,6 +436,207 @@ const Reports = () => {
                     ))}
                   </div>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* Tab Best Sellers */}
+          {activeTab === 'best-sellers' && reportData && (
+            <div className="space-y-6">
+              <div className="bg-[#1a1214] border border-red-900/30 rounded-xl p-5">
+                <div className="text-gray-400 mb-1">Total Produk Terlaris</div>
+                <div className="text-2xl font-bold text-amber-400">{reportData.total_items || reportData.items?.length || 0}</div>
+              </div>
+
+              <div className="bg-[#1a1214] border border-red-900/30 rounded-xl overflow-hidden">
+                <table className="w-full">
+                  <thead className="bg-red-900/20">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-sm font-semibold">No</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold">Produk</th>
+                      <th className="px-4 py-3 text-right text-sm font-semibold">Qty Terjual</th>
+                      <th className="px-4 py-3 text-right text-sm font-semibold">Pendapatan</th>
+                      <th className="px-4 py-3 text-right text-sm font-semibold">Laba</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {reportData.items?.length === 0 ? (
+                      <tr><td colSpan={5} className="px-4 py-8 text-center text-gray-400">Tidak ada data</td></tr>
+                    ) : (
+                      reportData.items?.map((item, idx) => (
+                        <tr key={idx} className="border-t border-red-900/10 hover:bg-red-900/10">
+                          <td className="px-4 py-3 text-amber-400 font-bold">{idx + 1}</td>
+                          <td className="px-4 py-3">
+                            <div className="font-medium">{item.product_name}</div>
+                            <div className="text-sm text-gray-400">{item.product_code}</div>
+                          </td>
+                          <td className="px-4 py-3 text-right font-semibold">{item.quantity_sold}</td>
+                          <td className="px-4 py-3 text-right text-green-400">{formatRupiah(item.revenue)}</td>
+                          <td className="px-4 py-3 text-right text-amber-400">{formatRupiah(item.profit)}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Tab Kasir */}
+          {activeTab === 'cashiers' && reportData && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-3 gap-4">
+                <div className="bg-[#1a1214] border border-red-900/30 rounded-xl p-5">
+                  <div className="text-gray-400 mb-1">Total Kasir</div>
+                  <div className="text-2xl font-bold">{reportData.total_cashiers || 0}</div>
+                </div>
+                <div className="bg-[#1a1214] border border-red-900/30 rounded-xl p-5">
+                  <div className="text-gray-400 mb-1">Total Penjualan</div>
+                  <div className="text-2xl font-bold text-green-400">{formatRupiah(reportData.total_sales)}</div>
+                </div>
+                <div className="bg-[#1a1214] border border-red-900/30 rounded-xl p-5">
+                  <div className="text-gray-400 mb-1">Rata-rata per Kasir</div>
+                  <div className="text-2xl font-bold text-amber-400">
+                    {formatRupiah(reportData.total_cashiers ? reportData.total_sales / reportData.total_cashiers : 0)}
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-[#1a1214] border border-red-900/30 rounded-xl overflow-hidden">
+                <table className="w-full">
+                  <thead className="bg-red-900/20">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-sm font-semibold">Kasir</th>
+                      <th className="px-4 py-3 text-right text-sm font-semibold">Total Penjualan</th>
+                      <th className="px-4 py-3 text-right text-sm font-semibold">Transaksi</th>
+                      <th className="px-4 py-3 text-right text-sm font-semibold">Rata-rata</th>
+                      <th className="px-4 py-3 text-right text-sm font-semibold">Laba</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {reportData.items?.length === 0 ? (
+                      <tr><td colSpan={5} className="px-4 py-8 text-center text-gray-400">Tidak ada data</td></tr>
+                    ) : (
+                      reportData.items?.map((item, idx) => (
+                        <tr key={idx} className="border-t border-red-900/10 hover:bg-red-900/10">
+                          <td className="px-4 py-3 font-medium">{item.cashier_name}</td>
+                          <td className="px-4 py-3 text-right text-green-400 font-semibold">{formatRupiah(item.total_sales)}</td>
+                          <td className="px-4 py-3 text-right">{item.total_transactions}</td>
+                          <td className="px-4 py-3 text-right text-gray-400">{formatRupiah(item.avg_transaction)}</td>
+                          <td className="px-4 py-3 text-right text-amber-400">{formatRupiah(item.total_profit)}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Tab Hutang (Payables) */}
+          {activeTab === 'payables' && reportData && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-3 gap-4">
+                <div className="bg-[#1a1214] border border-red-900/30 rounded-xl p-5">
+                  <div className="text-gray-400 mb-1">Total Pembelian</div>
+                  <div className="text-2xl font-bold">{formatRupiah(reportData.total_purchase)}</div>
+                </div>
+                <div className="bg-[#1a1214] border border-red-900/30 rounded-xl p-5">
+                  <div className="text-gray-400 mb-1">Sudah Dibayar</div>
+                  <div className="text-2xl font-bold text-green-400">{formatRupiah(reportData.total_paid)}</div>
+                </div>
+                <div className="bg-[#1a1214] border border-red-900/30 rounded-xl p-5">
+                  <div className="text-gray-400 mb-1">Sisa Hutang</div>
+                  <div className="text-2xl font-bold text-red-400">{formatRupiah(reportData.total_payable)}</div>
+                </div>
+              </div>
+
+              <div className="bg-[#1a1214] border border-red-900/30 rounded-xl overflow-hidden">
+                <table className="w-full">
+                  <thead className="bg-red-900/20">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-sm font-semibold">No. PO</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold">Supplier</th>
+                      <th className="px-4 py-3 text-right text-sm font-semibold">Total</th>
+                      <th className="px-4 py-3 text-right text-sm font-semibold">Dibayar</th>
+                      <th className="px-4 py-3 text-right text-sm font-semibold">Sisa</th>
+                      <th className="px-4 py-3 text-center text-sm font-semibold">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {reportData.items?.length === 0 ? (
+                      <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-400">Tidak ada hutang</td></tr>
+                    ) : (
+                      reportData.items?.map((item, idx) => (
+                        <tr key={idx} className="border-t border-red-900/10 hover:bg-red-900/10">
+                          <td className="px-4 py-3 font-mono text-amber-300">{item.po_number}</td>
+                          <td className="px-4 py-3">{item.supplier_name}</td>
+                          <td className="px-4 py-3 text-right">{formatRupiah(item.total)}</td>
+                          <td className="px-4 py-3 text-right text-green-400">{formatRupiah(item.paid_amount)}</td>
+                          <td className="px-4 py-3 text-right text-red-400">{formatRupiah(Math.max(0, item.total - item.paid_amount))}</td>
+                          <td className="px-4 py-3 text-center">
+                            <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                              item.paid_amount >= item.total ? 'bg-green-600/20 text-green-400' : 
+                              item.paid_amount > 0 ? 'bg-yellow-600/20 text-yellow-400' : 'bg-red-600/20 text-red-400'
+                            }`}>
+                              {item.paid_amount >= item.total ? 'Lunas' : item.paid_amount > 0 ? 'Sebagian' : 'Belum Bayar'}
+                            </span>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Tab Piutang (Receivables) */}
+          {activeTab === 'receivables' && reportData && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-[#1a1214] border border-red-900/30 rounded-xl p-5">
+                  <div className="text-gray-400 mb-1">Pelanggan dengan Piutang</div>
+                  <div className="text-2xl font-bold">{reportData.customer_count || 0}</div>
+                </div>
+                <div className="bg-[#1a1214] border border-red-900/30 rounded-xl p-5">
+                  <div className="text-gray-400 mb-1">Total Piutang</div>
+                  <div className="text-2xl font-bold text-amber-400">{formatRupiah(reportData.total_receivable)}</div>
+                </div>
+              </div>
+
+              <div className="bg-[#1a1214] border border-red-900/30 rounded-xl overflow-hidden">
+                <table className="w-full">
+                  <thead className="bg-red-900/20">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-sm font-semibold">Pelanggan</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold">Telepon</th>
+                      <th className="px-4 py-3 text-center text-sm font-semibold">Segmen</th>
+                      <th className="px-4 py-3 text-right text-sm font-semibold">Piutang</th>
+                      <th className="px-4 py-3 text-right text-sm font-semibold">Limit Kredit</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {reportData.items?.length === 0 ? (
+                      <tr><td colSpan={5} className="px-4 py-8 text-center text-gray-400">Tidak ada piutang</td></tr>
+                    ) : (
+                      reportData.items?.map((item, idx) => (
+                        <tr key={idx} className="border-t border-red-900/10 hover:bg-red-900/10">
+                          <td className="px-4 py-3">
+                            <div className="font-medium">{item.name}</div>
+                            <div className="text-sm text-gray-400">{item.code}</div>
+                          </td>
+                          <td className="px-4 py-3 text-gray-400">{item.phone}</td>
+                          <td className="px-4 py-3 text-center">
+                            <span className="px-2 py-1 rounded text-xs bg-blue-600/20 text-blue-400 capitalize">{item.segment}</span>
+                          </td>
+                          <td className="px-4 py-3 text-right text-amber-400 font-semibold">{formatRupiah(item.credit_balance)}</td>
+                          <td className="px-4 py-3 text-right text-gray-400">{formatRupiah(item.credit_limit)}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
               </div>
             </div>
           )}

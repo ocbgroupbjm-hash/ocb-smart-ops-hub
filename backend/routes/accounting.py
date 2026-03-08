@@ -4,7 +4,7 @@ from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime, timezone
 from database import db
-from auth import get_current_user
+from utils.auth import get_current_user
 import uuid
 
 router = APIRouter(prefix="/api/accounting", tags=["Accounting"])

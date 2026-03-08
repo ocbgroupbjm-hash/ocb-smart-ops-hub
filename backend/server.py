@@ -44,6 +44,10 @@ from routes.hallo_ai import router as hallo_ai_router
 from routes.master_erp import router as master_erp_router
 from routes.settings import router as settings_router
 from routes.accounting import router as accounting_router
+from routes.backup import router as backup_router
+from routes.print_settings import router as print_router
+from routes.serial_number import router as serial_router
+from routes.assembly import router as assembly_router
 
 # Mount all routers under /api
 app.include_router(auth_router, prefix="/api")
@@ -62,6 +66,10 @@ app.include_router(hallo_ai_router, prefix="/api")
 app.include_router(master_erp_router, prefix="/api")
 app.include_router(settings_router, prefix="/api")
 app.include_router(accounting_router)
+app.include_router(backup_router)
+app.include_router(print_router)
+app.include_router(serial_router)
+app.include_router(assembly_router)
 
 # Health check
 @app.get("/api/health")
