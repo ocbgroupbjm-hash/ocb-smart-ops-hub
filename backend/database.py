@@ -5,12 +5,12 @@ from dotenv import load_dotenv
 load_dotenv()
 
 mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
-db_name = os.environ.get('DB_NAME', 'ai_business_os')
+db_name = os.environ.get('DB_NAME', 'ocb_ai_database')
 
 client = AsyncIOMotorClient(mongo_url)
 db = client[db_name]
 
-# Collections
+# Collections - AI Business OS + OCB AI
 users_collection = db['users']
 companies_collection = db['companies']
 branches_collection = db['branches']
@@ -23,3 +23,16 @@ workflows_collection = db['workflows']
 sales_orders_collection = db['sales_orders']
 inventory_collection = db['inventory']
 analytics_events_collection = db['analytics_events']
+
+# OCB AI Specific Collections
+db.products = products_collection
+db.transactions = db['transactions']
+db.attendance = db['attendance']
+db.kpi_tasks = db['kpi_tasks']
+db.kpi_targets = db['kpi_targets']
+db.users = users_collection
+db.branches = branches_collection
+db.customers = customers_collection
+db.knowledge_base = knowledge_base_collection
+db.conversations = conversations_collection
+db.messages = messages_collection
