@@ -17,6 +17,13 @@ api_router = APIRouter(prefix="/api")
 # Import routes
 from routes import auth, ai_chat, crm, branches, knowledge, analytics
 
+# Import OCB AI routes
+try:
+    from routes_ocb import pos_products, pos_transactions, attendance, kpi
+    OCB_ROUTES_AVAILABLE = True
+except ImportError:
+    OCB_ROUTES_AVAILABLE = False
+
 # Include routers
 api_router.include_router(auth.router)
 api_router.include_router(ai_chat.router)
@@ -24,6 +31,13 @@ api_router.include_router(crm.router)
 api_router.include_router(branches.router)
 api_router.include_router(knowledge.router)
 api_router.include_router(analytics.router)
+
+# Include OCB AI routers if available
+if OCB_ROUTES_AVAILABLE:
+    api_router.include_router(pos_products.router)
+    api_router.include_router(pos_transactions.router)
+    api_router.include_router(attendance.router)
+    api_router.include_router(kpi.router)
 
 # Health check
 @api_router.get("/")

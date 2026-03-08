@@ -28,10 +28,11 @@ export default function Dashboard() {
 
   const loadDashboardData = async () => {
     try {
-      const response = await api.get('/analytics/dashboard');
+      const response = await api.get('/analytics/dashboard/');
       setStats(response.data);
     } catch (error) {
       toast.error('Failed to load dashboard data');
+      console.error('Dashboard data error:', error);
     } finally {
       setLoading(false);
     }

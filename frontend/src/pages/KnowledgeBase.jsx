@@ -26,10 +26,11 @@ export default function KnowledgeBase() {
 
   const loadKnowledge = async () => {
     try {
-      const response = await api.get('/knowledge');
+      const response = await api.get('/knowledge/');
       setKnowledge(response.data);
     } catch (error) {
       toast.error('Failed to load knowledge base');
+      console.error('Load knowledge error:', error);
     } finally {
       setLoading(false);
     }
@@ -38,13 +39,14 @@ export default function KnowledgeBase() {
   const handleAddKnowledge = async (e) => {
     e.preventDefault();
     try {
-      await api.post('/knowledge', newKnowledge);
+      await api.post('/knowledge/', newKnowledge);
       toast.success('Knowledge added successfully');
       setIsAddOpen(false);
       setNewKnowledge({ title: '', content: '', category: 'general' });
       loadKnowledge();
     } catch (error) {
       toast.error('Failed to add knowledge');
+      console.error('Add knowledge error:', error);
     }
   };
 
@@ -58,13 +60,14 @@ export default function KnowledgeBase() {
     formData.append('category', 'general');
 
     try {
-      await api.post('/knowledge/upload', formData, {
+      await api.post('/knowledge/upload/', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       toast.success('File uploaded successfully');
       loadKnowledge();
     } catch (error) {
       toast.error('Failed to upload file');
+      console.error('Upload file error:', error);
     }
   };
 
@@ -72,11 +75,12 @@ export default function KnowledgeBase() {
     if (!window.confirm('Are you sure you want to delete this knowledge item?')) return;
     
     try {
-      await api.delete(`/knowledge/${id}`);
+      await api.delete(`/knowledge/${id}/`);
       toast.success('Knowledge deleted successfully');
       loadKnowledge();
     } catch (error) {
       toast.error('Failed to delete knowledge');
+      console.error('Delete knowledge error:', error);
     }
   };
 

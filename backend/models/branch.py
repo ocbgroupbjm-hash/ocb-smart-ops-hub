@@ -12,8 +12,12 @@ class BranchBase(BaseModel):
     manager_name: Optional[str] = None
     is_active: bool = True
 
-class BranchCreate(BranchBase):
-    pass
+class BranchCreate(BaseModel):
+    name: str
+    location: str
+    address: Optional[str] = None
+    phone: Optional[str] = None
+    manager_name: Optional[str] = None
 
 class BranchUpdate(BaseModel):
     name: Optional[str] = None

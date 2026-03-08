@@ -26,10 +26,11 @@ export default function Branches() {
 
   const loadBranches = async () => {
     try {
-      const response = await api.get('/branches');
+      const response = await api.get('/branches/');
       setBranches(response.data);
     } catch (error) {
       toast.error('Failed to load branches');
+      console.error('Load branches error:', error);
     } finally {
       setLoading(false);
     }
@@ -38,13 +39,14 @@ export default function Branches() {
   const handleAddBranch = async (e) => {
     e.preventDefault();
     try {
-      await api.post('/branches', newBranch);
+      await api.post('/branches/', newBranch);
       toast.success('Branch added successfully');
       setIsAddOpen(false);
       setNewBranch({ name: '', location: '', address: '', phone: '', manager_name: '' });
       loadBranches();
     } catch (error) {
       toast.error('Failed to add branch');
+      console.error('Add branch error:', error);
     }
   };
 

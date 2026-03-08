@@ -34,7 +34,7 @@ export default function AIChat() {
     setLoading(true);
 
     try {
-      const response = await api.post('/ai/chat', {
+      const response = await api.post('/ai/chat/', {
         conversation_id: conversationId,
         message: input,
         agent_mode: agentMode,
@@ -49,8 +49,8 @@ export default function AIChat() {
       const aiMessage = { role: 'assistant', content: response.data.response };
       setMessages(prev => [...prev, aiMessage]);
     } catch (error) {
-      toast.error('Failed to send message');
-      console.error(error);
+      toast.error('Failed to send message: ' + (error.response?.data?.detail || error.message));
+      console.error('AI Chat error:', error);
     } finally {
       setLoading(false);
     }

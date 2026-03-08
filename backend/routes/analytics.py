@@ -5,7 +5,8 @@ from database import (
     customers_collection, 
     conversations_collection, 
     branches_collection,
-    messages_collection
+    messages_collection,
+    db
 )
 from utils.dependencies import get_current_user
 from datetime import datetime, timedelta, timezone
@@ -33,10 +34,18 @@ async def get_dashboard_stats(current_user: dict = Depends(get_current_user)):
         "timestamp": {"$gte": today_start.isoformat()}
     })
     
+    # Total sales from transactions
+    total_sales = 0.0
+    try:
+        transactions = await db.transactions.find({"company_id": company_id}, {"_id": 0}).to_list(10000)
+        total_sales = sum(txn.get("total_amount", 0) for txn in transactions)
+    except:
+        pass
+    
     return DashboardStats(
         total_customers=total_customers,
         total_conversations=total_conversations,
-        total_sales=0.0,  # Mock for now
+        total_sales=total_sales,
         active_branches=active_branches,
         ai_queries_today=ai_queries_today,
         avg_sentiment="positive"
@@ -88,11 +97,24 @@ async def get_branch_performance(current_user: dict = Depends(get_current_user))
         {"_id": 0}
     ).to_list(100)
     
-    # Mock sales data
-    import random
+    # Get real sales data from transactions
     for branch in branches:
-        branch["sales"] = random.randint(50000, 500000)
-        branch["customers"] = random.randint(50, 500)
+        try:
+            transactions = await db.transactions.find({
+                "company_id": company_id,
+                "branch_id": branch.get("id")
+            }, {"_id": 0}).to_list(10000)
+            
+            branch["sales"] = sum(txn.get("total_amount", 0) for txn in transactions)
+            branch["transaction_count"] = len(transactions)
+            
+            # Get unique customers
+            customer_ids = set(txn.get("customer_id") for txn in transactions if txn.get("customer_id"))
+            branch["customers"] = len(customer_ids)
+        except:
+            branch["sales"] = 0
+            branch["transaction_count"] = 0
+            branch["customers"] = 0
     
     # Sort by sales
     branches.sort(key=lambda x: x.get("sales", 0), reverse=True)

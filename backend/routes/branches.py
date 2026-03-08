@@ -14,10 +14,17 @@ async def create_branch(branch_data: BranchCreate, current_user: dict = Depends(
     if not company_id:
         raise HTTPException(status_code=400, detail="User must be associated with a company")
     
-    # Override company_id
-    branch_data.company_id = company_id
+    # Create branch with company_id from current user
+    branch = Branch(
+        company_id=company_id,
+        name=branch_data.name,
+        location=branch_data.location,
+        address=branch_data.address,
+        phone=branch_data.phone,
+        manager_name=branch_data.manager_name,
+        is_active=True
+    )
     
-    branch = Branch(**branch_data.model_dump())
     branch_dict = branch.model_dump()
     branch_dict['created_at'] = branch_dict['created_at'].isoformat()
     branch_dict['updated_at'] = branch_dict['updated_at'].isoformat()
