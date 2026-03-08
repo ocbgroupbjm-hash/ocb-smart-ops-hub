@@ -25,6 +25,7 @@ class UserUpdate(BaseModel):
     branch_id: Optional[str] = None
     branch_ids: Optional[List[str]] = None
     is_active: Optional[bool] = None
+    password: Optional[str] = None  # For password reset
 
 class ChangePassword(BaseModel):
     current_password: str
@@ -34,7 +35,8 @@ class ChangePassword(BaseModel):
 async def list_users(
     branch_id: str = "",
     role: str = "",
-    is_active: bool = True,
+    search: str = "",
+    limit: int = 200,
     user: dict = Depends(get_current_user)
 ):
     """List users (admin/owner only)"""
@@ -42,7 +44,7 @@ async def list_users(
         # Regular users can only see their branch
         branch_id = user.get("branch_id", "")
     
-    query = {"is_active": is_active}
+    query = {}
     
     if branch_id:
         query["branch_id"] = branch_id
@@ -50,7 +52,13 @@ async def list_users(
     if role:
         query["role"] = role
     
-    items = await users.find(query, {"_id": 0, "password_hash": 0}).sort("name", 1).to_list(500)
+    if search:
+        query["$or"] = [
+            {"name": {"$regex": search, "$options": "i"}},
+            {"email": {"$regex": search, "$options": "i"}}
+        ]
+    
+    items = await users.find(query, {"_id": 0, "password_hash": 0}).sort("name", 1).to_list(limit)
     
     # Enrich with branch names
     for item in items:
@@ -58,7 +66,7 @@ async def list_users(
             branch = await branches.find_one({"id": item["branch_id"]}, {"_id": 0, "name": 1})
             item["branch_name"] = branch.get("name", "") if branch else ""
     
-    return items
+    return {"items": items, "total": len(items)}
 
 @router.get("/{user_id}")
 async def get_user(user_id: str, user: dict = Depends(get_current_user)):
@@ -124,6 +132,10 @@ async def update_user(user_id: str, data: UserUpdate, user: dict = Depends(get_c
     if "role" in update_data and user.get("role") not in ["owner", "admin"]:
         del update_data["role"]
     
+    # Handle password update
+    if "password" in update_data:
+        update_data["password_hash"] = hash_password(update_data.pop("password"))
+    
     update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
     
     await users.update_one({"id": user_id}, {"$set": update_data})
@@ -136,8 +148,8 @@ async def update_user(user_id: str, data: UserUpdate, user: dict = Depends(get_c
         module="users",
         entity_type="user",
         entity_id=user_id,
-        old_value={k: target.get(k) for k in update_data.keys()},
-        new_value=update_data
+        old_value={k: target.get(k) for k in update_data.keys() if k != "password_hash"},
+        new_value={k: v for k, v in update_data.items() if k != "password_hash"}
     )
     await audit_logs.insert_one(log.model_dump())
     
@@ -170,23 +182,47 @@ async def change_password(user_id: str, data: ChangePassword, user: dict = Depen
     return {"message": "Password changed"}
 
 @router.delete("/{user_id}")
-async def deactivate_user(user_id: str, user: dict = Depends(get_current_user)):
-    """Deactivate user (soft delete)"""
+async def delete_user(user_id: str, hard: bool = False, user: dict = Depends(get_current_user)):
+    """Delete user (soft or hard delete)"""
     if user.get("role") not in ["owner", "admin"]:
         raise HTTPException(status_code=403, detail="Insufficient permissions")
     
     if user.get("user_id") == user_id:
-        raise HTTPException(status_code=400, detail="Cannot deactivate yourself")
+        raise HTTPException(status_code=400, detail="Cannot delete yourself")
     
-    result = await users.update_one(
-        {"id": user_id},
-        {"$set": {"is_active": False, "updated_at": datetime.now(timezone.utc).isoformat()}}
-    )
-    
-    if result.matched_count == 0:
+    target = await users.find_one({"id": user_id}, {"_id": 0})
+    if not target:
         raise HTTPException(status_code=404, detail="User not found")
     
-    return {"message": "User deactivated"}
+    if hard and user.get("role") == "owner":
+        # Hard delete - only owner can do this
+        result = await users.delete_one({"id": user_id})
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="User not found")
+        message = "User permanently deleted"
+    else:
+        # Soft delete - deactivate
+        result = await users.update_one(
+            {"id": user_id},
+            {"$set": {"is_active": False, "updated_at": datetime.now(timezone.utc).isoformat()}}
+        )
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="User not found")
+        message = "User deactivated"
+    
+    # Audit log
+    log = AuditLog(
+        user_id=user.get("user_id", ""),
+        user_name=user.get("name", ""),
+        action="delete",
+        module="users",
+        entity_type="user",
+        entity_id=user_id,
+        old_value={"email": target.get("email"), "name": target.get("name")}
+    )
+    await audit_logs.insert_one(log.model_dump())
+    
+    return {"message": message}
 
 # ==================== AUDIT LOGS ====================
 
