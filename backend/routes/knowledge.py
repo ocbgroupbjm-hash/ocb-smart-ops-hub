@@ -17,9 +17,16 @@ async def create_knowledge(
     if not company_id:
         raise HTTPException(status_code=400, detail="User must be associated with a company")
     
-    knowledge_data.company_id = company_id
+    knowledge = KnowledgeBase(
+        company_id=company_id,
+        title=knowledge_data.title,
+        content=knowledge_data.content,
+        file_type=knowledge_data.file_type,
+        file_url=knowledge_data.file_url,
+        category=knowledge_data.category or "general",
+        is_active=True
+    )
     
-    knowledge = KnowledgeBase(**knowledge_data.model_dump())
     knowledge_dict = knowledge.model_dump()
     knowledge_dict['created_at'] = knowledge_dict['created_at'].isoformat()
     knowledge_dict['updated_at'] = knowledge_dict['updated_at'].isoformat()

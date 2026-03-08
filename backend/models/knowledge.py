@@ -17,7 +17,6 @@ class KnowledgeBase(BaseModel):
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class KnowledgeCreate(BaseModel):
-    company_id: str
     title: str
     content: str
     file_type: Optional[str] = None
