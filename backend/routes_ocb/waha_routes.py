@@ -569,3 +569,41 @@ async def retry_pending_messages():
         "results": results
     }
 
+
+class WAHATestSend(BaseModel):
+    """Test send request with debug info"""
+    phone: str
+    text: str
+
+
+@router.post("/debug-send/")
+async def debug_send_message(data: WAHATestSend):
+    """Debug endpoint to test WAHA send with detailed output"""
+    result = await waha_service.test_send(data.phone, data.text)
+    return result
+
+
+@router.get("/ping/")
+async def ping_waha():
+    """Ping WAHA server to check if it's accessible"""
+    import httpx
+    
+    url = f"{waha_service.base_url}/ping"
+    
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.get(url)
+            return {
+                "success": response.status_code == 200,
+                "status_code": response.status_code,
+                "response": response.text,
+                "waha_url": waha_service.base_url
+            }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e),
+            "waha_url": waha_service.base_url
+        }
+
+

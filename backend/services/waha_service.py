@@ -25,6 +25,15 @@ class WAHAService:
             "Content-Type": "application/json"
         }
     
+    def update_config(self, base_url: str = None, api_key: str = None, session: str = None):
+        """Update WAHA configuration"""
+        if base_url:
+            self.base_url = base_url.rstrip('/')
+        if api_key:
+            self.api_key = api_key
+        if session:
+            self.session = session
+    
     def normalize_phone(self, phone: str) -> str:
         """Normalize phone number to international format"""
         # Remove all non-digit characters
@@ -66,7 +75,7 @@ class WAHAService:
                     headers=self._get_headers()
                 )
                 
-                logger.info(f"WAHA Response: Status={response.status_code}, Body={response.text[:500]}")
+                logger.info(f"WAHA Send: URL={url}, Status={response.status_code}")
                 
                 if response.status_code in [200, 201]:
                     logger.info(f"WAHA: Message sent successfully to {phone}")
@@ -75,12 +84,21 @@ class WAHAService:
                         "chat_id": chat_id,
                         "response": response.json() if response.text else {}
                     }
+                elif response.status_code == 401:
+                    logger.error(f"WAHA: Authentication failed (401). Check API key.")
+                    return {
+                        "success": False,
+                        "error": "WAHA authentication failed. API key may be incorrect.",
+                        "status_code": 401,
+                        "chat_id": chat_id
+                    }
                 else:
                     error_msg = f"Status {response.status_code}: {response.text}"
                     logger.error(f"WAHA send failed: {error_msg}")
                     return {
                         "success": False,
                         "error": error_msg,
+                        "status_code": response.status_code,
                         "chat_id": chat_id
                     }
                         
@@ -96,6 +114,46 @@ class WAHAService:
                 "success": False,
                 "error": str(e)
             }
+    
+    async def test_send(self, phone: str, text: str) -> Dict[str, Any]:
+        """Test send with detailed debugging"""
+        chat_id = self.phone_to_chat_id(phone)
+        url = f"{self.base_url}/api/sendText"
+        
+        headers = self._get_headers()
+        payload = {
+            "chatId": chat_id,
+            "text": text,
+            "session": self.session
+        }
+        
+        result = {
+            "url": url,
+            "headers": {k: v[:20] + "..." if k == "X-Api-Key" else v for k, v in headers.items()},
+            "payload": payload,
+            "chat_id": chat_id
+        }
+        
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                response = await client.post(url, json=payload, headers=headers)
+                result["status_code"] = response.status_code
+                result["response"] = response.text[:500]
+                result["success"] = response.status_code in [200, 201]
+                
+                if result["success"]:
+                    result["message"] = "Message sent successfully!"
+                elif response.status_code == 401:
+                    result["message"] = "Authentication failed. Please verify API key with WAHA admin."
+                else:
+                    result["message"] = f"Failed with status {response.status_code}"
+                    
+        except Exception as e:
+            result["error"] = str(e)
+            result["success"] = False
+            result["message"] = f"Request failed: {str(e)}"
+        
+        return result
     
     async def get_status(self, session: str = None) -> Dict[str, Any]:
         """Get WAHA session status"""
