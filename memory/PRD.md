@@ -1,74 +1,94 @@
-# OCB AI - WAHA WhatsApp Integration
+# OCB AI Super App - Product Requirements
 
-## System Architecture
+## Core Modules
+- AI Customer Communication (WhatsApp)
+- POS Retail System
+- Inventory Management
+- CRM
+- Employee Attendance
+- Employee KPI System
+- Multi-Branch Command Center
+- AI Business Intelligence
+- Knowledge Base
+- Workflow Automation
+- Admin Control Panel
+
+---
+
+## N8N WhatsApp Webhook (✅ READY - 8 Mar 2026)
+
+### Endpoint
 ```
-Customer WhatsApp
-       ↓
-WAHA Server (https://waha-5uexh7skrwaw.cgk-moto.sumopod.my.id)
-       ↓
-POST /api/whatsapp/waha/webhook/
-       ↓
-OCB AI Processing:
-  • Normalize phone number (+62 format)
-  • Auto-create CRM customer
-  • Generate AI response (Bahasa Indonesia)
-       ↓
-WAHA Send Message API (POST /api/sendText)
-       ↓
-Customer WhatsApp
-```
-
-## Implementation Status
-
-### COMPLETE
-- [x] WAHA Service (`/app/backend/services/waha_service.py`)
-- [x] WAHA Routes (`/app/backend/routes_ocb/waha_routes.py`)
-- [x] Webhook endpoint: POST /api/whatsapp/waha/webhook/
-- [x] Status endpoint: GET /api/whatsapp/waha/status/
-- [x] Send endpoint: POST /api/whatsapp/waha/send/
-- [x] Test flow: POST /api/whatsapp/waha/test/
-- [x] Config endpoint: GET/POST /api/whatsapp/waha/config/
-- [x] Retry pending: POST /api/whatsapp/waha/retry-pending/
-- [x] CRM auto-create on first contact
-- [x] Conversation storage (MongoDB)
-- [x] Message history (MongoDB)
-- [x] System logs (MongoDB)
-- [x] AI response in Bahasa Indonesia
-- [x] WAHA Monitor UI (6 tabs)
-- [x] Configuration update panel
-
-### SERVER AUTH ISSUE
-- WAHA server returns **401 Unauthorized**
-- API Key: `E9qyiFBRWKToEZReNTvNyq8VCfPjyXzb`
-- Header: `X-Api-Key: <key>`
-- **Action Required**: Verify API key with WAHA server administrator
-
-## WAHA Configuration
-```
-Base URL: https://waha-5uexh7skrwaw.cgk-moto.sumopod.my.id
-API Key: E9qyiFBRWKToEZReNTvNyq8VCfPjyXzb
-Session: default
-Webhook: POST /api/whatsapp/waha/webhook/
+POST /api/whatsapp/incoming/
 ```
 
-## Test Results
-- ✅ Webhook receiver: Working
-- ✅ Phone normalization: Working
-- ✅ CRM auto-create: Working
-- ✅ AI response generation: Working (Natural Bahasa Indonesia)
-- ✅ Message storage: Working
-- ✅ System logs: Working
-- ❌ WAHA send: 401 Unauthorized
+### Request
+```json
+{
+  "phone_number": "628xxxxxxxxxx",
+  "message": "incoming whatsapp text"
+}
+```
 
-## Frontend Pages
-- `/waha` - WAHA WhatsApp Monitor
-  - Live Feed
-  - Conversations
-  - Send Message
-  - Test Flow
-  - System Logs
-  - WAHA Config (NEW)
+### Response
+```json
+{
+  "reply": "AI generated reply in Bahasa Indonesia"
+}
+```
+
+### Features
+- ✅ Response time ~2-3 seconds
+- ✅ CRM auto-create for new customers
+- ✅ Messages stored in MongoDB
+- ✅ Logs stored in MongoDB
+- ✅ No authentication required
+- ✅ Knowledge Base context integrated
+- ✅ Natural Bahasa Indonesia AI replies
+
+### Health Check
+```
+GET /api/whatsapp/incoming/health
+```
+
+### Files
+- `/app/backend/routes_ocb/n8n_webhook.py`
+
+---
+
+## WAHA Direct Integration (⚠️ AUTH ISSUE)
+
+### Architecture
+```
+Customer WhatsApp → WAHA Server → Webhook → OCB AI → WAHA Send → Customer
+```
+
+### Status
+- ✅ Webhook receiver working
+- ✅ AI response generation working
+- ❌ WAHA send: 401 Unauthorized (server-side issue)
+
+### Files
+- `/app/backend/services/waha_service.py`
+- `/app/backend/routes_ocb/waha_routes.py`
+- `/app/frontend/src/pages/WAHAMonitor.jsx`
+
+---
+
+## Working Modules
+- ✅ Authentication (JWT)
+- ✅ CRM (add/view customers)
+- ✅ Branches (add/view)
+- ✅ Knowledge Base (add/view)
+- ✅ Dashboard with analytics
+- ✅ N8N WhatsApp Integration
+
+## Placeholder Modules (Not Implemented)
+- Inventory Management UI
+- POS System UI
+- Employee Attendance UI
+- KPI Management UI
 
 ## Test Account
-- Email: test@ocbai.com
-- Password: test123
+- Email: testuser_waha@example.com
+- Password: testpassword
