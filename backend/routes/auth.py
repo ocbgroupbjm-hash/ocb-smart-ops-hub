@@ -28,12 +28,27 @@ class AuthResponse(BaseModel):
 
 @router.post("/login", response_model=AuthResponse)
 async def login(data: LoginRequest):
+    print(f"[DEBUG] Login attempt for: {data.email}")
+    
     user = await users.find_one({"email": data.email}, {"_id": 0})
     if not user:
+        print(f"[DEBUG] User not found: {data.email}")
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
-    if not verify_password(data.password, user.get("password_hash", "")):
+    print(f"[DEBUG] User found: {user.get('name')}")
+    
+    stored_hash = user.get("password_hash", "")
+    if not stored_hash:
+        # Fallback to password field for backwards compatibility
+        stored_hash = user.get("password", "")
+    
+    print(f"[DEBUG] Hash exists: {bool(stored_hash)}")
+    
+    if not verify_password(data.password, stored_hash):
+        print(f"[DEBUG] Password verification failed")
         raise HTTPException(status_code=401, detail="Invalid credentials")
+    
+    print(f"[DEBUG] Password verified successfully")
     
     if not user.get("is_active", True):
         raise HTTPException(status_code=401, detail="Account disabled")
