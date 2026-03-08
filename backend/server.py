@@ -43,6 +43,7 @@ from routes.ai_business import router as ai_business_router
 from routes.hallo_ai import router as hallo_ai_router
 from routes.master_erp import router as master_erp_router
 from routes.settings import router as settings_router
+from routes.accounting import router as accounting_router
 
 # Mount all routers under /api
 app.include_router(auth_router, prefix="/api")
@@ -60,6 +61,7 @@ app.include_router(ai_business_router, prefix="/api")
 app.include_router(hallo_ai_router, prefix="/api")
 app.include_router(master_erp_router, prefix="/api")
 app.include_router(settings_router, prefix="/api")
+app.include_router(accounting_router)
 
 # Health check
 @app.get("/api/health")
