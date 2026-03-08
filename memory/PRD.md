@@ -85,6 +85,13 @@
   - Dynamic database connection dengan proxy class
   - Isolasi data 100% antar bisnis
   - Visual indicator untuk database aktif
+  
+- **Clone Business** (NEW!):
+  - Clone master data dari bisnis existing ke bisnis baru
+  - Pilih data yang ingin di-clone (Kategori, Produk, Supplier, Pelanggan, COA, Settings)
+  - Otomatis reset stok dan saldo ke 0
+  - Buat user admin untuk bisnis baru
+  - Custom icon dan warna untuk bisnis baru
 
 ### 6. MODUL LAINNYA (From Previous)
 - **Dashboard**: Overview penjualan, grafik, ringkasan
@@ -172,7 +179,6 @@
 - Offline mode untuk POS
 
 ### P2 (Medium Priority)
-- Copy Master Data antar bisnis
 - Export/Import data antar database
 - PDF Export untuk laporan
 - Barcode scanner integration
@@ -193,6 +199,12 @@
   - Koneksi database sekarang dinamis tanpa restart backend
   - UI "Kelola Bisnis" berfungsi sempurna
   - Switch bisnis -> Logout -> Login ke database baru berfungsi
+
+- ✅ **NEW: Clone Business Feature**
+  - Clone master data (Kategori, Produk, Supplier, Pelanggan, COA, Settings)
+  - Auto reset stok dan saldo ke 0 saat clone
+  - Buat user admin otomatis untuk bisnis baru
+  - UI modal lengkap dengan pilihan data clone
 
 - ✅ Implemented full Accounting module (COA, Journals, Ledger, Financial Reports)
 - ✅ Implemented comprehensive Reports module (9 types + Excel export)

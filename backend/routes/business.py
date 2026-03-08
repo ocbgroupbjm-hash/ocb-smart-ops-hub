@@ -5,7 +5,8 @@ from typing import List, Optional
 from datetime import datetime, timezone
 import os
 import json
-from database import set_active_db_name, get_active_db_name
+from database import set_active_db_name, get_active_db_name, client
+from utils.auth import hash_password
 
 router = APIRouter(prefix="/api/business", tags=["Business Management"])
 
@@ -20,6 +21,23 @@ class Business(BaseModel):
     icon: Optional[str] = "store"
     color: Optional[str] = "#991B1B"
     created_at: Optional[str] = None
+
+class CloneBusinessRequest(BaseModel):
+    source_db: str
+    target_name: str
+    target_db_name: str
+    target_description: Optional[str] = ""
+    target_icon: Optional[str] = "store"
+    target_color: Optional[str] = "#991B1B"
+    clone_products: bool = True
+    clone_categories: bool = True
+    clone_suppliers: bool = True
+    clone_customers: bool = True
+    clone_coa: bool = True
+    clone_settings: bool = True
+    create_admin_user: bool = True
+    admin_email: Optional[str] = None
+    admin_password: Optional[str] = None
 
 def ensure_data_dir():
     os.makedirs("/app/backend/data", exist_ok=True)
@@ -177,3 +195,141 @@ async def get_current_business():
         "current_db": current_db,
         "business": business
     }
+
+@router.post("/clone")
+async def clone_business(request: CloneBusinessRequest):
+    """Clone master data from one business to a new business"""
+    import uuid
+    
+    businesses = load_businesses()
+    
+    # Validate source exists
+    source_biz = next((b for b in businesses if b['db_name'] == request.source_db), None)
+    if not source_biz:
+        raise HTTPException(status_code=404, detail="Database sumber tidak ditemukan")
+    
+    # Validate target doesn't exist
+    if any(b['db_name'] == request.target_db_name for b in businesses):
+        raise HTTPException(status_code=400, detail="Nama database target sudah digunakan")
+    
+    try:
+        # Get source and target database references
+        source_db = client[request.source_db]
+        target_db = client[request.target_db_name]
+        
+        cloned_counts = {}
+        
+        # Clone Categories
+        if request.clone_categories:
+            categories = await source_db['categories'].find({}, {"_id": 0}).to_list(None)
+            if categories:
+                await target_db['categories'].insert_many(categories)
+                cloned_counts['categories'] = len(categories)
+        
+        # Clone Products (without stock data)
+        if request.clone_products:
+            products = await source_db['products'].find({}, {"_id": 0}).to_list(None)
+            if products:
+                # Reset stock-related fields
+                for p in products:
+                    p['stock'] = 0
+                    p['reserved_stock'] = 0
+                await target_db['products'].insert_many(products)
+                cloned_counts['products'] = len(products)
+        
+        # Clone Suppliers
+        if request.clone_suppliers:
+            suppliers = await source_db['suppliers'].find({}, {"_id": 0}).to_list(None)
+            if suppliers:
+                await target_db['suppliers'].insert_many(suppliers)
+                cloned_counts['suppliers'] = len(suppliers)
+        
+        # Clone Customers
+        if request.clone_customers:
+            customers = await source_db['customers'].find({}, {"_id": 0}).to_list(None)
+            if customers:
+                # Reset balance/points
+                for c in customers:
+                    c['balance'] = 0
+                    c['points'] = 0
+                    c['total_purchases'] = 0
+                await target_db['customers'].insert_many(customers)
+                cloned_counts['customers'] = len(customers)
+        
+        # Clone Chart of Accounts
+        if request.clone_coa:
+            coa = await source_db['chart_of_accounts'].find({}, {"_id": 0}).to_list(None)
+            if coa:
+                # Reset balances
+                for acc in coa:
+                    acc['balance'] = 0
+                await target_db['chart_of_accounts'].insert_many(coa)
+                cloned_counts['chart_of_accounts'] = len(coa)
+        
+        # Clone Settings
+        if request.clone_settings:
+            settings = await source_db['settings'].find({}, {"_id": 0}).to_list(None)
+            if settings:
+                await target_db['settings'].insert_many(settings)
+                cloned_counts['settings'] = len(settings)
+            
+            print_settings = await source_db['print_settings'].find({}, {"_id": 0}).to_list(None)
+            if print_settings:
+                await target_db['print_settings'].insert_many(print_settings)
+                cloned_counts['print_settings'] = len(print_settings)
+        
+        # Create default branch
+        default_branch = {
+            "id": str(uuid.uuid4()),
+            "code": "HQ",
+            "name": "Headquarters",
+            "address": "Main Office",
+            "phone": "",
+            "is_active": True,
+            "is_warehouse": True,
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await target_db['branches'].insert_one(default_branch)
+        cloned_counts['branches'] = 1
+        
+        # Create admin user if requested
+        if request.create_admin_user and request.admin_email and request.admin_password:
+            admin_user = {
+                "id": str(uuid.uuid4()),
+                "email": request.admin_email,
+                "password_hash": hash_password(request.admin_password),
+                "name": "Admin",
+                "phone": "",
+                "role": "owner",
+                "branch_id": default_branch["id"],
+                "branch_ids": [default_branch["id"]],
+                "is_active": True,
+                "permissions": [],
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+            await target_db['users'].insert_one(admin_user)
+            cloned_counts['users'] = 1
+        
+        # Create business entry
+        new_business_id = request.target_db_name.lower().replace(' ', '_')
+        new_business = {
+            "id": new_business_id,
+            "name": request.target_name,
+            "db_name": request.target_db_name,
+            "description": request.target_description or f"Clone dari {source_biz['name']}",
+            "icon": request.target_icon or "store",
+            "color": request.target_color or "#991B1B",
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "cloned_from": request.source_db
+        }
+        businesses.append(new_business)
+        save_businesses(businesses)
+        
+        return {
+            "message": f"Bisnis '{request.target_name}' berhasil di-clone dari '{source_biz['name']}'",
+            "business": new_business,
+            "cloned_data": cloned_counts
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Gagal clone bisnis: {str(e)}")

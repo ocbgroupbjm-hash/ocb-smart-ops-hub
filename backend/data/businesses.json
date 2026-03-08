@@ -25,5 +25,15 @@
     "icon": "smartphone",
     "color": "#1E40AF",
     "created_at": "2026-03-08T13:45:41.729969+00:00"
+  },
+  {
+    "id": "ocb_test_clone",
+    "name": "Toko Test Clone",
+    "db_name": "ocb_test_clone",
+    "description": "Test clone dari OCB GROUP",
+    "icon": "store",
+    "color": "#065F46",
+    "created_at": "2026-03-08T15:31:51.736607+00:00",
+    "cloned_from": "ocb_titan"
   }
 ]

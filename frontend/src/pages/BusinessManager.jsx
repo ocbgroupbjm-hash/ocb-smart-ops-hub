@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { Building2, Plus, Loader2, Edit, Trash2, CheckCircle, Database, RefreshCw, Store, Shirt, Smartphone, Coffee, ShoppingBag, Briefcase } from 'lucide-react';
+import { Building2, Plus, Loader2, Edit, Trash2, CheckCircle, Database, RefreshCw, Store, Shirt, Smartphone, Coffee, ShoppingBag, Briefcase, Copy, Package, Users, FileText, Settings } from 'lucide-react';
 import { toast } from 'sonner';
 
 const BusinessManager = () => {
@@ -9,6 +9,9 @@ const BusinessManager = () => {
   const [currentDb, setCurrentDb] = useState('');
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showCloneModal, setShowCloneModal] = useState(false);
+  const [cloneSource, setCloneSource] = useState(null);
+  const [cloning, setCloning] = useState(false);
   const [switching, setSwitching] = useState(null);
   
   const [formData, setFormData] = useState({
@@ -18,6 +21,23 @@ const BusinessManager = () => {
     description: '',
     icon: 'store',
     color: '#991B1B'
+  });
+
+  const [cloneData, setCloneData] = useState({
+    target_name: '',
+    target_db_name: '',
+    target_description: '',
+    target_icon: 'store',
+    target_color: '#991B1B',
+    clone_products: true,
+    clone_categories: true,
+    clone_suppliers: true,
+    clone_customers: true,
+    clone_coa: true,
+    clone_settings: true,
+    create_admin_user: true,
+    admin_email: '',
+    admin_password: ''
   });
 
   const icons = [
@@ -135,6 +155,66 @@ const BusinessManager = () => {
     } catch (err) { toast.error('Gagal menghapus'); }
   };
 
+  const openCloneModal = (business) => {
+    setCloneSource(business);
+    setCloneData({
+      target_name: '',
+      target_db_name: '',
+      target_description: '',
+      target_icon: business.icon || 'store',
+      target_color: business.color || '#991B1B',
+      clone_products: true,
+      clone_categories: true,
+      clone_suppliers: true,
+      clone_customers: true,
+      clone_coa: true,
+      clone_settings: true,
+      create_admin_user: true,
+      admin_email: '',
+      admin_password: ''
+    });
+    setShowCloneModal(true);
+  };
+
+  const cloneBusiness = async () => {
+    if (!cloneData.target_name || !cloneData.target_db_name) {
+      toast.error('Nama dan Database target wajib diisi');
+      return;
+    }
+    
+    if (cloneData.create_admin_user && (!cloneData.admin_email || !cloneData.admin_password)) {
+      toast.error('Email dan password admin wajib diisi');
+      return;
+    }
+    
+    setCloning(true);
+    try {
+      const res = await api('/api/business/clone', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          source_db: cloneSource.db_name,
+          ...cloneData
+        })
+      });
+      
+      if (res.ok) {
+        const data = await res.json();
+        toast.success(`Bisnis berhasil di-clone! Data: ${Object.entries(data.cloned_data || {}).map(([k,v]) => `${k}: ${v}`).join(', ')}`);
+        setShowCloneModal(false);
+        setCloneSource(null);
+        loadBusinesses();
+      } else {
+        const err = await res.json();
+        toast.error(err.detail || 'Gagal clone bisnis');
+      }
+    } catch (err) { 
+      toast.error('Gagal clone bisnis'); 
+    } finally {
+      setCloning(false);
+    }
+  };
+
   const getIconComponent = (iconId) => {
     const found = icons.find(i => i.id === iconId);
     return found ? found.icon : Store;
@@ -231,6 +311,14 @@ const BusinessManager = () => {
                       Sedang Digunakan
                     </div>
                   )}
+                  
+                  <button
+                    onClick={() => openCloneModal(business)}
+                    className="p-2 text-blue-400 hover:bg-blue-600/20 rounded-lg"
+                    title="Clone bisnis ini"
+                  >
+                    <Copy className="h-4 w-4" />
+                  </button>
                   
                   {business.id !== 'default' && (
                     <button
@@ -338,6 +426,242 @@ const BusinessManager = () => {
                 className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
               >
                 Buat Bisnis
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Clone Modal */}
+      {showCloneModal && cloneSource && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-[#1a1214] border border-red-900/30 rounded-xl p-6 w-[600px] max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-blue-600/20 rounded-lg">
+                <Copy className="h-5 w-5 text-blue-400" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-amber-100">Clone Bisnis</h2>
+                <p className="text-sm text-gray-400">Dari: <span className="text-amber-400">{cloneSource.name}</span></p>
+              </div>
+            </div>
+            
+            <div className="space-y-4">
+              {/* Target Business Info */}
+              <div className="p-4 bg-[#0a0608] rounded-lg space-y-3">
+                <h3 className="font-medium text-amber-100 flex items-center gap-2">
+                  <Building2 className="h-4 w-4" /> Info Bisnis Baru
+                </h3>
+                
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs text-gray-400 mb-1">Nama Bisnis *</label>
+                    <input
+                      type="text"
+                      value={cloneData.target_name}
+                      onChange={(e) => setCloneData({ ...cloneData, target_name: e.target.value })}
+                      className="w-full px-3 py-2 bg-[#1a1214] border border-red-900/30 rounded-lg text-sm"
+                      placeholder="Toko Baru"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-400 mb-1">Nama Database *</label>
+                    <input
+                      type="text"
+                      value={cloneData.target_db_name}
+                      onChange={(e) => setCloneData({ ...cloneData, target_db_name: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '_') })}
+                      className="w-full px-3 py-2 bg-[#1a1214] border border-red-900/30 rounded-lg text-sm font-mono"
+                      placeholder="toko_baru"
+                    />
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="block text-xs text-gray-400 mb-1">Deskripsi</label>
+                  <input
+                    type="text"
+                    value={cloneData.target_description}
+                    onChange={(e) => setCloneData({ ...cloneData, target_description: e.target.value })}
+                    className="w-full px-3 py-2 bg-[#1a1214] border border-red-900/30 rounded-lg text-sm"
+                    placeholder="Cabang baru dari..."
+                  />
+                </div>
+
+                <div className="flex gap-4">
+                  <div className="flex-1">
+                    <label className="block text-xs text-gray-400 mb-2">Ikon</label>
+                    <div className="flex gap-1 flex-wrap">
+                      {icons.map((icon) => (
+                        <button
+                          key={icon.id}
+                          onClick={() => setCloneData({ ...cloneData, target_icon: icon.id })}
+                          className={`p-2 rounded border transition-all ${
+                            cloneData.target_icon === icon.id 
+                              ? 'border-amber-500 bg-amber-500/20' 
+                              : 'border-red-900/30'
+                          }`}
+                        >
+                          <icon.icon className="h-4 w-4" />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <label className="block text-xs text-gray-400 mb-2">Warna</label>
+                    <div className="flex gap-1">
+                      {colors.map((color) => (
+                        <button
+                          key={color}
+                          onClick={() => setCloneData({ ...cloneData, target_color: color })}
+                          className={`w-6 h-6 rounded-full border-2 ${
+                            cloneData.target_color === color ? 'border-white' : 'border-transparent'
+                          }`}
+                          style={{ backgroundColor: color }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Data to Clone */}
+              <div className="p-4 bg-[#0a0608] rounded-lg space-y-3">
+                <h3 className="font-medium text-amber-100 flex items-center gap-2">
+                  <Database className="h-4 w-4" /> Data yang Di-clone
+                </h3>
+                
+                <div className="grid grid-cols-2 gap-2">
+                  <label className="flex items-center gap-2 p-2 rounded hover:bg-[#1a1214] cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      checked={cloneData.clone_categories}
+                      onChange={(e) => setCloneData({ ...cloneData, clone_categories: e.target.checked })}
+                      className="rounded border-gray-600"
+                    />
+                    <Package className="h-4 w-4 text-blue-400" />
+                    <span className="text-sm">Kategori</span>
+                  </label>
+                  
+                  <label className="flex items-center gap-2 p-2 rounded hover:bg-[#1a1214] cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      checked={cloneData.clone_products}
+                      onChange={(e) => setCloneData({ ...cloneData, clone_products: e.target.checked })}
+                      className="rounded border-gray-600"
+                    />
+                    <ShoppingBag className="h-4 w-4 text-green-400" />
+                    <span className="text-sm">Produk (stok = 0)</span>
+                  </label>
+                  
+                  <label className="flex items-center gap-2 p-2 rounded hover:bg-[#1a1214] cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      checked={cloneData.clone_suppliers}
+                      onChange={(e) => setCloneData({ ...cloneData, clone_suppliers: e.target.checked })}
+                      className="rounded border-gray-600"
+                    />
+                    <Briefcase className="h-4 w-4 text-purple-400" />
+                    <span className="text-sm">Supplier</span>
+                  </label>
+                  
+                  <label className="flex items-center gap-2 p-2 rounded hover:bg-[#1a1214] cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      checked={cloneData.clone_customers}
+                      onChange={(e) => setCloneData({ ...cloneData, clone_customers: e.target.checked })}
+                      className="rounded border-gray-600"
+                    />
+                    <Users className="h-4 w-4 text-cyan-400" />
+                    <span className="text-sm">Pelanggan (saldo = 0)</span>
+                  </label>
+                  
+                  <label className="flex items-center gap-2 p-2 rounded hover:bg-[#1a1214] cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      checked={cloneData.clone_coa}
+                      onChange={(e) => setCloneData({ ...cloneData, clone_coa: e.target.checked })}
+                      className="rounded border-gray-600"
+                    />
+                    <FileText className="h-4 w-4 text-amber-400" />
+                    <span className="text-sm">Chart of Accounts</span>
+                  </label>
+                  
+                  <label className="flex items-center gap-2 p-2 rounded hover:bg-[#1a1214] cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      checked={cloneData.clone_settings}
+                      onChange={(e) => setCloneData({ ...cloneData, clone_settings: e.target.checked })}
+                      className="rounded border-gray-600"
+                    />
+                    <Settings className="h-4 w-4 text-gray-400" />
+                    <span className="text-sm">Pengaturan</span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Admin User */}
+              <div className="p-4 bg-[#0a0608] rounded-lg space-y-3">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input 
+                    type="checkbox" 
+                    checked={cloneData.create_admin_user}
+                    onChange={(e) => setCloneData({ ...cloneData, create_admin_user: e.target.checked })}
+                    className="rounded border-gray-600"
+                  />
+                  <h3 className="font-medium text-amber-100">Buat User Admin</h3>
+                </label>
+                
+                {cloneData.create_admin_user && (
+                  <div className="grid grid-cols-2 gap-3 mt-2">
+                    <div>
+                      <label className="block text-xs text-gray-400 mb-1">Email Admin *</label>
+                      <input
+                        type="email"
+                        value={cloneData.admin_email}
+                        onChange={(e) => setCloneData({ ...cloneData, admin_email: e.target.value })}
+                        className="w-full px-3 py-2 bg-[#1a1214] border border-red-900/30 rounded-lg text-sm"
+                        placeholder="admin@toko.com"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-400 mb-1">Password *</label>
+                      <input
+                        type="password"
+                        value={cloneData.admin_password}
+                        onChange={(e) => setCloneData({ ...cloneData, admin_password: e.target.value })}
+                        className="w-full px-3 py-2 bg-[#1a1214] border border-red-900/30 rounded-lg text-sm"
+                        placeholder="********"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 mt-6">
+              <button 
+                onClick={() => { setShowCloneModal(false); setCloneSource(null); }} 
+                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+                disabled={cloning}
+              >
+                Batal
+              </button>
+              <button 
+                onClick={cloneBusiness} 
+                disabled={cloning}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 disabled:opacity-50"
+              >
+                {cloning ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Cloning...
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-4 w-4" />
+                    Clone Bisnis
+                  </>
+                )}
               </button>
             </div>
           </div>
