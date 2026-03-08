@@ -18,48 +18,54 @@ code {
 
 @layer base {
     :root {
-        --background: 0 0 0;
-        --foreground: 250 250 250;
-        --card: 10 10 10;
-        --card-foreground: 250 250 250;
-        --popover: 10 10 10;
-        --popover-foreground: 250 250 250;
-        --primary: 99 102 241;
+        --background: 8 4 6;
+        --foreground: 255 248 240;
+        --card: 15 8 10;
+        --card-foreground: 255 248 240;
+        --popover: 15 8 10;
+        --popover-foreground: 255 248 240;
+        --primary: 185 28 28;
         --primary-foreground: 255 255 255;
-        --secondary: 30 30 30;
-        --secondary-foreground: 250 250 250;
-        --muted: 20 20 20;
-        --muted-foreground: 160 160 160;
-        --accent: 20 20 30;
-        --accent-foreground: 200 200 255;
-        --destructive: 239 68 68;
+        --secondary: 25 15 18;
+        --secondary-foreground: 255 248 240;
+        --muted: 20 12 14;
+        --muted-foreground: 180 160 165;
+        --accent: 30 18 22;
+        --accent-foreground: 252 211 77;
+        --destructive: 220 38 38;
         --destructive-foreground: 255 255 255;
-        --border: 30 30 30;
-        --input: 20 20 20;
-        --ring: 99 102 241;
+        --border: 50 25 30;
+        --input: 25 15 18;
+        --ring: 185 28 28;
         --radius: 0.75rem;
+        
+        /* Custom OCB Colors */
+        --ocb-red: 185 28 28;
+        --ocb-gold: 252 211 77;
+        --ocb-amber: 245 158 11;
+        --ocb-maroon: 127 29 29;
     }
     
     .light {
-        --background: 255 255 255;
-        --foreground: 10 10 10;
-        --card: 250 250 250;
-        --card-foreground: 10 10 10;
+        --background: 255 252 250;
+        --foreground: 30 15 18;
+        --card: 255 248 245;
+        --card-foreground: 30 15 18;
         --popover: 255 255 255;
-        --popover-foreground: 10 10 10;
-        --primary: 99 102 241;
+        --popover-foreground: 30 15 18;
+        --primary: 185 28 28;
         --primary-foreground: 255 255 255;
-        --secondary: 240 240 240;
-        --secondary-foreground: 10 10 10;
-        --muted: 245 245 245;
-        --muted-foreground: 100 100 100;
-        --accent: 240 240 250;
-        --accent-foreground: 60 60 150;
+        --secondary: 255 240 235;
+        --secondary-foreground: 30 15 18;
+        --muted: 250 240 238;
+        --muted-foreground: 120 90 95;
+        --accent: 255 245 240;
+        --accent-foreground: 185 28 28;
         --destructive: 220 38 38;
         --destructive-foreground: 255 255 255;
-        --border: 230 230 230;
-        --input: 245 245 245;
-        --ring: 99 102 241;
+        --border: 230 210 215;
+        --input: 250 240 238;
+        --ring: 185 28 28;
     }
 }
 
@@ -69,6 +75,8 @@ code {
     }
     body {
         @apply bg-background text-foreground;
+        background: linear-gradient(135deg, rgb(8, 4, 6) 0%, rgb(18, 10, 12) 50%, rgb(12, 6, 8) 100%);
+        min-height: 100vh;
     }
     h1, h2, h3, h4, h5, h6 {
         @apply font-heading;
@@ -78,6 +86,36 @@ code {
 @layer utilities {
     .font-heading {
         font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    
+    /* OCB Gradient Text */
+    .text-gradient-ocb {
+        @apply bg-gradient-to-r from-red-400 via-amber-400 to-yellow-300 bg-clip-text text-transparent;
+    }
+    
+    /* OCB Card Glow */
+    .card-glow {
+        box-shadow: 0 0 40px rgba(185, 28, 28, 0.1), 
+                    0 0 80px rgba(252, 211, 77, 0.05);
+    }
+    
+    /* OCB Button Glow */
+    .btn-glow {
+        box-shadow: 0 4px 20px rgba(185, 28, 28, 0.3),
+                    0 0 40px rgba(185, 28, 28, 0.1);
+    }
+    
+    /* Subtle grain texture */
+    .grain {
+        position: relative;
+    }
+    .grain::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+        opacity: 0.03;
+        pointer-events: none;
     }
 }
 
@@ -111,4 +149,29 @@ code {
         border-top-color: inherit;
         border-bottom-color: inherit;
     }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(30, 15, 18, 0.5);
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(185, 28, 28, 0.3);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(185, 28, 28, 0.5);
+}
+
+/* Selection color */
+::selection {
+    background: rgba(185, 28, 28, 0.3);
+    color: rgb(252, 211, 77);
 }

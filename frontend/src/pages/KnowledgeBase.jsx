@@ -96,12 +96,12 @@ export default function KnowledgeBase() {
     <div className="space-y-6" data-testid="knowledge-page">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-4xl font-bold tracking-tight mb-2">Knowledge Base</h1>
-          <p className="text-muted-foreground">Train your AI with business knowledge and documentation</p>
+          <h1 className="text-4xl font-bold tracking-tight mb-2 bg-gradient-to-r from-red-400 via-amber-400 to-yellow-300 bg-clip-text text-transparent">Knowledge Base</h1>
+          <p className="text-red-300/60">Train your AI with business knowledge and documentation</p>
         </div>
         <div className="flex gap-2">
           <label htmlFor="file-upload">
-            <Button variant="outline" asChild>
+            <Button variant="outline" asChild className="border-red-900/30 text-red-200 hover:bg-red-900/20">
               <span>
                 <Upload className="h-4 w-4 mr-2" />
                 Upload File
@@ -119,20 +119,20 @@ export default function KnowledgeBase() {
           
           <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
             <DialogTrigger asChild>
-              <Button data-testid="add-knowledge-button">
+              <Button data-testid="add-knowledge-button" className="bg-gradient-to-r from-red-700 to-red-600 hover:from-red-600 hover:to-red-500 shadow-lg shadow-red-900/30">
                 <Plus className="h-4 w-4 mr-2" />
                 Add Knowledge
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-w-2xl bg-gradient-to-b from-red-950/95 to-red-950/90 border-red-900/30">
               <DialogHeader>
-                <DialogTitle>Add Knowledge</DialogTitle>
-                <DialogDescription>Add new information to train your AI assistant</DialogDescription>
+                <DialogTitle className="text-amber-100">Add Knowledge</DialogTitle>
+                <DialogDescription className="text-red-300/60">Add new information to train your AI assistant</DialogDescription>
               </DialogHeader>
               <form onSubmit={handleAddKnowledge}>
                 <div className="space-y-4 py-4">
                   <div className="space-y-2">
-                    <Label htmlFor="title">Title</Label>
+                    <Label htmlFor="title" className="text-red-200/80">Title</Label>
                     <Input
                       id="title"
                       value={newKnowledge.title}
@@ -140,15 +140,16 @@ export default function KnowledgeBase() {
                       required
                       placeholder="Product Information"
                       data-testid="knowledge-title-input"
+                      className="bg-red-950/30 border-red-900/30 text-amber-50 placeholder:text-red-300/40"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="category">Category</Label>
+                    <Label htmlFor="category" className="text-red-200/80">Category</Label>
                     <Select value={newKnowledge.category} onValueChange={(value) => setNewKnowledge({ ...newKnowledge, category: value })}>
-                      <SelectTrigger>
+                      <SelectTrigger className="bg-red-950/30 border-red-900/30 text-amber-50">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="bg-red-950/95 border-red-900/30">
                         <SelectItem value="general">General</SelectItem>
                         <SelectItem value="product">Product</SelectItem>
                         <SelectItem value="faq">FAQ</SelectItem>
@@ -158,7 +159,7 @@ export default function KnowledgeBase() {
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="content">Content</Label>
+                    <Label htmlFor="content" className="text-red-200/80">Content</Label>
                     <Textarea
                       id="content"
                       value={newKnowledge.content}
@@ -167,11 +168,12 @@ export default function KnowledgeBase() {
                       rows={8}
                       placeholder="Enter detailed information here..."
                       data-testid="knowledge-content-input"
+                      className="bg-red-950/30 border-red-900/30 text-amber-50 placeholder:text-red-300/40"
                     />
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button type="submit" data-testid="save-knowledge-button">Save Knowledge</Button>
+                  <Button type="submit" data-testid="save-knowledge-button" className="bg-gradient-to-r from-red-700 to-red-600 hover:from-red-600 hover:to-red-500">Save Knowledge</Button>
                 </DialogFooter>
               </form>
             </DialogContent>
@@ -183,31 +185,31 @@ export default function KnowledgeBase() {
       <div className="grid grid-cols-1 gap-4">
         {loading ? (
           <div className="flex justify-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
           </div>
         ) : knowledge.length === 0 ? (
-          <Card>
+          <Card className="bg-gradient-to-br from-red-950/40 to-red-950/20 border-red-900/30">
             <CardContent className="flex flex-col items-center justify-center py-12">
-              <BookOpen className="h-16 w-16 text-muted-foreground mb-4" />
-              <p className="text-muted-foreground mb-4">No knowledge items found</p>
-              <Button onClick={() => setIsAddOpen(true)}>Add Your First Knowledge Item</Button>
+              <BookOpen className="h-16 w-16 text-red-400/50 mb-4" />
+              <p className="text-red-300/60 mb-4">No knowledge items found</p>
+              <Button onClick={() => setIsAddOpen(true)} className="bg-gradient-to-r from-red-700 to-red-600">Add Your First Knowledge Item</Button>
             </CardContent>
           </Card>
         ) : (
           knowledge.map((item) => (
-            <Card key={item.id} className="hover:shadow-md transition-all duration-200" data-testid="knowledge-card">
+            <Card key={item.id} className="hover:shadow-xl hover:shadow-red-900/20 transition-all duration-200 bg-gradient-to-br from-red-950/40 to-red-950/20 border-red-900/30" data-testid="knowledge-card">
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
-                      <FileText className="h-5 w-5 text-primary" />
-                      <CardTitle className="text-lg">{item.title}</CardTitle>
+                      <FileText className="h-5 w-5 text-amber-400" />
+                      <CardTitle className="text-lg text-amber-100">{item.title}</CardTitle>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className={`px-2 py-1 text-xs rounded-full ${categoryColors[item.category] || categoryColors.general}`}>
                         {item.category.toUpperCase()}
                       </span>
-                      <span className="text-xs text-muted-foreground">
+                      <span className="text-xs text-red-300/50">
                         Added {new Date(item.created_at).toLocaleDateString()}
                       </span>
                     </div>
@@ -216,14 +218,14 @@ export default function KnowledgeBase() {
                     variant="ghost"
                     size="icon"
                     onClick={() => handleDelete(item.id)}
-                    className="text-destructive hover:text-destructive"
+                    className="text-red-400 hover:text-red-300 hover:bg-red-900/20"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground line-clamp-3">
+                <p className="text-sm text-red-200/70 line-clamp-3">
                   {item.content}
                 </p>
               </CardContent>

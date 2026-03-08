@@ -13,6 +13,7 @@ import KnowledgeBase from './pages/KnowledgeBase';
 import Analytics from './pages/Analytics';
 import Inventory from './pages/Inventory';
 import Settings from './pages/Settings';
+import WhatsAppIntegration from './pages/WhatsAppIntegration';
 import './index.css';
 
 const PrivateRoute = ({ children }) => {
@@ -52,6 +53,7 @@ function App() {
               <Route path="analytics" element={<Analytics />} />
               <Route path="inventory" element={<Inventory />} />
               <Route path="knowledge" element={<KnowledgeBase />} />
+              <Route path="whatsapp" element={<WhatsAppIntegration />} />
               <Route path="settings" element={<Settings />} />
             </Route>
           </Routes>
