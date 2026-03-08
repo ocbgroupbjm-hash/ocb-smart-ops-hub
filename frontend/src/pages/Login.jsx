@@ -1,21 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Loader2, Eye, EyeOff, Sparkles, Brain, BarChart3, ShoppingCart, Building2, ChevronRight, Database, Store, Shirt, Smartphone, Coffee, ShoppingBag, Briefcase } from 'lucide-react';
+import { Loader2, Eye, EyeOff, Sparkles, Brain, BarChart3, ShoppingCart, Building2, ChevronRight, Database, Store, Shirt, Smartphone, Coffee, ShoppingBag, Briefcase, User, Lock, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 const Login = () => {
-  const [step, setStep] = useState(1); // 1 = pilih bisnis, 2 = login
-  const [isLogin, setIsLogin] = useState(true);
+  const [step, setStep] = useState(1); // 1 = login owner, 2 = pilih bisnis, 3 = login database
+  const [ownerEmail, setOwnerEmail] = useState('');
+  const [ownerPassword, setOwnerPassword] = useState('');
+  const [ownerVerified, setOwnerVerified] = useState(false);
+  const [ownerName, setOwnerName] = useState('');
+  
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [businesses, setBusinesses] = useState([]);
   const [selectedBusiness, setSelectedBusiness] = useState(null);
-  const [loadingBusinesses, setLoadingBusinesses] = useState(true);
-  const { login, register } = useAuth();
+  const [loadingBusinesses, setLoadingBusinesses] = useState(false);
+  
+  const { login } = useAuth();
   const navigate = useNavigate();
 
   const icons = {
@@ -28,10 +32,6 @@ const Login = () => {
     briefcase: Briefcase,
   };
 
-  useEffect(() => {
-    loadBusinesses();
-  }, []);
-
   const loadBusinesses = async () => {
     setLoadingBusinesses(true);
     try {
@@ -39,14 +39,9 @@ const Login = () => {
       if (res.ok) {
         const data = await res.json();
         setBusinesses(data.businesses || []);
-        // Auto-select if only one business
-        if (data.businesses?.length === 1) {
-          setSelectedBusiness(data.businesses[0]);
-        }
       }
     } catch (err) { 
       console.error(err); 
-      // If error, still allow login with default
       setBusinesses([{
         id: 'default',
         name: 'OCB GROUP',
@@ -59,50 +54,81 @@ const Login = () => {
     finally { setLoadingBusinesses(false); }
   };
 
+  // Step 1: Verify Owner
+  const verifyOwner = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    
+    try {
+      // Try to login to verify owner credentials
+      const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: ownerEmail, password: ownerPassword })
+      });
+      
+      if (res.ok) {
+        const data = await res.json();
+        // Check if user is owner
+        if (data.user?.role === 'owner' || data.user?.role === 'admin') {
+          setOwnerVerified(true);
+          setOwnerName(data.user?.name || 'Owner');
+          toast.success(`Selamat datang, ${data.user?.name || 'Owner'}!`);
+          // Load businesses and go to step 2
+          await loadBusinesses();
+          setStep(2);
+        } else {
+          toast.error('Hanya Owner/Admin yang dapat mengakses multi-bisnis');
+        }
+      } else {
+        toast.error('Email atau password salah');
+      }
+    } catch (err) {
+      toast.error('Gagal verifikasi. Coba lagi.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Step 2: Select Business
   const selectBusiness = async (business) => {
     setSelectedBusiness(business);
     setLoading(true);
     
     try {
-      // Switch database before login
+      // Switch database
       const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/business/switch/${business.db_name}`, {
         method: 'POST'
       });
       
       if (res.ok) {
-        // Wait for backend to restart with new DB
         toast.success(`Database: ${business.name}`);
+        // Wait for backend to apply new DB
         setTimeout(() => {
-          setStep(2);
+          setStep(3);
           setLoading(false);
         }, 1500);
       } else {
-        // Still proceed to login even if switch fails
-        setStep(2);
+        setStep(3);
         setLoading(false);
       }
     } catch (err) {
-      // Still proceed to login
-      setStep(2);
+      setStep(3);
       setLoading(false);
     }
   };
 
-  const handleSubmit = async (e) => {
+  // Step 3: Login to selected database
+  const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
     
     try {
-      if (isLogin) {
-        await login(email, password);
-        toast.success(`Selamat datang di ${selectedBusiness?.name || 'OCB AI TITAN'}!`);
-      } else {
-        await register({ email, password, name, role: 'cashier' });
-        toast.success('Akun berhasil dibuat!');
-      }
+      await login(email, password);
+      toast.success(`Berhasil masuk ke ${selectedBusiness?.name || 'sistem'}!`);
       navigate('/dashboard');
     } catch (err) {
-      toast.error(err.message || 'Autentikasi gagal');
+      toast.error(err.message || 'Login gagal. Periksa email dan password.');
     } finally {
       setLoading(false);
     }
@@ -130,24 +156,40 @@ const Login = () => {
           </h1>
           <p className="text-xl text-amber-100/80 mb-8">Enterprise Retail AI System</p>
           
+          {/* Steps indicator */}
+          <div className="flex justify-center gap-4 mb-8">
+            <div className={`flex items-center gap-2 px-4 py-2 rounded-full ${step >= 1 ? 'bg-green-600/30 text-green-400' : 'bg-gray-800 text-gray-500'}`}>
+              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${step >= 1 ? 'bg-green-600' : 'bg-gray-700'}`}>1</div>
+              <span className="text-sm">Login Owner</span>
+            </div>
+            <div className={`flex items-center gap-2 px-4 py-2 rounded-full ${step >= 2 ? 'bg-green-600/30 text-green-400' : 'bg-gray-800 text-gray-500'}`}>
+              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${step >= 2 ? 'bg-green-600' : 'bg-gray-700'}`}>2</div>
+              <span className="text-sm">Pilih Bisnis</span>
+            </div>
+            <div className={`flex items-center gap-2 px-4 py-2 rounded-full ${step >= 3 ? 'bg-green-600/30 text-green-400' : 'bg-gray-800 text-gray-500'}`}>
+              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${step >= 3 ? 'bg-green-600' : 'bg-gray-700'}`}>3</div>
+              <span className="text-sm">Masuk Sistem</span>
+            </div>
+          </div>
+          
           <div className="space-y-4 text-left">
             <div className="flex items-center gap-4 p-4 bg-red-900/20 border border-red-700/30 rounded-xl">
               <div className="p-2 bg-gradient-to-br from-purple-600 to-blue-600 rounded-lg">
                 <Brain className="h-6 w-6 text-white" />
               </div>
               <div>
-                <div className="font-semibold text-amber-100">Hallo AI - AI Perusahaan</div>
-                <div className="text-sm text-gray-400">CEO, CFO, COO, Marketing, Sales AI</div>
+                <div className="font-semibold text-amber-100">Multi-Bisnis</div>
+                <div className="text-sm text-gray-400">1 Aplikasi untuk banyak bisnis</div>
               </div>
             </div>
             
             <div className="flex items-center gap-4 p-4 bg-red-900/20 border border-red-700/30 rounded-xl">
               <div className="p-2 bg-gradient-to-br from-green-600 to-emerald-600 rounded-lg">
-                <BarChart3 className="h-6 w-6 text-white" />
+                <Database className="h-6 w-6 text-white" />
               </div>
               <div>
-                <div className="font-semibold text-amber-100">Multi-Bisnis</div>
-                <div className="text-sm text-gray-400">Kelola banyak bisnis dalam 1 aplikasi</div>
+                <div className="font-semibold text-amber-100">Database Terpisah</div>
+                <div className="text-sm text-gray-400">Data tidak tercampur antar bisnis</div>
               </div>
             </div>
             
@@ -157,14 +199,14 @@ const Login = () => {
               </div>
               <div>
                 <div className="font-semibold text-amber-100">ERP Lengkap</div>
-                <div className="text-sm text-gray-400">POS, Inventory, Keuangan, Multi-Cabang</div>
+                <div className="text-sm text-gray-400">POS, Inventory, Keuangan, Akuntansi</div>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Right Side - Login Form */}
+      {/* Right Side - Forms */}
       <div className="flex-1 flex items-center justify-center p-4 lg:p-12">
         <div className="w-full max-w-md">
           {/* Mobile Logo */}
@@ -175,18 +217,98 @@ const Login = () => {
             <h1 className="text-3xl font-bold bg-gradient-to-r from-red-400 via-amber-400 to-yellow-300 bg-clip-text text-transparent">
               OCB AI TITAN
             </h1>
-            <p className="text-gray-400 mt-2">Enterprise Retail AI System</p>
           </div>
 
-          {/* STEP 1: Pilih Bisnis */}
+          {/* ==================== STEP 1: Login Owner ==================== */}
           {step === 1 && (
             <div className="bg-[#1a1214] border border-red-900/30 rounded-xl p-8 shadow-xl">
               <div className="flex items-center gap-3 mb-2">
-                <Database className="h-6 w-6 text-amber-400" />
-                <h2 className="text-2xl font-bold text-amber-100">Pilih Bisnis</h2>
+                <div className="p-2 bg-amber-600/20 rounded-lg">
+                  <User className="h-5 w-5 text-amber-400" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-amber-100">Login Owner</h2>
+                  <p className="text-sm text-gray-400">Step 1 dari 3</p>
+                </div>
               </div>
-              <p className="text-gray-400 mb-6">
-                Pilih bisnis yang ingin Anda akses
+              <p className="text-gray-400 mb-6 mt-4">
+                Masuk dengan akun Owner untuk mengakses multi-bisnis
+              </p>
+
+              <form onSubmit={verifyOwner} className="space-y-4">
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">Email Owner</label>
+                  <input
+                    type="email"
+                    value={ownerEmail}
+                    onChange={(e) => setOwnerEmail(e.target.value)}
+                    className="w-full px-4 py-3 bg-[#0a0608] border border-red-900/30 rounded-lg focus:outline-none focus:border-amber-500"
+                    placeholder="owner@perusahaan.com"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">Password</label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      value={ownerPassword}
+                      onChange={(e) => setOwnerPassword(e.target.value)}
+                      className="w-full px-4 py-3 bg-[#0a0608] border border-red-900/30 rounded-lg focus:outline-none focus:border-amber-500 pr-12"
+                      placeholder="••••••••"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+                    >
+                      {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                    </button>
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full py-3 bg-gradient-to-r from-amber-600 to-orange-600 text-white rounded-lg font-semibold hover:from-amber-500 hover:to-orange-500 disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Lock className="h-5 w-5" />}
+                  Verifikasi Owner
+                </button>
+              </form>
+
+              <div className="mt-6 p-4 bg-blue-900/20 border border-blue-700/30 rounded-lg">
+                <div className="text-xs text-blue-300 mb-2">Demo Owner Account:</div>
+                <div className="text-sm text-gray-300">ocbgroupbjm@gmail.com / admin123</div>
+              </div>
+            </div>
+          )}
+
+          {/* ==================== STEP 2: Pilih Bisnis ==================== */}
+          {step === 2 && (
+            <div className="bg-[#1a1214] border border-red-900/30 rounded-xl p-8 shadow-xl">
+              {/* Owner badge */}
+              <div className="mb-6 p-3 bg-green-900/20 border border-green-700/30 rounded-lg flex items-center gap-3">
+                <CheckCircle className="h-5 w-5 text-green-400" />
+                <div>
+                  <div className="text-sm text-green-400">Owner Terverifikasi</div>
+                  <div className="text-white font-medium">{ownerName}</div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 bg-blue-600/20 rounded-lg">
+                  <Database className="h-5 w-5 text-blue-400" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-amber-100">Pilih Bisnis</h2>
+                  <p className="text-sm text-gray-400">Step 2 dari 3</p>
+                </div>
+              </div>
+              <p className="text-gray-400 mb-6 mt-4">
+                Pilih bisnis/database yang ingin Anda akses
               </p>
 
               {loadingBusinesses ? (
@@ -199,6 +321,7 @@ const Login = () => {
                   {businesses.map((business) => {
                     const IconComp = getIcon(business.icon);
                     const isSelected = selectedBusiness?.id === business.id;
+                    const isSwitching = loading && isSelected;
                     
                     return (
                       <button
@@ -221,7 +344,7 @@ const Login = () => {
                           <div className="font-semibold text-amber-100">{business.name}</div>
                           <div className="text-sm text-gray-400">{business.description || business.db_name}</div>
                         </div>
-                        {loading && isSelected ? (
+                        {isSwitching ? (
                           <Loader2 className="h-5 w-5 animate-spin text-amber-400" />
                         ) : (
                           <ChevronRight className="h-5 w-5 text-gray-500" />
@@ -232,20 +355,22 @@ const Login = () => {
                 </div>
               )}
 
-              <div className="mt-6 p-4 bg-blue-900/20 border border-blue-700/30 rounded-lg">
-                <div className="text-xs text-blue-300 mb-1">Info:</div>
-                <div className="text-sm text-gray-300">Setiap bisnis memiliki database & user terpisah</div>
-              </div>
+              <button
+                onClick={() => setStep(1)}
+                className="w-full mt-4 py-2 text-gray-400 hover:text-white text-sm"
+              >
+                ← Kembali ke Login Owner
+              </button>
             </div>
           )}
 
-          {/* STEP 2: Login Form */}
-          {step === 2 && (
+          {/* ==================== STEP 3: Login ke Database ==================== */}
+          {step === 3 && (
             <div className="bg-[#1a1214] border border-red-900/30 rounded-xl p-8 shadow-xl">
-              {/* Selected Business Badge */}
+              {/* Selected Business badge */}
               {selectedBusiness && (
                 <button
-                  onClick={() => setStep(1)}
+                  onClick={() => setStep(2)}
                   className="w-full mb-6 p-3 bg-gradient-to-r from-red-900/30 to-amber-900/20 border border-red-700/30 rounded-lg flex items-center gap-3 hover:border-amber-500/50 transition-colors"
                 >
                   {(() => {
@@ -260,63 +385,35 @@ const Login = () => {
                     );
                   })()}
                   <div className="flex-1 text-left">
-                    <div className="text-sm text-gray-400">Bisnis:</div>
+                    <div className="text-sm text-gray-400">Database:</div>
                     <div className="font-semibold text-amber-100">{selectedBusiness.name}</div>
                   </div>
                   <span className="text-xs text-amber-400">Ganti</span>
                 </button>
               )}
 
-              <h2 className="text-2xl font-bold text-amber-100 mb-2">
-                {isLogin ? 'Masuk' : 'Daftar Akun'}
-              </h2>
-              <p className="text-gray-400 mb-6">
-                {isLogin ? `Login ke ${selectedBusiness?.name || 'sistem'}` : 'Buat akun baru'}
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 bg-green-600/20 rounded-lg">
+                  <Lock className="h-5 w-5 text-green-400" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-amber-100">Masuk Sistem</h2>
+                  <p className="text-sm text-gray-400">Step 3 dari 3</p>
+                </div>
+              </div>
+              <p className="text-gray-400 mb-6 mt-4">
+                Login dengan akun yang ada di database <strong className="text-amber-300">{selectedBusiness?.name}</strong>
               </p>
 
-              {/* Tabs */}
-              <div className="flex mb-6 border border-red-900/30 rounded-lg overflow-hidden">
-                <button
-                  onClick={() => setIsLogin(true)}
-                  className={`flex-1 py-2 text-sm font-semibold transition-colors ${
-                    isLogin ? 'bg-red-900/30 text-amber-400' : 'text-gray-400 hover:text-white'
-                  }`}
-                >
-                  Masuk
-                </button>
-                <button
-                  onClick={() => setIsLogin(false)}
-                  className={`flex-1 py-2 text-sm font-semibold transition-colors ${
-                    !isLogin ? 'bg-red-900/30 text-amber-400' : 'text-gray-400 hover:text-white'
-                  }`}
-                >
-                  Daftar
-                </button>
-              </div>
-
-              <form onSubmit={handleSubmit} className="space-y-4">
-                {!isLogin && (
-                  <div>
-                    <label className="block text-sm text-gray-400 mb-1">Nama Lengkap</label>
-                    <input
-                      type="text"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      className="w-full px-4 py-3 bg-[#0a0608] border border-red-900/30 rounded-lg focus:outline-none focus:border-red-500"
-                      placeholder="Masukkan nama lengkap"
-                      required={!isLogin}
-                    />
-                  </div>
-                )}
-
+              <form onSubmit={handleLogin} className="space-y-4">
                 <div>
                   <label className="block text-sm text-gray-400 mb-1">Email</label>
                   <input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full px-4 py-3 bg-[#0a0608] border border-red-900/30 rounded-lg focus:outline-none focus:border-red-500"
-                    placeholder="email@perusahaan.com"
+                    className="w-full px-4 py-3 bg-[#0a0608] border border-red-900/30 rounded-lg focus:outline-none focus:border-green-500"
+                    placeholder="user@perusahaan.com"
                     required
                     data-testid="email-input"
                   />
@@ -329,7 +426,7 @@ const Login = () => {
                       type={showPassword ? 'text' : 'password'}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="w-full px-4 py-3 bg-[#0a0608] border border-red-900/30 rounded-lg focus:outline-none focus:border-red-500 pr-12"
+                      className="w-full px-4 py-3 bg-[#0a0608] border border-red-900/30 rounded-lg focus:outline-none focus:border-green-500 pr-12"
                       placeholder="••••••••"
                       required
                       data-testid="password-input"
@@ -347,20 +444,18 @@ const Login = () => {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-3 bg-gradient-to-r from-red-600 to-amber-600 text-white rounded-lg font-semibold hover:from-red-500 hover:to-amber-500 disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="w-full py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg font-semibold hover:from-green-500 hover:to-emerald-500 disabled:opacity-50 flex items-center justify-center gap-2"
                   data-testid="submit-btn"
                 >
                   {loading && <Loader2 className="h-5 w-5 animate-spin" />}
-                  {isLogin ? 'Masuk' : 'Daftar Akun'}
+                  Masuk ke {selectedBusiness?.name}
                 </button>
               </form>
 
-              {isLogin && (
-                <div className="mt-6 p-4 bg-blue-900/20 border border-blue-700/30 rounded-lg">
-                  <div className="text-xs text-blue-300 mb-2">Demo Account:</div>
-                  <div className="text-sm text-gray-300">ocbgroupbjm@gmail.com / admin123</div>
-                </div>
-              )}
+              <div className="mt-6 p-4 bg-amber-900/20 border border-amber-700/30 rounded-lg">
+                <div className="text-xs text-amber-300 mb-2">Info:</div>
+                <div className="text-sm text-gray-300">Gunakan akun yang terdaftar di database "{selectedBusiness?.name}"</div>
+              </div>
             </div>
           )}
 
