@@ -38,18 +38,18 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed lg:static inset-y-0 left-0 z-50 w-64 bg-card border-r border-border transform transition-transform duration-300 ease-in-out",
+          "fixed lg:static inset-y-0 left-0 z-50 w-64 bg-black border-r border-border/30 transform transition-transform duration-300 ease-in-out",
           isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         )}
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="flex items-center justify-between p-6 border-b border-border">
+          <div className="flex items-center justify-between p-6 border-b border-border/30">
             <div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-white via-primary to-purple-400 bg-clip-text text-transparent">
                 AI BOS
               </h1>
-              <p className="text-xs text-muted-foreground mt-1">Business Operating System</p>
+              <p className="text-xs text-gray-500 mt-1">Business Operating System</p>
             </div>
             <button
               onClick={() => setIsOpen(false)}
@@ -68,10 +68,10 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                 data-testid={`nav-${item.name.toLowerCase().replace(' ', '-')}`}
                 className={({ isActive }) =>
                   cn(
-                    "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors",
+                    "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200",
                     isActive
-                      ? "bg-primary text-primary-foreground shadow-sm"
-                      : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                      ? "bg-primary text-white shadow-lg shadow-primary/30"
+                      : "text-gray-400 hover:bg-white/5 hover:text-white"
                   )
                 }
               >
@@ -82,14 +82,14 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
           </nav>
 
           {/* User info */}
-          <div className="p-4 border-t border-border">
+          <div className="p-4 border-t border-border/30 bg-white/[0.02]">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-white font-semibold">
+              <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-white font-semibold shadow-lg shadow-primary/20">
                 AI
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">AI Business</p>
-                <p className="text-xs text-muted-foreground">Starter Plan</p>
+                <p className="text-sm font-medium text-white truncate">AI Business</p>
+                <p className="text-xs text-gray-500">Starter Plan</p>
               </div>
             </div>
           </div>

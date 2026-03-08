@@ -79,8 +79,8 @@ export default function Dashboard() {
   return (
     <div className="space-y-8" data-testid="dashboard-page">
       <div>
-        <h1 className="text-4xl font-bold tracking-tight mb-2">Dashboard</h1>
-        <p className="text-muted-foreground">Welcome back! Here's your business overview.</p>
+        <h1 className="text-4xl font-bold tracking-tight mb-2 bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">Dashboard</h1>
+        <p className="text-gray-500">Welcome back! Here's your business overview.</p>
       </div>
 
       {/* Stats Grid */}
@@ -88,21 +88,21 @@ export default function Dashboard() {
         {statCards.map((stat, index) => (
           <Card 
             key={index} 
-            className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
+            className="hover:shadow-xl hover:shadow-primary/5 transition-all duration-300 hover:-translate-y-1 bg-card/50 backdrop-blur-sm border-border/50"
             data-testid={`stat-card-${stat.title.toLowerCase().replace(' ', '-')}`}
           >
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
+              <CardTitle className="text-sm font-medium text-gray-400">
                 {stat.title}
               </CardTitle>
-              <div className={`p-2 rounded-lg bg-gradient-to-br ${stat.color}`}>
+              <div className={`p-2 rounded-lg bg-gradient-to-br ${stat.color} shadow-lg`}>
                 <stat.icon className="h-4 w-4 text-white" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">{stat.value}</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                <span className="text-green-500 font-medium">{stat.change}</span> from last month
+              <div className="text-3xl font-bold text-white">{stat.value}</div>
+              <p className="text-xs text-gray-500 mt-1">
+                <span className="text-green-400 font-medium">{stat.change}</span> from last month
               </p>
             </CardContent>
           </Card>
@@ -111,10 +111,10 @@ export default function Dashboard() {
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
+        <Card className="bg-card/50 backdrop-blur-sm border-border/50">
           <CardHeader>
-            <CardTitle>Conversation Trends</CardTitle>
-            <CardDescription>Daily conversation volume over the last week</CardDescription>
+            <CardTitle className="text-white">Conversation Trends</CardTitle>
+            <CardDescription className="text-gray-500">Daily conversation volume over the last week</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="h-80">
@@ -142,10 +142,10 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-card/50 backdrop-blur-sm border-border/50">
           <CardHeader>
-            <CardTitle>Customer Segments</CardTitle>
-            <CardDescription>Distribution of customers by segment</CardDescription>
+            <CardTitle className="text-white">Customer Segments</CardTitle>
+            <CardDescription className="text-gray-500">Distribution of customers by segment</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="h-80">
@@ -172,10 +172,10 @@ export default function Dashboard() {
       </div>
 
       {/* Quick Actions */}
-      <Card>
+      <Card className="bg-card/50 backdrop-blur-sm border-border/50">
         <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
-          <CardDescription>Frequently used features</CardDescription>
+          <CardTitle className="text-white">Quick Actions</CardTitle>
+          <CardDescription className="text-gray-500">Frequently used features</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -188,10 +188,10 @@ export default function Dashboard() {
               <button
                 key={index}
                 onClick={() => window.location.href = action.href}
-                className="flex flex-col items-center gap-2 p-6 rounded-xl border border-border hover:border-primary hover:bg-accent transition-all duration-200"
+                className="flex flex-col items-center gap-2 p-6 rounded-xl border border-border/50 hover:border-primary/50 hover:bg-white/5 transition-all duration-200 group"
               >
-                <action.icon className="h-6 w-6 text-primary" />
-                <span className="text-sm font-medium">{action.label}</span>
+                <action.icon className="h-6 w-6 text-primary group-hover:scale-110 transition-transform" />
+                <span className="text-sm font-medium text-gray-300 group-hover:text-white">{action.label}</span>
               </button>
             ))}
           </div>

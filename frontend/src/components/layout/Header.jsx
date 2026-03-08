@@ -16,7 +16,7 @@ const Header = ({ sidebarOpen, setSidebarOpen }) => {
   const { theme, toggleTheme } = useTheme();
 
   return (
-    <header className="h-16 border-b border-border bg-card px-4 flex items-center justify-between">
+    <header className="h-16 border-b border-border/30 bg-black/50 backdrop-blur-xl px-4 flex items-center justify-between">
       <div className="flex items-center gap-4">
         <Button
           variant="ghost"
@@ -27,12 +27,12 @@ const Header = ({ sidebarOpen, setSidebarOpen }) => {
           <Menu className="h-5 w-5" />
         </Button>
         
-        <div className="hidden md:flex items-center gap-2 px-3 py-2 bg-muted rounded-lg">
-          <Search className="h-4 w-4 text-muted-foreground" />
+        <div className="hidden md:flex items-center gap-2 px-3 py-2 bg-white/5 backdrop-blur-sm rounded-lg border border-border/30">
+          <Search className="h-4 w-4 text-gray-500" />
           <input
             type="text"
             placeholder="Search..."
-            className="bg-transparent border-none outline-none text-sm w-64"
+            className="bg-transparent border-none outline-none text-sm w-64 text-white placeholder:text-gray-500"
           />
         </div>
       </div>
@@ -57,13 +57,13 @@ const Header = ({ sidebarOpen, setSidebarOpen }) => {
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-accent transition-colors">
-              <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-white text-sm font-semibold">
+            <button className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/5 transition-all duration-200">
+              <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-white text-sm font-semibold shadow-lg shadow-primary/20">
                 {user?.full_name?.charAt(0) || 'U'}
               </div>
               <div className="hidden md:block text-left">
-                <p className="text-sm font-medium">{user?.full_name}</p>
-                <p className="text-xs text-muted-foreground capitalize">{user?.role}</p>
+                <p className="text-sm font-medium text-white">{user?.full_name}</p>
+                <p className="text-xs text-gray-500 capitalize">{user?.role}</p>
               </div>
             </button>
           </DropdownMenuTrigger>

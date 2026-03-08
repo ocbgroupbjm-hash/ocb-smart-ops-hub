@@ -53,34 +53,39 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-accent/20 to-background p-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-black relative overflow-hidden">
+      {/* Elegant gradient background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-black via-primary/5 to-black"></div>
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(99,102,241,0.1),transparent_50%)]"></div>
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,rgba(168,85,247,0.08),transparent_50%)]"></div>
+      
+      <div className="relative w-full max-w-md px-4 z-10">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-purple-600 mb-4">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-purple-600 mb-6 shadow-lg shadow-primary/20">
             <Bot className="h-8 w-8 text-white" />
           </div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent mb-2">
+          <h1 className="text-5xl font-bold bg-gradient-to-r from-white via-primary to-purple-400 bg-clip-text text-transparent mb-3">
             AI Business OS
           </h1>
-          <p className="text-muted-foreground">AI-Powered Business Automation Platform</p>
+          <p className="text-gray-400 text-sm">AI-Powered Business Automation Platform</p>
         </div>
 
         <Tabs defaultValue="login" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-2 bg-card/50 backdrop-blur-sm border border-border">
             <TabsTrigger value="login">Login</TabsTrigger>
             <TabsTrigger value="register">Register</TabsTrigger>
           </TabsList>
 
           <TabsContent value="login">
-            <Card>
+            <Card className="bg-card/80 backdrop-blur-xl border-border/50 shadow-2xl">
               <CardHeader>
-                <CardTitle>Welcome Back</CardTitle>
-                <CardDescription>Enter your credentials to access your account</CardDescription>
+                <CardTitle className="text-2xl text-white">Welcome Back</CardTitle>
+                <CardDescription className="text-gray-400">Enter your credentials to access your account</CardDescription>
               </CardHeader>
               <form onSubmit={handleLogin}>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="login-email">Email</Label>
+                    <Label htmlFor="login-email" className="text-gray-300">Email</Label>
                     <Input
                       id="login-email"
                       type="email"
@@ -89,10 +94,11 @@ export default function Login() {
                       onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
                       required
                       data-testid="login-email-input"
+                      className="bg-white/5 border-border/50 text-white placeholder:text-gray-500"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="login-password">Password</Label>
+                    <Label htmlFor="login-password" className="text-gray-300">Password</Label>
                     <Input
                       id="login-password"
                       type="password"
@@ -100,11 +106,12 @@ export default function Login() {
                       onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
                       required
                       data-testid="login-password-input"
+                      className="bg-white/5 border-border/50 text-white placeholder:text-gray-500"
                     />
                   </div>
                 </CardContent>
                 <CardFooter>
-                  <Button type="submit" className="w-full" disabled={loading} data-testid="login-submit-button">
+                  <Button type="submit" className="w-full shadow-lg shadow-primary/20" disabled={loading} data-testid="login-submit-button">
                     {loading ? 'Logging in...' : 'Login'}
                   </Button>
                 </CardFooter>
@@ -113,15 +120,15 @@ export default function Login() {
           </TabsContent>
 
           <TabsContent value="register">
-            <Card>
+            <Card className="bg-card/80 backdrop-blur-xl border-border/50 shadow-2xl">
               <CardHeader>
-                <CardTitle>Create Account</CardTitle>
-                <CardDescription>Start your AI-powered business journey</CardDescription>
+                <CardTitle className="text-2xl text-white">Create Account</CardTitle>
+                <CardDescription className="text-gray-400">Start your AI-powered business journey</CardDescription>
               </CardHeader>
               <form onSubmit={handleRegister}>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="register-name">Full Name</Label>
+                    <Label htmlFor="register-name" className="text-gray-300">Full Name</Label>
                     <Input
                       id="register-name"
                       type="text"
@@ -130,10 +137,11 @@ export default function Login() {
                       onChange={(e) => setRegisterData({ ...registerData, full_name: e.target.value })}
                       required
                       data-testid="register-name-input"
+                      className="bg-white/5 border-border/50 text-white placeholder:text-gray-500"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="register-email">Email</Label>
+                    <Label htmlFor="register-email" className="text-gray-300">Email</Label>
                     <Input
                       id="register-email"
                       type="email"
@@ -142,10 +150,11 @@ export default function Login() {
                       onChange={(e) => setRegisterData({ ...registerData, email: e.target.value })}
                       required
                       data-testid="register-email-input"
+                      className="bg-white/5 border-border/50 text-white placeholder:text-gray-500"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="register-password">Password</Label>
+                    <Label htmlFor="register-password" className="text-gray-300">Password</Label>
                     <Input
                       id="register-password"
                       type="password"
@@ -153,11 +162,12 @@ export default function Login() {
                       onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })}
                       required
                       data-testid="register-password-input"
+                      className="bg-white/5 border-border/50 text-white placeholder:text-gray-500"
                     />
                   </div>
                 </CardContent>
                 <CardFooter>
-                  <Button type="submit" className="w-full" disabled={loading} data-testid="register-submit-button">
+                  <Button type="submit" className="w-full shadow-lg shadow-primary/20" disabled={loading} data-testid="register-submit-button">
                     {loading ? 'Creating account...' : 'Create Account'}
                   </Button>
                 </CardFooter>

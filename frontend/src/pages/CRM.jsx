@@ -70,8 +70,8 @@ export default function CRM() {
     <div className="space-y-6" data-testid="crm-page">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-4xl font-bold tracking-tight mb-2">Customer CRM</h1>
-          <p className="text-muted-foreground">Manage and track your customer relationships</p>
+          <h1 className="text-4xl font-bold tracking-tight mb-2 bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">Customer CRM</h1>
+          <p className="text-gray-500">Manage and track your customer relationships</p>
         </div>
         <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
           <DialogTrigger asChild>
@@ -146,15 +146,15 @@ export default function CRM() {
       </div>
 
       {/* Search */}
-      <Card>
+      <Card className="bg-card/50 backdrop-blur-sm border-border/50">
         <CardContent className="pt-6">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
             <Input
               placeholder="Search customers by name, phone, or email..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-10"
+              className="pl-10 bg-white/5 border-border/50 text-white placeholder:text-gray-500"
               data-testid="customer-search-input"
             />
           </div>
@@ -176,11 +176,11 @@ export default function CRM() {
           </Card>
         ) : (
           customers.map((customer) => (
-            <Card key={customer.id} className="hover:shadow-lg transition-all duration-300" data-testid="customer-card">
+            <Card key={customer.id} className="hover:shadow-xl hover:shadow-primary/5 transition-all duration-300 bg-card/50 backdrop-blur-sm border-border/50" data-testid="customer-card">
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div>
-                    <CardTitle className="text-lg">{customer.name}</CardTitle>
+                    <CardTitle className="text-lg text-white">{customer.name}</CardTitle>
                     {customer.segment && (
                       <Badge className={`mt-2 ${segmentColors[customer.segment] || ''}`}>
                         {customer.segment.replace('_', ' ').toUpperCase()}
@@ -197,25 +197,25 @@ export default function CRM() {
               </CardHeader>
               <CardContent className="space-y-2">
                 {customer.phone && (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-2 text-sm text-gray-400">
                     <Phone className="h-4 w-4" />
                     {customer.phone}
                   </div>
                 )}
                 {customer.email && (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-2 text-sm text-gray-400">
                     <Mail className="h-4 w-4" />
                     {customer.email}
                   </div>
                 )}
                 {customer.location && (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-2 text-sm text-gray-400">
                     <MapPin className="h-4 w-4" />
                     {customer.location}
                   </div>
                 )}
-                <div className="pt-2 mt-2 border-t">
-                  <div className="text-xs text-muted-foreground">
+                <div className="pt-2 mt-2 border-t border-border/30">
+                  <div className="text-xs text-gray-500">
                     {customer.total_orders} orders · Joined {new Date(customer.created_at).toLocaleDateString()}
                   </div>
                 </div>
