@@ -14,10 +14,20 @@ async def create_customer(customer_data: CustomerCreate, current_user: dict = De
     if not company_id:
         raise HTTPException(status_code=400, detail="User must be associated with a company")
     
-    # Override company_id with current user's company
-    customer_data.company_id = company_id
+    # Create customer with company_id from current user
+    customer = Customer(
+        company_id=company_id,
+        name=customer_data.name,
+        phone=customer_data.phone,
+        email=customer_data.email,
+        location=customer_data.location,
+        segment=customer_data.segment or "regular",
+        notes=customer_data.notes,
+        tags=[],
+        lifetime_value=0.0,
+        total_orders=0
+    )
     
-    customer = Customer(**customer_data.model_dump())
     customer_dict = customer.model_dump()
     customer_dict['created_at'] = customer_dict['created_at'].isoformat()
     customer_dict['updated_at'] = customer_dict['updated_at'].isoformat()

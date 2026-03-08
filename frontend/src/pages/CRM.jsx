@@ -37,10 +37,11 @@ export default function CRM() {
 
   const loadCustomers = async () => {
     try {
-      const response = await api.get('/customers', { params: { search } });
+      const response = await api.get('/customers/', { params: { search } });
       setCustomers(response.data);
     } catch (error) {
       toast.error('Failed to load customers');
+      console.error('Load customers error:', error);
     } finally {
       setLoading(false);
     }
@@ -49,13 +50,14 @@ export default function CRM() {
   const handleAddCustomer = async (e) => {
     e.preventDefault();
     try {
-      await api.post('/customers', newCustomer);
+      await api.post('/customers/', newCustomer);
       toast.success('Customer added successfully');
       setIsAddOpen(false);
       setNewCustomer({ name: '', phone: '', email: '', location: '', segment: 'regular' });
       loadCustomers();
     } catch (error) {
       toast.error('Failed to add customer');
+      console.error('Add customer error:', error);
     }
   };
 

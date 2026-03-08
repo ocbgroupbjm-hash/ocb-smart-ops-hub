@@ -16,8 +16,13 @@ class CustomerBase(BaseModel):
     last_interaction: Optional[datetime] = None
     notes: Optional[str] = None
 
-class CustomerCreate(CustomerBase):
-    pass
+class CustomerCreate(BaseModel):
+    name: str
+    phone: Optional[str] = None
+    email: Optional[str] = None
+    location: Optional[str] = None
+    segment: Optional[str] = None
+    notes: Optional[str] = None
 
 class CustomerUpdate(BaseModel):
     name: Optional[str] = None
