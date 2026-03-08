@@ -1,107 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Loader2, Eye, EyeOff, Sparkles, Brain, BarChart3, ShoppingCart, Building2, ChevronRight, Database, Store, Shirt, Smartphone, Coffee, ShoppingBag, Briefcase, Lock } from 'lucide-react';
+import { Loader2, Eye, EyeOff, Sparkles, Brain, BarChart3, ShoppingCart, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 
 const Login = () => {
-  const [step, setStep] = useState(1); // 1 = pilih bisnis, 2 = login
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [businesses, setBusinesses] = useState([]);
-  const [selectedBusiness, setSelectedBusiness] = useState(null);
-  const [loadingBusinesses, setLoadingBusinesses] = useState(true);
   
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const icons = {
-    store: Store,
-    building: Building2,
-    shirt: Shirt,
-    smartphone: Smartphone,
-    coffee: Coffee,
-    shopping: ShoppingBag,
-    briefcase: Briefcase,
-  };
-
-  useEffect(() => {
-    loadBusinesses();
-  }, []);
-
-  const loadBusinesses = async () => {
-    setLoadingBusinesses(true);
-    try {
-      const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/business/list`);
-      if (res.ok) {
-        const data = await res.json();
-        const bizList = data.businesses || [];
-        setBusinesses(bizList);
-        
-        // Auto select current active database
-        const currentDb = data.current_db;
-        const activeBiz = bizList.find(b => b.db_name === currentDb);
-        if (activeBiz) {
-          setSelectedBusiness(activeBiz);
-        }
-      }
-    } catch (err) { 
-      console.error(err); 
-      setBusinesses([{
-        id: 'default',
-        name: 'OCB GROUP',
-        db_name: 'ocb_titan',
-        description: 'Database utama',
-        icon: 'building',
-        color: '#991B1B'
-      }]);
-    }
-    finally { setLoadingBusinesses(false); }
-  };
-
-  const selectBusiness = async (business) => {
-    setSelectedBusiness(business);
-    setLoading(true);
-    
-    try {
-      // Switch database
-      await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/business/switch/${business.db_name}`, {
-        method: 'POST'
-      });
-      
-      toast.success(`Database: ${business.name}`);
-      
-      // Wait for backend to restart and apply new DB
-      setTimeout(() => {
-        setStep(2);
-        setLoading(false);
-      }, 2000);
-    } catch (err) {
-      // Still proceed to login
-      setStep(2);
-      setLoading(false);
-    }
-  };
-
   const handleLogin = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    
-    try {
-      await login(email, password);
-      toast.success(`Berhasil masuk ke ${selectedBusiness?.name || 'sistem'}!`);
-      navigate('/dashboard');
-    } catch (err) {
-      toast.error(err.message || 'Login gagal. Periksa email dan password.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Direct login without selecting business (for single business)
-  const handleDirectLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
     
@@ -114,10 +26,6 @@ const Login = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const getIcon = (iconName) => {
-    return icons[iconName] || Store;
   };
 
   return (
@@ -151,11 +59,11 @@ const Login = () => {
             
             <div className="flex items-center gap-4 p-4 bg-red-900/20 border border-red-700/30 rounded-xl">
               <div className="p-2 bg-gradient-to-br from-green-600 to-emerald-600 rounded-lg">
-                <Database className="h-6 w-6 text-white" />
+                <BarChart3 className="h-6 w-6 text-white" />
               </div>
               <div>
-                <div className="font-semibold text-amber-100">Multi-Bisnis</div>
-                <div className="text-sm text-gray-400">1 Aplikasi untuk banyak bisnis</div>
+                <div className="font-semibold text-amber-100">AI Bisnis</div>
+                <div className="text-sm text-gray-400">Analisa & Rekomendasi Otomatis</div>
               </div>
             </div>
             
@@ -185,83 +93,12 @@ const Login = () => {
             </h1>
           </div>
 
-          {/* Login Form with Business Selector */}
+          {/* Login Form */}
           <div className="bg-[#1a1214] border border-red-900/30 rounded-xl p-8 shadow-xl">
-            
-            {/* Business Selector - Always Visible */}
-            {businesses.length > 1 && (
-              <div className="mb-6">
-                <label className="block text-sm text-gray-400 mb-2">Pilih Bisnis</label>
-                <div className="space-y-2 max-h-48 overflow-y-auto">
-                  {loadingBusinesses ? (
-                    <div className="text-center py-4">
-                      <Loader2 className="h-6 w-6 animate-spin mx-auto text-amber-400" />
-                    </div>
-                  ) : (
-                    businesses.map((business) => {
-                      const IconComp = getIcon(business.icon);
-                      const isSelected = selectedBusiness?.id === business.id;
-                      
-                      return (
-                        <button
-                          key={business.id}
-                          type="button"
-                          onClick={() => selectBusiness(business)}
-                          disabled={loading}
-                          className={`w-full p-3 rounded-lg border transition-all text-left flex items-center gap-3 ${
-                            isSelected 
-                              ? 'border-amber-500 bg-amber-900/20' 
-                              : 'border-red-900/30 hover:border-red-700/50 hover:bg-red-900/10'
-                          } disabled:opacity-50`}
-                        >
-                          <div 
-                            className="p-2 rounded-lg"
-                            style={{ backgroundColor: `${business.color}30` }}
-                          >
-                            <IconComp className="h-5 w-5" style={{ color: business.color }} />
-                          </div>
-                          <div className="flex-1">
-                            <div className="font-medium text-amber-100 text-sm">{business.name}</div>
-                            <div className="text-xs text-gray-500">{business.db_name}</div>
-                          </div>
-                          {loading && isSelected && (
-                            <Loader2 className="h-4 w-4 animate-spin text-amber-400" />
-                          )}
-                        </button>
-                      );
-                    })
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Single Business Badge */}
-            {businesses.length === 1 && selectedBusiness && (
-              <div className="mb-6 p-3 bg-gradient-to-r from-red-900/30 to-amber-900/20 border border-red-700/30 rounded-lg flex items-center gap-3">
-                {(() => {
-                  const IconComp = getIcon(selectedBusiness.icon);
-                  return (
-                    <div 
-                      className="p-2 rounded-lg"
-                      style={{ backgroundColor: `${selectedBusiness.color}30` }}
-                    >
-                      <IconComp className="h-5 w-5" style={{ color: selectedBusiness.color }} />
-                    </div>
-                  );
-                })()}
-                <div className="flex-1">
-                  <div className="text-sm text-gray-400">Bisnis:</div>
-                  <div className="font-semibold text-amber-100">{selectedBusiness.name}</div>
-                </div>
-              </div>
-            )}
-
             <h2 className="text-2xl font-bold text-amber-100 mb-2">Masuk</h2>
-            <p className="text-gray-400 mb-6">
-              Login ke {selectedBusiness?.name || 'OCB AI TITAN'}
-            </p>
+            <p className="text-gray-400 mb-6">Login ke OCB AI TITAN</p>
 
-            <form onSubmit={businesses.length > 1 ? handleLogin : handleDirectLogin} className="space-y-4">
+            <form onSubmit={handleLogin} className="space-y-4">
               <div>
                 <label className="block text-sm text-gray-400 mb-1">Email</label>
                 <input
