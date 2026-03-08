@@ -20,6 +20,30 @@ import RolePermission from './pages/RolePermission';
 import AIBusiness from './pages/AIBusiness';
 import HalloAI from './pages/HalloAI';
 import Settings from './pages/Settings';
+
+// Master Data Pages
+import { 
+  MasterItems, MasterCategories, MasterUnits, MasterBrands, 
+  MasterWarehouses, MasterSuppliers, MasterCustomers, MasterSalesPersons,
+  MasterCustomerGroups, MasterRegions, MasterBanks, MasterEmoney,
+  MasterShippingCosts, MasterDiscounts, MasterPromotions
+} from './pages/master';
+
+// Purchase Pages
+import { 
+  PurchaseOrders, PurchaseList, PurchaseReceiving, 
+  PurchasePayments, PurchaseReturns, PurchasePriceHistory 
+} from './pages/purchase';
+
+// Sales Pages
+import { SalesList, SalesReturns, SalesDelivery } from './pages/sales';
+
+// Inventory Pages
+import { StockCards, StockMovements, StockTransfers, StockOpname } from './pages/inventory';
+
+// Settings Pages
+import { PrinterSettings } from './pages/settings';
+
 import './index.css';
 
 const PrivateRoute = ({ children }) => {
@@ -77,6 +101,102 @@ function App() {
             <Route path="hak-akses" element={<RolePermission />} />
             <Route path="pengaturan" element={<Settings />} />
             <Route path="akses-ditolak" element={<AccessDenied />} />
+            
+            {/* Master Data Routes */}
+            <Route path="master/items" element={<MasterItems />} />
+            <Route path="master/categories" element={<MasterCategories />} />
+            <Route path="master/units" element={<MasterUnits />} />
+            <Route path="master/brands" element={<MasterBrands />} />
+            <Route path="master/warehouses" element={<MasterWarehouses />} />
+            <Route path="master/suppliers" element={<MasterSuppliers />} />
+            <Route path="master/customers" element={<MasterCustomers />} />
+            <Route path="master/sales-persons" element={<MasterSalesPersons />} />
+            <Route path="master/customer-groups" element={<MasterCustomerGroups />} />
+            <Route path="master/customer-points" element={<MasterCustomerGroups />} />
+            <Route path="master/regions" element={<MasterRegions />} />
+            <Route path="master/emoney" element={<MasterEmoney />} />
+            <Route path="master/banks" element={<MasterBanks />} />
+            <Route path="master/shipping-costs" element={<MasterShippingCosts />} />
+            <Route path="master/stock-cards" element={<Inventory />} />
+            <Route path="master/discounts" element={<MasterDiscounts />} />
+            <Route path="master/promotions" element={<MasterPromotions />} />
+            
+            {/* Purchase Routes */}
+            <Route path="purchase/orders" element={<PurchaseOrders />} />
+            <Route path="purchase/list" element={<PurchaseList />} />
+            <Route path="purchase/receiving" element={<PurchaseReceiving />} />
+            <Route path="purchase/price-history" element={<PurchasePriceHistory />} />
+            <Route path="purchase/payments" element={<PurchasePayments />} />
+            <Route path="purchase/payment-status" element={<PurchasePayments />} />
+            <Route path="purchase/returns" element={<PurchaseReturns />} />
+            
+            {/* Sales Routes */}
+            <Route path="sales/orders" element={<POS />} />
+            <Route path="sales/list" element={<SalesList />} />
+            <Route path="sales/cashier-sales" element={<POS />} />
+            <Route path="sales/price-history" element={<Products />} />
+            <Route path="sales/trade-in" element={<POS />} />
+            <Route path="sales/payments" element={<Finance />} />
+            <Route path="sales/payment-status" element={<Finance />} />
+            <Route path="sales/returns" element={<SalesReturns />} />
+            <Route path="sales/points" element={<Customers />} />
+            <Route path="sales/deliveries" element={<SalesDelivery />} />
+            
+            {/* Inventory Routes */}
+            <Route path="inventory/stock-list" element={<Inventory />} />
+            <Route path="inventory/stock-cards" element={<StockCards />} />
+            <Route path="inventory/stock-in" element={<StockMovements />} />
+            <Route path="inventory/stock-out" element={<StockMovements />} />
+            <Route path="inventory/transfer" element={<StockTransfers />} />
+            <Route path="inventory/mutations" element={<StockMovements />} />
+            <Route path="inventory/opname" element={<StockOpname />} />
+            <Route path="inventory/serial-numbers" element={<Products />} />
+            <Route path="inventory/assemblies" element={<Products />} />
+            
+            {/* Accounting Routes */}
+            <Route path="accounting/coa" element={<Accounting />} />
+            <Route path="accounting/cash-in" element={<Finance />} />
+            <Route path="accounting/cash-out" element={<Finance />} />
+            <Route path="accounting/cash-transfer" element={<Finance />} />
+            <Route path="accounting/customer-deposit" element={<Finance />} />
+            <Route path="accounting/supplier-deposit" element={<Finance />} />
+            <Route path="accounting/journals" element={<Accounting />} />
+            <Route path="accounting/ledger" element={<Accounting />} />
+            <Route path="accounting/opening-balance" element={<Accounting />} />
+            <Route path="accounting/year-end" element={<Accounting />} />
+            <Route path="accounting/coa-settings" element={<Accounting />} />
+            
+            {/* Reports Routes */}
+            <Route path="reports/sales" element={<Reports />} />
+            <Route path="reports/purchase" element={<Reports />} />
+            <Route path="reports/inventory" element={<Reports />} />
+            <Route path="reports/best-sellers" element={<Reports />} />
+            <Route path="reports/payables" element={<Reports />} />
+            <Route path="reports/receivables" element={<Reports />} />
+            <Route path="reports/cash" element={<Reports />} />
+            <Route path="reports/profit-loss" element={<Reports />} />
+            <Route path="reports/branches" element={<Reports />} />
+            <Route path="reports/cashiers" element={<Reports />} />
+            <Route path="reports/suppliers" element={<Reports />} />
+            <Route path="reports/customers" element={<Reports />} />
+            
+            {/* Settings Routes */}
+            <Route path="settings/users" element={<Users />} />
+            <Route path="settings/roles" element={<RolePermission />} />
+            <Route path="settings/company" element={<Settings />} />
+            <Route path="settings/general" element={<Settings />} />
+            <Route path="settings/branches" element={<Branches />} />
+            <Route path="settings/periods" element={<Settings />} />
+            <Route path="settings/numbering" element={<Settings />} />
+            <Route path="settings/printer" element={<PrinterSettings />} />
+            <Route path="settings/theme" element={<Settings />} />
+            <Route path="settings/import" element={<Settings />} />
+            <Route path="settings/export" element={<Settings />} />
+            <Route path="settings/backup" element={<Settings />} />
+            <Route path="settings/activity-log" element={<Settings />} />
+            <Route path="settings/system-analysis" element={<Settings />} />
+            <Route path="settings/help" element={<Settings />} />
+            <Route path="settings/info" element={<Settings />} />
           </Route>
         </Routes>
       </BrowserRouter>

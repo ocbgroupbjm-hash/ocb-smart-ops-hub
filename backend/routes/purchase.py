@@ -248,3 +248,137 @@ async def cancel_purchase_order(po_id: str, user: dict = Depends(get_current_use
     )
     
     return {"message": "Purchase order cancelled"}
+
+# ==================== PURCHASE PAYMENTS ====================
+
+from database import db
+purchase_payments = db["purchase_payments"]
+purchase_returns = db["purchase_returns"]
+price_history = db["purchase_price_history"]
+
+class PaymentCreate(BaseModel):
+    po_id: str
+    amount: float
+    payment_method: str = "transfer"
+    bank_id: str = ""
+    reference: str = ""
+    notes: str = ""
+
+@router.get("/payments")
+async def list_payments(search: str = "", user: dict = Depends(get_current_user)):
+    query = {}
+    if search:
+        query["$or"] = [
+            {"payment_number": {"$regex": search, "$options": "i"}},
+            {"po_number": {"$regex": search, "$options": "i"}}
+        ]
+    payments = await purchase_payments.find(query, {"_id": 0}).sort("created_at", -1).to_list(100)
+    return {"items": payments}
+
+@router.post("/payments")
+async def create_payment(data: PaymentCreate, user: dict = Depends(get_current_user)):
+    po = await purchase_orders.find_one({"id": data.po_id}, {"_id": 0})
+    if not po:
+        raise HTTPException(status_code=404, detail="PO tidak ditemukan")
+    
+    import uuid
+    payment_number = f"PAY{datetime.now().strftime('%Y%m%d%H%M%S')}"
+    
+    payment = {
+        "id": str(uuid.uuid4()),
+        "payment_number": payment_number,
+        "po_id": data.po_id,
+        "po_number": po.get("po_number"),
+        "supplier_id": po.get("supplier_id"),
+        "supplier_name": po.get("supplier_name"),
+        "amount": data.amount,
+        "payment_method": data.payment_method,
+        "bank_id": data.bank_id,
+        "reference": data.reference,
+        "notes": data.notes,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_by": user.get("id")
+    }
+    await purchase_payments.insert_one(payment)
+    return {"id": payment["id"], "message": "Pembayaran berhasil dicatat"}
+
+# ==================== PURCHASE RETURNS ====================
+
+class ReturnItem(BaseModel):
+    product_id: str
+    quantity: int
+
+class ReturnCreate(BaseModel):
+    po_id: str
+    reason: str
+    items: List[ReturnItem]
+
+@router.get("/returns")
+async def list_returns(search: str = "", user: dict = Depends(get_current_user)):
+    query = {}
+    if search:
+        query["$or"] = [
+            {"return_number": {"$regex": search, "$options": "i"}},
+            {"po_number": {"$regex": search, "$options": "i"}}
+        ]
+    returns = await purchase_returns.find(query, {"_id": 0}).sort("created_at", -1).to_list(100)
+    return {"items": returns}
+
+@router.post("/returns")
+async def create_return(data: ReturnCreate, user: dict = Depends(get_current_user)):
+    po = await purchase_orders.find_one({"id": data.po_id}, {"_id": 0})
+    if not po:
+        raise HTTPException(status_code=404, detail="PO tidak ditemukan")
+    
+    import uuid
+    return_number = f"RTN{datetime.now().strftime('%Y%m%d%H%M%S')}"
+    
+    return_items = []
+    total = 0
+    
+    for item in data.items:
+        po_item = next((i for i in po.get("items", []) if i["product_id"] == item.product_id), None)
+        if po_item:
+            subtotal = item.quantity * po_item.get("unit_cost", 0)
+            return_items.append({
+                "product_id": item.product_id,
+                "product_name": po_item.get("product_name"),
+                "quantity": item.quantity,
+                "unit_cost": po_item.get("unit_cost", 0),
+                "subtotal": subtotal
+            })
+            total += subtotal
+    
+    retur = {
+        "id": str(uuid.uuid4()),
+        "return_number": return_number,
+        "po_id": data.po_id,
+        "po_number": po.get("po_number"),
+        "supplier_id": po.get("supplier_id"),
+        "supplier_name": po.get("supplier_name"),
+        "reason": data.reason,
+        "items": return_items,
+        "total": total,
+        "status": "pending",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_by": user.get("id")
+    }
+    await purchase_returns.insert_one(retur)
+    return {"id": retur["id"], "message": "Retur berhasil dibuat"}
+
+# ==================== PRICE HISTORY ====================
+
+@router.get("/price-history")
+async def list_price_history(
+    search: str = "",
+    product_id: str = "",
+    user: dict = Depends(get_current_user)
+):
+    query = {}
+    if product_id:
+        query["product_id"] = product_id
+    if search:
+        query["product_name"] = {"$regex": search, "$options": "i"}
+    
+    history = await price_history.find(query, {"_id": 0}).sort("created_at", -1).to_list(100)
+    return {"items": history}

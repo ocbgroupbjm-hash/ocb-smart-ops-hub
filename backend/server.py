@@ -41,6 +41,8 @@ from routes.reports import router as reports_router
 from routes.roles import router as roles_router
 from routes.ai_business import router as ai_business_router
 from routes.hallo_ai import router as hallo_ai_router
+from routes.master_erp import router as master_erp_router
+from routes.settings import router as settings_router
 
 # Mount all routers under /api
 app.include_router(auth_router, prefix="/api")
@@ -56,6 +58,8 @@ app.include_router(reports_router, prefix="/api")
 app.include_router(roles_router, prefix="/api")
 app.include_router(ai_business_router, prefix="/api")
 app.include_router(hallo_ai_router, prefix="/api")
+app.include_router(master_erp_router, prefix="/api")
+app.include_router(settings_router, prefix="/api")
 
 # Health check
 @app.get("/api/health")
