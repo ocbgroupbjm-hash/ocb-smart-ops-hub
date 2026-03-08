@@ -18,6 +18,7 @@ import Branches from './pages/Branches';
 import Users from './pages/Users';
 import RolePermission from './pages/RolePermission';
 import AIBusiness from './pages/AIBusiness';
+import HalloAI from './pages/HalloAI';
 import Settings from './pages/Settings';
 import './index.css';
 
@@ -70,6 +71,7 @@ function App() {
             <Route path="akuntansi" element={<Accounting />} />
             <Route path="laporan" element={<Reports />} />
             <Route path="ai-bisnis" element={<AIBusiness />} />
+            <Route path="hallo-ai" element={<HalloAI />} />
             <Route path="cabang" element={<Branches />} />
             <Route path="pengguna" element={<Users />} />
             <Route path="hak-akses" element={<RolePermission />} />

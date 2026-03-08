@@ -1,5 +1,5 @@
-# OCB TITAN RETAIL AI SYSTEM - Main Server
-# Enterprise-grade retail operating system for OCB GROUP
+# OCB AI TITAN - Enterprise Retail AI System
+# Sistem AI Perusahaan untuk OCB GROUP
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -13,9 +13,9 @@ load_dotenv(ROOT_DIR / '.env')
 
 # Create app
 app = FastAPI(
-    title="OCB TITAN Retail AI System",
-    description="Enterprise Retail Operating System for OCB GROUP",
-    version="1.0.0"
+    title="OCB AI TITAN",
+    description="Enterprise Retail AI System - AI Perusahaan Terlengkap",
+    version="2.0.0"
 )
 
 # CORS
@@ -40,6 +40,7 @@ from routes.users import router as users_router
 from routes.reports import router as reports_router
 from routes.roles import router as roles_router
 from routes.ai_business import router as ai_business_router
+from routes.hallo_ai import router as hallo_ai_router
 
 # Mount all routers under /api
 app.include_router(auth_router, prefix="/api")
@@ -54,19 +55,30 @@ app.include_router(users_router, prefix="/api")
 app.include_router(reports_router, prefix="/api")
 app.include_router(roles_router, prefix="/api")
 app.include_router(ai_business_router, prefix="/api")
+app.include_router(hallo_ai_router, prefix="/api")
 
 # Health check
 @app.get("/api/health")
 async def health_check():
-    return {"status": "healthy", "system": "OCB TITAN Retail AI"}
+    return {"status": "healthy", "system": "OCB AI TITAN - Enterprise Retail AI"}
 
 @app.get("/api")
 async def root():
     return {
-        "system": "OCB TITAN Retail AI System",
-        "version": "1.0.0",
+        "system": "OCB AI TITAN",
+        "description": "Enterprise Retail AI System",
+        "version": "2.0.0",
         "company": "OCB GROUP",
-        "status": "operational"
+        "status": "operational",
+        "ai_capabilities": [
+            "CEO AI - Strategic Analysis",
+            "CFO AI - Financial Analysis",
+            "COO AI - Operations Monitoring",
+            "CMO AI - Marketing Intelligence",
+            "Sales AI - Upselling & Cross-selling",
+            "Customer Service AI - Customer Support",
+            "Business Analyst AI - Data Analytics"
+        ]
     }
 
 # Logging
@@ -78,16 +90,16 @@ logger = logging.getLogger(__name__)
 
 @app.on_event("startup")
 async def startup():
-    logger.info("OCB TITAN Retail AI System starting...")
+    logger.info("OCB AI TITAN - Enterprise Retail AI System starting...")
     
     # Initialize database indexes
     from database import init_indexes
     await init_indexes()
     
-    logger.info("OCB TITAN Retail AI System ready")
+    logger.info("OCB AI TITAN ready - All AI capabilities online")
 
 @app.on_event("shutdown")
 async def shutdown():
     from database import client
     client.close()
-    logger.info("OCB TITAN Retail AI System shutdown")
+    logger.info("OCB AI TITAN shutdown")

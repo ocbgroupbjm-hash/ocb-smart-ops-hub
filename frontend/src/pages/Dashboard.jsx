@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { 
   TrendingUp, TrendingDown, DollarSign, ShoppingCart, Users, Package, 
-  AlertTriangle, Building2, ArrowUpRight, ArrowDownRight, RefreshCw, Brain, Store, ShoppingBag
+  AlertTriangle, Building2, ArrowUpRight, ArrowDownRight, RefreshCw, Brain, Store, ShoppingBag,
+  Sparkles, MessageSquare, ChevronRight
 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const Dashboard = () => {
   const { api, user } = useAuth();
+  const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [salesTrend, setSalesTrend] = useState([]);
@@ -85,9 +88,17 @@ const Dashboard = () => {
       {/* AI Insights Widget */}
       {aiInsights.length > 0 && (
         <div className="bg-gradient-to-r from-purple-900/20 via-blue-900/20 to-purple-900/20 border border-purple-700/30 rounded-xl p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <Brain className="h-5 w-5 text-purple-400" />
-            <span className="font-semibold text-purple-300">AI Insights</span>
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Brain className="h-5 w-5 text-purple-400" />
+              <span className="font-semibold text-purple-300">AI Insights</span>
+            </div>
+            <button 
+              onClick={() => navigate('/hallo-ai')}
+              className="flex items-center gap-1 text-sm text-purple-400 hover:text-purple-300"
+            >
+              <Sparkles className="h-4 w-4" /> Buka Hallo AI
+            </button>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
             {aiInsights.map((insight, idx) => {

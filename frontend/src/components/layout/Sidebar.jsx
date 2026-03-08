@@ -3,7 +3,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, ShoppingCart, Package, Boxes, Users, Building2, 
   Settings, LogOut, DollarSign, Truck, UserCog, Warehouse,
-  BarChart3, Calculator, Brain, Shield
+  BarChart3, Calculator, Brain, Shield, Sparkles
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -18,6 +18,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
 
   const navItems = [
     { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard', roles: ['owner', 'admin', 'supervisor', 'cashier', 'finance', 'inventory'] },
+    { name: 'Hallo AI', icon: Sparkles, path: '/hallo-ai', roles: ['owner', 'admin', 'supervisor', 'finance'], highlight: true },
     { name: 'Kasir', icon: ShoppingCart, path: '/kasir', roles: ['owner', 'admin', 'supervisor', 'cashier'] },
     { name: 'Produk', icon: Package, path: '/produk', roles: ['owner', 'admin', 'supervisor', 'inventory'] },
     { name: 'Stok', icon: Boxes, path: '/stok', roles: ['owner', 'admin', 'supervisor', 'inventory'] },
@@ -65,9 +66,9 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
           {/* Logo */}
           <div className="p-6 border-b border-red-900/20">
             <h1 className="text-2xl font-bold bg-gradient-to-r from-red-400 via-amber-400 to-yellow-300 bg-clip-text text-transparent">
-              OCB TITAN
+              OCB AI TITAN
             </h1>
-            <p className="text-xs text-red-300/50 mt-1">Sistem Retail AI Enterprise</p>
+            <p className="text-xs text-red-300/50 mt-1">Enterprise Retail AI System</p>
           </div>
 
           {/* Navigation */}
@@ -82,12 +83,15 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                   `flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
                     isActive
                       ? 'bg-gradient-to-r from-red-900/40 to-amber-900/20 text-amber-200 border border-red-700/30 shadow-lg shadow-red-900/20'
-                      : 'text-gray-400 hover:bg-red-900/10 hover:text-red-200 border border-transparent'
+                      : item.highlight
+                        ? 'text-purple-300 hover:bg-purple-900/20 hover:text-purple-200 border border-purple-700/20'
+                        : 'text-gray-400 hover:bg-red-900/10 hover:text-red-200 border border-transparent'
                   }`
                 }
               >
-                <item.icon className="h-5 w-5" />
+                <item.icon className={`h-5 w-5 ${item.highlight ? 'text-purple-400' : ''}`} />
                 <span className="font-medium">{item.name}</span>
+                {item.highlight && <span className="ml-auto text-[10px] px-1.5 py-0.5 bg-purple-600/30 text-purple-300 rounded">AI</span>}
               </NavLink>
             ))}
           </nav>
