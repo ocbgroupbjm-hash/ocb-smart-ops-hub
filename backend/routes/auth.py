@@ -1,135 +1,138 @@
-from fastapi import APIRouter, HTTPException, status
-from models.user import UserCreate, UserLogin, UserResponse, TokenResponse, User
-from models.company import CompanyCreate, Company
-from database import users_collection, companies_collection
-from utils.auth import hash_password, verify_password, create_access_token
+# OCB TITAN - Auth Routes
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
+from typing import Optional
+from database import users, branches, audit_logs
+from utils.auth import hash_password, verify_password, create_token, get_current_user
+from models.titan_models import User, UserRole, AuditLog
+from fastapi import Depends
 from datetime import datetime, timezone
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
-@router.post("/register", response_model=TokenResponse)
-async def register(user_data: UserCreate):
-    # Check if user exists
-    existing_user = await users_collection.find_one({"email": user_data.email}, {"_id": 0})
-    if existing_user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already registered"
-        )
-    
-    # Create company if role is owner and no company_id provided
-    company_id = user_data.company_id
-    if user_data.role == "owner" and not company_id:
-        company_data = CompanyCreate(
-            name=f"{user_data.full_name}'s Company",
-            plan="starter",
-            ai_quota=10000
-        )
-        company = Company(**company_data.model_dump())
-        company_dict = company.model_dump()
-        company_dict['created_at'] = company_dict['created_at'].isoformat()
-        company_dict['updated_at'] = company_dict['updated_at'].isoformat()
-        await companies_collection.insert_one(company_dict)
-        company_id = company.id
-    
-    # Create user
-    hashed_password = hash_password(user_data.password)
-    user = User(
-        email=user_data.email,
-        full_name=user_data.full_name,
-        role=user_data.role,
-        company_id=company_id,
-        branch_id=user_data.branch_id,
-        is_active=True
-    )
-    
-    user_dict = user.model_dump()
-    user_dict['password'] = hashed_password
-    user_dict['created_at'] = user_dict['created_at'].isoformat()
-    user_dict['updated_at'] = user_dict['updated_at'].isoformat()
-    
-    await users_collection.insert_one(user_dict)
-    
-    # Create token
-    token = create_access_token({"sub": user.id, "email": user.email, "role": user.role})
-    
-    return TokenResponse(
-        access_token=token,
-        user=UserResponse(
-            id=user.id,
-            email=user.email,
-            full_name=user.full_name,
-            role=user.role,
-            company_id=user.company_id,
-            branch_id=user.branch_id,
-            is_active=user.is_active,
-            created_at=user.created_at
-        )
-    )
+class LoginRequest(BaseModel):
+    email: str
+    password: str
 
-@router.post("/login", response_model=TokenResponse)
-async def login(credentials: UserLogin):
-    user = await users_collection.find_one({"email": credentials.email}, {"_id": 0})
-    
+class RegisterRequest(BaseModel):
+    email: str
+    password: str
+    name: str
+    phone: str = ""
+    role: str = "cashier"
+    branch_id: Optional[str] = None
+
+class AuthResponse(BaseModel):
+    token: str
+    user: dict
+
+@router.post("/login", response_model=AuthResponse)
+async def login(data: LoginRequest):
+    user = await users.find_one({"email": data.email}, {"_id": 0})
     if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid email or password"
-        )
+        raise HTTPException(status_code=401, detail="Invalid credentials")
     
-    if not verify_password(credentials.password, user.get("password", "")):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid email or password"
-        )
+    if not verify_password(data.password, user.get("password_hash", "")):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
     
-    if not user.get("is_active", False):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Account is inactive"
-        )
+    if not user.get("is_active", True):
+        raise HTTPException(status_code=401, detail="Account disabled")
     
-    # Create token
-    token = create_access_token({"sub": user["id"], "email": user["email"], "role": user["role"]})
+    # Update last login
+    await users.update_one(
+        {"id": user["id"]},
+        {"$set": {"last_login": datetime.now(timezone.utc).isoformat()}}
+    )
     
-    # Convert ISO string to datetime if needed
-    created_at = user['created_at']
-    if isinstance(created_at, str):
-        created_at = datetime.fromisoformat(created_at)
+    # Get branch info
+    branch = None
+    if user.get("branch_id"):
+        branch = await branches.find_one({"id": user["branch_id"]}, {"_id": 0, "id": 1, "name": 1, "code": 1})
     
-    return TokenResponse(
-        access_token=token,
-        user=UserResponse(
-            id=user["id"],
-            email=user["email"],
-            full_name=user["full_name"],
-            role=user["role"],
-            company_id=user.get("company_id"),
-            branch_id=user.get("branch_id"),
-            is_active=user["is_active"],
-            created_at=created_at
-        )
+    token_data = {
+        "user_id": user["id"],
+        "email": user["email"],
+        "name": user["name"],
+        "role": user.get("role", "cashier"),
+        "branch_id": user.get("branch_id"),
+        "branch_ids": user.get("branch_ids", [])
+    }
+    
+    token = create_token(token_data)
+    
+    return AuthResponse(
+        token=token,
+        user={
+            "id": user["id"],
+            "email": user["email"],
+            "name": user["name"],
+            "role": user.get("role", "cashier"),
+            "branch_id": user.get("branch_id"),
+            "branch": branch,
+            "permissions": user.get("permissions", [])
+        }
     )
 
-@router.get("/me", response_model=UserResponse)
-async def get_current_user_info(current_user: dict = None):
-    from utils.dependencies import get_current_user
-    from fastapi import Depends
+@router.post("/register", response_model=AuthResponse)
+async def register(data: RegisterRequest):
+    existing = await users.find_one({"email": data.email})
+    if existing:
+        raise HTTPException(status_code=400, detail="Email already registered")
     
-    async def get_me(user: dict = Depends(get_current_user)):
-        created_at = user['created_at']
-        if isinstance(created_at, str):
-            created_at = datetime.fromisoformat(created_at)
-        
-        return UserResponse(
-            id=user["id"],
-            email=user["email"],
-            full_name=user["full_name"],
-            role=user["role"],
-            company_id=user.get("company_id"),
-            branch_id=user.get("branch_id"),
-            is_active=user["is_active"],
-            created_at=created_at
-        )
+    # Create default branch if needed
+    default_branch = await branches.find_one({"code": "HQ"}, {"_id": 0})
+    if not default_branch:
+        from models.titan_models import Branch
+        default_branch = Branch(
+            code="HQ",
+            name="Headquarters",
+            address="Main Office",
+            is_warehouse=True
+        ).model_dump()
+        await branches.insert_one(default_branch)
     
-    return await get_me()
+    user = User(
+        email=data.email,
+        password_hash=hash_password(data.password),
+        name=data.name,
+        phone=data.phone,
+        role=UserRole(data.role) if data.role in [r.value for r in UserRole] else UserRole.CASHIER,
+        branch_id=data.branch_id or default_branch["id"],
+        branch_ids=[data.branch_id or default_branch["id"]]
+    )
+    
+    await users.insert_one(user.model_dump())
+    
+    token_data = {
+        "user_id": user.id,
+        "email": user.email,
+        "name": user.name,
+        "role": user.role.value,
+        "branch_id": user.branch_id,
+        "branch_ids": user.branch_ids
+    }
+    
+    return AuthResponse(
+        token=create_token(token_data),
+        user={
+            "id": user.id,
+            "email": user.email,
+            "name": user.name,
+            "role": user.role.value,
+            "branch_id": user.branch_id,
+            "branch": {"id": default_branch["id"], "name": default_branch["name"], "code": default_branch["code"]}
+        }
+    )
+
+@router.get("/me")
+async def get_me(user: dict = Depends(get_current_user)):
+    user_data = await users.find_one({"id": user["user_id"]}, {"_id": 0, "password_hash": 0})
+    if not user_data:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    branch = None
+    if user_data.get("branch_id"):
+        branch = await branches.find_one({"id": user_data["branch_id"]}, {"_id": 0, "id": 1, "name": 1, "code": 1})
+    
+    user_data["branch"] = branch
+    return user_data

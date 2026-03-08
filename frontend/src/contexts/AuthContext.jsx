@@ -1,60 +1,111 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import api from '../services/api';
+
+const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 const AuthContext = createContext(null);
 
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within AuthProvider');
-  }
-  return context;
-};
+export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
+  const [token, setToken] = useState(localStorage.getItem('token'));
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    const savedUser = localStorage.getItem('user');
-    
-    if (token && savedUser) {
-      setUser(JSON.parse(savedUser));
+    if (token) {
+      fetchUser();
+    } else {
+      setLoading(false);
     }
-    setLoading(false);
-  }, []);
+  }, [token]);
+
+  const fetchUser = async () => {
+    try {
+      const res = await fetch(`${API_URL}/api/auth/me`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setUser(data);
+      } else {
+        logout();
+      }
+    } catch (err) {
+      console.error('Auth error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const login = async (email, password) => {
-    const response = await api.post('/auth/login', { email, password });
-    const { access_token, user: userData } = response.data;
+    const res = await fetch(`${API_URL}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
     
-    localStorage.setItem('token', access_token);
-    localStorage.setItem('user', JSON.stringify(userData));
-    setUser(userData);
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.detail || 'Login failed');
+    }
     
-    return userData;
+    const data = await res.json();
+    localStorage.setItem('token', data.token);
+    setToken(data.token);
+    setUser(data.user);
+    return data;
   };
 
   const register = async (userData) => {
-    const response = await api.post('/auth/register', userData);
-    const { access_token, user: newUser } = response.data;
+    const res = await fetch(`${API_URL}/api/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(userData)
+    });
     
-    localStorage.setItem('token', access_token);
-    localStorage.setItem('user', JSON.stringify(newUser));
-    setUser(newUser);
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.detail || 'Registration failed');
+    }
     
-    return newUser;
+    const data = await res.json();
+    localStorage.setItem('token', data.token);
+    setToken(data.token);
+    setUser(data.user);
+    return data;
   };
 
   const logout = () => {
     localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    setToken(null);
     setUser(null);
   };
 
+  const api = async (endpoint, options = {}) => {
+    const headers = {
+      'Content-Type': 'application/json',
+      ...options.headers
+    };
+    
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+    
+    const res = await fetch(`${API_URL}${endpoint}`, {
+      ...options,
+      headers
+    });
+    
+    if (res.status === 401) {
+      logout();
+      throw new Error('Session expired');
+    }
+    
+    return res;
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, token, loading, login, register, logout, api }}>
       {children}
     </AuthContext.Provider>
   );

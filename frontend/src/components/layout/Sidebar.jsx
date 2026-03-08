@@ -1,33 +1,40 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { 
-  LayoutDashboard, 
-  Bot, 
-  Users, 
-  Store, 
-  BarChart3, 
-  Package, 
-  BookOpen,
-  Settings,
-  X
+  LayoutDashboard, ShoppingCart, Package, Boxes, Users, Building2, 
+  TrendingUp, FileText, Settings, LogOut, DollarSign, Truck
 } from 'lucide-react';
-import { cn } from '../../lib/utils';
+import { useAuth } from '../../contexts/AuthContext';
 
 const Sidebar = ({ isOpen, setIsOpen }) => {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
   const navItems = [
-    { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
-    { name: 'AI Chat', icon: Bot, path: '/ai-chat' },
-    { name: 'CRM', icon: Users, path: '/crm' },
-    { name: 'Branches', icon: Store, path: '/branches' },
-    { name: 'Analytics', icon: BarChart3, path: '/analytics' },
-    { name: 'Inventory', icon: Package, path: '/inventory' },
-    { name: 'Knowledge Base', icon: BookOpen, path: '/knowledge' },
-    { name: 'Settings', icon: Settings, path: '/settings' },
+    { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard', roles: ['owner', 'admin', 'supervisor', 'cashier', 'finance', 'inventory'] },
+    { name: 'POS', icon: ShoppingCart, path: '/pos', roles: ['owner', 'admin', 'supervisor', 'cashier'] },
+    { name: 'Products', icon: Package, path: '/products', roles: ['owner', 'admin', 'supervisor', 'inventory'] },
+    { name: 'Inventory', icon: Boxes, path: '/inventory', roles: ['owner', 'admin', 'supervisor', 'inventory'] },
+    { name: 'Purchase', icon: Truck, path: '/purchase', roles: ['owner', 'admin', 'supervisor', 'inventory'] },
+    { name: 'Customers', icon: Users, path: '/customers', roles: ['owner', 'admin', 'supervisor', 'cashier'] },
+    { name: 'Branches', icon: Building2, path: '/branches', roles: ['owner', 'admin'] },
+    { name: 'Finance', icon: DollarSign, path: '/finance', roles: ['owner', 'admin', 'finance'] },
+    { name: 'Reports', icon: FileText, path: '/reports', roles: ['owner', 'admin', 'supervisor', 'finance'] },
+    { name: 'Users', icon: Users, path: '/users', roles: ['owner', 'admin'] },
+    { name: 'Settings', icon: Settings, path: '/settings', roles: ['owner', 'admin', 'supervisor', 'cashier', 'finance', 'inventory'] },
   ];
+
+  const filteredNavItems = navItems.filter(item => 
+    item.roles.includes(user?.role || 'cashier')
+  );
 
   return (
     <>
-      {/* Mobile backdrop */}
       {isOpen && (
         <div 
           className="fixed inset-0 bg-black/50 z-40 lg:hidden"
@@ -35,63 +42,61 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
         />
       )}
       
-      {/* Sidebar */}
       <aside
-        className={cn(
-          "fixed lg:static inset-y-0 left-0 z-50 w-64 bg-gradient-to-b from-[#0a0608] to-[#120a0c] border-r border-red-900/20 transform transition-transform duration-300 ease-in-out",
-          isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
-        )}
+        className={`fixed lg:static inset-y-0 left-0 z-50 w-64 bg-gradient-to-b from-[#0a0608] to-[#120a0c] border-r border-red-900/20 transform transition-transform duration-300 ease-in-out ${
+          isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+        }`}
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="flex items-center justify-between p-6 border-b border-red-900/20">
-            <div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-red-400 via-amber-400 to-yellow-300 bg-clip-text text-transparent">
-                OCB AI
-              </h1>
-              <p className="text-xs text-red-300/50 mt-1">Super Business Platform</p>
-            </div>
-            <button
-              onClick={() => setIsOpen(false)}
-              className="lg:hidden p-1 rounded-md hover:bg-red-900/20"
-            >
-              <X className="h-5 w-5 text-red-300" />
-            </button>
+          <div className="p-6 border-b border-red-900/20">
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-red-400 via-amber-400 to-yellow-300 bg-clip-text text-transparent">
+              OCB TITAN
+            </h1>
+            <p className="text-xs text-red-300/50 mt-1">Enterprise Retail AI System</p>
           </div>
 
           {/* Navigation */}
           <nav className="flex-1 overflow-y-auto p-4 space-y-1">
-            {navItems.map((item) => (
+            {filteredNavItems.map((item) => (
               <NavLink
                 key={item.path}
                 to={item.path}
-                data-testid={`nav-${item.name.toLowerCase().replace(' ', '-')}`}
+                onClick={() => setIsOpen(false)}
+                data-testid={`nav-${item.name.toLowerCase()}`}
                 className={({ isActive }) =>
-                  cn(
-                    "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group",
+                  `flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
                     isActive
-                      ? "bg-gradient-to-r from-red-900/40 to-amber-900/20 text-amber-200 border border-red-700/30 shadow-lg shadow-red-900/20"
-                      : "text-gray-400 hover:bg-red-900/10 hover:text-red-200 border border-transparent"
-                  )
+                      ? 'bg-gradient-to-r from-red-900/40 to-amber-900/20 text-amber-200 border border-red-700/30 shadow-lg shadow-red-900/20'
+                      : 'text-gray-400 hover:bg-red-900/10 hover:text-red-200 border border-transparent'
+                  }`
                 }
               >
-                <item.icon className="h-5 w-5 group-[.active]:text-amber-400" />
+                <item.icon className="h-5 w-5" />
                 <span className="font-medium">{item.name}</span>
               </NavLink>
             ))}
           </nav>
 
-          {/* User info */}
+          {/* User Info & Logout */}
           <div className="p-4 border-t border-red-900/20 bg-red-950/20">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 mb-3">
               <div className="h-10 w-10 rounded-full bg-gradient-to-br from-red-600 to-amber-500 flex items-center justify-center text-white font-semibold shadow-lg shadow-red-900/30">
-                AI
+                {user?.name?.[0]?.toUpperCase() || 'U'}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-amber-100 truncate">OCB Business</p>
-                <p className="text-xs text-red-300/50">Enterprise Plan</p>
+                <p className="text-sm font-medium text-amber-100 truncate">{user?.name}</p>
+                <p className="text-xs text-red-300/50 capitalize">{user?.role} • {user?.branch?.code || 'HQ'}</p>
               </div>
             </div>
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center justify-center gap-2 px-3 py-2 text-red-400 hover:bg-red-900/20 rounded-lg transition-colors"
+              data-testid="logout-btn"
+            >
+              <LogOut className="h-4 w-4" />
+              <span>Logout</span>
+            </button>
           </div>
         </div>
       </aside>

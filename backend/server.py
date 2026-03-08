@@ -1,68 +1,69 @@
-from fastapi import FastAPI, APIRouter
+# OCB TITAN RETAIL AI SYSTEM - Main Server
+# Enterprise-grade retail operating system for OCB GROUP
+
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
-from starlette.middleware.cors import CORSMiddleware
+from pathlib import Path
 import os
 import logging
-from pathlib import Path
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
-# Create the main app
-app = FastAPI(title="AI Business OS", version="1.0.0")
-
-# Create API router
-api_router = APIRouter(prefix="/api")
-
-# Import routes
-from routes import auth, ai_chat, crm, branches, knowledge, analytics
-
-# Import OCB AI routes
-try:
-    from routes_ocb import pos_products, pos_transactions, attendance, kpi, whatsapp, whatsapp_test, waha_routes, n8n_webhook
-    OCB_ROUTES_AVAILABLE = True
-except ImportError:
-    OCB_ROUTES_AVAILABLE = False
-
-# Include routers
-api_router.include_router(auth.router)
-api_router.include_router(ai_chat.router)
-api_router.include_router(crm.router)
-api_router.include_router(branches.router)
-api_router.include_router(knowledge.router)
-api_router.include_router(analytics.router)
-
-# Include OCB AI routers if available
-if OCB_ROUTES_AVAILABLE:
-    api_router.include_router(pos_products.router)
-    api_router.include_router(pos_transactions.router)
-    api_router.include_router(attendance.router)
-    api_router.include_router(kpi.router)
-    api_router.include_router(whatsapp.router)
-    api_router.include_router(whatsapp_test.router)
-    api_router.include_router(waha_routes.router)
-    api_router.include_router(n8n_webhook.router)
-
-# Health check
-@api_router.get("/")
-async def root():
-    return {"message": "AI Business OS API", "status": "running"}
-
-@api_router.get("/health")
-async def health_check():
-    return {"status": "healthy"}
-
-# Include API router
-app.include_router(api_router)
+# Create app
+app = FastAPI(
+    title="OCB TITAN Retail AI System",
+    description="Enterprise Retail Operating System for OCB GROUP",
+    version="1.0.0"
+)
 
 # CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_credentials=True,
     allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Import and include routers
+from routes.auth import router as auth_router
+from routes.products import router as products_router
+from routes.pos import router as pos_router
+from routes.inventory import router as inventory_router
+from routes.master_data import router as master_data_router
+from routes.purchase import router as purchase_router
+from routes.finance import router as finance_router
+from routes.dashboard import router as dashboard_router
+from routes.users import router as users_router
+from routes.reports import router as reports_router
+
+# Mount all routers under /api
+app.include_router(auth_router, prefix="/api")
+app.include_router(products_router, prefix="/api")
+app.include_router(pos_router, prefix="/api")
+app.include_router(inventory_router, prefix="/api")
+app.include_router(master_data_router, prefix="/api")
+app.include_router(purchase_router, prefix="/api")
+app.include_router(finance_router, prefix="/api")
+app.include_router(dashboard_router, prefix="/api")
+app.include_router(users_router, prefix="/api")
+app.include_router(reports_router, prefix="/api")
+
+# Health check
+@app.get("/api/health")
+async def health_check():
+    return {"status": "healthy", "system": "OCB TITAN Retail AI"}
+
+@app.get("/api")
+async def root():
+    return {
+        "system": "OCB TITAN Retail AI System",
+        "version": "1.0.0",
+        "company": "OCB GROUP",
+        "status": "operational"
+    }
 
 # Logging
 logging.basicConfig(
@@ -72,11 +73,17 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 @app.on_event("startup")
-async def startup_event():
-    logger.info("AI Business OS API started successfully")
+async def startup():
+    logger.info("OCB TITAN Retail AI System starting...")
+    
+    # Initialize database indexes
+    from database import init_indexes
+    await init_indexes()
+    
+    logger.info("OCB TITAN Retail AI System ready")
 
 @app.on_event("shutdown")
-async def shutdown_event():
+async def shutdown():
     from database import client
     client.close()
-    logger.info("AI Business OS API shut down")
+    logger.info("OCB TITAN Retail AI System shutdown")

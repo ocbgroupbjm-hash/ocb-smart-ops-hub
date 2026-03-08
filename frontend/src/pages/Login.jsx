@@ -1,191 +1,143 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Button } from '../components/ui/button';
-import { Input } from '../components/ui/input';
-import { Label } from '../components/ui/label';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { Loader2, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
-import { Sparkles } from 'lucide-react';
 
-export default function Login() {
-  const navigate = useNavigate();
-  const { login, register } = useAuth();
+const Login = () => {
+  const [isLogin, setIsLogin] = useState(true);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const { login, register } = useAuth();
+  const navigate = useNavigate();
 
-  const [loginData, setLoginData] = useState({ email: '', password: '' });
-  const [registerData, setRegisterData] = useState({
-    email: '',
-    password: '',
-    full_name: '',
-    role: 'owner'
-  });
-
-  const handleLogin = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     
     try {
-      await login(loginData.email, loginData.password);
-      toast.success('Login successful!');
+      if (isLogin) {
+        await login(email, password);
+        toast.success('Welcome back!');
+      } else {
+        await register({ email, password, name, role: 'cashier' });
+        toast.success('Account created!');
+      }
       navigate('/dashboard');
-    } catch (error) {
-      toast.error(error.response?.data?.detail || 'Login failed');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleRegister = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    
-    try {
-      await register(registerData);
-      toast.success('Registration successful!');
-      navigate('/dashboard');
-    } catch (error) {
-      toast.error(error.response?.data?.detail || 'Registration failed');
+    } catch (err) {
+      toast.error(err.message || 'Authentication failed');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #080406 0%, #120a0c 50%, #0c0608 100%)' }}>
-      {/* Elegant gradient background */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(185,28,28,0.15),transparent_50%)]"></div>
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,rgba(252,211,77,0.08),transparent_50%)]"></div>
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(127,29,29,0.1),transparent_60%)]"></div>
-      
-      <div className="relative w-full max-w-md px-4 z-10">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0a0608] via-[#1a0a0e] to-[#0a0608] p-4">
+      <div className="w-full max-w-md">
+        {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-red-700 to-amber-500 mb-6 shadow-lg shadow-red-900/30">
-            <Sparkles className="h-8 w-8 text-white" />
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-red-600 to-amber-500 rounded-xl mb-4 shadow-lg shadow-red-900/50">
+            <span className="text-2xl font-bold text-white">T</span>
           </div>
-          <h1 className="text-5xl font-bold bg-gradient-to-r from-red-400 via-amber-400 to-yellow-300 bg-clip-text text-transparent mb-3">
-            OCB AI
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-red-400 via-amber-400 to-yellow-300 bg-clip-text text-transparent">
+            OCB TITAN
           </h1>
-          <p className="text-red-300/60 text-sm">AI-Powered Super Business Platform</p>
+          <p className="text-gray-400 mt-2">Enterprise Retail AI System</p>
         </div>
 
-        <Tabs defaultValue="login" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 bg-red-950/30 backdrop-blur-sm border border-red-900/30">
-            <TabsTrigger value="login" className="data-[state=active]:bg-red-900/40 data-[state=active]:text-amber-200">Login</TabsTrigger>
-            <TabsTrigger value="register" className="data-[state=active]:bg-red-900/40 data-[state=active]:text-amber-200">Register</TabsTrigger>
-          </TabsList>
+        {/* Form Card */}
+        <div className="bg-[#1a1214] border border-red-900/30 rounded-xl p-8 shadow-xl">
+          {/* Tabs */}
+          <div className="flex mb-6 border border-red-900/30 rounded-lg overflow-hidden">
+            <button
+              onClick={() => setIsLogin(true)}
+              className={`flex-1 py-2 text-sm font-semibold transition-colors ${
+                isLogin ? 'bg-red-900/30 text-amber-400' : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              Login
+            </button>
+            <button
+              onClick={() => setIsLogin(false)}
+              className={`flex-1 py-2 text-sm font-semibold transition-colors ${
+                !isLogin ? 'bg-red-900/30 text-amber-400' : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              Register
+            </button>
+          </div>
 
-          <TabsContent value="login">
-            <Card className="bg-gradient-to-b from-red-950/40 to-red-950/20 backdrop-blur-xl border-red-900/30 shadow-2xl shadow-red-900/20">
-              <CardHeader>
-                <CardTitle className="text-2xl text-amber-100">Welcome Back</CardTitle>
-                <CardDescription className="text-red-300/60">Enter your credentials to access your account</CardDescription>
-              </CardHeader>
-              <form onSubmit={handleLogin}>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="login-email" className="text-red-200/80">Email</Label>
-                    <Input
-                      id="login-email"
-                      type="email"
-                      placeholder="you@company.com"
-                      value={loginData.email}
-                      onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
-                      required
-                      data-testid="login-email-input"
-                      className="bg-red-950/30 border-red-900/30 text-amber-50 placeholder:text-red-300/40 focus:border-amber-500/50 focus:ring-amber-500/20"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="login-password" className="text-red-200/80">Password</Label>
-                    <Input
-                      id="login-password"
-                      type="password"
-                      value={loginData.password}
-                      onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
-                      required
-                      data-testid="login-password-input"
-                      className="bg-red-950/30 border-red-900/30 text-amber-50 placeholder:text-red-300/40 focus:border-amber-500/50 focus:ring-amber-500/20"
-                    />
-                  </div>
-                </CardContent>
-                <CardFooter>
-                  <Button 
-                    type="submit" 
-                    className="w-full bg-gradient-to-r from-red-700 to-red-600 hover:from-red-600 hover:to-red-500 shadow-lg shadow-red-900/30 text-white" 
-                    disabled={loading} 
-                    data-testid="login-submit-button"
-                  >
-                    {loading ? 'Logging in...' : 'Login'}
-                  </Button>
-                </CardFooter>
-              </form>
-            </Card>
-          </TabsContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {!isLogin && (
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Full Name</label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full px-4 py-3 bg-[#0a0608] border border-red-900/30 rounded-lg focus:outline-none focus:border-red-500"
+                  placeholder="John Doe"
+                  required={!isLogin}
+                />
+              </div>
+            )}
 
-          <TabsContent value="register">
-            <Card className="bg-gradient-to-b from-red-950/40 to-red-950/20 backdrop-blur-xl border-red-900/30 shadow-2xl shadow-red-900/20">
-              <CardHeader>
-                <CardTitle className="text-2xl text-amber-100">Create Account</CardTitle>
-                <CardDescription className="text-red-300/60">Start your AI-powered business journey</CardDescription>
-              </CardHeader>
-              <form onSubmit={handleRegister}>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="register-name" className="text-red-200/80">Full Name</Label>
-                    <Input
-                      id="register-name"
-                      type="text"
-                      placeholder="John Doe"
-                      value={registerData.full_name}
-                      onChange={(e) => setRegisterData({ ...registerData, full_name: e.target.value })}
-                      required
-                      data-testid="register-name-input"
-                      className="bg-red-950/30 border-red-900/30 text-amber-50 placeholder:text-red-300/40 focus:border-amber-500/50 focus:ring-amber-500/20"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="register-email" className="text-red-200/80">Email</Label>
-                    <Input
-                      id="register-email"
-                      type="email"
-                      placeholder="you@company.com"
-                      value={registerData.email}
-                      onChange={(e) => setRegisterData({ ...registerData, email: e.target.value })}
-                      required
-                      data-testid="register-email-input"
-                      className="bg-red-950/30 border-red-900/30 text-amber-50 placeholder:text-red-300/40 focus:border-amber-500/50 focus:ring-amber-500/20"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="register-password" className="text-red-200/80">Password</Label>
-                    <Input
-                      id="register-password"
-                      type="password"
-                      value={registerData.password}
-                      onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })}
-                      required
-                      data-testid="register-password-input"
-                      className="bg-red-950/30 border-red-900/30 text-amber-50 placeholder:text-red-300/40 focus:border-amber-500/50 focus:ring-amber-500/20"
-                    />
-                  </div>
-                </CardContent>
-                <CardFooter>
-                  <Button 
-                    type="submit" 
-                    className="w-full bg-gradient-to-r from-red-700 to-red-600 hover:from-red-600 hover:to-red-500 shadow-lg shadow-red-900/30 text-white" 
-                    disabled={loading} 
-                    data-testid="register-submit-button"
-                  >
-                    {loading ? 'Creating account...' : 'Create Account'}
-                  </Button>
-                </CardFooter>
-              </form>
-            </Card>
-          </TabsContent>
-        </Tabs>
+            <div>
+              <label className="block text-sm text-gray-400 mb-1">Email</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-4 py-3 bg-[#0a0608] border border-red-900/30 rounded-lg focus:outline-none focus:border-red-500"
+                placeholder="you@company.com"
+                required
+                data-testid="email-input"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm text-gray-400 mb-1">Password</label>
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full px-4 py-3 bg-[#0a0608] border border-red-900/30 rounded-lg focus:outline-none focus:border-red-500 pr-12"
+                  placeholder="••••••••"
+                  required
+                  data-testid="password-input"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+                >
+                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                </button>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-3 bg-gradient-to-r from-red-600 to-amber-600 text-white rounded-lg font-semibold hover:from-red-500 hover:to-amber-500 disabled:opacity-50 flex items-center justify-center gap-2"
+              data-testid="submit-btn"
+            >
+              {loading && <Loader2 className="h-5 w-5 animate-spin" />}
+              {isLogin ? 'Sign In' : 'Create Account'}
+            </button>
+          </form>
+        </div>
+
+        <p className="text-center text-gray-500 text-sm mt-6">
+          OCB GROUP © 2026. All rights reserved.
+        </p>
       </div>
     </div>
   );
-}
+};
+
+export default Login;
