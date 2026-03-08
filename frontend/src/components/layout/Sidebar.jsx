@@ -2,7 +2,8 @@ import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, ShoppingCart, Package, Boxes, Users, Building2, 
-  TrendingUp, FileText, Settings, LogOut, DollarSign, Truck
+  FileText, Settings, LogOut, DollarSign, Truck, UserCog, Warehouse,
+  BarChart3, Receipt, Calculator
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -17,21 +18,32 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
 
   const navItems = [
     { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard', roles: ['owner', 'admin', 'supervisor', 'cashier', 'finance', 'inventory'] },
-    { name: 'POS', icon: ShoppingCart, path: '/pos', roles: ['owner', 'admin', 'supervisor', 'cashier'] },
-    { name: 'Products', icon: Package, path: '/products', roles: ['owner', 'admin', 'supervisor', 'inventory'] },
-    { name: 'Inventory', icon: Boxes, path: '/inventory', roles: ['owner', 'admin', 'supervisor', 'inventory'] },
-    { name: 'Purchase', icon: Truck, path: '/purchase', roles: ['owner', 'admin', 'supervisor', 'inventory'] },
-    { name: 'Customers', icon: Users, path: '/customers', roles: ['owner', 'admin', 'supervisor', 'cashier'] },
-    { name: 'Branches', icon: Building2, path: '/branches', roles: ['owner', 'admin'] },
-    { name: 'Finance', icon: DollarSign, path: '/finance', roles: ['owner', 'admin', 'finance'] },
-    { name: 'Reports', icon: FileText, path: '/reports', roles: ['owner', 'admin', 'supervisor', 'finance'] },
-    { name: 'Users', icon: Users, path: '/users', roles: ['owner', 'admin'] },
-    { name: 'Settings', icon: Settings, path: '/settings', roles: ['owner', 'admin', 'supervisor', 'cashier', 'finance', 'inventory'] },
+    { name: 'Kasir', icon: ShoppingCart, path: '/pos', roles: ['owner', 'admin', 'supervisor', 'cashier'] },
+    { name: 'Produk', icon: Package, path: '/produk', roles: ['owner', 'admin', 'supervisor', 'inventory'] },
+    { name: 'Stok', icon: Boxes, path: '/stok', roles: ['owner', 'admin', 'supervisor', 'inventory'] },
+    { name: 'Pembelian', icon: Truck, path: '/pembelian', roles: ['owner', 'admin', 'supervisor', 'inventory'] },
+    { name: 'Supplier', icon: Warehouse, path: '/supplier', roles: ['owner', 'admin', 'supervisor', 'inventory'] },
+    { name: 'Pelanggan', icon: Users, path: '/pelanggan', roles: ['owner', 'admin', 'supervisor', 'cashier'] },
+    { name: 'Keuangan', icon: DollarSign, path: '/keuangan', roles: ['owner', 'admin', 'finance'] },
+    { name: 'Akuntansi', icon: Calculator, path: '/akuntansi', roles: ['owner', 'admin', 'finance'] },
+    { name: 'Laporan', icon: BarChart3, path: '/laporan', roles: ['owner', 'admin', 'supervisor', 'finance'] },
+    { name: 'Cabang', icon: Building2, path: '/cabang', roles: ['owner', 'admin'] },
+    { name: 'Pengguna', icon: UserCog, path: '/pengguna', roles: ['owner', 'admin'] },
+    { name: 'Pengaturan', icon: Settings, path: '/pengaturan', roles: ['owner', 'admin', 'supervisor'] },
   ];
 
   const filteredNavItems = navItems.filter(item => 
     item.roles.includes(user?.role || 'cashier')
   );
+
+  const roleLabels = {
+    owner: 'Pemilik',
+    admin: 'Administrator',
+    supervisor: 'Supervisor',
+    cashier: 'Kasir',
+    finance: 'Keuangan',
+    inventory: 'Gudang'
+  };
 
   return (
     <>
@@ -53,7 +65,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
             <h1 className="text-2xl font-bold bg-gradient-to-r from-red-400 via-amber-400 to-yellow-300 bg-clip-text text-transparent">
               OCB TITAN
             </h1>
-            <p className="text-xs text-red-300/50 mt-1">Enterprise Retail AI System</p>
+            <p className="text-xs text-red-300/50 mt-1">Sistem Retail AI Enterprise</p>
           </div>
 
           {/* Navigation */}
@@ -86,7 +98,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-amber-100 truncate">{user?.name}</p>
-                <p className="text-xs text-red-300/50 capitalize">{user?.role} • {user?.branch?.code || 'HQ'}</p>
+                <p className="text-xs text-red-300/50">{roleLabels[user?.role] || 'Kasir'} • {user?.branch?.code || 'HQ'}</p>
               </div>
             </div>
             <button
@@ -95,7 +107,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
               data-testid="logout-btn"
             >
               <LogOut className="h-4 w-4" />
-              <span>Logout</span>
+              <span>Keluar</span>
             </button>
           </div>
         </div>
