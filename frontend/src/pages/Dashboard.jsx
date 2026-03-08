@@ -97,7 +97,7 @@ const Dashboard = () => {
               onClick={() => navigate('/hallo-ai')}
               className="flex items-center gap-1 text-sm text-purple-400 hover:text-purple-300"
             >
-              <Sparkles className="h-4 w-4" /> Buka Hallo AI
+              <Sparkles className="h-4 w-4" /> Buka Hallo OCB AI
             </button>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">

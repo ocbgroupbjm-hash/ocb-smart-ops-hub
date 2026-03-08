@@ -38,7 +38,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       roles: ['owner', 'admin', 'supervisor', 'cashier', 'finance', 'inventory'] 
     },
     { 
-      name: 'Hallo AI', 
+      name: 'Hallo OCB AI', 
       icon: Sparkles, 
       path: '/hallo-ai', 
       roles: ['owner', 'admin', 'supervisor', 'cashier', 'finance', 'inventory'], 

@@ -170,7 +170,7 @@ const HalloAI = () => {
                 <Sparkles className="h-6 w-6 text-white" />
               </div>
               <div>
-                <h2 className="font-bold text-lg text-amber-100">Hallo AI</h2>
+                <h2 className="font-bold text-lg text-amber-100">Hallo OCB AI</h2>
                 <p className="text-xs text-gray-400">AI Perusahaan Terlengkap</p>
               </div>
             </div>
@@ -264,7 +264,7 @@ const HalloAI = () => {
             <PersonaIcon className="h-6 w-6 text-white" />
           </div>
           <div>
-            <h3 className="font-semibold text-amber-100">{currentPersona.name || 'Hallo AI'}</h3>
+            <h3 className="font-semibold text-amber-100">{currentPersona.name || 'Hallo OCB AI'}</h3>
             <p className="text-xs text-gray-400">{currentPersona.description || 'AI Perusahaan'}</p>
           </div>
         </div>
