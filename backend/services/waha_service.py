@@ -13,24 +13,20 @@ class WAHAService:
     """WAHA WhatsApp HTTP API Service for OCB AI"""
     
     def __init__(self):
-        self.base_url = "https://waha-5uexh7skrwaw.cgk-moto.sumopod.my.id"
-        self.api_key = "E9qyiFBRWKToEZReNTvNyq8VCfPjyXzb"
+        self.base_url = "https://waha-as0dv2f9yagn.cgk-hello.sumopod.my.id"
         self.timeout = 30.0
         self.session = "default"
         
     def _get_headers(self) -> Dict[str, str]:
-        """Get headers with X-Api-Key authentication"""
+        """Get headers - NO authentication required"""
         return {
-            "X-Api-Key": self.api_key,
             "Content-Type": "application/json"
         }
     
-    def update_config(self, base_url: str = None, api_key: str = None, session: str = None):
+    def update_config(self, base_url: str = None, session: str = None):
         """Update WAHA configuration"""
         if base_url:
             self.base_url = base_url.rstrip('/')
-        if api_key:
-            self.api_key = api_key
         if session:
             self.session = session
     
