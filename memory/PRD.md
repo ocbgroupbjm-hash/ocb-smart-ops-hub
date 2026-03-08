@@ -1,221 +1,207 @@
-# OCB TITAN RETAIL AI SYSTEM
-## Enterprise Retail Operating System for OCB GROUP
+# OCB TITAN RETAIL AI OPERATING SYSTEM
 
-**Version:** 1.0.0  
-**Last Updated:** March 8, 2026
+## Product Requirements Document
 
----
+### 1. Overview
+OCB TITAN adalah sistem retail AI enterprise-grade yang dibangun untuk OCB GROUP. Sistem ini menggantikan iPOS 5 Ultimate dengan solusi modern yang mendukung 40+ cabang.
 
-## System Overview
-
-OCB TITAN is a comprehensive enterprise retail AI operating system designed to support:
-- 40+ branches
-- 130+ employees
-- Scalable to 500+ branches
-- Thousands of daily transactions
-
----
-
-## Technology Stack
-
-- **Frontend:** React 18 + Tailwind CSS
+### 2. Tech Stack
+- **Frontend:** React.js dengan Tailwind CSS
 - **Backend:** FastAPI (Python)
 - **Database:** MongoDB
-- **Authentication:** JWT (7-day expiration)
+- **Styling:** Dark theme dengan Red-Gold accent
 
----
+### 3. Bahasa Sistem
+**SEMUA INTERFACE DALAM BAHASA INDONESIA**
 
-## Implemented Modules
+Menu Utama:
+- Dashboard
+- Kasir (POS)
+- Produk
+- Stok
+- Pembelian
+- Supplier
+- Pelanggan
+- Keuangan
+- Akuntansi
+- Laporan
+- Cabang
+- Pengguna
+- Pengaturan
 
-### ✅ Core Platform
-- Multi-branch architecture
-- Role-based access control (Owner, Admin, Supervisor, Cashier, Finance, Inventory)
-- Audit logging
-- Auto-numbering sequences (INV, PO, TRF, OPN, PRD, CUS)
+### 4. Modul yang Telah Diimplementasi
 
-### ✅ MODULE 1: POS System
-- Fast checkout interface
-- Barcode scanner support
-- Product search (code, barcode, name)
-- Shopping cart management
-- Multiple payment methods (Cash, QRIS, Bank Transfer, E-Wallet)
-- Split payment support
-- Hold/Recall transactions
-- Transaction discount (% or fixed)
-- Item-level discount
-- Invoice generation
+#### 4.1 Dashboard ✅
+- Penjualan Hari Ini
+- Laba Hari Ini
+- Total Transaksi
+- Total Saldo Kas
+- Total Cabang, Produk, Pelanggan, Karyawan
+- Trend Penjualan (7 Hari)
+- Produk Terlaris
+- Peringatan Stok Menipis
 
-### ✅ MODULE 2: Product Management
-- Product catalog with pricing
-- Multiple price tiers (Selling, Wholesale, Member, Reseller)
-- Category management
-- Barcode support
-- Stock tracking settings
-- Minimum stock alerts
+#### 4.2 Kasir (POS) ✅
+- Scan barcode / cari produk
+- Keranjang belanja
+- Diskon produk & transaksi
+- Multi-payment (Tunai, Transfer, QRIS, E-wallet, Split Payment)
+- Hold/Recall/Void transaksi
+- Retur transaksi
+- Cetak struk
 
-### ✅ MODULE 3: Inventory Management
-- Stock per branch
-- Low stock alerts
-- Stock adjustments
-- Stock movement history
-- Stock transfers (request, send, receive)
-- Stock opname (physical count)
+#### 4.3 Produk ✅
+- CRUD produk lengkap
+- Field: Kode, Nama, Kategori, Brand, Barcode
+- Multi-harga: Modal, Jual, Grosir, Member, Reseller
+- Stok minimum
+- Kategori & Sub-kategori
 
-### ✅ MODULE 6: Customer Management
-- Customer database
-- Segment classification (Regular, Member, VIP, Reseller, Wholesale)
+#### 4.4 Inventory ✅
+- Stok per cabang
+- Stok gudang
+- Transfer stok cabang
+- Stok opname
+- Kartu stok / mutasi
+- Peringatan stok menipis
+
+#### 4.5 Pembelian ✅
+- Purchase Order (PO)
+- Penerimaan barang
+- Status: Draft, Dipesan, Sebagian, Diterima, Dibatalkan
+
+#### 4.6 Supplier ✅
+- Database supplier lengkap
+- Kontak, Alamat, Kota
+- Informasi Bank
+- Term pembayaran
+
+#### 4.7 Pelanggan (CRM) ✅
+- Data pelanggan (Nama, HP, Email, Alamat)
+- Segmen: Reguler, Member, VIP, Reseller, Grosir
 - Loyalty points
-- Purchase history tracking
-- Auto-pricing by segment
+- Riwayat transaksi
 
-### ✅ MODULE 8: Financial Management
-- Cash balance per branch
-- Cash in/out tracking
-- Expense management
-- Daily financial reports
+#### 4.8 Keuangan ✅
+- Saldo Kas
+- Kas Masuk/Keluar
+- Pengeluaran
+- Laporan harian
 
-### ✅ MODULE 10: Owner Dashboard
-- Real-time sales metrics
-- Branch performance comparison
-- Best selling products
-- Low stock alerts
-- Employee count by branch
-- 7-day sales trend chart
+#### 4.9 Akuntansi ✅
+- Laporan Laba Rugi
+- Neraca (dalam pengembangan)
+- Jurnal Umum (dalam pengembangan)
 
-### ✅ MODULE 11: User Management
-- Role-based permissions
-- Multi-branch access
-- Password management
-- Audit logs
+#### 4.10 Laporan ✅
+- Laporan Penjualan (Harian, Per Cabang, Per Produk)
+- Laporan Produk (Terlaris, Performa)
+- Laporan Stok
+- Laporan Cabang
+- Laporan Pelanggan
 
-### ✅ MODULE 12: Branch Management
-- Branch profiles
-- Warehouse designation
-- Cash balance tracking
-- Employee assignment
+#### 4.11 Multi-Cabang ✅
+- CRUD cabang
+- Saldo kas per cabang
+- Gudang
 
----
+#### 4.12 Pengguna ✅
+- Role: Owner, Admin, Supervisor, Kasir, Finance, Inventory
+- Aktivasi/Nonaktifkan user
+- Assign ke cabang
 
-## API Endpoints
+#### 4.13 Pengaturan ✅
+- Info Toko
+- Pengaturan POS
+- Notifikasi
+- Keamanan (2FA, Audit Log)
+- Backup
 
-### Authentication
-- `POST /api/auth/login` - User login
-- `POST /api/auth/register` - User registration
-- `GET /api/auth/me` - Get current user
+### 5. API Endpoints
 
-### Products
-- `GET /api/products` - List products
-- `GET /api/products/search` - Quick search for POS
-- `GET /api/products/barcode/{barcode}` - Scan barcode
-- `POST /api/products` - Create product
-- `PUT /api/products/{id}` - Update product
-- `GET /api/products/categories` - List categories
-- `POST /api/products/categories` - Create category
+#### Authentication
+- POST /api/auth/login
+- POST /api/auth/register
+- GET /api/auth/me
 
-### POS
-- `POST /api/pos/transaction` - Create sale
-- `POST /api/pos/hold` - Hold transaction
-- `GET /api/pos/held` - List held transactions
-- `POST /api/pos/void/{id}` - Void transaction
-- `GET /api/pos/transactions` - Transaction history
-- `GET /api/pos/summary/today` - Daily summary
+#### Dashboard
+- GET /api/dashboard/owner
+- GET /api/dashboard/branch
+- GET /api/dashboard/sales-trend
+- GET /api/dashboard/top-products
+- GET /api/dashboard/low-stock
 
-### Inventory
-- `GET /api/inventory/stock` - Stock overview
-- `GET /api/inventory/stock/low` - Low stock alerts
-- `POST /api/inventory/adjust` - Stock adjustment
-- `POST /api/inventory/transfer` - Create transfer
-- `GET /api/inventory/movements` - Movement history
+#### Products
+- GET/POST /api/products
+- GET/PUT/DELETE /api/products/{id}
+- GET/POST /api/products/categories
+- GET /api/products/search
 
-### Customers
-- `GET /api/customers` - List customers
-- `GET /api/customers/search` - Quick search
-- `POST /api/customers` - Create customer
-- `PUT /api/customers/{id}` - Update customer
+#### Inventory
+- GET /api/inventory/stock
+- GET /api/inventory/stock/low
+- GET /api/inventory/movements
+- POST /api/inventory/stock-in
+- POST /api/inventory/stock-out
+- GET/POST /api/inventory/transfers
+- GET/POST /api/inventory/opnames
 
-### Branches
-- `GET /api/branches` - List branches
-- `POST /api/branches` - Create branch
-- `PUT /api/branches/{id}` - Update branch
+#### POS
+- POST /api/pos/transactions
+- GET /api/pos/transactions
+- POST /api/pos/transactions/{id}/void
+- POST /api/pos/transactions/{id}/return
+- GET/POST /api/pos/held
+- GET /api/pos/summary/today
 
-### Finance
-- `GET /api/finance/cash/balance` - Cash balance
-- `POST /api/finance/cash/in` - Cash in
-- `POST /api/finance/cash/out` - Cash out
-- `GET /api/finance/cash/movements` - Cash movements
-- `POST /api/finance/expenses` - Record expense
-- `GET /api/finance/reports/daily` - Daily report
+#### Finance
+- GET /api/finance/cash/balance
+- POST /api/finance/cash/in
+- POST /api/finance/cash/out
+- GET /api/finance/cash/movements
+- GET/POST /api/finance/expenses
+- GET /api/finance/reports/daily
+- GET /api/finance/reports/profit-loss
 
-### Dashboard
-- `GET /api/dashboard/owner` - Owner dashboard
-- `GET /api/dashboard/branch` - Branch dashboard
-- `GET /api/dashboard/sales-trend` - Sales trend
-- `GET /api/dashboard/top-products` - Top products
-- `GET /api/dashboard/cashier-performance` - Cashier metrics
+#### Reports
+- GET /api/reports/sales
+- GET /api/reports/product-performance
+- GET /api/reports/inventory
+- GET /api/reports/branch-comparison
+- GET /api/reports/customer-analysis
 
-### Reports
-- `GET /api/reports/sales` - Sales report
-- `GET /api/reports/inventory` - Inventory valuation
-- `GET /api/reports/stock-movements` - Stock movement report
-- `GET /api/reports/product-performance` - Product performance
-- `GET /api/reports/branch-comparison` - Branch comparison
+#### Master Data
+- GET/POST /api/branches
+- GET/POST /api/customers
+- GET/POST /api/suppliers
 
----
+#### Users
+- GET/POST /api/users
+- PUT /api/users/{id}
 
-## Test Account
+### 6. Kredensial Test
+- **Email:** admin@ocb.com
+- **Password:** admin123
+- **Role:** Owner
 
-```
-Email: owner@ocb.com
-Password: owner123
-Role: Owner
-```
+### 7. Status Testing
+- **Backend:** 100% PASSED (34/34 tests)
+- **Frontend:** 100% PASSED (All pages functional)
 
----
+### 8. Tanggal Update
+- **Terakhir diupdate:** 2026-03-08
+- **Status:** Sistem siap digunakan
 
-## Pending Modules (Future)
+### 9. Catatan untuk Pengembangan Selanjutnya
 
-- MODULE 4: Purchase Management (UI)
-- MODULE 5: Sales Channels (Wholesale, Online)
-- MODULE 7: Supplier Management
-- MODULE 9: Accounting (Journal, GL, P&L)
-- MODULE 13: Business Reports (Advanced)
-- MODULE 14: AI Business Automation
-- MODULE 15: Marketing Automation
-- MODULE 16: Enhanced Security
+#### Fitur yang Perlu Dikembangkan:
+1. **WhatsApp AI Integration** - Kirim struk, cek stok, balas chat
+2. **AI Business** - Analisa penjualan, rekomendasi produk
+3. **Neraca & Jurnal** - Akuntansi lengkap
+4. **Export Excel/PDF** - Laporan downloadable
+5. **Backup Database** - Sistem backup otomatis
 
----
-
-## File Structure
-
-```
-/app/backend/
-├── models/titan_models.py    # All data models
-├── database.py               # MongoDB collections
-├── server.py                 # FastAPI main
-├── utils/auth.py            # JWT authentication
-└── routes/
-    ├── auth.py              # Authentication
-    ├── products.py          # Product management
-    ├── pos.py               # POS transactions
-    ├── inventory.py         # Stock management
-    ├── master_data.py       # Branches, Customers, Suppliers
-    ├── purchase.py          # Purchase orders
-    ├── finance.py           # Cash & expenses
-    ├── dashboard.py         # Analytics
-    ├── users.py             # User management
-    └── reports.py           # Business reports
-
-/app/frontend/src/
-├── contexts/AuthContext.jsx
-├── components/layout/
-│   ├── Sidebar.jsx
-│   └── DashboardLayout.jsx
-└── pages/
-    ├── Login.jsx
-    ├── Dashboard.jsx
-    ├── POS.jsx
-    ├── Products.jsx
-    ├── Inventory.jsx
-    ├── Customers.jsx
-    └── Branches.jsx
-```
+#### Integrasi yang Dibutuhkan:
+- WhatsApp API untuk notifikasi
+- Payment Gateway (QRIS)
+- Printer thermal untuk struk
