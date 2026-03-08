@@ -18,7 +18,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
 
   const navItems = [
     { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard', roles: ['owner', 'admin', 'supervisor', 'cashier', 'finance', 'inventory'] },
-    { name: 'Kasir', icon: ShoppingCart, path: '/pos', roles: ['owner', 'admin', 'supervisor', 'cashier'] },
+    { name: 'Kasir', icon: ShoppingCart, path: '/kasir', roles: ['owner', 'admin', 'supervisor', 'cashier'] },
     { name: 'Produk', icon: Package, path: '/produk', roles: ['owner', 'admin', 'supervisor', 'inventory'] },
     { name: 'Stok', icon: Boxes, path: '/stok', roles: ['owner', 'admin', 'supervisor', 'inventory'] },
     { name: 'Pembelian', icon: Truck, path: '/pembelian', roles: ['owner', 'admin', 'supervisor', 'inventory'] },
