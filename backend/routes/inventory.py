@@ -266,6 +266,102 @@ async def adjust_stock(data: StockAdjustment, user: dict = Depends(get_current_u
 
 # ==================== STOCK TRANSFERS ====================
 
+class StockInOut(BaseModel):
+    product_id: str
+    quantity: int
+    notes: str = ""
+
+@router.post("/stock-in")
+async def stock_in(data: StockInOut, user: dict = Depends(get_current_user)):
+    """Add stock (stock in)"""
+    branch_id = user.get("branch_id")
+    if not branch_id:
+        raise HTTPException(status_code=400, detail="User tidak terhubung ke cabang")
+    
+    if data.quantity <= 0:
+        raise HTTPException(status_code=400, detail="Jumlah harus lebih dari 0")
+    
+    # Get product info
+    product = await products.find_one({"id": data.product_id}, {"_id": 0})
+    if not product:
+        raise HTTPException(status_code=404, detail="Produk tidak ditemukan")
+    
+    # Update or create stock
+    stock = await product_stocks.find_one({"product_id": data.product_id, "branch_id": branch_id})
+    
+    if stock:
+        new_qty = stock.get("quantity", 0) + data.quantity
+        await product_stocks.update_one(
+            {"product_id": data.product_id, "branch_id": branch_id},
+            {"$set": {
+                "quantity": new_qty,
+                "available": new_qty - stock.get("reserved", 0),
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }}
+        )
+    else:
+        new_stock = ProductStock(
+            product_id=data.product_id,
+            branch_id=branch_id,
+            quantity=data.quantity,
+            available=data.quantity
+        )
+        await product_stocks.insert_one(new_stock.model_dump())
+        new_qty = data.quantity
+    
+    # Record movement
+    movement = StockMovement(
+        product_id=data.product_id,
+        branch_id=branch_id,
+        movement_type=StockMovementType.STOCK_IN,
+        quantity=data.quantity,
+        quantity_after=new_qty,
+        notes=data.notes or "Stok masuk",
+        user_id=user.get("user_id", "")
+    )
+    await stock_movements.insert_one(movement.model_dump())
+    
+    return {"message": "Stok berhasil ditambahkan", "new_quantity": new_qty}
+
+@router.post("/stock-out")
+async def stock_out(data: StockInOut, user: dict = Depends(get_current_user)):
+    """Remove stock (stock out)"""
+    branch_id = user.get("branch_id")
+    if not branch_id:
+        raise HTTPException(status_code=400, detail="User tidak terhubung ke cabang")
+    
+    if data.quantity <= 0:
+        raise HTTPException(status_code=400, detail="Jumlah harus lebih dari 0")
+    
+    stock = await product_stocks.find_one({"product_id": data.product_id, "branch_id": branch_id})
+    
+    if not stock or stock.get("quantity", 0) < data.quantity:
+        raise HTTPException(status_code=400, detail="Stok tidak mencukupi")
+    
+    new_qty = stock.get("quantity", 0) - data.quantity
+    await product_stocks.update_one(
+        {"product_id": data.product_id, "branch_id": branch_id},
+        {"$set": {
+            "quantity": new_qty,
+            "available": new_qty - stock.get("reserved", 0),
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    # Record movement
+    movement = StockMovement(
+        product_id=data.product_id,
+        branch_id=branch_id,
+        movement_type=StockMovementType.STOCK_OUT,
+        quantity=-data.quantity,
+        quantity_after=new_qty,
+        notes=data.notes or "Stok keluar",
+        user_id=user.get("user_id", "")
+    )
+    await stock_movements.insert_one(movement.model_dump())
+    
+    return {"message": "Stok berhasil dikurangi", "new_quantity": new_qty}
+
 @router.post("/transfer")
 async def create_transfer(data: CreateTransfer, user: dict = Depends(get_current_user)):
     """Create a stock transfer request"""

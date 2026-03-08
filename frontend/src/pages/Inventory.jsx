@@ -15,17 +15,24 @@ const Inventory = () => {
   const [showAdjustModal, setShowAdjustModal] = useState(false);
   const [showTransferModal, setShowTransferModal] = useState(false);
   const [showOpnameModal, setShowOpnameModal] = useState(false);
+  const [showStockInModal, setShowStockInModal] = useState(false);
+  const [showStockOutModal, setShowStockOutModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [adjustQty, setAdjustQty] = useState(0);
   const [adjustReason, setAdjustReason] = useState('');
   const [branches, setBranches] = useState([]);
+  const [products, setProducts] = useState([]);
   const [transferForm, setTransferForm] = useState({ to_branch_id: '', items: [] });
   const [opnameItems, setOpnameItems] = useState([]);
+  const [stockInForm, setStockInForm] = useState({ product_id: '', quantity: 0, notes: '' });
+  const [stockOutForm, setStockOutForm] = useState({ product_id: '', quantity: 0, notes: '' });
+  const [saving, setSaving] = useState(false);
 
   const formatRupiah = (num) => `Rp ${(num || 0).toLocaleString('id-ID')}`;
 
   useEffect(() => {
     loadBranches();
+    loadProducts();
     if (activeTab === 'stock') loadStock();
     else if (activeTab === 'low-stock') loadLowStock();
     else if (activeTab === 'movements') loadMovements();
@@ -36,6 +43,13 @@ const Inventory = () => {
     try {
       const res = await api('/api/branches');
       if (res.ok) setBranches(await res.json());
+    } catch (err) { console.error(err); }
+  };
+
+  const loadProducts = async () => {
+    try {
+      const res = await api('/api/products?limit=500');
+      if (res.ok) { const data = await res.json(); setProducts(data.items || []); }
     } catch (err) { console.error(err); }
   };
 
@@ -140,6 +154,56 @@ const Inventory = () => {
     } catch (err) { toast.error('Gagal melakukan opname'); }
   };
 
+  const handleStockIn = async () => {
+    if (!stockInForm.product_id || stockInForm.quantity <= 0) {
+      toast.error('Pilih produk dan masukkan jumlah');
+      return;
+    }
+    setSaving(true);
+    try {
+      const res = await api('/api/inventory/stock-in', {
+        method: 'POST',
+        body: JSON.stringify(stockInForm)
+      });
+      if (res.ok) {
+        toast.success('Stok berhasil ditambahkan');
+        setShowStockInModal(false);
+        setStockInForm({ product_id: '', quantity: 0, notes: '' });
+        loadStock();
+        loadMovements();
+      } else {
+        const error = await res.json();
+        toast.error(error.detail || 'Gagal menambah stok');
+      }
+    } catch (err) { toast.error('Gagal menambah stok'); }
+    finally { setSaving(false); }
+  };
+
+  const handleStockOut = async () => {
+    if (!stockOutForm.product_id || stockOutForm.quantity <= 0) {
+      toast.error('Pilih produk dan masukkan jumlah');
+      return;
+    }
+    setSaving(true);
+    try {
+      const res = await api('/api/inventory/stock-out', {
+        method: 'POST',
+        body: JSON.stringify(stockOutForm)
+      });
+      if (res.ok) {
+        toast.success('Stok berhasil dikurangi');
+        setShowStockOutModal(false);
+        setStockOutForm({ product_id: '', quantity: 0, notes: '' });
+        loadStock();
+        loadMovements();
+      } else {
+        const error = await res.json();
+        toast.error(error.detail || 'Gagal mengurangi stok');
+      }
+    } catch (err) { toast.error('Gagal mengurangi stok'); }
+    finally { setSaving(false); }
+  };
+
   const tabs = [
     { id: 'stock', label: 'Stok Cabang', icon: Package },
     { id: 'low-stock', label: 'Stok Menipis', icon: AlertTriangle },
@@ -164,6 +228,12 @@ const Inventory = () => {
           <p className="text-gray-400">Kelola stok produk antar cabang</p>
         </div>
         <div className="flex gap-2">
+          <button onClick={() => setShowStockInModal(true)} className="px-4 py-2 bg-green-600/20 text-green-400 rounded-lg hover:bg-green-600/30 flex items-center gap-2" data-testid="stock-in-btn">
+            <Plus className="h-5 w-5" /> Stok Masuk
+          </button>
+          <button onClick={() => setShowStockOutModal(true)} className="px-4 py-2 bg-red-600/20 text-red-400 rounded-lg hover:bg-red-600/30 flex items-center gap-2" data-testid="stock-out-btn">
+            <Minus className="h-5 w-5" /> Stok Keluar
+          </button>
           <button onClick={() => { setOpnameItems(stock.map(s => ({ product_id: s.product_id, actual_qty: s.quantity }))); setShowOpnameModal(true); }} className="px-4 py-2 border border-red-900/30 text-gray-300 rounded-lg hover:bg-red-900/20 flex items-center gap-2">
             <FileCheck className="h-5 w-5" /> Stok Opname
           </button>
@@ -500,6 +570,78 @@ const Inventory = () => {
             <div className="flex gap-3 mt-6">
               <button onClick={() => setShowOpnameModal(false)} className="flex-1 py-2 border border-red-900/30 rounded-lg hover:bg-red-900/20">Batal</button>
               <button onClick={handleOpname} className="flex-1 py-2 bg-gradient-to-r from-red-600 to-amber-600 text-white rounded-lg">Simpan Opname</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Stok Masuk */}
+      {showStockInModal && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+          <div className="bg-[#1a1214] border border-red-900/30 rounded-xl w-full max-w-md">
+            <div className="p-6 border-b border-red-900/30 flex justify-between items-center">
+              <h2 className="text-xl font-bold flex items-center gap-2"><Plus className="h-5 w-5 text-green-400" /> Stok Masuk</h2>
+              <button onClick={() => setShowStockInModal(false)} className="text-gray-400 hover:text-white"><X className="h-6 w-6" /></button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Produk *</label>
+                <select value={stockInForm.product_id} onChange={(e) => setStockInForm({ ...stockInForm, product_id: e.target.value })} className="w-full px-3 py-2 bg-[#0a0608] border border-red-900/30 rounded-lg">
+                  <option value="">Pilih Produk</option>
+                  {products.map(p => <option key={p.id} value={p.id}>{p.code} - {p.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Jumlah *</label>
+                <input type="number" min="1" value={stockInForm.quantity} onChange={(e) => setStockInForm({ ...stockInForm, quantity: Number(e.target.value) })} className="w-full px-3 py-2 bg-[#0a0608] border border-red-900/30 rounded-lg text-xl" />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Keterangan</label>
+                <input type="text" value={stockInForm.notes} onChange={(e) => setStockInForm({ ...stockInForm, notes: e.target.value })} className="w-full px-3 py-2 bg-[#0a0608] border border-red-900/30 rounded-lg" placeholder="Stok masuk dari supplier..." />
+              </div>
+              <div className="flex gap-3 pt-4">
+                <button onClick={() => setShowStockInModal(false)} className="flex-1 py-2 border border-red-900/30 rounded-lg hover:bg-red-900/20">Batal</button>
+                <button onClick={handleStockIn} disabled={saving} className="flex-1 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg disabled:opacity-50 flex items-center justify-center gap-2">
+                  {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Plus className="h-5 w-5" />}
+                  {saving ? 'Menyimpan...' : 'Tambah Stok'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Stok Keluar */}
+      {showStockOutModal && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+          <div className="bg-[#1a1214] border border-red-900/30 rounded-xl w-full max-w-md">
+            <div className="p-6 border-b border-red-900/30 flex justify-between items-center">
+              <h2 className="text-xl font-bold flex items-center gap-2"><Minus className="h-5 w-5 text-red-400" /> Stok Keluar</h2>
+              <button onClick={() => setShowStockOutModal(false)} className="text-gray-400 hover:text-white"><X className="h-6 w-6" /></button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Produk *</label>
+                <select value={stockOutForm.product_id} onChange={(e) => setStockOutForm({ ...stockOutForm, product_id: e.target.value })} className="w-full px-3 py-2 bg-[#0a0608] border border-red-900/30 rounded-lg">
+                  <option value="">Pilih Produk</option>
+                  {stock.filter(s => s.quantity > 0).map(s => <option key={s.product_id} value={s.product_id}>{s.product_code} - {s.product_name} (Stok: {s.quantity})</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Jumlah *</label>
+                <input type="number" min="1" value={stockOutForm.quantity} onChange={(e) => setStockOutForm({ ...stockOutForm, quantity: Number(e.target.value) })} className="w-full px-3 py-2 bg-[#0a0608] border border-red-900/30 rounded-lg text-xl" />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Keterangan</label>
+                <input type="text" value={stockOutForm.notes} onChange={(e) => setStockOutForm({ ...stockOutForm, notes: e.target.value })} className="w-full px-3 py-2 bg-[#0a0608] border border-red-900/30 rounded-lg" placeholder="Rusak, hilang, sample..." />
+              </div>
+              <div className="flex gap-3 pt-4">
+                <button onClick={() => setShowStockOutModal(false)} className="flex-1 py-2 border border-red-900/30 rounded-lg hover:bg-red-900/20">Batal</button>
+                <button onClick={handleStockOut} disabled={saving} className="flex-1 py-2 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-lg disabled:opacity-50 flex items-center justify-center gap-2">
+                  {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Minus className="h-5 w-5" />}
+                  {saving ? 'Menyimpan...' : 'Kurangi Stok'}
+                </button>
+              </div>
             </div>
           </div>
         </div>

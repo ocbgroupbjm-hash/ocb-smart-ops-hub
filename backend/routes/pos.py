@@ -78,7 +78,7 @@ async def create_transaction(data: CreateTransaction, user: dict = Depends(get_c
             )
         
         # Calculate pricing
-        unit_price = cart_item.price_override or product.get("selling_price", 0)
+        unit_price = cart_item.price_override or product.get("sell_price", 0) or product.get("selling_price", 0)
         
         # Apply customer segment pricing
         if data.customer_id:
