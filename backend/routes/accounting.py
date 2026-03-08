@@ -572,9 +572,15 @@ async def get_balance_sheet(date: str = "", user: dict = Depends(get_current_use
     total_liabilities = 0
     total_equity = 0
     
+    # Calculate net income from revenue and expenses
+    net_income = 0
+    
     for account in all_accounts:
         acc_id = account.get("id")
         balance = balances.get(acc_id, 0)
+        category = account.get("category")
+        
+        # For credit normal accounts, negate the balance
         if account.get("normal_balance") == "credit":
             balance = -balance
         
@@ -584,21 +590,31 @@ async def get_balance_sheet(date: str = "", user: dict = Depends(get_current_use
             "balance": balance
         }
         
-        if account.get("category") == "asset":
+        if category == "asset":
             assets.append(item)
             total_assets += balance
-        elif account.get("category") == "liability":
+        elif category == "liability":
             liabilities.append(item)
             total_liabilities += balance
-        elif account.get("category") == "equity":
+        elif category == "equity":
             equity.append(item)
             total_equity += balance
+        elif category == "revenue":
+            # Revenue increases net income
+            net_income += balance
+        elif category == "expense":
+            # Expense decreases net income
+            net_income -= balance
+    
+    # Add net income to equity
+    total_equity += net_income
     
     return {
         "date": date,
         "assets": assets,
         "liabilities": liabilities,
         "equity": equity,
+        "net_income": net_income,
         "total_assets": total_assets,
         "total_liabilities": total_liabilities,
         "total_equity": total_equity,
