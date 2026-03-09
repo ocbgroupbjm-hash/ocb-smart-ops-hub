@@ -8,7 +8,7 @@ export const DashboardLayout = () => {
   const location = useLocation();
   
   // Full-screen pages (no sidebar)
-  const fullScreenPages = ['/pos'];
+  const fullScreenPages = ['/pos', '/warroom', '/ai-sales'];
   const isFullScreen = fullScreenPages.includes(location.pathname);
 
   if (isFullScreen) {
@@ -28,7 +28,7 @@ export const DashboardLayout = () => {
           >
             <Menu className="h-6 w-6" />
           </button>
-          <h1 className="text-lg font-bold text-amber-100">OCB TITAN</h1>
+          <h1 className="text-lg font-bold text-amber-100">OCB SUPER AI</h1>
           <div className="w-10" />
         </div>
         

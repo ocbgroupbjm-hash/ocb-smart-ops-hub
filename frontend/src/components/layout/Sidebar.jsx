@@ -8,7 +8,8 @@ import {
   ClipboardList, Receipt, History, RotateCcw, TrendingUp, Printer,
   FileSpreadsheet, HardDrive, BookOpen, Wallet, ArrowLeftRight, 
   PiggyBank, FileCheck, Archive, Clock, AlertCircle, HelpCircle, Info,
-  Upload, Download, Layers, BarChart2, ShoppingBag, UserCheck, Star
+  Upload, Download, Layers, BarChart2, ShoppingBag, UserCheck, Star,
+  Activity, Bot, MessageSquare, Target, Megaphone
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -37,19 +38,17 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       path: '/dashboard', 
       roles: ['owner', 'admin', 'supervisor', 'cashier', 'finance', 'inventory'] 
     },
-    { 
-      name: 'Hallo OCB AI', 
-      icon: Sparkles, 
-      path: '/hallo-ai', 
-      roles: ['owner', 'admin', 'supervisor', 'cashier', 'finance', 'inventory'], 
-      highlight: true 
-    },
-    { 
-      name: 'AI Bisnis', 
-      icon: Brain, 
-      path: '/ai-bisnis', 
-      roles: ['owner', 'admin', 'supervisor', 'finance'],
-      highlight: true
+    {
+      name: '🚀 SUPER AI',
+      icon: Activity,
+      roles: ['owner', 'admin', 'supervisor'],
+      highlight: true,
+      submenu: [
+        { name: '🏢 Warroom', icon: Activity, path: '/warroom', description: 'Monitor seluruh cabang' },
+        { name: '🤖 AI Sales', icon: Bot, path: '/ai-sales', description: 'Penjualan otomatis' },
+        { name: '💬 Hallo OCB AI', icon: MessageSquare, path: '/hallo-ai' },
+        { name: '📊 AI Bisnis', icon: Brain, path: '/ai-bisnis' },
+      ]
     },
     {
       name: 'Kasir (POS)',

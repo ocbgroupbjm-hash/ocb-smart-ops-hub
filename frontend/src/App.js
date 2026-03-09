@@ -22,6 +22,10 @@ import HalloAI from './pages/HalloAI';
 import Settings from './pages/Settings';
 import BusinessManager from './pages/BusinessManager';
 
+// SUPER AI Pages
+import Warroom from './pages/Warroom';
+import AISales from './pages/AISales';
+
 // Master Data Pages
 import { 
   MasterItems, MasterCategories, MasterUnits, MasterBrands, 
@@ -98,6 +102,11 @@ function App() {
           >
             <Route index element={<Navigate to="/dashboard" />} />
             <Route path="dashboard" element={<Dashboard />} />
+            
+            {/* SUPER AI Routes */}
+            <Route path="warroom" element={<Warroom />} />
+            <Route path="ai-sales" element={<AISales />} />
+            
             <Route path="kasir" element={<POS />} />
             <Route path="produk" element={<Products />} />
             <Route path="stok" element={<Inventory />} />

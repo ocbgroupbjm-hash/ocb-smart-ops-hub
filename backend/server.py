@@ -1,5 +1,6 @@
-# OCB AI TITAN - Enterprise Retail AI System
-# Sistem AI Perusahaan untuk OCB GROUP
+# OCB GROUP SUPER AI OPERATING SYSTEM
+# Enterprise AI System untuk OCB GROUP
+# Sales, CRM, ERP, Marketing, CFO, Warroom
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -13,9 +14,9 @@ load_dotenv(ROOT_DIR / '.env')
 
 # Create app
 app = FastAPI(
-    title="OCB AI TITAN",
-    description="Enterprise Retail AI System - AI Perusahaan Terlengkap",
-    version="2.0.0"
+    title="OCB GROUP SUPER AI OPERATING SYSTEM",
+    description="Enterprise AI System - Sales, CRM, ERP, Marketing, CFO, Warroom",
+    version="3.0.0"
 )
 
 # CORS
@@ -27,7 +28,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Import and include routers
+# Import and include routers - Core ERP
 from routes.auth import router as auth_router
 from routes.products import router as products_router
 from routes.pos import router as pos_router
@@ -50,7 +51,14 @@ from routes.serial_number import router as serial_router
 from routes.assembly import router as assembly_router
 from routes.business import router as business_router
 
-# Mount all routers under /api
+# Import SUPER AI routers
+from routes.ai_sales import router as ai_sales_router
+from routes.warroom import router as warroom_router
+from routes.stock_monitor import router as stock_monitor_router
+from routes.ai_cfo import router as ai_cfo_router
+from routes.ai_marketing import router as ai_marketing_router
+
+# Mount all routers under /api - Core ERP
 app.include_router(auth_router, prefix="/api")
 app.include_router(products_router, prefix="/api")
 app.include_router(pos_router, prefix="/api")
@@ -73,10 +81,26 @@ app.include_router(serial_router)
 app.include_router(assembly_router)
 app.include_router(business_router)
 
+# Mount SUPER AI routers
+app.include_router(ai_sales_router)
+app.include_router(warroom_router)
+app.include_router(stock_monitor_router)
+app.include_router(ai_cfo_router)
+app.include_router(ai_marketing_router)
+
 # Health check
 @app.get("/api/health")
 async def health_check():
-    return {"status": "healthy", "system": "OCB AI TITAN - Enterprise Retail AI"}
+    from database import get_active_db_name
+    return {
+        "status": "healthy", 
+        "system": "OCB GROUP SUPER AI OPERATING SYSTEM",
+        "active_database": get_active_db_name(),
+        "modules": [
+            "AI Sales", "AI CFO", "AI Marketing", 
+            "Warroom", "Stock Monitor", "ERP"
+        ]
+    }
 
 @app.get("/api")
 async def root():
