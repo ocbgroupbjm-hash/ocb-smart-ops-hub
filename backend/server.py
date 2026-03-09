@@ -57,6 +57,7 @@ from routes.warroom import router as warroom_router
 from routes.stock_monitor import router as stock_monitor_router
 from routes.ai_cfo import router as ai_cfo_router
 from routes.ai_marketing import router as ai_marketing_router
+from routes.whatsapp_webhook import router as whatsapp_webhook_router
 
 # Mount all routers under /api - Core ERP
 app.include_router(auth_router, prefix="/api")
@@ -87,6 +88,7 @@ app.include_router(warroom_router)
 app.include_router(stock_monitor_router)
 app.include_router(ai_cfo_router)
 app.include_router(ai_marketing_router)
+app.include_router(whatsapp_webhook_router)
 
 # Health check
 @app.get("/api/health")
