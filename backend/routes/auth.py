@@ -45,10 +45,10 @@ async def login(data: LoginRequest):
     print(f"[DEBUG] Hash exists: {bool(stored_hash)}")
     
     if not verify_password(data.password, stored_hash):
-        print(f"[DEBUG] Password verification failed")
+        print("[DEBUG] Password verification failed")
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
-    print(f"[DEBUG] Password verified successfully")
+    print("[DEBUG] Password verified successfully")
     
     if not user.get("is_active", True):
         raise HTTPException(status_code=401, detail="Account disabled")

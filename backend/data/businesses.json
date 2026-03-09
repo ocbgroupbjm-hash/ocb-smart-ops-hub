@@ -9,31 +9,21 @@
     "created_at": "2026-03-08T13:45:41.499969+00:00"
   },
   {
-    "id": "toko_baju",
-    "name": "Toko Baju Kita",
-    "db_name": "ocb_baju",
-    "description": "Bisnis fashion retail",
-    "icon": "shirt",
-    "color": "#5B21B6",
-    "created_at": "2026-03-08T13:45:41.613318+00:00"
+    "id": "ocb_unit_4",
+    "name": "OCB UNIT 4 MPC & MP3",
+    "db_name": "ocb_unit_4",
+    "description": "BERGERAK DI BIDANG DISTIBUSI INDOSAT",
+    "icon": "building",
+    "color": "#7C2D12",
+    "created_at": "2026-03-09T13:13:27.612561+00:00"
   },
   {
-    "id": "counter_hp",
-    "name": "Counter HP",
-    "db_name": "ocb_counter",
-    "description": "Bisnis counter handphone & pulsa",
-    "icon": "smartphone",
-    "color": "#1E40AF",
-    "created_at": "2026-03-08T13:45:41.729969+00:00"
-  },
-  {
-    "id": "ocb_test_clone",
-    "name": "Toko Test Clone",
-    "db_name": "ocb_test_clone",
-    "description": "Test clone dari OCB GROUP",
+    "id": "ocb_unt_1",
+    "name": "OCB UNIT 1 RITAIL",
+    "db_name": "ocb_unt_1",
+    "description": "BERGERAK DI BIDANG RITAIL ",
     "icon": "store",
     "color": "#065F46",
-    "created_at": "2026-03-08T15:31:51.736607+00:00",
-    "cloned_from": "ocb_titan"
+    "created_at": "2026-03-09T13:15:23.232757+00:00"
   }
 ]

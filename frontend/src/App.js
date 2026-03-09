@@ -26,6 +26,16 @@ import BusinessManager from './pages/BusinessManager';
 import Warroom from './pages/Warroom';
 import AISales from './pages/AISales';
 
+// SUPER ERP Pages
+import SetoranHarian from './pages/SetoranHarian';
+import SelisihKas from './pages/SelisihKas';
+import Employees from './pages/Employees';
+import Absensi from './pages/Absensi';
+import Payroll from './pages/Payroll';
+import WarRoomV2 from './pages/WarRoomV2';
+import ERPDashboard from './pages/ERPDashboard';
+import MasterERP from './pages/MasterERP';
+
 // Master Data Pages
 import { 
   MasterItems, MasterCategories, MasterUnits, MasterBrands, 
@@ -106,6 +116,22 @@ function App() {
             {/* SUPER AI Routes */}
             <Route path="warroom" element={<Warroom />} />
             <Route path="ai-sales" element={<AISales />} />
+            <Route path="war-room-v2" element={<WarRoomV2 />} />
+            
+            {/* SUPER ERP Routes */}
+            <Route path="setoran-harian" element={<SetoranHarian />} />
+            <Route path="selisih-kas" element={<SelisihKas />} />
+            <Route path="employees" element={<Employees />} />
+            <Route path="absensi" element={<Absensi />} />
+            <Route path="payroll" element={<Payroll />} />
+            <Route path="erp-dashboard" element={<ERPDashboard />} />
+            
+            {/* Master ERP Routes */}
+            <Route path="master/shifts" element={<MasterERP />} />
+            <Route path="master/jabatan" element={<MasterERP />} />
+            <Route path="master/lokasi-absensi" element={<MasterERP />} />
+            <Route path="master/payroll-rules" element={<MasterERP />} />
+            <Route path="master-erp" element={<MasterERP />} />
             
             <Route path="kasir" element={<POS />} />
             <Route path="produk" element={<Products />} />

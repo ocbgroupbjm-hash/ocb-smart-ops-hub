@@ -248,7 +248,7 @@ Atau hubungi CS kami di:
 📧 cs@ocbgroup.co.id"""
     
     # Default greeting/browsing response
-    return f"""Halo kak! 👋 Selamat datang di *OCB GROUP*
+    return """Halo kak! 👋 Selamat datang di *OCB GROUP*
 
 Saya AI Assistant yang siap membantu.
 
@@ -383,12 +383,12 @@ async def handle_whatsapp_message(
             cart_items=len(cart)
         )
         
-    except Exception as e:
+    except Exception:
         # Return error response
         return WhatsAppResponse(
             success=False,
             phone_number=phone,
-            reply_message=f"Maaf, terjadi kesalahan. Silakan coba lagi atau hubungi CS kami.",
+            reply_message="Maaf, terjadi kesalahan. Silakan coba lagi atau hubungi CS kami.",
             conversation_id="",
             customer_name=data.customer_name or "Customer",
             intent="error",

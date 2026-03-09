@@ -363,7 +363,7 @@ async def process_disassembly(data: AssemblyTransaction, user: dict = Depends(ge
     return {
         "id": transaction_id,
         "assembly_number": disassembly_number,
-        "message": f"Pembongkaran berhasil. Komponen ditambahkan ke stok"
+        "message": "Pembongkaran berhasil. Komponen ditambahkan ke stok"
     }
 
 @router.get("/transactions")

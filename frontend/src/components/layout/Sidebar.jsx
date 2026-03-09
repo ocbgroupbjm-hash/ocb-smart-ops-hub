@@ -9,7 +9,8 @@ import {
   FileSpreadsheet, HardDrive, BookOpen, Wallet, ArrowLeftRight, 
   PiggyBank, FileCheck, Archive, Clock, AlertCircle, HelpCircle, Info,
   Upload, Download, Layers, BarChart2, ShoppingBag, UserCheck, Star,
-  Activity, Bot, MessageSquare, Target, Megaphone
+  Activity, Bot, MessageSquare, Target, Megaphone, Banknote, UserPlus,
+  CalendarCheck, Briefcase, BadgeDollarSign, Bell, Eye, Fingerprint
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -45,9 +46,36 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       highlight: true,
       submenu: [
         { name: '🏢 Warroom', icon: Activity, path: '/warroom', description: 'Monitor seluruh cabang' },
+        { name: '⚔️ War Room V2', icon: Eye, path: '/war-room-v2', description: 'Command Center Owner' },
         { name: '🤖 AI Sales', icon: Bot, path: '/ai-sales', description: 'Penjualan otomatis' },
         { name: '💬 Hallo OCB AI', icon: MessageSquare, path: '/hallo-ai' },
         { name: '📊 AI Bisnis', icon: Brain, path: '/ai-bisnis' },
+      ]
+    },
+    {
+      name: '💰 Operasional',
+      icon: Banknote,
+      roles: ['owner', 'admin', 'supervisor', 'cashier'],
+      highlight: true,
+      submenu: [
+        { name: 'Setoran Harian', icon: Banknote, path: '/setoran-harian', description: 'Input setoran cabang' },
+        { name: 'Selisih Kas', icon: AlertCircle, path: '/selisih-kas', description: 'Plus/Minus tracking' },
+        { name: 'Dashboard ERP', icon: BarChart2, path: '/erp-dashboard', description: 'Summary operasional' },
+      ]
+    },
+    {
+      name: '👥 HR & Payroll',
+      icon: UserPlus,
+      roles: ['owner', 'admin', 'supervisor'],
+      submenu: [
+        { name: 'Data Karyawan', icon: Users, path: '/employees', description: 'Master karyawan' },
+        { name: 'Absensi', icon: Fingerprint, path: '/absensi', description: 'Check-in/out GPS' },
+        { name: 'Payroll', icon: BadgeDollarSign, path: '/payroll', description: 'Penggajian' },
+        { divider: true },
+        { name: 'Master Shift', icon: Clock, path: '/master/shifts' },
+        { name: 'Master Jabatan', icon: Briefcase, path: '/master/jabatan' },
+        { name: 'Lokasi Absensi', icon: MapPin, path: '/master/lokasi-absensi' },
+        { name: 'Aturan Payroll', icon: Settings, path: '/master/payroll-rules' },
       ]
     },
     {

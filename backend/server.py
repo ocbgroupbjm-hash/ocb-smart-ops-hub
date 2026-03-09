@@ -59,6 +59,12 @@ from routes.ai_cfo import router as ai_cfo_router
 from routes.ai_marketing import router as ai_marketing_router
 from routes.whatsapp_webhook import router as whatsapp_webhook_router
 
+# Import SUPER ERP routers
+from routes.erp_operations import router as erp_operations_router
+from routes.attendance import router as attendance_router
+from routes.payroll import router as payroll_router
+from routes.war_room_v2 import router as war_room_v2_router
+
 # Mount all routers under /api - Core ERP
 app.include_router(auth_router, prefix="/api")
 app.include_router(products_router, prefix="/api")
@@ -89,6 +95,12 @@ app.include_router(stock_monitor_router)
 app.include_router(ai_cfo_router)
 app.include_router(ai_marketing_router)
 app.include_router(whatsapp_webhook_router)
+
+# Mount SUPER ERP routers
+app.include_router(erp_operations_router)
+app.include_router(attendance_router)
+app.include_router(payroll_router)
+app.include_router(war_room_v2_router)
 
 # Health check
 @app.get("/api/health")

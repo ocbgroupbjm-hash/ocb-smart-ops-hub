@@ -496,7 +496,7 @@ async def get_dashboard_widget(current_user: dict = Depends(get_current_user)):
                         "color": "red",
                         "title": "Perlu Perhatian",
                         "value": worst["nama_cabang"],
-                        "description": f"Penjualan terendah"
+                        "description": "Penjualan terendah"
                     })
         except:
             pass
