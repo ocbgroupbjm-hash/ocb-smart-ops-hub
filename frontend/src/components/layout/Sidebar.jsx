@@ -10,7 +10,8 @@ import {
   PiggyBank, FileCheck, Archive, Clock, AlertCircle, HelpCircle, Info,
   Upload, Download, Layers, BarChart2, ShoppingBag, UserCheck, Star,
   Activity, Bot, MessageSquare, Target, Megaphone, Banknote, UserPlus,
-  CalendarCheck, Briefcase, BadgeDollarSign, Bell, Eye, Fingerprint, FileBarChart
+  CalendarCheck, Briefcase, BadgeDollarSign, Bell, Eye, Fingerprint, FileBarChart,
+  Globe
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -50,6 +51,19 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
         { name: '🤖 AI Sales', icon: Bot, path: '/ai-sales', description: 'Penjualan otomatis' },
         { name: '💬 Hallo OCB AI', icon: MessageSquare, path: '/hallo-ai' },
         { name: '📊 AI Bisnis', icon: Brain, path: '/ai-bisnis' },
+      ]
+    },
+    {
+      name: '🌍 OCB TITAN AI',
+      icon: Eye,
+      roles: ['owner', 'admin'],
+      highlight: true,
+      submenu: [
+        { name: '🗺️ Global Map', icon: MapPin, path: '/global-map', description: 'Monitor cabang real-time' },
+        { name: '🧠 AI Command Center', icon: Brain, path: '/ai-command-center', description: 'Analisis AI' },
+        { name: '🏆 KPI & Performance', icon: Target, path: '/kpi-performance', description: 'Ranking karyawan' },
+        { name: '🤖 CRM AI', icon: Bot, path: '/crm-ai', description: 'AI untuk CRM' },
+        { name: '📤 Data Export', icon: Download, path: '/data-export', description: 'Export semua data' },
       ]
     },
     {

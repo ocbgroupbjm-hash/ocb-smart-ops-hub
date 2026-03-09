@@ -37,6 +37,13 @@ import ERPDashboard from './pages/ERPDashboard';
 import MasterERP from './pages/MasterERP';
 import ERPReports from './pages/ERPReports';
 
+// OCB TITAN AI Pages
+import GlobalMap from './pages/GlobalMap';
+import DataExport from './pages/DataExport';
+import KPIPerformance from './pages/KPIPerformance';
+import AICommandCenter from './pages/AICommandCenter';
+import CRMAI from './pages/CRMAI';
+
 // Master Data Pages
 import { 
   MasterItems, MasterCategories, MasterUnits, MasterBrands, 
@@ -118,6 +125,13 @@ function App() {
             <Route path="warroom" element={<Warroom />} />
             <Route path="ai-sales" element={<AISales />} />
             <Route path="war-room-v2" element={<WarRoomV2 />} />
+            
+            {/* OCB TITAN AI Routes */}
+            <Route path="global-map" element={<GlobalMap />} />
+            <Route path="data-export" element={<DataExport />} />
+            <Route path="kpi-performance" element={<KPIPerformance />} />
+            <Route path="ai-command-center" element={<AICommandCenter />} />
+            <Route path="crm-ai" element={<CRMAI />} />
             
             {/* SUPER ERP Routes */}
             <Route path="setoran-harian" element={<SetoranHarian />} />

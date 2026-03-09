@@ -66,6 +66,14 @@ from routes.payroll import router as payroll_router
 from routes.war_room_v2 import router as war_room_v2_router
 from routes.erp_reports import router as erp_reports_router
 
+# Import OCB TITAN AI routers
+from routes.global_map import router as global_map_router
+from routes.data_export import router as data_export_router
+from routes.kpi_performance import router as kpi_router
+from routes.ai_command_center import router as ai_command_router
+from routes.crm_ai import router as crm_ai_router
+from routes.attendance_advanced import router as attendance_v2_router
+
 # Mount all routers under /api - Core ERP
 app.include_router(auth_router, prefix="/api")
 app.include_router(products_router, prefix="/api")
@@ -103,6 +111,14 @@ app.include_router(attendance_router)
 app.include_router(payroll_router)
 app.include_router(war_room_v2_router)
 app.include_router(erp_reports_router)
+
+# Mount OCB TITAN AI routers
+app.include_router(global_map_router)
+app.include_router(data_export_router)
+app.include_router(kpi_router)
+app.include_router(ai_command_router)
+app.include_router(crm_ai_router)
+app.include_router(attendance_v2_router)
 
 # Health check
 @app.get("/api/health")
