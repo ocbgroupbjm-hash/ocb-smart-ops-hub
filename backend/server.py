@@ -64,6 +64,7 @@ from routes.erp_operations import router as erp_operations_router
 from routes.attendance import router as attendance_router
 from routes.payroll import router as payroll_router
 from routes.war_room_v2 import router as war_room_v2_router
+from routes.erp_reports import router as erp_reports_router
 
 # Mount all routers under /api - Core ERP
 app.include_router(auth_router, prefix="/api")
@@ -101,6 +102,7 @@ app.include_router(erp_operations_router)
 app.include_router(attendance_router)
 app.include_router(payroll_router)
 app.include_router(war_room_v2_router)
+app.include_router(erp_reports_router)
 
 # Health check
 @app.get("/api/health")

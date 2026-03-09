@@ -35,6 +35,7 @@ import Payroll from './pages/Payroll';
 import WarRoomV2 from './pages/WarRoomV2';
 import ERPDashboard from './pages/ERPDashboard';
 import MasterERP from './pages/MasterERP';
+import ERPReports from './pages/ERPReports';
 
 // Master Data Pages
 import { 
@@ -132,6 +133,7 @@ function App() {
             <Route path="master/lokasi-absensi" element={<MasterERP />} />
             <Route path="master/payroll-rules" element={<MasterERP />} />
             <Route path="master-erp" element={<MasterERP />} />
+            <Route path="erp-reports" element={<ERPReports />} />
             
             <Route path="kasir" element={<POS />} />
             <Route path="produk" element={<Products />} />

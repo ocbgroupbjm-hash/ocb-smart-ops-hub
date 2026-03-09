@@ -1,276 +1,228 @@
-# OCB GROUP SUPER AI OPERATING SYSTEM
-# Enterprise AI System for OCB GROUP
-
-## System Overview
-**OCB GROUP SUPER AI** adalah sistem Enterprise AI Operating System lengkap untuk OCB GROUP dengan fitur:
-- AI Sales Otomatis (Chat-based selling)
-- AI CFO (Financial Analysis)
-- AI Marketing (Campaign Management)
-- Warroom Dashboard (Real-time Monitoring)
-- Stock Monitoring 40+ Cabang
-- Multi-Business Management
-- Full ERP Integration
+# OCB GROUP SUPER ERP + AI TITAN WAR ROOM OPERATING SYSTEM
+## Product Requirements Document (PRD)
 
 ---
 
-## ✅ NEW FEATURES - SUPER AI MVP (2026-03-09)
+## 1. Overview
 
-### WARROOM DASHBOARD
-- Real-time monitoring seluruh cabang (41 cabang)
-- KPI Cards: Revenue, Transaksi, Cabang Aktif, Stock Alerts
-- Active Operations: Conversations, Orders, Campaigns
-- Branch Performance Table dengan Target Achievement
-- Auto-refresh setiap 30 detik
-- Route: `/warroom`
+**System Name:** OCB GROUP SUPER ERP + AI TITAN WAR ROOM  
+**Version:** 2.0  
+**Last Updated:** March 10, 2026  
 
-### AI SALES ENGINE
-- Chat interface untuk penjualan otomatis
-- Commands: KATALOG, PROMO, KERANJANG, CHECKOUT
-- Product recommendation
-- Shopping cart management
-- Invoice & QRIS generation (Mock)
-- Order tracking
-- Route: `/ai-sales`
-
-### AI CFO
-- Financial summary (Revenue, Costs, Profit, Margins)
-- Profit analysis by branch and product
-- Cash flow reporting
-- Receivables (Piutang) report
-- Payables (Hutang) report
-- AI-powered recommendations
-- API: `/api/ai-cfo/*`
-
-### AI MARKETING
-- Customer segmentation (by segment & activity)
-- Campaign CRUD
-- Broadcast messaging
-- Marketing analytics
-- Customer engagement recommendations
-- API: `/api/ai-marketing/*`
-
-### STOCK MONITORING
-- Overview semua 41 cabang
-- Low stock & out of stock alerts
-- Stock transfer suggestions
-- Per-branch stock detail
-- Per-product stock across branches
-- API: `/api/stock-monitor/*`
+The OCB GROUP SUPER ERP is a comprehensive, enterprise-grade system that serves as the central command center for OCB GROUP business operations. It integrates retail operations, finance, HR management, and advanced AI analytics into a single unified platform.
 
 ---
 
-## ✅ COMPLETED FEATURES (From Previous - 2026-03-08)
-
-### 1. MODUL AKUNTANSI (100% Complete)
-- **Daftar Perkiraan (Chart of Accounts)**
-  - CRUD lengkap untuk akun
-  - Hierarki akun (Asset, Liability, Equity, Revenue, Expense)
-  - 18 akun standar sudah tersedia
-  - Saldo real-time dari jurnal
-
-- **Kas Masuk/Keluar/Transfer**
-  - Transaksi kas dengan pilihan akun
-  - History transaksi
-
-- **Data Jurnal (Journal Entries)**
-  - CRUD jurnal umum
-  - Double-entry system
-  - Validasi debit = kredit
-
-- **Buku Besar (General Ledger)**
-  - History per akun
-  - Filter tanggal
-
-- **Laporan Keuangan**
-  - Neraca Saldo (Trial Balance)
-  - Neraca (Balance Sheet)
-  - Laporan Laba Rugi (Income Statement)
-  - Arus Kas (Cash Flow)
-
-### 2. MODUL LAPORAN (100% Complete)
-9 jenis laporan dengan filtering:
-1. Laporan Penjualan
-2. Laporan Produk
-3. Laporan Produk Terlaris
-4. Laporan Stok
-5. Laporan Cabang
-6. Laporan Kasir
-7. Laporan Pelanggan
-8. Laporan Hutang
-9. Laporan Piutang
-
-**Fitur Export:**
-- Export Excel (xlsx)
-
-### 3. MODUL PENGATURAN (100% Complete)
-- **Info Toko**: Nama, alamat, telepon, pajak, footer struk
-- **POS**: Auto print, show stock, negative stock
-- **Notifikasi**: Stok menipis, laporan harian
-- **Keamanan**: 2FA, Audit Log, Session timeout
-- **Backup Database**:
-  - Create backup manual
-  - Download backup (JSON)
-  - Restore dari backup
-  - Hapus backup
-- **Print Struk**:
-  - Konfigurasi printer (USB, Bluetooth, WiFi, Network)
-  - Pilih lebar kertas (58mm/80mm)
-  - Template struk (logo, header, footer, checkbox)
-
-### 4. FITUR LANJUTAN (100% Complete)
-- **Serial Number Tracking**:
-  - Tambah serial manual
-  - Bulk generate serial (prefix + sequence)
-  - Status tracking (Tersedia, Terjual, Retur, Rusak, Dipesan)
-  - History perubahan status
-
-- **Rakitan Produk (Product Assembly)**:
-  - Buat formula rakitan
-  - Komponen dengan qty
-  - Proses Rakit (assembly) - kurangi komponen, tambah hasil
-  - Proses Bongkar (disassembly) - kurangi hasil, tambah komponen
-  - Riwayat transaksi rakitan
-
-### 5. MODUL MULTI-BUSINESS (100% Complete) - NEW!
-- **Kelola Bisnis**:
-  - Daftar semua database bisnis
-  - Tambah bisnis baru dengan custom database
-  - Switch database tanpa restart backend
-  - Dynamic database connection dengan proxy class
-  - Isolasi data 100% antar bisnis
-  - Visual indicator untuk database aktif
-  
-- **Clone Business** (NEW!):
-  - Clone master data dari bisnis existing ke bisnis baru
-  - Pilih data yang ingin di-clone (Kategori, Produk, Supplier, Pelanggan, COA, Settings)
-  - Otomatis reset stok dan saldo ke 0
-  - Buat user admin untuk bisnis baru
-  - Custom icon dan warna untuk bisnis baru
-
-### 6. MODUL LAINNYA (From Previous)
-- **Dashboard**: Overview penjualan, grafik, ringkasan
-- **Master Data**: Produk, Kategori, Unit, Brand, Supplier, Pelanggan, dll
-- **Pembelian**: PO, Receiving, Payment, Returns
-- **Penjualan**: POS Kasir, Retur, Delivery
-- **Persediaan**: Kartu Stok, Mutasi, Transfer, Opname
-- **User Management**: Users, Roles, Permissions
-- **AI Features**: Hallo AI (Chat), AI Bisnis (Insights)
-
----
-
-## TECHNICAL SPECIFICATIONS
+## 2. Core Architecture
 
 ### Tech Stack
-- **Backend**: FastAPI, Python 3.11
-- **Frontend**: React 18, TailwindCSS, Shadcn UI
-- **Database**: MongoDB (Motor async driver)
-- **Auth**: JWT tokens
+- **Backend:** FastAPI (Python 3.12+)
+- **Frontend:** React 18 with TailwindCSS
+- **Database:** MongoDB (Motor async driver)
+- **Architecture:** Multi-tenant with dynamic database connections
 
-### API Endpoints
+### Key Directories
 ```
-/api/auth/*              - Authentication
-/api/products/*          - Products CRUD
-/api/pos/*              - POS operations
-/api/inventory/*         - Inventory management
-/api/purchase/*          - Purchase orders
-/api/master/*           - Master data
-/api/reports/*          - Reports
-/api/accounting/*       - Accounting
-/api/backup/*           - Backup/Restore
-/api/print/*            - Print settings
-/api/serial/*           - Serial numbers
-/api/assembly/*         - Product assembly
-/api/users/*            - User management
-/api/ai-business/*      - AI Business
-/api/hallo-ai/*         - Hallo AI chat
-/api/business/*         - Multi-Business Management (NEW)
+/app/
+├── backend/
+│   ├── models/erp_models.py      # All ERP data models
+│   ├── routes/
+│   │   ├── erp_operations.py     # Master data, Setoran, Selisih Kas
+│   │   ├── attendance.py         # GPS attendance system
+│   │   ├── payroll.py            # Integrated payroll
+│   │   ├── war_room_v2.py        # Owner command center
+│   │   ├── erp_reports.py        # Comprehensive reporting
+│   │   └── ... (other routes)
+│   └── server.py
+└── frontend/
+    └── src/
+        ├── pages/
+        │   ├── SetoranHarian.jsx    # Daily deposits
+        │   ├── SelisihKas.jsx       # Cash variance
+        │   ├── Employees.jsx        # Employee management
+        │   ├── Absensi.jsx          # GPS attendance
+        │   ├── Payroll.jsx          # Payroll management
+        │   ├── WarRoomV2.jsx        # Owner dashboard
+        │   ├── ERPDashboard.jsx     # ERP summary
+        │   ├── MasterERP.jsx        # Master data management
+        │   └── ERPReports.jsx       # Reports
+        └── components/
 ```
 
-### Database Collections
-- users, branches, categories, products
-- customers, suppliers, transactions
-- purchase_orders, stock_movements
-- chart_of_accounts, journal_entries
-- cash_transactions, serial_numbers
-- assemblies, assembly_transactions
-- backups, print_settings, settings
+---
+
+## 3. Implemented Modules (Phase 1)
+
+### 3.1 Master ERP ✅
+- **Employees:** Complete CRUD with personal info, employment details, salary
+- **Master Shift:** Shift management (Pagi, Siang, Malam, Full Day)
+- **Master Jabatan:** Position/role hierarchy with levels
+- **Master Lokasi Absensi:** GPS coordinates for attendance validation
+- **Master Payroll Rules:** Salary structure per position
+
+### 3.2 Setoran Harian (Daily Deposits) ✅
+- Input daily cash deposits from branches
+- Breakdown by payment method (Cash, Transfer, E-Wallet, Debit, Credit, Piutang)
+- Auto-calculate selisih kas (cash variance)
+- Verification and approval workflow
+- Filter by date, branch, status
+
+### 3.3 Selisih Kas (Cash Variance Tracking) ✅
+- Track plus/minus cash discrepancies
+- Resolution options: Beban Perusahaan, Piutang Karyawan, Potong Gaji
+- Link to payroll for salary deductions
+- Audit trail for all variances
+
+### 3.4 Attendance System ✅
+- GPS-based check-in/check-out
+- Location validation against registered coordinates
+- Auto-detect late arrivals (telat_menit calculation)
+- Early leave and overtime tracking
+- Support for izin/cuti/sakit with approval workflow
+- Daily and monthly summaries
+
+### 3.5 Payroll Terintegrasi ✅
+- Period-based payroll (monthly)
+- Auto-generate based on:
+  - Attendance data (hadir, telat, alpha)
+  - Overtime hours
+  - Cash variance deductions (minus kas)
+- Components: Gaji Pokok, Tunjangan, Bonus, Potongan
+- Slip gaji generation
+- Approval and payment tracking
+
+### 3.6 War Room Command Center ✅
+- Real-time owner dashboard
+- KPIs: Sales, Setoran, Attendance, Alerts
+- Top/Bottom branch rankings
+- Problem employee tracking
+- 7-day trend visualization
+- Live activity feed
+- Target achievement progress
+
+### 3.7 AI Insights & Fraud Detection ✅
+- AI-generated business insights
+- Pattern detection: Minus berulang, Sering telat, Penjualan turun
+- Severity-based alerts (Critical, Warning, Info)
+- Automated recommendations
+
+### 3.8 Comprehensive Reports ✅
+- Executive Summary (Daily & Monthly)
+- Setoran Reports (by date, by branch)
+- Selisih Kas Reports (by employee, by branch)
+- Attendance Reports (monthly recap)
+- Payroll Reports (annual summary)
+
+### 3.9 System Alerts ✅
+- Real-time alert creation for:
+  - Cash variance (minus kas)
+  - Late arrivals (>30 min)
+  - Fraud patterns detected
+- Alert resolution tracking
 
 ---
 
-## TESTING STATUS
+## 4. API Endpoints
 
-### Latest Test Report: iteration_6.json
-- **Backend**: 22/22 tests PASSED (100%)
-- **Frontend**: 100% features working
-- **Retest Needed**: NO
+### ERP Operations
+- `GET/POST /api/erp/employees` - Employee CRUD
+- `GET/POST /api/erp/master/shifts` - Shift management
+- `GET/POST /api/erp/master/jabatan` - Position management
+- `GET/POST /api/erp/master/lokasi-absensi` - GPS locations
+- `GET/POST /api/erp/master/payroll-rules` - Payroll rules
+- `GET/POST /api/erp/setoran` - Daily deposits
+- `GET/PUT /api/erp/selisih-kas` - Cash variance
+- `GET /api/erp/alerts` - System alerts
+- `GET /api/erp/dashboard/summary` - ERP summary
 
-### Test Credentials
-- Email: ocbgroupbjm@gmail.com
-- Password: admin123
-- Role: owner
+### Attendance
+- `POST /api/attendance/check-in` - Check-in with GPS
+- `POST /api/attendance/check-out` - Check-out with GPS
+- `GET /api/attendance/list` - Attendance list
+- `GET /api/attendance/employee/{id}` - Employee attendance
+- `GET /api/attendance/summary/daily` - Daily summary
+- `POST /api/attendance/izin` - Leave request
+
+### Payroll
+- `GET/POST /api/payroll/periods` - Payroll periods
+- `POST /api/payroll/periods/{id}/generate` - Generate payroll
+- `POST /api/payroll/periods/{id}/approve` - Approve payroll
+- `POST /api/payroll/periods/{id}/pay` - Mark as paid
+- `GET /api/payroll/details` - Payroll details
+- `GET /api/payroll/slip/{id}` - Salary slip
+
+### War Room
+- `GET /api/war-room/dashboard` - Main dashboard
+- `GET /api/war-room/cabang-belum-setor` - Pending branches
+- `GET /api/war-room/karyawan-tidak-absen` - Absent employees
+- `GET /api/war-room/selisih-pending` - Pending variances
+- `GET /api/war-room/fraud-detection` - Fraud alerts
+- `GET /api/war-room/ai-insights` - AI insights
+- `GET /api/war-room/live-feed` - Live activity
+
+### Reports
+- `GET /api/reports/executive/daily` - Daily executive summary
+- `GET /api/reports/executive/monthly` - Monthly executive summary
+- `GET /api/reports/setoran/daily` - Daily setoran report
+- `GET /api/reports/setoran/monthly` - Monthly setoran report
+- `GET /api/reports/selisih/by-employee` - Selisih by employee
+- `GET /api/reports/selisih/by-branch` - Selisih by branch
+- `GET /api/reports/attendance/monthly` - Monthly attendance
+- `GET /api/reports/payroll/summary` - Annual payroll summary
 
 ---
 
-## DEPLOYMENT INFO
-- **Preview URL**: https://smart-ops-hub-6.preview.emergentagent.com
-- **Backend Port**: 8001 (internal)
-- **Frontend Port**: 3000 (internal)
+## 5. Testing Credentials
+
+- **Email:** ocbgroupbjm@gmail.com
+- **Password:** admin123
+- **Login Flow:** Select Business (OCB GROUP) → Enter Credentials
 
 ---
 
-## BACKLOG / FUTURE ENHANCEMENTS
+## 6. Future Roadmap (P1-P2)
 
-### P0 (In Progress) - COMPLETED
-- ✅ **Multi-Business (Multi-Database) Feature** - FIXED 2026-03-08
-  - Switch antar database bisnis tanpa restart backend
-  - Isolasi data antar bisnis
-  - Dynamic database connection dengan proxy class
+### Phase 2 (P1)
+- [ ] AI Business Analyst integration with LLM
+- [ ] Real-time WhatsApp notifications
+- [ ] Advanced approval workflows
+- [ ] Mobile-responsive attendance app
+- [ ] Export to Excel/PDF
 
-### P1 (High Priority)
-- Final Testing: 3-cycle end-to-end testing di multiple databases
-- WhatsApp AI Integration (untuk notifikasi)
-- Multi-branch sync real-time
-- Offline mode untuk POS
-
-### P2 (Medium Priority)
-- Export/Import data antar database
-- PDF Export untuk laporan
-- Barcode scanner integration
-- Import data dari Excel
-
-### P3 (Nice to Have)
-- Dashboard customization
-- Dark/Light theme toggle
-- Mobile app version
+### Phase 3 (P2)
+- [ ] AI Auditor automated checks
+- [ ] Multi-level approval matrix
+- [ ] Budget vs Actual tracking
+- [ ] Branch performance scoring
+- [ ] Employee KPI dashboard
 
 ---
 
-## CHANGELOG
+## 7. Change Log
 
-### 2026-03-08 (Latest)
-- ✅ **FIXED: Multi-Business Database Switching Bug**
-  - Refactored `/app/backend/database.py` dengan Dynamic Collection Proxy
-  - Koneksi database sekarang dinamis tanpa restart backend
-  - UI "Kelola Bisnis" berfungsi sempurna
-  - Switch bisnis -> Logout -> Login ke database baru berfungsi
+### March 10, 2026
+- ✅ Implemented Phase 1 SUPER ERP modules
+- ✅ Created Master ERP (Employees, Shifts, Jabatan, Lokasi, Payroll Rules)
+- ✅ Built Setoran Harian with auto selisih calculation
+- ✅ Developed Selisih Kas tracking with resolution workflow
+- ✅ Implemented GPS-based Attendance system
+- ✅ Built integrated Payroll with attendance & minus kas deductions
+- ✅ Created War Room V2 Command Center
+- ✅ Added AI Insights and Fraud Detection
+- ✅ Built Comprehensive Reporting system
+- ✅ All frontend pages with professional UI
 
-- ✅ **NEW: Clone Business Feature**
-  - Clone master data (Kategori, Produk, Supplier, Pelanggan, COA, Settings)
-  - Auto reset stok dan saldo ke 0 saat clone
-  - Buat user admin otomatis untuk bisnis baru
-  - UI modal lengkap dengan pilihan data clone
+### March 9, 2026
+- Fixed multi-business database switching
+- Implemented "Select Business First" login flow
+- Created WhatsApp webhook for n8n integration
+- Completed 40 branch seeding script
 
-- ✅ Implemented full Accounting module (COA, Journals, Ledger, Financial Reports)
-- ✅ Implemented comprehensive Reports module (9 types + Excel export)
-- ✅ Implemented Backup & Restore functionality
-- ✅ Implemented Print Struk settings with printer configuration
-- ✅ Implemented Serial Number tracking with bulk generation
-- ✅ Implemented Product Assembly (Rakitan Produk) with formula management
-- ✅ All tests passing (22/22 backend, 100% frontend)
+---
 
-### Previous Sessions
-- Fixed User Management CRUD bug
-- Implemented Master Data modules
-- Implemented Purchase and Sales modules
-- Implemented Inventory management
-- Implemented AI features (Hallo AI, AI Bisnis)
+## 8. Known Issues & Notes
+
+- QRIS payment integration is **MOCKED**
+- Branch data is seeded/dummy for testing
+- Photo upload in attendance stores filename only (no actual file storage)
+- All existing POS, inventory, accounting features preserved

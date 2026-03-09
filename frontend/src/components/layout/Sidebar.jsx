@@ -10,7 +10,7 @@ import {
   PiggyBank, FileCheck, Archive, Clock, AlertCircle, HelpCircle, Info,
   Upload, Download, Layers, BarChart2, ShoppingBag, UserCheck, Star,
   Activity, Bot, MessageSquare, Target, Megaphone, Banknote, UserPlus,
-  CalendarCheck, Briefcase, BadgeDollarSign, Bell, Eye, Fingerprint
+  CalendarCheck, Briefcase, BadgeDollarSign, Bell, Eye, Fingerprint, FileBarChart
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -61,6 +61,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
         { name: 'Setoran Harian', icon: Banknote, path: '/setoran-harian', description: 'Input setoran cabang' },
         { name: 'Selisih Kas', icon: AlertCircle, path: '/selisih-kas', description: 'Plus/Minus tracking' },
         { name: 'Dashboard ERP', icon: BarChart2, path: '/erp-dashboard', description: 'Summary operasional' },
+        { name: 'Laporan ERP', icon: FileText, path: '/erp-reports', description: 'Comprehensive reports' },
       ]
     },
     {
