@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { usePermission, PermissionGate } from '../../contexts/PermissionContext';
 import { 
   Package, Plus, Search, RefreshCw, Download, Upload, Edit2, Trash2, 
   Eye, Barcode, Loader2, X, ChevronLeft, ChevronRight, Printer, Settings,
@@ -9,6 +10,7 @@ import { toast } from 'sonner';
 
 const MasterItems = () => {
   const { api } = useAuth();
+  const { hasPermission } = usePermission();
   
   // Data states
   const [items, setItems] = useState([]);
@@ -523,13 +525,15 @@ const MasterItems = () => {
           >
             <FileText className="h-3 w-3" /> CSV
           </button>
-          <button
-            onClick={() => { resetForm(); setShowModal(true); }}
-            className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 flex items-center gap-1"
-            data-testid="btn-add"
-          >
-            <Plus className="h-3 w-3" /> Tambah Item
-          </button>
+          {hasPermission('master_item', 'create') && (
+            <button
+              onClick={() => { resetForm(); setShowModal(true); }}
+              className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 flex items-center gap-1"
+              data-testid="btn-add"
+            >
+              <Plus className="h-3 w-3" /> Tambah Item
+            </button>
+          )}
         </div>
 
         {/* BARIS 2: Tipe Item + Cabang + Jenis + Pilihan Item */}
@@ -754,20 +758,24 @@ const MasterItems = () => {
                     </td>
                     <td className="px-2 py-1.5 text-center">
                       <div className="flex items-center justify-center gap-1">
-                        <button
-                          onClick={() => handleEdit(item)}
-                          className="p-1 hover:bg-blue-900/30 rounded text-blue-400"
-                          title="Edit"
-                        >
-                          <Edit2 className="h-3 w-3" />
-                        </button>
-                        <button
-                          onClick={() => openPhotoStudio(item)}
-                          className="p-1 hover:bg-amber-900/30 rounded text-amber-400"
-                          title="AI Photo Studio"
-                        >
-                          <Camera className="h-3 w-3" />
-                        </button>
+                        {hasPermission('master_item', 'edit') && (
+                          <button
+                            onClick={() => handleEdit(item)}
+                            className="p-1 hover:bg-blue-900/30 rounded text-blue-400"
+                            title="Edit"
+                          >
+                            <Edit2 className="h-3 w-3" />
+                          </button>
+                        )}
+                        {hasPermission('ai_photo_studio', 'view') && (
+                          <button
+                            onClick={() => openPhotoStudio(item)}
+                            className="p-1 hover:bg-amber-900/30 rounded text-amber-400"
+                            title="AI Photo Studio"
+                          >
+                            <Camera className="h-3 w-3" />
+                          </button>
+                        )}
                         <button
                           onClick={() => openBranchStockManager(item)}
                           className="p-1 hover:bg-purple-900/30 rounded text-purple-400"
@@ -775,13 +783,15 @@ const MasterItems = () => {
                         >
                           <Package className="h-3 w-3" />
                         </button>
-                        <button
-                          onClick={() => handleDelete(item)}
-                          className="p-1 hover:bg-red-900/30 rounded text-red-400"
-                          title="Hapus"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </button>
+                        {hasPermission('master_item', 'delete') && (
+                          <button
+                            onClick={() => handleDelete(item)}
+                            className="p-1 hover:bg-red-900/30 rounded text-red-400"
+                            title="Hapus"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

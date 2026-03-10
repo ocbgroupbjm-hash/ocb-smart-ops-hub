@@ -1,11 +1,12 @@
 # OCB AI TITAN - Complete Master Data API
 # Categories, Units, Brands, Warehouses, Sales Persons, Customer Groups, etc.
 
-from fastapi import APIRouter, HTTPException, Depends, Query
+from fastapi import APIRouter, HTTPException, Depends, Query, Request
 from pydantic import BaseModel
 from typing import Optional, List
 from database import db, get_next_sequence
 from utils.auth import get_current_user
+from routes.rbac_system import require_permission, log_activity
 from datetime import datetime, timezone
 import uuid
 
@@ -181,10 +182,28 @@ async def update_item(item_id: str, data: ItemCreate, user: dict = Depends(get_c
     return {"message": "Item berhasil diupdate"}
 
 @router.delete("/items/{item_id}")
-async def delete_item(item_id: str, user: dict = Depends(get_current_user)):
+async def delete_item(
+    item_id: str, 
+    request: Request,
+    user: dict = Depends(require_permission("master_item", "delete"))
+):
+    # Get item name for audit log
+    item = await items.find_one({"id": item_id}, {"_id": 0, "name": 1, "code": 1})
+    if not item:
+        raise HTTPException(status_code=404, detail="Item tidak ditemukan")
+    
     result = await items.delete_one({"id": item_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Item tidak ditemukan")
+    
+    # Log activity
+    await log_activity(
+        db, user.get("user_id"), user.get("name", ""),
+        "delete", "master_item",
+        f"Menghapus item: {item.get('code')} - {item.get('name')}",
+        request.client.host if request.client else ""
+    )
+    
     return {"message": "Item berhasil dihapus"}
 
 # ==================== CATEGORIES ====================
