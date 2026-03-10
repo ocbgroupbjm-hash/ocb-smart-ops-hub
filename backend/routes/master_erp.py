@@ -118,6 +118,11 @@ class CategoryCreate(BaseModel):
     name: str
     description: str = ""
 
+class CategoryUpdate(BaseModel):
+    code: Optional[str] = None
+    name: Optional[str] = None
+    description: Optional[str] = None
+
 @router.get("/categories")
 async def list_categories(search: str = "", user: dict = Depends(get_current_user)):
     query = {}
@@ -144,8 +149,10 @@ async def create_category(data: CategoryCreate, user: dict = Depends(get_current
     return {"id": category["id"], "message": "Kategori berhasil ditambahkan"}
 
 @router.put("/categories/{category_id}")
-async def update_category(category_id: str, data: CategoryCreate, user: dict = Depends(get_current_user)):
-    update_data = data.model_dump()
+async def update_category(category_id: str, data: CategoryUpdate, user: dict = Depends(get_current_user)):
+    update_data = {k: v for k, v in data.model_dump().items() if v is not None}
+    if not update_data:
+        raise HTTPException(status_code=400, detail="Tidak ada data untuk diupdate")
     update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
     result = await categories.update_one({"id": category_id}, {"$set": update_data})
     if result.matched_count == 0:
@@ -165,6 +172,11 @@ class UnitCreate(BaseModel):
     code: str
     name: str
     description: str = ""
+
+class UnitUpdate(BaseModel):
+    code: Optional[str] = None
+    name: Optional[str] = None
+    description: Optional[str] = None
 
 @router.get("/units")
 async def list_units(search: str = "", user: dict = Depends(get_current_user)):
@@ -192,8 +204,10 @@ async def create_unit(data: UnitCreate, user: dict = Depends(get_current_user)):
     return {"id": unit["id"], "message": "Satuan berhasil ditambahkan"}
 
 @router.put("/units/{unit_id}")
-async def update_unit(unit_id: str, data: UnitCreate, user: dict = Depends(get_current_user)):
-    update_data = data.model_dump()
+async def update_unit(unit_id: str, data: UnitUpdate, user: dict = Depends(get_current_user)):
+    update_data = {k: v for k, v in data.model_dump().items() if v is not None}
+    if not update_data:
+        raise HTTPException(status_code=400, detail="Tidak ada data untuk diupdate")
     update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
     result = await units.update_one({"id": unit_id}, {"$set": update_data})
     if result.matched_count == 0:
@@ -213,6 +227,11 @@ class BrandCreate(BaseModel):
     code: str
     name: str
     description: str = ""
+
+class BrandUpdate(BaseModel):
+    code: Optional[str] = None
+    name: Optional[str] = None
+    description: Optional[str] = None
 
 @router.get("/brands")
 async def list_brands(search: str = "", user: dict = Depends(get_current_user)):
@@ -240,8 +259,10 @@ async def create_brand(data: BrandCreate, user: dict = Depends(get_current_user)
     return {"id": brand["id"], "message": "Merk berhasil ditambahkan"}
 
 @router.put("/brands/{brand_id}")
-async def update_brand(brand_id: str, data: BrandCreate, user: dict = Depends(get_current_user)):
-    update_data = data.model_dump()
+async def update_brand(brand_id: str, data: BrandUpdate, user: dict = Depends(get_current_user)):
+    update_data = {k: v for k, v in data.model_dump().items() if v is not None}
+    if not update_data:
+        raise HTTPException(status_code=400, detail="Tidak ada data untuk diupdate")
     update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
     result = await brands.update_one({"id": brand_id}, {"$set": update_data})
     if result.matched_count == 0:

@@ -166,10 +166,10 @@ async def inventory_report(
     
     result = await product_stocks.aggregate(pipeline).to_list(10000)
     
-    # Calculate totals
-    total_stock_value = sum(r.get("stock_value", 0) for r in result)
-    total_retail_value = sum(r.get("retail_value", 0) for r in result)
-    total_items = sum(r.get("quantity", 0) for r in result)
+    # Calculate totals - handle None values
+    total_stock_value = sum((r.get("stock_value") or 0) for r in result)
+    total_retail_value = sum((r.get("retail_value") or 0) for r in result)
+    total_items = sum((r.get("quantity") or 0) for r in result)
     low_stock_count = sum(1 for r in result if r.get("is_low_stock", False))
     
     return {
