@@ -328,10 +328,18 @@ const MasterItems = () => {
       formData.append('file', file);
       formData.append('is_main', 'true');
       
-      const res = await api(`/api/ai-photo-studio/upload/${selectedItemForPhoto.id}`, {
+      // Untuk FormData, gunakan fetch langsung dengan Authorization header only
+      // Jangan set Content-Type karena browser harus set multipart/form-data dengan boundary
+      const API_URL = process.env.REACT_APP_BACKEND_URL;
+      const token = localStorage.getItem('token');
+      
+      const res = await fetch(`${API_URL}/api/ai-photo-studio/upload/${selectedItemForPhoto.id}`, {
         method: 'POST',
         body: formData,
-        headers: {} // Let browser set Content-Type for FormData
+        headers: {
+          'Authorization': `Bearer ${token}`
+          // Content-Type TIDAK boleh di-set manual untuk FormData
+        }
       });
       
       if (res.ok) {
@@ -347,6 +355,7 @@ const MasterItems = () => {
         toast.error(err.detail || 'Gagal upload foto');
       }
     } catch (err) {
+      console.error('Upload error:', err);
       toast.error('Terjadi kesalahan saat upload');
     } finally {
       setPhotoUploading(false);

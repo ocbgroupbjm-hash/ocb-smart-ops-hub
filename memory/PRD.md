@@ -8,6 +8,26 @@ Enterprise AI-powered retail operating system for OCB GROUP managing multi-branc
 
 ## LATEST UPDATE: March 10, 2026
 
+### Bug Fix: AI Photo Studio Upload - FIXED
+
+**Penyebab Bug:**
+- `get_current_user` di `ai_photo_studio.py` didefinisikan sebagai fungsi wrapper, bukan di-import langsung
+- Mengakibatkan `user.get("id")` error karena `user` adalah fungsi, bukan dict
+
+**Files yang Diperbaiki:**
+1. `/app/backend/routes/ai_photo_studio.py` - Fix import get_current_user
+2. `/app/frontend/src/pages/master/MasterItems.jsx` - Fix FormData upload (gunakan fetch langsung dengan Authorization header)
+
+**Test Results:**
+- ✅ Upload PNG: BERHASIL
+- ✅ Upload JPG: BERHASIL  
+- ✅ Upload via Frontend: BERHASIL
+- ✅ Data Persisten (Reload): BERHASIL
+- ✅ Preview Original: BERHASIL
+- ✅ AI Enhancement Tools: TAMPIL
+
+---
+
 ### New Features Implemented:
 
 #### 1. Daftar Item Page Redesign (ERP-Style)

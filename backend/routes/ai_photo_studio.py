@@ -19,9 +19,7 @@ def get_db():
     from database import get_db as db_get
     return db_get()
 
-def get_current_user():
-    from routes.auth import get_current_user as auth_user
-    return auth_user
+from routes.auth import get_current_user
 
 # Get API key
 EMERGENT_LLM_KEY = os.environ.get("EMERGENT_LLM_KEY", "")
