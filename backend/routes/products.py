@@ -1,10 +1,12 @@
 # OCB TITAN - Products API
-from fastapi import APIRouter, HTTPException, Depends, Query
+# SECURITY: All destructive operations require RBAC validation
+from fastapi import APIRouter, HTTPException, Depends, Query, Request
 from pydantic import BaseModel
 from typing import Optional, List
-from database import products, categories, product_stocks, branches, get_next_sequence
+from database import products, categories, product_stocks, branches, get_next_sequence, get_db
 from utils.auth import get_current_user
 from models.titan_models import Product, ProductCategory, ProductStock
+from routes.rbac_middleware import require_permission, log_security_event
 from datetime import datetime, timezone
 
 router = APIRouter(prefix="/products", tags=["Products"])
@@ -51,18 +53,30 @@ class CategoryCreate(BaseModel):
 # ==================== CATEGORIES ====================
 
 @router.get("/categories")
-async def list_categories(user: dict = Depends(get_current_user)):
+async def list_categories(user: dict = Depends(require_permission("master_category", "view"))):
+    """List categories - Requires master_category.view permission"""
     items = await categories.find({"is_active": True}, {"_id": 0}).to_list(1000)
     return items
 
 @router.post("/categories")
-async def create_category(data: CategoryCreate, user: dict = Depends(get_current_user)):
+async def create_category(data: CategoryCreate, request: Request, user: dict = Depends(require_permission("master_category", "create"))):
+    """Create category - Requires master_category.create permission"""
     existing = await categories.find_one({"code": data.code})
     if existing:
         raise HTTPException(status_code=400, detail="Category code already exists")
     
     cat = ProductCategory(**data.model_dump())
     await categories.insert_one(cat.model_dump())
+    
+    # Audit log
+    db = get_db()
+    await log_security_event(
+        db, user.get("user_id", ""), user.get("name", ""),
+        "create", "master_category",
+        f"Membuat kategori {data.name}",
+        request.client.host if request.client else ""
+    )
+    
     return {"id": cat.id, "message": "Category created"}
 
 # ==================== PRODUCTS ====================
@@ -74,8 +88,9 @@ async def list_products(
     is_active: bool = True,
     skip: int = 0,
     limit: int = 100,
-    user: dict = Depends(get_current_user)
+    user: dict = Depends(require_permission("master_item", "view"))
 ):
+    """List products - Requires master_item.view permission"""
     query = {"is_active": is_active}
     
     if search:
@@ -97,9 +112,9 @@ async def list_products(
 async def search_products(
     q: str = Query(..., min_length=1),
     branch_id: str = "",
-    user: dict = Depends(get_current_user)
+    user: dict = Depends(require_permission("master_item", "view"))
 ):
-    """Fast product search for POS - search by code, barcode, or name"""
+    """Fast product search for POS - Requires master_item.view permission"""
     query = {
         "is_active": True,
         "$or": [
@@ -125,8 +140,8 @@ async def search_products(
     return items
 
 @router.get("/barcode/{barcode}")
-async def get_by_barcode(barcode: str, branch_id: str = "", user: dict = Depends(get_current_user)):
-    """Get product by exact barcode match - for scanner"""
+async def get_by_barcode(barcode: str, branch_id: str = "", user: dict = Depends(require_permission("master_item", "view"))):
+    """Get product by exact barcode match - Requires master_item.view permission"""
     product = await products.find_one({"barcode": barcode, "is_active": True}, {"_id": 0})
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
@@ -143,7 +158,8 @@ async def get_by_barcode(barcode: str, branch_id: str = "", user: dict = Depends
     return product
 
 @router.get("/{product_id}")
-async def get_product(product_id: str, user: dict = Depends(get_current_user)):
+async def get_product(product_id: str, user: dict = Depends(require_permission("master_item", "view"))):
+    """Get product details - Requires master_item.view permission"""
     product = await products.find_one({"id": product_id}, {"_id": 0})
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
@@ -160,7 +176,8 @@ async def get_product(product_id: str, user: dict = Depends(get_current_user)):
     return product
 
 @router.post("")
-async def create_product(data: ProductCreate, user: dict = Depends(get_current_user)):
+async def create_product(data: ProductCreate, request: Request, user: dict = Depends(require_permission("master_item", "create"))):
+    """Create product - Requires master_item.create permission"""
     # Generate code if not provided
     code = data.code or await get_next_sequence("product_code", "PRD")
     
@@ -191,10 +208,20 @@ async def create_product(data: ProductCreate, user: dict = Depends(get_current_u
         )
         await product_stocks.insert_one(stock.model_dump())
     
+    # Audit log
+    db = get_db()
+    await log_security_event(
+        db, user.get("user_id", ""), user.get("name", ""),
+        "create", "master_item",
+        f"Membuat produk {product.name} ({product.code})",
+        request.client.host if request.client else ""
+    )
+    
     return {"id": product.id, "code": product.code, "message": "Product created"}
 
 @router.put("/{product_id}")
-async def update_product(product_id: str, data: ProductUpdate, user: dict = Depends(get_current_user)):
+async def update_product(product_id: str, data: ProductUpdate, request: Request, user: dict = Depends(require_permission("master_item", "edit"))):
+    """Update product - Requires master_item.edit permission"""
     product = await products.find_one({"id": product_id})
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
@@ -204,10 +231,24 @@ async def update_product(product_id: str, data: ProductUpdate, user: dict = Depe
     
     await products.update_one({"id": product_id}, {"$set": update_data})
     
+    # Audit log
+    db = get_db()
+    await log_security_event(
+        db, user.get("user_id", ""), user.get("name", ""),
+        "edit", "master_item",
+        f"Update produk {product.get('name', product_id)}",
+        request.client.host if request.client else "",
+        data_before=product,
+        data_after=update_data
+    )
+    
     return {"message": "Product updated"}
 
 @router.delete("/{product_id}")
-async def delete_product(product_id: str, user: dict = Depends(get_current_user)):
+async def delete_product(product_id: str, request: Request, user: dict = Depends(require_permission("master_item", "delete"))):
+    """Delete product - Requires master_item.delete permission"""
+    product = await products.find_one({"id": product_id}, {"_id": 0})
+    
     # Soft delete
     result = await products.update_one(
         {"id": product_id},
@@ -217,12 +258,23 @@ async def delete_product(product_id: str, user: dict = Depends(get_current_user)
     if result.modified_count == 0:
         raise HTTPException(status_code=404, detail="Product not found")
     
+    # CRITICAL: Audit log for delete
+    db = get_db()
+    await log_security_event(
+        db, user.get("user_id", ""), user.get("name", ""),
+        "delete", "master_item",
+        f"DELETE produk {product.get('name', product_id) if product else product_id}",
+        request.client.host if request.client else "",
+        severity="critical"
+    )
+    
     return {"message": "Product deleted"}
 
 # ==================== STOCK ====================
 
 @router.get("/{product_id}/stock")
-async def get_product_stock(product_id: str, user: dict = Depends(get_current_user)):
+async def get_product_stock(product_id: str, user: dict = Depends(require_permission("stock_card", "view"))):
+    """Get product stock - Requires stock_card.view permission"""
     stocks = await product_stocks.find(
         {"product_id": product_id},
         {"_id": 0}
@@ -242,9 +294,10 @@ async def adjust_stock(
     branch_id: str,
     quantity: int,
     reason: str = "",
-    user: dict = Depends(get_current_user)
+    request: Request = None,
+    user: dict = Depends(require_permission("stock_opname", "edit"))
 ):
-    """Adjust stock quantity (positive or negative)"""
+    """Adjust stock quantity - Requires stock_opname.edit permission"""
     from models.titan_models import StockMovement, StockMovementType
     
     stock = await product_stocks.find_one({"product_id": product_id, "branch_id": branch_id})
@@ -279,5 +332,15 @@ async def adjust_stock(
         user_id=user.get("user_id", "")
     )
     await stock_movements.insert_one(movement.model_dump())
+    
+    # Audit log for stock adjustment
+    db = get_db()
+    await log_security_event(
+        db, user.get("user_id", ""), user.get("name", ""),
+        "edit", "stock_opname",
+        f"Stock adjustment {product_id} di branch {branch_id}: {quantity:+d}. Alasan: {reason}",
+        request.client.host if request and request.client else "",
+        severity="warning" if abs(quantity) > 100 else "normal"
+    )
     
     return {"message": "Stock adjusted", "new_quantity": new_qty if stock else max(0, quantity)}

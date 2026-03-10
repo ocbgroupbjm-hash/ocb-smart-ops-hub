@@ -1,16 +1,18 @@
 # OCB TITAN - POS (Point of Sale) API
-from fastapi import APIRouter, HTTPException, Depends
+# SECURITY: All destructive operations require RBAC validation
+from fastapi import APIRouter, HTTPException, Depends, Request
 from pydantic import BaseModel
 from typing import Optional, List
 from database import (
     transactions, held_transactions, products, product_stocks, 
-    customers, branches, cash_movements, stock_movements, get_next_sequence
+    customers, branches, cash_movements, stock_movements, get_next_sequence, get_db
 )
 from utils.auth import get_current_user
 from models.titan_models import (
     Transaction, TransactionItem, PaymentDetail, TransactionStatus,
     PaymentMethod, StockMovement, StockMovementType, CashMovement
 )
+from routes.rbac_middleware import require_permission, log_security_event, check_data_scope
 from datetime import datetime, timezone
 import uuid
 
@@ -37,6 +39,9 @@ class CreateTransaction(BaseModel):
     discount_amount: float = 0
     payments: List[PaymentInput]
     notes: str = ""
+    # Kredit fields for AR integration
+    is_credit: bool = False  # If true, creates AR entry
+    credit_due_days: int = 30  # Days until payment due
 
 class HoldTransaction(BaseModel):
     items: List[CartItem]
@@ -48,8 +53,12 @@ class HoldTransaction(BaseModel):
 # ==================== TRANSACTION ====================
 
 @router.post("/transaction")
-async def create_transaction(data: CreateTransaction, user: dict = Depends(get_current_user)):
-    """Create a new POS transaction"""
+async def create_transaction(
+    data: CreateTransaction, 
+    request: Request,
+    user: dict = Depends(require_permission("sales", "create"))
+):
+    """Create a new POS transaction - Requires sales.create permission"""
     branch_id = user.get("branch_id")
     if not branch_id:
         raise HTTPException(status_code=400, detail="User not assigned to a branch")
@@ -231,20 +240,106 @@ async def create_transaction(data: CreateTransaction, user: dict = Depends(get_c
             }
         )
     
+    # =============== AUTO-CREATE AR FOR CREDIT SALES ===============
+    ar_id = None
+    db = get_db()  # Get db connection early
+    if data.is_credit and data.customer_id:
+        # Calculate outstanding amount (total - paid)
+        outstanding = total - paid_amount
+        if outstanding > 0:
+            from datetime import timedelta
+            due_date = datetime.now(timezone.utc) + timedelta(days=data.credit_due_days)
+            
+            ar_entry = {
+                "id": str(uuid.uuid4()),
+                "ar_number": f"AR-{invoice}",
+                "customer_id": data.customer_id,
+                "customer_name": data.customer_name or "Unknown",
+                "source_type": "sales",
+                "source_id": tx.id,
+                "source_number": invoice,
+                "branch_id": branch_id,
+                "amount": outstanding,
+                "paid_amount": 0,
+                "due_date": due_date.isoformat(),
+                "status": "unpaid",
+                "notes": f"Piutang dari penjualan kredit {invoice}",
+                "created_by": user.get("user_id", ""),
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+            
+            await db["accounts_receivable"].insert_one(ar_entry)
+            ar_id = ar_entry["id"]
+            
+            # Create journal entry for credit sale (Debit: AR, Credit: Sales)
+            journal_id = str(uuid.uuid4())
+            journal_no = f"JV-AR-{invoice}"
+            
+            journal_entry = {
+                "id": journal_id,
+                "journal_no": journal_no,
+                "journal_date": datetime.now(timezone.utc).isoformat(),
+                "source_type": "sales_credit",
+                "source_id": tx.id,
+                "description": f"Penjualan kredit {invoice} ke {data.customer_name}",
+                "total_debit": outstanding,
+                "total_credit": outstanding,
+                "status": "posted",
+                "branch_id": branch_id,
+                "created_by": user.get("user_id", ""),
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+            await db["journal_entries"].insert_one(journal_entry)
+            
+            # Journal lines
+            journal_lines = [
+                {
+                    "id": str(uuid.uuid4()),
+                    "journal_id": journal_id,
+                    "account_code": "1201",  # Piutang Dagang
+                    "account_name": "Piutang Dagang",
+                    "debit": outstanding,
+                    "credit": 0,
+                    "description": f"Piutang {data.customer_name}"
+                },
+                {
+                    "id": str(uuid.uuid4()),
+                    "journal_id": journal_id,
+                    "account_code": "4101",  # Penjualan
+                    "account_name": "Penjualan",
+                    "debit": 0,
+                    "credit": outstanding,
+                    "description": f"Penjualan kredit {invoice}"
+                }
+            ]
+            await db["journal_entry_lines"].insert_many(journal_lines)
+    
+    # Audit log
+    await log_security_event(
+        db, user.get("user_id", ""), user.get("name", ""),
+        "create", "sales",
+        f"Penjualan {invoice} sebesar Rp {total:,.0f}",
+        request.client.host if request.client else "",
+        branch_id=branch_id,
+        document_no=invoice
+    )
+    
     return {
         "id": tx.id,
         "invoice_number": invoice,
         "total": total,
         "paid": paid_amount,
         "change": change,
-        "message": "Transaction completed"
+        "is_credit": data.is_credit,
+        "ar_id": ar_id,
+        "message": "Transaction completed" + (" (Credit sale - AR created)" if ar_id else "")
     }
 
 # ==================== HOLD & RECALL ====================
 
 @router.post("/hold")
-async def hold_transaction(data: HoldTransaction, user: dict = Depends(get_current_user)):
-    """Hold a transaction for later"""
+async def hold_transaction(data: HoldTransaction, user: dict = Depends(require_permission("sales", "create"))):
+    """Hold a transaction for later - Requires sales.create permission"""
     branch_id = user.get("branch_id")
     
     held = {
@@ -265,8 +360,8 @@ async def hold_transaction(data: HoldTransaction, user: dict = Depends(get_curre
     return {"id": held["id"], "message": "Transaction held"}
 
 @router.get("/held")
-async def list_held_transactions(user: dict = Depends(get_current_user)):
-    """List held transactions for current branch"""
+async def list_held_transactions(user: dict = Depends(require_permission("sales", "view"))):
+    """List held transactions for current branch - Requires sales.view permission"""
     branch_id = user.get("branch_id")
     items = await held_transactions.find(
         {"branch_id": branch_id},
@@ -276,8 +371,8 @@ async def list_held_transactions(user: dict = Depends(get_current_user)):
     return items
 
 @router.get("/held/{held_id}")
-async def get_held_transaction(held_id: str, user: dict = Depends(get_current_user)):
-    """Get a held transaction"""
+async def get_held_transaction(held_id: str, user: dict = Depends(require_permission("sales", "view"))):
+    """Get a held transaction - Requires sales.view permission"""
     held = await held_transactions.find_one({"id": held_id}, {"_id": 0})
     if not held:
         raise HTTPException(status_code=404, detail="Held transaction not found")
@@ -293,18 +388,34 @@ async def get_held_transaction(held_id: str, user: dict = Depends(get_current_us
     return held
 
 @router.delete("/held/{held_id}")
-async def delete_held_transaction(held_id: str, user: dict = Depends(get_current_user)):
-    """Delete a held transaction"""
+async def delete_held_transaction(held_id: str, request: Request, user: dict = Depends(require_permission("sales", "delete"))):
+    """Delete a held transaction - Requires sales.delete permission"""
     result = await held_transactions.delete_one({"id": held_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Held transaction not found")
+    
+    # Audit log
+    db = get_db()
+    await log_security_event(
+        db, user.get("user_id", ""), user.get("name", ""),
+        "delete", "sales",
+        f"Menghapus held transaction {held_id}",
+        request.client.host if request.client else "",
+        severity="warning"
+    )
+    
     return {"message": "Held transaction deleted"}
 
 # ==================== VOID & RETURN ====================
 
 @router.post("/void/{transaction_id}")
-async def void_transaction(transaction_id: str, reason: str = "", user: dict = Depends(get_current_user)):
-    """Void a transaction (same day only)"""
+async def void_transaction(
+    transaction_id: str, 
+    reason: str = "", 
+    request: Request = None,
+    user: dict = Depends(require_permission("sales", "void"))
+):
+    """Void a transaction (same day only) - Requires sales.void permission"""
     tx = await transactions.find_one({"id": transaction_id}, {"_id": 0})
     if not tx:
         raise HTTPException(status_code=404, detail="Transaction not found")
@@ -369,6 +480,20 @@ async def void_transaction(transaction_id: str, reason: str = "", user: dict = D
         )
         await cash_movements.insert_one(cash_mov.model_dump())
     
+    # CRITICAL: Audit log for void
+    db = get_db()
+    await log_security_event(
+        db, user.get("user_id", ""), user.get("name", ""),
+        "void", "sales",
+        f"VOID transaksi {tx.get('invoice_number')} sebesar Rp {tx.get('total', 0):,.0f}. Alasan: {reason}",
+        request.client.host if request and request.client else "",
+        branch_id=branch_id,
+        document_no=tx.get('invoice_number'),
+        data_before={"status": "completed", "total": tx.get("total")},
+        data_after={"status": "voided", "reason": reason},
+        severity="critical"
+    )
+    
     return {"message": "Transaction voided"}
 
 # ==================== HISTORY ====================
@@ -379,9 +504,9 @@ async def list_transactions(
     status: str = "",
     skip: int = 0,
     limit: int = 50,
-    user: dict = Depends(get_current_user)
+    user: dict = Depends(require_permission("sales", "view"))
 ):
-    """List transactions for current branch"""
+    """List transactions for current branch - Requires sales.view permission"""
     branch_id = user.get("branch_id")
     query = {"branch_id": branch_id}
     
@@ -397,8 +522,8 @@ async def list_transactions(
     return {"items": items, "total": total}
 
 @router.get("/transactions/{transaction_id}")
-async def get_transaction(transaction_id: str, user: dict = Depends(get_current_user)):
-    """Get transaction details"""
+async def get_transaction(transaction_id: str, user: dict = Depends(require_permission("sales", "view"))):
+    """Get transaction details - Requires sales.view permission"""
     tx = await transactions.find_one({"id": transaction_id}, {"_id": 0})
     if not tx:
         raise HTTPException(status_code=404, detail="Transaction not found")
@@ -407,8 +532,8 @@ async def get_transaction(transaction_id: str, user: dict = Depends(get_current_
 # ==================== DAILY SUMMARY ====================
 
 @router.get("/summary/today")
-async def get_today_summary(user: dict = Depends(get_current_user)):
-    """Get today's sales summary for current branch"""
+async def get_today_summary(user: dict = Depends(require_permission("sales", "view"))):
+    """Get today's sales summary for current branch - Requires sales.view permission"""
     branch_id = user.get("branch_id")
     today = datetime.now(timezone.utc).isoformat()[:10]
     

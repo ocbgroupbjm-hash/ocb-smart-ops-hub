@@ -1,13 +1,15 @@
 # OCB TITAN - Purchase Management API
-from fastapi import APIRouter, HTTPException, Depends
+# SECURITY: All operations require RBAC validation
+from fastapi import APIRouter, HTTPException, Depends, Request
 from pydantic import BaseModel
 from typing import Optional, List
 from database import (
     purchase_orders, suppliers, products, product_stocks, 
-    stock_movements, branches, get_next_sequence
+    stock_movements, branches, get_next_sequence, get_db
 )
 from utils.auth import get_current_user
 from models.titan_models import PurchaseOrder, PurchaseOrderItem, PurchaseStatus, StockMovement, StockMovementType, ProductStock
+from routes.rbac_middleware import require_permission, log_security_event
 from datetime import datetime, timezone
 
 router = APIRouter(prefix="/purchase", tags=["Purchase"])
@@ -24,6 +26,9 @@ class CreatePO(BaseModel):
     items: List[POItemInput]
     expected_date: Optional[str] = None
     notes: str = ""
+    # AP integration fields
+    is_credit: bool = True  # Most purchases are on credit
+    credit_due_days: int = 30  # Days until payment due
 
 class ReceiveItem(BaseModel):
     product_id: str
@@ -41,8 +46,9 @@ async def list_purchase_orders(
     supplier_id: str = "",
     skip: int = 0,
     limit: int = 50,
-    user: dict = Depends(get_current_user)
+    user: dict = Depends(require_permission("purchase", "view"))
 ):
+    """List purchase orders - Requires purchase.view permission"""
     query = {}
     
     if status:
@@ -57,14 +63,16 @@ async def list_purchase_orders(
     return {"items": items, "total": total}
 
 @router.get("/orders/{po_id}")
-async def get_purchase_order(po_id: str, user: dict = Depends(get_current_user)):
+async def get_purchase_order(po_id: str, user: dict = Depends(require_permission("purchase", "view"))):
+    """Get purchase order details - Requires purchase.view permission"""
     po = await purchase_orders.find_one({"id": po_id}, {"_id": 0})
     if not po:
         raise HTTPException(status_code=404, detail="Purchase order not found")
     return po
 
 @router.post("/orders")
-async def create_purchase_order(data: CreatePO, user: dict = Depends(get_current_user)):
+async def create_purchase_order(data: CreatePO, request: Request, user: dict = Depends(require_permission("purchase", "create"))):
+    """Create purchase order - Requires purchase.create permission"""
     supplier = await suppliers.find_one({"id": data.supplier_id}, {"_id": 0})
     if not supplier:
         raise HTTPException(status_code=400, detail="Supplier not found")
@@ -114,11 +122,21 @@ async def create_purchase_order(data: CreatePO, user: dict = Depends(get_current
     
     await purchase_orders.insert_one(po.model_dump())
     
+    # Audit log
+    db = get_db()
+    await log_security_event(
+        db, user.get("user_id", ""), user.get("name", ""),
+        "create", "purchase",
+        f"Membuat PO {po_number} ke {supplier.get('name')} sebesar Rp {subtotal:,.0f}",
+        request.client.host if request.client else "",
+        document_no=po_number
+    )
+    
     return {"id": po.id, "po_number": po_number, "message": "Purchase order created"}
 
 @router.post("/orders/{po_id}/submit")
-async def submit_purchase_order(po_id: str, user: dict = Depends(get_current_user)):
-    """Submit PO to supplier"""
+async def submit_purchase_order(po_id: str, request: Request, user: dict = Depends(require_permission("purchase", "edit"))):
+    """Submit PO to supplier - Requires purchase.edit permission"""
     po = await purchase_orders.find_one({"id": po_id}, {"_id": 0})
     if not po:
         raise HTTPException(status_code=404, detail="Purchase order not found")
@@ -135,11 +153,21 @@ async def submit_purchase_order(po_id: str, user: dict = Depends(get_current_use
         }}
     )
     
+    # Audit log
+    db = get_db()
+    await log_security_event(
+        db, user.get("user_id", ""), user.get("name", ""),
+        "edit", "purchase",
+        f"Submit PO {po.get('po_number')} ke supplier",
+        request.client.host if request.client else "",
+        document_no=po.get('po_number')
+    )
+    
     return {"message": "Purchase order submitted"}
 
 @router.post("/orders/{po_id}/receive")
-async def receive_purchase_order(po_id: str, data: ReceivePO, user: dict = Depends(get_current_user)):
-    """Receive goods from purchase order"""
+async def receive_purchase_order(po_id: str, data: ReceivePO, request: Request, user: dict = Depends(require_permission("purchase", "edit"))):
+    """Receive goods from purchase order - Requires purchase.edit permission"""
     po = await purchase_orders.find_one({"id": po_id}, {"_id": 0})
     if not po:
         raise HTTPException(status_code=404, detail="Purchase order not found")
@@ -227,11 +255,100 @@ async def receive_purchase_order(po_id: str, data: ReceivePO, user: dict = Depen
         }}
     )
     
-    return {"message": f"Goods received. Status: {new_status}"}
+    # =============== AUTO-CREATE AP FOR CREDIT PURCHASES ===============
+    ap_id = None
+    if all_received and po.get("is_credit", True):  # Default to credit
+        from datetime import timedelta
+        import uuid
+        
+        po_total = po.get("total", 0)
+        credit_due_days = po.get("credit_due_days", 30)
+        due_date = datetime.now(timezone.utc) + timedelta(days=credit_due_days)
+        
+        ap_entry = {
+            "id": str(uuid.uuid4()),
+            "ap_number": f"AP-{po.get('po_number')}",
+            "supplier_id": po.get("supplier_id"),
+            "supplier_name": po.get("supplier_name", "Unknown"),
+            "source_type": "purchase",
+            "source_id": po_id,
+            "source_number": po.get("po_number"),
+            "branch_id": branch_id,
+            "amount": po_total,
+            "paid_amount": 0,
+            "due_date": due_date.isoformat(),
+            "status": "unpaid",
+            "notes": f"Hutang dari pembelian {po.get('po_number')}",
+            "created_by": user.get("user_id", ""),
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        
+        db = get_db()
+        await db["accounts_payable"].insert_one(ap_entry)
+        ap_id = ap_entry["id"]
+        
+        # Create journal entry for purchase (Debit: Inventory, Credit: AP)
+        journal_id = str(uuid.uuid4())
+        journal_no = f"JV-AP-{po.get('po_number')}"
+        
+        journal_entry = {
+            "id": journal_id,
+            "journal_no": journal_no,
+            "journal_date": datetime.now(timezone.utc).isoformat(),
+            "source_type": "purchase_credit",
+            "source_id": po_id,
+            "description": f"Pembelian kredit {po.get('po_number')} dari {po.get('supplier_name')}",
+            "total_debit": po_total,
+            "total_credit": po_total,
+            "status": "posted",
+            "branch_id": branch_id,
+            "created_by": user.get("user_id", ""),
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db["journal_entries"].insert_one(journal_entry)
+        
+        # Journal lines
+        journal_lines = [
+            {
+                "id": str(uuid.uuid4()),
+                "journal_id": journal_id,
+                "account_code": "1301",  # Persediaan
+                "account_name": "Persediaan Barang Dagang",
+                "debit": po_total,
+                "credit": 0,
+                "description": f"Persediaan dari {po.get('po_number')}"
+            },
+            {
+                "id": str(uuid.uuid4()),
+                "journal_id": journal_id,
+                "account_code": "2101",  # Hutang Dagang
+                "account_name": "Hutang Dagang",
+                "debit": 0,
+                "credit": po_total,
+                "description": f"Hutang ke {po.get('supplier_name')}"
+            }
+        ]
+        await db["journal_entry_lines"].insert_many(journal_lines)
+    
+    # Audit log
+    db = get_db()
+    await log_security_event(
+        db, user.get("user_id", ""), user.get("name", ""),
+        "edit", "purchase",
+        f"Receive PO {po.get('po_number')} - status: {new_status}" + (f" - AP {ap_id} created" if ap_id else ""),
+        request.client.host if request.client else "",
+        document_no=po.get('po_number')
+    )
+    
+    return {
+        "message": f"Goods received. Status: {new_status}",
+        "ap_created": ap_id is not None,
+        "ap_id": ap_id
+    }
 
 @router.post("/orders/{po_id}/cancel")
-async def cancel_purchase_order(po_id: str, user: dict = Depends(get_current_user)):
-    """Cancel a purchase order"""
+async def cancel_purchase_order(po_id: str, request: Request, user: dict = Depends(require_permission("purchase", "delete"))):
+    """Cancel a purchase order - Requires purchase.delete permission"""
     po = await purchase_orders.find_one({"id": po_id}, {"_id": 0})
     if not po:
         raise HTTPException(status_code=404, detail="Purchase order not found")
@@ -245,6 +362,17 @@ async def cancel_purchase_order(po_id: str, user: dict = Depends(get_current_use
             "status": "cancelled",
             "updated_at": datetime.now(timezone.utc).isoformat()
         }}
+    )
+    
+    # Audit log
+    db = get_db()
+    await log_security_event(
+        db, user.get("user_id", ""), user.get("name", ""),
+        "cancel", "purchase",
+        f"CANCEL PO {po.get('po_number')}",
+        request.client.host if request.client else "",
+        document_no=po.get('po_number'),
+        severity="warning"
     )
     
     return {"message": "Purchase order cancelled"}
@@ -265,7 +393,8 @@ class PaymentCreate(BaseModel):
     notes: str = ""
 
 @router.get("/payments")
-async def list_payments(search: str = "", user: dict = Depends(get_current_user)):
+async def list_payments(search: str = "", user: dict = Depends(require_permission("pay_payable", "view"))):
+    """List purchase payments - Requires pay_payable.view permission"""
     query = {}
     if search:
         query["$or"] = [
@@ -276,7 +405,8 @@ async def list_payments(search: str = "", user: dict = Depends(get_current_user)
     return {"items": payments}
 
 @router.post("/payments")
-async def create_payment(data: PaymentCreate, user: dict = Depends(get_current_user)):
+async def create_payment(data: PaymentCreate, request: Request, user: dict = Depends(require_permission("pay_payable", "create"))):
+    """Create purchase payment - Requires pay_payable.create permission"""
     po = await purchase_orders.find_one({"id": data.po_id}, {"_id": 0})
     if not po:
         raise HTTPException(status_code=404, detail="PO tidak ditemukan")
@@ -300,6 +430,17 @@ async def create_payment(data: PaymentCreate, user: dict = Depends(get_current_u
         "created_by": user.get("id")
     }
     await purchase_payments.insert_one(payment)
+    
+    # Audit log
+    db_conn = get_db()
+    await log_security_event(
+        db_conn, user.get("user_id", ""), user.get("name", ""),
+        "create", "pay_payable",
+        f"Pembayaran {payment_number} sebesar Rp {data.amount:,.0f} untuk PO {po.get('po_number')}",
+        request.client.host if request.client else "",
+        document_no=payment_number
+    )
+    
     return {"id": payment["id"], "message": "Pembayaran berhasil dicatat"}
 
 # ==================== PURCHASE RETURNS ====================
@@ -314,7 +455,8 @@ class ReturnCreate(BaseModel):
     items: List[ReturnItem]
 
 @router.get("/returns")
-async def list_returns(search: str = "", user: dict = Depends(get_current_user)):
+async def list_returns(search: str = "", user: dict = Depends(require_permission("purchase_return", "view"))):
+    """List purchase returns - Requires purchase_return.view permission"""
     query = {}
     if search:
         query["$or"] = [
@@ -325,7 +467,8 @@ async def list_returns(search: str = "", user: dict = Depends(get_current_user))
     return {"items": returns}
 
 @router.post("/returns")
-async def create_return(data: ReturnCreate, user: dict = Depends(get_current_user)):
+async def create_return(data: ReturnCreate, request: Request, user: dict = Depends(require_permission("purchase_return", "create"))):
+    """Create purchase return - Requires purchase_return.create permission"""
     po = await purchase_orders.find_one({"id": data.po_id}, {"_id": 0})
     if not po:
         raise HTTPException(status_code=404, detail="PO tidak ditemukan")
@@ -364,6 +507,17 @@ async def create_return(data: ReturnCreate, user: dict = Depends(get_current_use
         "created_by": user.get("id")
     }
     await purchase_returns.insert_one(retur)
+    
+    # Audit log
+    db_conn = get_db()
+    await log_security_event(
+        db_conn, user.get("user_id", ""), user.get("name", ""),
+        "create", "purchase_return",
+        f"Retur {return_number} dari PO {po.get('po_number')} sebesar Rp {total:,.0f}",
+        request.client.host if request.client else "",
+        document_no=return_number
+    )
+    
     return {"id": retur["id"], "message": "Retur berhasil dibuat"}
 
 # ==================== PRICE HISTORY ====================
@@ -372,8 +526,9 @@ async def create_return(data: ReturnCreate, user: dict = Depends(get_current_use
 async def list_price_history(
     search: str = "",
     product_id: str = "",
-    user: dict = Depends(get_current_user)
+    user: dict = Depends(require_permission("purchase_price_history", "view"))
 ):
+    """List price history - Requires purchase_price_history.view permission"""
     query = {}
     if product_id:
         query["product_id"] = product_id
