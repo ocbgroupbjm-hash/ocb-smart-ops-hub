@@ -4,12 +4,14 @@ import { usePermission, PermissionGate } from '../../contexts/PermissionContext'
 import { 
   Package, Plus, Search, RefreshCw, Download, Upload, Edit2, Trash2, 
   Eye, Barcode, Loader2, X, ChevronLeft, ChevronRight, Printer, Settings,
-  Filter, FileSpreadsheet, FileText, Camera, ImagePlus, Wand2, Sparkles
+  Filter, FileSpreadsheet, FileText, Camera, ImagePlus, Wand2, Sparkles,
+  DollarSign
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { PricingConfigModal } from '../../components/pricing';
 
 const MasterItems = () => {
-  const { api } = useAuth();
+  const { api, token } = useAuth();
   const { hasPermission } = usePermission();
   
   // Data states
@@ -53,6 +55,10 @@ const MasterItems = () => {
   const [aiProcessing, setAiProcessing] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
   const [enhancedImage, setEnhancedImage] = useState(null);
+  
+  // Pricing Modal states
+  const [showPricingModal, setShowPricingModal] = useState(false);
+  const [selectedItemForPricing, setSelectedItemForPricing] = useState(null);
   
   // Form data
   const [formData, setFormData] = useState({
@@ -694,6 +700,7 @@ const MasterItems = () => {
                 <th className="px-2 py-2 text-left text-amber-200 font-semibold">MEREK</th>
                 <th className="px-2 py-2 text-right text-amber-200 font-semibold">H.BELI</th>
                 <th className="px-2 py-2 text-right text-amber-200 font-semibold">H.JUAL</th>
+                <th className="px-2 py-2 text-center text-amber-200 font-semibold">MODE HARGA</th>
                 <th className="px-2 py-2 text-right text-amber-200 font-semibold">STOK</th>
                 <th className="px-2 py-2 text-center text-amber-200 font-semibold">STATUS</th>
                 <th className="px-2 py-2 text-center text-amber-200 font-semibold">AKSI</th>
@@ -702,14 +709,14 @@ const MasterItems = () => {
             <tbody className="divide-y divide-red-900/20">
               {loading ? (
                 <tr>
-                  <td colSpan={12} className="px-4 py-8 text-center text-gray-400">
+                  <td colSpan={13} className="px-4 py-8 text-center text-gray-400">
                     <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" />
                     Memuat data...
                   </td>
                 </tr>
               ) : items.length === 0 ? (
                 <tr>
-                  <td colSpan={12} className="px-4 py-8 text-center text-gray-400">
+                  <td colSpan={13} className="px-4 py-8 text-center text-gray-400">
                     Tidak ada data item ditemukan
                   </td>
                 </tr>
@@ -738,6 +745,18 @@ const MasterItems = () => {
                     <td className="px-2 py-1.5 text-gray-400">{item.brand_name || '-'}</td>
                     <td className="px-2 py-1.5 text-right text-gray-300">{formatCurrency(item.cost_price)}</td>
                     <td className="px-2 py-1.5 text-right text-green-400 font-medium">{formatCurrency(item.selling_price)}</td>
+                    <td className="px-2 py-1.5 text-center">
+                      <span className={`px-1.5 py-0.5 rounded text-[10px] ${
+                        item.pricing_mode === 'quantity' ? 'bg-blue-900/50 text-blue-300' :
+                        item.pricing_mode === 'level' ? 'bg-purple-900/50 text-purple-300' :
+                        item.pricing_mode === 'unit' ? 'bg-amber-900/50 text-amber-300' :
+                        'bg-green-900/50 text-green-300'
+                      }`}>
+                        {item.pricing_mode === 'quantity' ? 'QTY' :
+                         item.pricing_mode === 'level' ? 'LEVEL' :
+                         item.pricing_mode === 'unit' ? 'UNIT' : 'SINGLE'}
+                      </span>
+                    </td>
                     <td className="px-2 py-1.5 text-right">
                       <span className={`font-medium ${
                         (item.stock || 0) <= (item.min_stock || 0) ? 'text-red-400' : 
@@ -774,6 +793,18 @@ const MasterItems = () => {
                             title="AI Photo Studio"
                           >
                             <Camera className="h-3 w-3" />
+                          </button>
+                        )}
+                        {hasPermission('master_item', 'edit') && (
+                          <button
+                            onClick={() => {
+                              setSelectedItemForPricing(item);
+                              setShowPricingModal(true);
+                            }}
+                            className="p-1 hover:bg-green-900/30 rounded text-green-400"
+                            title="Konfigurasi Harga"
+                          >
+                            <DollarSign className="h-3 w-3" />
                           </button>
                         )}
                         <button
@@ -1300,6 +1331,21 @@ const MasterItems = () => {
           </div>
         </div>
       )}
+
+      {/* Pricing Configuration Modal */}
+      <PricingConfigModal
+        isOpen={showPricingModal}
+        onClose={() => {
+          setShowPricingModal(false);
+          setSelectedItemForPricing(null);
+        }}
+        product={selectedItemForPricing}
+        token={token}
+        units={units}
+        onSave={() => {
+          loadItems();
+        }}
+      />
     </div>
   );
 };

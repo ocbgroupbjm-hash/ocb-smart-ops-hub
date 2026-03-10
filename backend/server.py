@@ -98,6 +98,7 @@ from routes.ai_photo_studio import router as ai_photo_router
 from routes.stock_card import router as stock_card_router
 from routes.ssot_service import router as ssot_router
 from routes.rbac_system import router as rbac_router
+from routes.pricing_system import router as pricing_router
 
 # Mount all routers under /api - Core ERP
 app.include_router(auth_router, prefix="/api")
@@ -169,6 +170,7 @@ app.include_router(ai_photo_router)
 app.include_router(stock_card_router)
 app.include_router(ssot_router)
 app.include_router(rbac_router)
+app.include_router(pricing_router)
 
 # Health check
 @app.get("/api/health")
