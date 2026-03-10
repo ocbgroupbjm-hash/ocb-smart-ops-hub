@@ -303,6 +303,44 @@ async def check_permission(user_id: str, module: str, action: str) -> bool:
     return permission is not None
 
 
+def require_permission(module: str, action: str):
+    """
+    Dependency factory for requiring specific permission.
+    Usage: Depends(require_permission("master_item", "delete"))
+    """
+    async def permission_dependency(user: dict = Depends(get_current_user)):
+        has_perm = await check_permission(user.get("user_id") or user.get("id"), module, action)
+        if not has_perm:
+            raise HTTPException(
+                status_code=403,
+                detail=f"Anda tidak memiliki izin untuk {action} pada {module}"
+            )
+        return user
+    return permission_dependency
+
+
+def require_branch_access(branch_id_param: str = "branch_id"):
+    """
+    Dependency factory for requiring branch access.
+    Usage: Depends(require_branch_access("branch_id"))
+    """
+    async def branch_dependency(
+        request: Request,
+        user: dict = Depends(get_current_user)
+    ):
+        # Get branch_id from path or query params
+        branch_id = request.path_params.get(branch_id_param) or request.query_params.get(branch_id_param)
+        if branch_id:
+            has_access = await check_branch_access(user.get("user_id") or user.get("id"), branch_id)
+            if not has_access:
+                raise HTTPException(
+                    status_code=403,
+                    detail="Anda tidak memiliki akses ke cabang ini"
+                )
+        return user
+    return branch_dependency
+
+
 async def check_branch_access(user_id: str, branch_id: str) -> bool:
     """Check if user has access to specific branch"""
     db = get_db()
@@ -421,14 +459,14 @@ async def create_role(data: RoleCreate, request: Request, user: dict = Depends(g
         "branch_access": data.branch_access,
         "account_access": data.account_access,
         "created_at": datetime.now(timezone.utc).isoformat(),
-        "created_by": user.get("id")
+        "created_by": user.get("user_id") or user.get("id")
     }
     
     await db["roles"].insert_one(role)
     
     # Log activity
     await log_activity(
-        db, user.get("id"), user.get("name", ""),
+        db, user.get("user_id") or user.get("id"), user.get("name", ""),
         "create", "role_management",
         f"Membuat role baru: {data.name}",
         request.client.host if request.client else ""
@@ -463,7 +501,7 @@ async def update_role(role_id: str, data: RoleCreate, request: Request, user: di
     
     # Log activity
     await log_activity(
-        db, user.get("id"), user.get("name", ""),
+        db, user.get("user_id") or user.get("id"), user.get("name", ""),
         "edit", "role_management",
         f"Mengubah role: {data.name}",
         request.client.host if request.client else "",
@@ -492,7 +530,7 @@ async def delete_role(role_id: str, request: Request, user: dict = Depends(get_c
     
     # Log activity
     await log_activity(
-        db, user.get("id"), user.get("name", ""),
+        db, user.get("user_id") or user.get("id"), user.get("name", ""),
         "delete", "role_management",
         f"Menghapus role: {role.get('name')}",
         request.client.host if request.client else ""
@@ -614,7 +652,7 @@ async def update_permissions(
     
     # Log activity
     await log_activity(
-        db, user.get("id"), user.get("name", ""),
+        db, user.get("user_id") or user.get("id"), user.get("name", ""),
         "edit", "role_management",
         f"Mengubah permission role: {role.get('name')} ({len(data.permissions)} permissions)",
         request.client.host if request.client else ""
@@ -670,7 +708,7 @@ async def bulk_update_permissions(
     
     # Log activity
     await log_activity(
-        db, user.get("id"), user.get("name", ""),
+        db, user.get("user_id") or user.get("id"), user.get("name", ""),
         "edit", "role_management",
         f"Bulk {'enable' if allowed else 'disable'} permissions role: {role.get('name')} ({count} permissions)",
         request.client.host if request.client else ""
@@ -684,7 +722,8 @@ async def bulk_update_permissions(
 @router.get("/user/permissions")
 async def get_my_permissions(user: dict = Depends(get_current_user)):
     """Get current user's permissions"""
-    return await get_user_permissions(user.get("id"))
+    # JWT payload uses user_id, not id
+    return await get_user_permissions(user.get("user_id") or user.get("user_id") or user.get("id"))
 
 
 @router.get("/user/{user_id}/permissions")
@@ -725,7 +764,7 @@ async def assign_user_role(
     
     # Log activity
     await log_activity(
-        db, user.get("id"), user.get("name", ""),
+        db, user.get("user_id") or user.get("id"), user.get("name", ""),
         "edit", "user_management",
         f"Mengubah role user {target_user.get('name')} menjadi {role.get('name')}",
         request.client.host if request.client else ""
@@ -743,7 +782,9 @@ async def check_user_permission(
     user: dict = Depends(get_current_user)
 ):
     """Check if current user has specific permission"""
-    has_permission = await check_permission(user.get("id"), module, action)
+    # JWT payload uses user_id, not id
+    user_id = user.get("user_id") or user.get("user_id") or user.get("id")
+    has_permission = await check_permission(user_id, module, action)
     return {
         "module": module,
         "action": action,
@@ -757,7 +798,9 @@ async def check_user_branch_access(
     user: dict = Depends(get_current_user)
 ):
     """Check if current user has access to specific branch"""
-    has_access = await check_branch_access(user.get("id"), branch_id)
+    # JWT payload uses user_id, not id
+    user_id = user.get("user_id") or user.get("user_id") or user.get("id")
+    has_access = await check_branch_access(user_id, branch_id)
     return {
         "branch_id": branch_id,
         "allowed": has_access
@@ -891,7 +934,7 @@ async def initialize_rbac(request: Request, user: dict = Depends(get_current_use
     
     # Log activity
     await log_activity(
-        db, user.get("id"), user.get("name", ""),
+        db, user.get("user_id") or user.get("id"), user.get("name", ""),
         "create", "role_management",
         f"Inisialisasi RBAC system: {roles_created} roles created",
         request.client.host if request.client else ""

@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { PermissionProvider } from './contexts/PermissionContext';
 import { Toaster } from './components/ui/sonner';
 import { DashboardLayout } from './components/layout/DashboardLayout';
 import Login from './pages/Login';
@@ -82,7 +83,7 @@ import SerialNumbers from './pages/inventory/SerialNumbers';
 import ProductAssembly from './pages/inventory/ProductAssembly';
 
 // Settings Pages
-import { PrinterSettings } from './pages/settings';
+import { PrinterSettings, RBACManagement } from './pages/settings';
 
 // Accounting Pages
 import ChartOfAccounts from './pages/accounting/ChartOfAccounts';
@@ -122,17 +123,18 @@ const AccessDenied = () => (
 function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route
-            path="/*"
-            element={
-              <PrivateRoute>
-                <DashboardLayout />
-              </PrivateRoute>
-            }
-          >
+      <PermissionProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route
+              path="/*"
+              element={
+                <PrivateRoute>
+                  <DashboardLayout />
+                </PrivateRoute>
+              }
+            >
             <Route index element={<Navigate to="/dashboard" />} />
             <Route path="dashboard" element={<Dashboard />} />
             
@@ -281,7 +283,8 @@ function App() {
             
             {/* Settings Routes */}
             <Route path="settings/users" element={<Users />} />
-            <Route path="settings/roles" element={<RolePermission />} />
+            <Route path="settings/roles" element={<RBACManagement />} />
+            <Route path="rbac" element={<RBACManagement />} />
             <Route path="settings/company" element={<Settings />} />
             <Route path="settings/general" element={<Settings />} />
             <Route path="settings/branches" element={<Branches />} />
@@ -300,7 +303,8 @@ function App() {
             <Route path="kelola-bisnis" element={<BusinessManager />} />
           </Route>
         </Routes>
-      </BrowserRouter>
+        </BrowserRouter>
+      </PermissionProvider>
       <Toaster position="top-right" />
     </AuthProvider>
   );

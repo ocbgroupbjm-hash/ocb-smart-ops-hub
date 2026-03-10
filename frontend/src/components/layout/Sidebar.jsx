@@ -14,9 +14,11 @@ import {
   Globe
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { usePermission } from '../../contexts/PermissionContext';
 
 const Sidebar = ({ isOpen, setIsOpen }) => {
   const { user, logout } = useAuth();
+  const { hasPermission, canSeeMenu, permissions } = usePermission();
   const navigate = useNavigate();
   const [expandedMenus, setExpandedMenus] = useState({});
 
@@ -267,9 +269,26 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     },
   ];
 
-  const filteredMenus = menuStructure.filter(item => 
-    item.roles?.includes(user?.role || 'cashier')
-  );
+  // Filter menus based on RBAC permissions
+  const filteredMenus = menuStructure.filter(item => {
+    // If user has all_permissions (super admin), show all
+    if (permissions?.all_permissions) return true;
+    
+    // Check role-based visibility first
+    const roleAllowed = item.roles?.includes(user?.role || 'cashier');
+    if (!roleAllowed) return false;
+    
+    // Check RBAC menu visibility
+    if (item.name.includes('Master Data')) return canSeeMenu('master');
+    if (item.name.includes('Pembelian')) return canSeeMenu('purchase');
+    if (item.name.includes('Penjualan')) return canSeeMenu('sales');
+    if (item.name.includes('Persediaan')) return canSeeMenu('inventory');
+    if (item.name.includes('Akuntansi')) return canSeeMenu('accounting');
+    if (item.name.includes('Laporan')) return canSeeMenu('report');
+    if (item.name.includes('Pengaturan')) return canSeeMenu('setting');
+    
+    return roleAllowed;
+  });
 
   const roleLabels = {
     owner: 'Pemilik',
