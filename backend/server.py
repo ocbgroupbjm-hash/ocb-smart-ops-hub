@@ -74,6 +74,12 @@ from routes.ai_command_center import router as ai_command_router
 from routes.crm_ai import router as crm_ai_router
 from routes.attendance_advanced import router as attendance_v2_router
 
+# Import OCB TITAN AI Phase 2 routers
+from routes.export_advanced import router as export_advanced_router
+from routes.import_system import router as import_system_router
+from routes.file_upload import router as file_upload_router
+from routes.whatsapp_alerts import router as whatsapp_alerts_router
+
 # Mount all routers under /api - Core ERP
 app.include_router(auth_router, prefix="/api")
 app.include_router(products_router, prefix="/api")
@@ -119,6 +125,12 @@ app.include_router(kpi_router)
 app.include_router(ai_command_router)
 app.include_router(crm_ai_router)
 app.include_router(attendance_v2_router)
+
+# Mount OCB TITAN AI Phase 2 routers
+app.include_router(export_advanced_router)
+app.include_router(import_system_router)
+app.include_router(file_upload_router)
+app.include_router(whatsapp_alerts_router)
 
 # Health check
 @app.get("/api/health")

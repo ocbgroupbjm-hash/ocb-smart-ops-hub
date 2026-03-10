@@ -44,6 +44,11 @@ import KPIPerformance from './pages/KPIPerformance';
 import AICommandCenter from './pages/AICommandCenter';
 import CRMAI from './pages/CRMAI';
 
+// OCB TITAN AI Phase 2 Pages
+import AdvancedExport from './pages/AdvancedExport';
+import ImportSystem from './pages/ImportSystem';
+import WhatsAppAlerts from './pages/WhatsAppAlerts';
+
 // Master Data Pages
 import { 
   MasterItems, MasterCategories, MasterUnits, MasterBrands, 
@@ -132,6 +137,11 @@ function App() {
             <Route path="kpi-performance" element={<KPIPerformance />} />
             <Route path="ai-command-center" element={<AICommandCenter />} />
             <Route path="crm-ai" element={<CRMAI />} />
+            
+            {/* OCB TITAN AI Phase 2 Routes */}
+            <Route path="advanced-export" element={<AdvancedExport />} />
+            <Route path="import-system" element={<ImportSystem />} />
+            <Route path="whatsapp-alerts" element={<WhatsAppAlerts />} />
             
             {/* SUPER ERP Routes */}
             <Route path="setoran-harian" element={<SetoranHarian />} />

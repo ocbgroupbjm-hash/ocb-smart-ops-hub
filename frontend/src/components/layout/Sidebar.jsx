@@ -63,7 +63,9 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
         { name: '🧠 AI Command Center', icon: Brain, path: '/ai-command-center', description: 'Analisis AI' },
         { name: '🏆 KPI & Performance', icon: Target, path: '/kpi-performance', description: 'Ranking karyawan' },
         { name: '🤖 CRM AI', icon: Bot, path: '/crm-ai', description: 'AI untuk CRM' },
-        { name: '📤 Data Export', icon: Download, path: '/data-export', description: 'Export semua data' },
+        { name: '📤 Advanced Export', icon: Download, path: '/advanced-export', description: 'Export Excel/PDF' },
+        { name: '📥 Import Data', icon: Upload, path: '/import-system', description: 'Import Excel/CSV' },
+        { name: '📱 WhatsApp Alerts', icon: Bell, path: '/whatsapp-alerts', description: 'Notifikasi WA' },
       ]
     },
     {
