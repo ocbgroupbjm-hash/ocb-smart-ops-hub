@@ -1,0 +1,92 @@
+{
+  "summary": "Form Tambah Item Revisi - All Features Verified. Form has 4 tabs (Data Umum, Harga Jual, Stok & Gudang, Akunting), NO Branch/Cabang field in form, multi-mode pricing integrated in Harga Jual tab, item successfully created without branch_id (global master item).",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "/api/ai-photo-studio/*", "issue": "404 errors logged for AI photo studio endpoints - not critical for this test"}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_results": {
+    "FORM_STRUCTURE": {
+      "no_branch_field": "PASS - Form Tambah Item does NOT contain any Branch/Cabang field",
+      "global_info_banner": "PASS - Shows 'Master Item bersifat global. Penempatan item per cabang diatur melalui modul Stok Cabang'",
+      "four_tabs_present": "PASS - Data Umum, Harga Jual, Stok & Gudang, Akunting tabs all visible and clickable"
+    },
+    "TAB_1_DATA_UMUM": {
+      "kode_item": "PASS - Required field with * marker",
+      "barcode": "PASS - Optional field present",
+      "nama_item": "PASS - Required field with * marker",
+      "tipe_item": "PASS - Dropdown with options: Barang, Jasa, Rakitan, Non-Inv, Biaya",
+      "kategori": "PASS - Dropdown populated with categories",
+      "satuan": "PASS - Required field with * marker, dropdown populated",
+      "merek": "PASS - Optional dropdown populated with brands",
+      "rak_default": "PASS - Optional text input with placeholder 'Contoh: A-01'",
+      "sku_internal": "PASS - Optional text input",
+      "harga_beli": "PASS - Number input with Rp prefix",
+      "harga_jual_default": "PASS - Number input with Rp prefix and helper text",
+      "berat": "PASS - Number input with unit selector (gr/kg/ml/l)",
+      "supplier_default": "PASS - Optional dropdown",
+      "deskripsi": "PASS - Optional textarea",
+      "checkboxes": "PASS - Aktif, Track Stok, Serial Number, Expired Date, Discontinued"
+    },
+    "TAB_2_HARGA_JUAL": {
+      "pricing_modes_display": "PASS - 4 modes visible: Satu Harga, Berdasarkan Jumlah, Level Harga, Berdasarkan Satuan",
+      "single_mode": "PASS - Shows default price from Data Umum tab",
+      "quantity_mode": "PASS - Shows 'Tambah Tier' button and tier example",
+      "level_mode": "PASS - Shows customer level inputs (retail, member, reseller, distributor, grosir)",
+      "unit_mode": "PASS - Shows unit-based pricing config",
+      "price_selection_checkbox": "PASS - 'Harga jual dipilih saat transaksi' checkbox present",
+      "security_warning": "PASS - Shows 'ANDA TIDAK MEMILIKI IZIN MENGUBAH HARGA' warning for kasir without permission"
+    },
+    "TAB_3_STOK_GUDANG": {
+      "info_banner": "PASS - Shows 'Pengaturan stok per cabang dilakukan melalui modul Stok Per Cabang. Di sini hanya pengaturan global.'",
+      "minimal_stok": "PASS - Number input with helper text",
+      "maksimal_stok": "PASS - Number input with helper text",
+      "rak_default": "PASS - Text input with placeholder"
+    },
+    "TAB_4_AKUNTING": {
+      "info_banner": "PASS - Shows 'Pengaturan akun ini opsional. Jika tidak diisi, sistem akan menggunakan akun default dari pengaturan perusahaan.'",
+      "akun_persediaan": "PASS - Text input present",
+      "akun_penjualan": "PASS - Text input present",
+      "akun_hpp": "PASS - Text input present",
+      "akun_retur": "PASS - Text input present",
+      "akun_diskon": "PASS - Text input present"
+    },
+    "VALIDATION": {
+      "kode_wajib": "PASS - Form validates Kode Item is required",
+      "nama_wajib": "PASS - Form validates Nama Item is required (browser validation popup shown)",
+      "satuan_wajib": "PASS - Form requires Satuan selection"
+    },
+    "ITEM_CREATION": {
+      "create_without_branch": "PASS - Item TEST-8665 created successfully without branch_id",
+      "success_toast": "PASS - Shows 'Item berhasil ditambahkan' notification",
+      "list_refresh": "PASS - Total items increased from 30 to 31",
+      "global_item": "PASS - Created item shows '-' in CABANG column (global master item)"
+    }
+  },
+  "test_report_links": [
+    "/app/test_reports/iteration_26.json"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "ItemFormModal.jsx - React Hook useEffect warning at line 116 (missing dependency 'loadPricingConfig') - minor issue, won't affect functionality"
+  ],
+  "updated_files": [],
+  "success_rate": {
+    "backend": "N/A (frontend-only test)",
+    "frontend": "100% - All features working as expected"
+  },
+  "test_credentials": {
+    "email": "ocbgroupbjm@gmail.com",
+    "password": "admin123"
+  },
+  "seed_data_creation": "Created test item TEST-8665 'Test Item From Playwright' with Harga Beli 10000, Harga Jual 15000, Satuan Box",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Form Tambah Item has been completely revised. NO Branch field exists in form. Master items are global. Branch-specific stock is managed via Stok Per Cabang module. Multi-mode pricing (Single, Quantity, Level, Unit) is integrated directly in Harga Jual tab. All 4 tabs working: Data Umum, Harga Jual, Stok & Gudang, Akunting."
+}

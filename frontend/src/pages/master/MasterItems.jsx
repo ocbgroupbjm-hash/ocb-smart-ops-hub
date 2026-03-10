@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { PricingConfigModal } from '../../components/pricing';
+import { ItemFormModal } from '../../components/master';
 
 const MasterItems = () => {
   const { api, token } = useAuth();
@@ -22,6 +23,7 @@ const MasterItems = () => {
   const [brands, setBrands] = useState([]);
   const [warehouses, setWarehouses] = useState([]);
   const [branches, setBranches] = useState([]);
+  const [suppliers, setSuppliers] = useState([]);
   
   // Filter states - COMPREHENSIVE like ERP desktop
   const [filters, setFilters] = useState({
@@ -119,12 +121,13 @@ const MasterItems = () => {
   // Load master data
   const loadMasterData = useCallback(async () => {
     try {
-      const [catRes, unitRes, brandRes, whRes, branchRes] = await Promise.all([
+      const [catRes, unitRes, brandRes, whRes, branchRes, suppRes] = await Promise.all([
         api('/api/master/categories'),
         api('/api/master/units'),
         api('/api/master/brands'),
         api('/api/master/warehouses'),
-        api('/api/global-map/branches')
+        api('/api/global-map/branches'),
+        api('/api/master/suppliers')
       ]);
       if (catRes.ok) setCategories(await catRes.json());
       if (unitRes.ok) setUnits(await unitRes.json());
@@ -133,6 +136,10 @@ const MasterItems = () => {
       if (branchRes.ok) {
         const data = await branchRes.json();
         setBranches(data.branches || []);
+      }
+      if (suppRes.ok) {
+        const data = await suppRes.json();
+        setSuppliers(data.suppliers || data || []);
       }
     } catch (err) {
       console.error('Error loading master data:', err);
@@ -171,33 +178,6 @@ const MasterItems = () => {
   };
 
   // CRUD handlers
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const url = editingItem 
-        ? `/api/master/items/${editingItem.id}`
-        : '/api/master/items';
-      const method = editingItem ? 'PUT' : 'POST';
-      
-      const res = await api(url, {
-        method,
-        body: JSON.stringify(formData)
-      });
-      
-      if (res.ok) {
-        toast.success(editingItem ? 'Item berhasil diupdate' : 'Item berhasil ditambahkan');
-        setShowModal(false);
-        resetForm();
-        loadItems();
-      } else {
-        const err = await res.json();
-        toast.error(err.detail || 'Gagal menyimpan item');
-      }
-    } catch (err) {
-      toast.error('Terjadi kesalahan');
-    }
-  };
-
   const handleDelete = async (item) => {
     if (!confirm(`Hapus item "${item.name}"?`)) return;
     try {
@@ -213,45 +193,7 @@ const MasterItems = () => {
 
   const handleEdit = (item) => {
     setEditingItem(item);
-    setFormData({
-      code: item.code || '',
-      barcode: item.barcode || '',
-      name: item.name || '',
-      category_id: item.category_id || '',
-      unit_id: item.unit_id || '',
-      brand_id: item.brand_id || '',
-      branch_id: item.branch_id || '',
-      rack: item.rack || '',
-      item_type: item.item_type || 'barang',
-      cost_price: item.cost_price || 0,
-      selling_price: item.selling_price || 0,
-      description: item.description || '',
-      is_active: item.is_active !== false,
-      track_stock: item.track_stock !== false,
-      discontinued: item.discontinued || false
-    });
     setShowModal(true);
-  };
-
-  const resetForm = () => {
-    setEditingItem(null);
-    setFormData({
-      code: '',
-      barcode: '',
-      name: '',
-      category_id: '',
-      unit_id: '',
-      brand_id: '',
-      branch_id: '',
-      rack: '',
-      item_type: 'barang',
-      cost_price: 0,
-      selling_price: 0,
-      description: '',
-      is_active: true,
-      track_stock: true,
-      discontinued: false
-    });
   };
 
   // Branch stock management
@@ -533,7 +475,7 @@ const MasterItems = () => {
           </button>
           {hasPermission('master_item', 'create') && (
             <button
-              onClick={() => { resetForm(); setShowModal(true); }}
+              onClick={() => { setEditingItem(null); setShowModal(true); }}
               className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 flex items-center gap-1"
               data-testid="btn-add"
             >
@@ -859,207 +801,25 @@ const MasterItems = () => {
         </div>
       </div>
 
-      {/* ADD/EDIT MODAL */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-          <div className="bg-[#1a1214] border border-red-900/30 rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-red-900/30">
-              <h3 className="text-lg font-bold text-amber-100">
-                {editingItem ? 'Edit Item' : 'Tambah Item Baru'}
-              </h3>
-              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-white">
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            <form onSubmit={handleSubmit} className="p-4 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs text-gray-400 mb-1">Kode Item *</label>
-                  <input
-                    type="text"
-                    value={formData.code}
-                    onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                    className="w-full px-3 py-2 bg-[#0a0608] border border-red-900/30 rounded text-gray-200 text-sm"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-400 mb-1">Barcode</label>
-                  <input
-                    type="text"
-                    value={formData.barcode}
-                    onChange={(e) => setFormData({ ...formData, barcode: e.target.value })}
-                    className="w-full px-3 py-2 bg-[#0a0608] border border-red-900/30 rounded text-gray-200 text-sm"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs text-gray-400 mb-1">Nama Item *</label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-3 py-2 bg-[#0a0608] border border-red-900/30 rounded text-gray-200 text-sm"
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-xs text-gray-400 mb-1">Tipe Item</label>
-                  <select
-                    value={formData.item_type}
-                    onChange={(e) => setFormData({ ...formData, item_type: e.target.value })}
-                    className="w-full px-3 py-2 bg-[#0a0608] border border-red-900/30 rounded text-gray-200 text-sm"
-                  >
-                    <option value="barang">Barang</option>
-                    <option value="jasa">Jasa</option>
-                    <option value="rakitan">Rakitan</option>
-                    <option value="non-inventory">Non-Inventory</option>
-                    <option value="biaya">Biaya</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-400 mb-1">Kategori</label>
-                  <select
-                    value={formData.category_id}
-                    onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
-                    className="w-full px-3 py-2 bg-[#0a0608] border border-red-900/30 rounded text-gray-200 text-sm"
-                  >
-                    <option value="">Pilih Kategori</option>
-                    {categories.map(c => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-400 mb-1">Satuan</label>
-                  <select
-                    value={formData.unit_id}
-                    onChange={(e) => setFormData({ ...formData, unit_id: e.target.value })}
-                    className="w-full px-3 py-2 bg-[#0a0608] border border-red-900/30 rounded text-gray-200 text-sm"
-                  >
-                    <option value="">Pilih Satuan</option>
-                    {units.map(u => (
-                      <option key={u.id} value={u.id}>{u.name}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-xs text-gray-400 mb-1">Merek</label>
-                  <select
-                    value={formData.brand_id}
-                    onChange={(e) => setFormData({ ...formData, brand_id: e.target.value })}
-                    className="w-full px-3 py-2 bg-[#0a0608] border border-red-900/30 rounded text-gray-200 text-sm"
-                  >
-                    <option value="">Pilih Merek</option>
-                    {brands.map(b => (
-                      <option key={b.id} value={b.id}>{b.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-400 mb-1">Cabang</label>
-                  <select
-                    value={formData.branch_id}
-                    onChange={(e) => setFormData({ ...formData, branch_id: e.target.value })}
-                    className="w-full px-3 py-2 bg-[#0a0608] border border-red-900/30 rounded text-gray-200 text-sm"
-                  >
-                    <option value="">Pilih Cabang</option>
-                    {branches.map(b => (
-                      <option key={b.id} value={b.id}>{b.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-400 mb-1">Rak</label>
-                  <input
-                    type="text"
-                    value={formData.rack}
-                    onChange={(e) => setFormData({ ...formData, rack: e.target.value })}
-                    className="w-full px-3 py-2 bg-[#0a0608] border border-red-900/30 rounded text-gray-200 text-sm"
-                    placeholder="Contoh: A-01"
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs text-gray-400 mb-1">Harga Beli</label>
-                  <input
-                    type="number"
-                    value={formData.cost_price}
-                    onChange={(e) => setFormData({ ...formData, cost_price: parseInt(e.target.value) || 0 })}
-                    className="w-full px-3 py-2 bg-[#0a0608] border border-red-900/30 rounded text-gray-200 text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-400 mb-1">Harga Jual</label>
-                  <input
-                    type="number"
-                    value={formData.selling_price}
-                    onChange={(e) => setFormData({ ...formData, selling_price: parseInt(e.target.value) || 0 })}
-                    className="w-full px-3 py-2 bg-[#0a0608] border border-red-900/30 rounded text-gray-200 text-sm"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs text-gray-400 mb-1">Deskripsi</label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full px-3 py-2 bg-[#0a0608] border border-red-900/30 rounded text-gray-200 text-sm"
-                  rows={2}
-                />
-              </div>
-              <div className="flex items-center gap-4">
-                <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.is_active}
-                    onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                    className="w-4 h-4"
-                  />
-                  Aktif
-                </label>
-                <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.track_stock}
-                    onChange={(e) => setFormData({ ...formData, track_stock: e.target.checked })}
-                    className="w-4 h-4"
-                  />
-                  Track Stok
-                </label>
-                <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.discontinued}
-                    onChange={(e) => setFormData({ ...formData, discontinued: e.target.checked })}
-                    className="w-4 h-4"
-                  />
-                  Discontinued
-                </label>
-              </div>
-              <div className="flex gap-2 pt-4 border-t border-red-900/30">
-                <button
-                  type="button"
-                  onClick={() => setShowModal(false)}
-                  className="flex-1 px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-600"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-                >
-                  {editingItem ? 'Update' : 'Simpan'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      {/* ADD/EDIT MODAL - Using new ItemFormModal component */}
+      <ItemFormModal
+        isOpen={showModal}
+        onClose={() => {
+          setShowModal(false);
+          setEditingItem(null);
+        }}
+        editingItem={editingItem}
+        token={token}
+        categories={categories}
+        units={units}
+        brands={brands}
+        suppliers={suppliers}
+        onSave={() => {
+          loadItems();
+          setShowModal(false);
+          setEditingItem(null);
+        }}
+      />
 
       {/* BRANCH STOCK MODAL */}
       {showBranchStock && selectedItemForStock && (
