@@ -145,28 +145,29 @@ async def create_item(data: ItemCreate, user: dict = Depends(get_current_user)):
     item = {
         "id": str(uuid.uuid4()),
         **data.model_dump(),
-        "stock": 0,  # Initial stock
+        # NOTE: stock tidak disimpan di item - dihitung dari stock_movements (SSOT)
         "created_at": datetime.now(timezone.utc).isoformat(),
         "created_by": user.get("id")
     }
     await items.insert_one(item)
     
-    # Auto-initialize branch stocks for all branches
+    # Auto-initialize branch stock CONFIG for all branches (min/max only, NOT stock_current)
+    # stock_current dihitung dari stock_movements (SSOT principle)
     all_branches = await db["branches"].find({}, {"_id": 0, "id": 1, "name": 1}).to_list(500)
     if all_branches:
-        branch_stocks = []
+        branch_configs = []
         for branch in all_branches:
-            branch_stocks.append({
+            branch_configs.append({
                 "id": str(uuid.uuid4()),
                 "item_id": item["id"],
                 "branch_id": branch["id"],
                 "branch_name": branch.get("name", ""),
-                "stock_current": 0,
+                # stock_current dihilangkan - dihitung dari stock_movements
                 "stock_minimum": 0,
                 "stock_maximum": 0,
                 "created_at": datetime.now(timezone.utc).isoformat()
             })
-        await db["item_branch_stock"].insert_many(branch_stocks)
+        await db["item_branch_stock"].insert_many(branch_configs)
     
     return {"id": item["id"], "message": "Item berhasil ditambahkan"}
 

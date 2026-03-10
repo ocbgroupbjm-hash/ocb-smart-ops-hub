@@ -51,34 +51,38 @@ async def get_item_branch_stocks(item_id: str, user: dict = Depends(get_current_
     if not item:
         raise HTTPException(status_code=404, detail="Item tidak ditemukan")
     
-    # Get branch stocks
-    stocks = await db["item_branch_stock"].find(
+    # Get branch stock configs (min/max)
+    configs = await db["item_branch_stock"].find(
         {"item_id": item_id}, 
         {"_id": 0}
     ).to_list(1000)
     
-    # If no stocks, initialize with all branches
-    if not stocks:
-        branches = await db["branches"].find({}, {"_id": 0, "id": 1, "name": 1}).to_list(500)
-        stocks = []
-        for branch in branches:
-            stock_doc = {
-                "id": str(uuid.uuid4()),
-                "item_id": item_id,
-                "branch_id": branch["id"],
-                "branch_name": branch.get("name", ""),
-                "stock_current": 0,
-                "stock_minimum": 0,
-                "stock_maximum": 0,
-                "created_at": datetime.now(timezone.utc).isoformat()
-            }
-            stocks.append(stock_doc)
-    else:
-        # Enrich with branch names
-        for stock in stocks:
-            if not stock.get("branch_name"):
-                branch = await db["branches"].find_one({"id": stock["branch_id"]}, {"_id": 0, "name": 1})
-                stock["branch_name"] = branch.get("name", "") if branch else ""
+    # Get all branches
+    branches = await db["branches"].find({}, {"_id": 0, "id": 1, "name": 1}).to_list(500)
+    branch_map = {b["id"]: b["name"] for b in branches}
+    config_map = {c["branch_id"]: c for c in configs}
+    
+    # Calculate stock_current from stock_movements (SSOT)
+    pipeline = [
+        {"$match": {"item_id": item_id}},
+        {"$group": {"_id": "$branch_id", "stock_current": {"$sum": "$quantity"}}}
+    ]
+    stock_results = await db["stock_movements"].aggregate(pipeline).to_list(500)
+    stock_map = {s["_id"]: s["stock_current"] for s in stock_results}
+    
+    # Build result with calculated stock
+    stocks = []
+    for branch in branches:
+        config = config_map.get(branch["id"], {})
+        stocks.append({
+            "id": config.get("id", str(uuid.uuid4())),
+            "item_id": item_id,
+            "branch_id": branch["id"],
+            "branch_name": branch.get("name", ""),
+            "stock_current": stock_map.get(branch["id"], 0),  # Calculated from movements (SSOT)
+            "stock_minimum": config.get("stock_minimum", 0),
+            "stock_maximum": config.get("stock_maximum", 0)
+        })
     
     return {
         "item_id": item_id,
