@@ -2,165 +2,133 @@
 ## Product Requirements Document (PRD)
 
 ### Overview
-Enterprise AI-powered retail operating system dengan **Supreme RBAC Security** dan **Multi-Mode Pricing System**.
+Enterprise AI-powered retail operating system dengan **Supreme RBAC Security**, **Multi-Mode Pricing**, dan **ERP-Grade Item Management**.
 
 ---
 
 ## LATEST UPDATE: March 10, 2026
 
-### ✅ MULTI-MODE SELLING PRICE SYSTEM - COMPLETE (100%)
+### ✅ FORM TAMBAH ITEM REVISI - COMPLETE (100%)
 
-#### 4 Pricing Modes
+#### Perubahan Utama
+1. **HAPUS Field Cabang** - Master item bersifat global
+2. **4 Tab Structure** - Form lebih terorganisir
+3. **Multi-Mode Pricing Terintegrasi** - Langsung di form
 
-**1. SATU HARGA (Single Price)**
-- Produk hanya memiliki satu harga jual tetap
-- Contoh: Kabel Data = Rp 15.000
+#### Struktur Form Baru
 
-**2. BERDASARKAN JUMLAH (Quantity Pricing)**
-- Harga berubah berdasarkan jumlah pembelian
-- Contoh:
-  - Qty 1-4 = Rp 10.000
-  - Qty 5-9 = Rp 9.000
-  - Qty 10+ = Rp 8.000
+**TAB 1: Data Umum**
+- Kode Item* (wajib)
+- Barcode
+- Nama Item* (wajib)
+- Tipe Item (Barang/Jasa/Rakitan/Non-Inventory/Biaya)
+- Kategori
+- Satuan* (wajib)
+- Merek
+- Rak Default
+- SKU Internal
+- Harga Beli
+- Harga Jual Default
+- Berat (dengan unit gr/kg/ml/l)
+- Supplier Default
+- Deskripsi
+- Checkboxes: Aktif, Track Stok, Serial Number, Expired Date, Discontinued
 
-**3. LEVEL HARGA (Price Levels)**
-- Harga berbeda berdasarkan tipe customer
-- Contoh:
-  - Retail = Rp 10.000
-  - Member = Rp 9.500
-  - Reseller = Rp 9.000
-  - Distributor = Rp 8.500
-  - Grosir = Rp 8.000
+**TAB 2: Harga Jual**
+- Pilihan Mode Harga:
+  - (●) Satu Harga
+  - ( ) Berdasarkan Jumlah
+  - ( ) Level Harga
+  - ( ) Berdasarkan Satuan
+- Form dinamis sesuai mode
+- Checkbox: "Harga jual dipilih saat transaksi"
+- Security warning untuk kasir tanpa izin
 
-**4. BERDASARKAN SATUAN (Unit Pricing)**
-- Harga berbeda berdasarkan satuan
-- Contoh:
-  - 1 PCS = Rp 1.500
-  - 1 PACK (10 PCS) = Rp 14.000
-  - 1 DUS (50 PCS) = Rp 55.000
+**TAB 3: Stok & Gudang**
+- Minimal Stok (global)
+- Maksimal Stok (global)
+- Rak Default
+- Info: "Pengaturan stok per cabang via modul Stok Per Cabang"
 
-#### API Endpoints
-```
-POST   /api/pricing/init              - Initialize system
-GET    /api/pricing/modes             - Get pricing modes
-GET    /api/pricing/customer-levels   - Get customer levels
-GET    /api/pricing/product/{id}      - Get product pricing
-PUT    /api/pricing/product/{id}      - Update product pricing
-POST   /api/pricing/calculate         - Calculate price
-POST   /api/pricing/calculate-batch   - Batch calculation
-POST   /api/pricing/pos/select-price  - POS price selection (secured)
-POST   /api/pricing/bulk-setup        - Bulk pricing setup
-```
+**TAB 4: Akunting**
+- Akun Persediaan
+- Akun Penjualan
+- Akun HPP
+- Akun Retur
+- Akun Diskon
+- Info: "Opsional - default dari pengaturan perusahaan"
 
-#### Security Features
-- ✅ **Override Price Permission**: Hanya user dengan `override_price` yang dapat mengubah harga
-- ✅ **FAIL-SAFE**: Kasir tanpa izin mendapat 403 FORBIDDEN
-- ✅ **Audit Log**: Semua perubahan harga tercatat
+#### Validasi
+- ✅ Kode Item wajib
+- ✅ Nama Item wajib
+- ✅ Satuan wajib
+- ✅ Harga tidak boleh negatif
+- ✅ Mode pricing specific validations
 
-#### Frontend Components
-- **PricingConfigModal**: Konfigurasi harga per produk
-- **POSPriceComponents**: Display harga di POS
-- **MODE HARGA Column**: Badge di tabel items (SINGLE/QTY/LEVEL/UNIT)
+---
+
+### ✅ MULTI-MODE SELLING PRICE SYSTEM - COMPLETE
+
+| Mode | Deskripsi |
+|------|-----------|
+| Satu Harga | Satu harga tetap |
+| Berdasarkan Jumlah | Price tiers per qty |
+| Level Harga | Per customer type |
+| Berdasarkan Satuan | Per unit (PCS/PACK/DUS) |
 
 ---
 
 ### ✅ ENTERPRISE RBAC SECURITY SYSTEM - COMPLETE
 
-#### Role Hierarchy (Level 0-8)
-```
-Level 0: SUPER ADMIN     - Full system access
-Level 1: PEMILIK         - Full access (inherit_all)
-Level 2: DIREKTUR        - All branches access
-Level 3: MANAGER         - Inherits from Supervisor
-Level 4: SUPERVISOR      - Inherits from Admin
-Level 5: ADMIN           - Inherits from Gudang + Keuangan
-Level 6: GUDANG/KEUANGAN - Departmental access
-Level 7: KASIR           - Point of sale only
-Level 8: VIEWER          - View only (read-only)
-```
-
-#### Metrics
-| Metric | Value |
-|--------|-------|
-| Total Modules | 99 |
-| Total Actions | 13 |
-| Total Roles | 10 |
-| Customer Levels | 5 |
-| Pricing Modes | 4 |
+| Level | Role |
+|-------|------|
+| 0 | Super Admin |
+| 1 | Pemilik (inherit_all) |
+| 2 | Direktur |
+| 3 | Manager |
+| 4 | Supervisor |
+| 5 | Admin |
+| 6 | Gudang/Keuangan |
+| 7 | Kasir |
+| 8 | Viewer |
 
 ---
 
-## Complete System Features
+## System Stats
 
-### 1. AI CFO & War Room
-- CFO Dashboard, AI War Room, Global Map (46 branches)
+| Metric | Value |
+|--------|-------|
+| Total Branches | 46 |
+| Total Products | 34+ |
+| RBAC Modules | 99 |
+| RBAC Actions | 13 |
+| Pricing Modes | 4 |
+| Customer Levels | 5 |
 
-### 2. Master Data
-- Items, Categories, Units, Brands, Suppliers, Customers
-- Per-Branch Stock, AI Photo Studio, Kartu Stok
+---
 
-### 3. Transactions
-- Purchase, Sales, Cashier, Returns
-- Stock In/Out, Transfer, Opname
+## Key Components
 
-### 4. Accounting
-- Cash In/Out, Journals, General Ledger
-- Period Closing, Balance Sheet
+### Form Tambah Item
+- `/app/frontend/src/components/master/ItemFormModal.jsx`
 
-### 5. Reports
-- 15+ report types with export
+### Pricing System
+- `/app/backend/routes/pricing_system.py`
+- `/app/frontend/src/components/pricing/PricingConfigModal.jsx`
 
-### 6. Enterprise Security
-- RBAC with 10-level hierarchy
-- Audit logging with severity
-- Branch-level access control
-
-### 7. Multi-Mode Pricing
-- 4 pricing modes
-- POS price selection (secured)
-- Customer level discounts
+### RBAC System
+- `/app/backend/routes/rbac_system.py`
+- `/app/frontend/src/pages/settings/RBACManagement.jsx`
 
 ---
 
 ## Test Results
 
-### Iteration 24: Enterprise RBAC
-- Backend: 23/23 PASSED (100%)
-- Frontend: 100% Working
-
-### Iteration 25: Multi-Mode Pricing
-- Backend: 15/15 PASSED (100%)
-- Frontend: 100% Working
-
----
-
-## Test Accounts
-| Role | Email | Password |
-|------|-------|----------|
-| PEMILIK | ocbgroupbjm@gmail.com | admin123 |
-| ADMIN | admin_test@ocb.com | test123 |
-| SUPERVISOR | supervisor_test@ocb.com | test123 |
-| KASIR | kasir_test@ocb.com | test123 |
-| VIEWER | viewer_test@ocb.com | test123 |
-
----
-
-## Key Files
-
-### Pricing System
-- `/app/backend/routes/pricing_system.py`
-- `/app/frontend/src/components/pricing/PricingConfigModal.jsx`
-- `/app/frontend/src/components/pricing/POSPriceComponents.jsx`
-
-### RBAC System
-- `/app/backend/routes/rbac_system.py`
-- `/app/frontend/src/pages/settings/RBACManagement.jsx`
-- `/app/frontend/src/contexts/PermissionContext.jsx`
-
-### Tests
-- `/app/test_reports/iteration_25.json`
-- `/app/backend/tests/test_multimode_pricing_system.py`
-- `/app/backend/tests/test_enterprise_rbac_security.py`
+| Iteration | Feature | Result |
+|-----------|---------|--------|
+| 24 | Enterprise RBAC | 100% PASS |
+| 25 | Multi-Mode Pricing | 100% PASS |
+| 26 | Form Tambah Item Revisi | 100% PASS |
 
 ---
 
@@ -168,15 +136,14 @@ Level 8: VIEWER          - View only (read-only)
 
 | Feature | Status |
 |---------|--------|
-| 46 Branches | ✅ READY |
-| Enterprise RBAC | ✅ READY |
+| Global Master Item | ✅ READY |
+| Form 4 Tabs | ✅ READY |
 | Multi-Mode Pricing | ✅ READY |
-| POS Security | ✅ READY |
-| Audit Logging | ✅ READY |
-| SSOT Architecture | ✅ READY |
+| Enterprise RBAC | ✅ READY |
+| Branch Stock Module | ✅ READY |
 
 ---
 
-**Version:** 9.0.0 (Multi-Mode Pricing + Enterprise RBAC)
+**Version:** 10.0.0 (Form Item + Multi-Mode Pricing + RBAC)
 **Last Updated:** March 10, 2026
 **Test Coverage:** 100%
