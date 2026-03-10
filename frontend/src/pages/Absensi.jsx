@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Fingerprint, MapPin, Clock, Camera, CheckCircle, XCircle,
-  Calendar, Building2, User, AlertTriangle, LogIn, LogOut
+  Calendar, Building2, User, AlertTriangle, LogIn, LogOut, ClipboardCheck
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { useToast } from '../hooks/use-toast';
 import api from '../services/api';
 
@@ -28,12 +29,20 @@ const Absensi = () => {
   const [location, setLocation] = useState({ lat: 0, lng: 0, address: '' });
   const [gettingLocation, setGettingLocation] = useState(false);
   const [checkingIn, setCheckingIn] = useState(false);
+  
+  // Approval state
+  const [activeTab, setActiveTab] = useState('absensi');
+  const [pendingApprovals, setPendingApprovals] = useState([]);
 
   useEffect(() => {
-    fetchData();
-    fetchBranches();
-    fetchEmployees();
-    fetchDailySummary();
+    const token = localStorage.getItem('token');
+    if (token) {
+      fetchData();
+      fetchBranches();
+      fetchEmployees();
+      fetchDailySummary();
+      fetchPendingApprovals();
+    }
   }, [tanggal, filterBranch, filterStatus]);
 
   const fetchData = async () => {
@@ -78,6 +87,40 @@ const Absensi = () => {
       setEmployees(res.data.employees || []);
     } catch (err) {
       console.error('Error fetching employees:', err);
+    }
+  };
+
+  const fetchPendingApprovals = async () => {
+    try {
+      const res = await api.get('/api/attendance/approvals/pending');
+      setPendingApprovals(res.data.pending || []);
+    } catch (err) {
+      console.error('Error fetching pending approvals:', err);
+    }
+  };
+
+  const approveRequest = async (id) => {
+    try {
+      await api.put(`/api/attendance/approvals/${id}/approve?approver_id=system&approver_name=Admin`);
+      toast({ title: 'Berhasil', description: 'Pengajuan disetujui' });
+      fetchPendingApprovals();
+      fetchData();
+    } catch (err) {
+      toast({ title: 'Error', description: 'Gagal menyetujui', variant: 'destructive' });
+    }
+  };
+
+  const rejectRequest = async (id) => {
+    const reason = window.prompt('Alasan penolakan:');
+    if (!reason) return;
+    
+    try {
+      await api.put(`/api/attendance/approvals/${id}/reject?approver_id=system&approver_name=Admin&reason=${encodeURIComponent(reason)}`);
+      toast({ title: 'Ditolak', description: 'Pengajuan ditolak' });
+      fetchPendingApprovals();
+      fetchData();
+    } catch (err) {
+      toast({ title: 'Error', description: 'Gagal menolak', variant: 'destructive' });
     }
   };
 
@@ -199,13 +242,35 @@ const Absensi = () => {
   return (
     <div className="p-6 space-y-6" data-testid="absensi-page">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-amber-100">Absensi Karyawan</h1>
-        <p className="text-gray-400 text-sm">Check-in/out dengan GPS dan selfie</p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold text-amber-100">Absensi Karyawan</h1>
+          <p className="text-gray-400 text-sm">Check-in/out dengan GPS dan selfie</p>
+        </div>
+        {pendingApprovals.length > 0 && (
+          <div className="px-3 py-1 bg-yellow-900/30 border border-yellow-700/30 rounded-full text-yellow-400 text-sm flex items-center gap-2">
+            <ClipboardCheck className="h-4 w-4" />
+            {pendingApprovals.length} perlu approval
+          </div>
+        )}
       </div>
 
-      {/* Quick Check-in Card */}
-      <Card className="bg-gradient-to-br from-green-900/20 to-green-800/10 border-green-700/30">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="bg-red-950/30">
+          <TabsTrigger value="absensi" className="flex items-center gap-2">
+            <Fingerprint className="h-4 w-4" /> Absensi Harian
+          </TabsTrigger>
+          <TabsTrigger value="approvals" className="flex items-center gap-2">
+            <ClipboardCheck className="h-4 w-4" /> Approval
+            {pendingApprovals.length > 0 && (
+              <span className="ml-1 px-2 py-0.5 bg-yellow-600 text-black text-xs rounded-full">{pendingApprovals.length}</span>
+            )}
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="absensi" className="space-y-4 mt-4">
+          {/* Quick Check-in Card */}
+          <Card className="bg-gradient-to-br from-green-900/20 to-green-800/10 border-green-700/30">
         <CardHeader>
           <CardTitle className="text-lg text-green-400 flex items-center gap-2">
             <Fingerprint className="h-5 w-5" /> Quick Check-in
@@ -432,6 +497,74 @@ const Absensi = () => {
           </div>
         </CardContent>
       </Card>
+        </TabsContent>
+
+        {/* Approvals Tab */}
+        <TabsContent value="approvals" className="mt-4">
+          <Card className="bg-[#0f0a0a] border-red-900/20">
+            <CardHeader>
+              <CardTitle className="text-lg text-amber-200 flex items-center gap-2">
+                <ClipboardCheck className="h-5 w-5" /> Pengajuan Menunggu Approval
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {pendingApprovals.length === 0 ? (
+                <div className="text-center py-8 text-gray-400">
+                  <CheckCircle className="h-12 w-12 mx-auto mb-4 text-green-500/50" />
+                  <p>Tidak ada pengajuan yang menunggu approval</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {pendingApprovals.map((item) => (
+                    <div key={item.id} className="p-4 bg-red-950/20 rounded-lg border border-red-900/30">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="font-medium text-amber-200">{item.employee_name}</p>
+                          <p className="text-xs text-gray-400">{item.employee_nik} - {item.branch_name}</p>
+                          <div className="mt-2 flex items-center gap-3">
+                            <span className={`px-2 py-1 text-xs rounded ${
+                              item.status === 'izin' ? 'bg-blue-900/30 text-blue-400' :
+                              item.status === 'cuti' ? 'bg-purple-900/30 text-purple-400' :
+                              item.status === 'sakit' ? 'bg-orange-900/30 text-orange-400' :
+                              'bg-gray-900/30 text-gray-400'
+                            }`}>
+                              {item.status?.toUpperCase()}
+                            </span>
+                            <span className="text-sm text-gray-400">
+                              <Calendar className="h-3 w-3 inline mr-1" />
+                              {item.tanggal}
+                            </span>
+                          </div>
+                          {item.keterangan && (
+                            <p className="mt-2 text-sm text-gray-300">"{item.keterangan}"</p>
+                          )}
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            onClick={() => approveRequest(item.id)}
+                            className="bg-green-600 hover:bg-green-700"
+                          >
+                            <CheckCircle className="h-4 w-4 mr-1" /> Setuju
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => rejectRequest(item.id)}
+                            className="border-red-700/30 text-red-400 hover:bg-red-900/20"
+                          >
+                            <XCircle className="h-4 w-4 mr-1" /> Tolak
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

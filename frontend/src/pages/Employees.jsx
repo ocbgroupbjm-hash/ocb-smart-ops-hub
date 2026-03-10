@@ -54,9 +54,13 @@ const Employees = () => {
   });
 
   useEffect(() => {
-    fetchData();
-    fetchBranches();
-    fetchJabatan();
+    // Check if token exists before fetching
+    const token = localStorage.getItem('token');
+    if (token) {
+      fetchData();
+      fetchBranches();
+      fetchJabatan();
+    }
   }, [search, filterBranch, filterStatus]);
 
   const fetchData = async () => {
