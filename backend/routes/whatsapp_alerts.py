@@ -217,6 +217,7 @@ async def get_alert_templates():
                 "created_at": now_iso()
             }
             await alert_templates_col().insert_one(template)
+            template.pop("_id", None)  # Remove MongoDB _id before appending
             templates.append(template)
     
     return {"templates": templates}

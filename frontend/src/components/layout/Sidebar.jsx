@@ -87,6 +87,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       roles: ['owner', 'admin', 'supervisor'],
       submenu: [
         { name: 'Data Karyawan', icon: Users, path: '/employees', description: 'Master karyawan' },
+        { name: 'HR Management', icon: Building2, path: '/hr-management', description: 'Training & Struktur' },
         { name: 'Absensi', icon: Fingerprint, path: '/absensi', description: 'Check-in/out GPS' },
         { name: 'Payroll', icon: BadgeDollarSign, path: '/payroll', description: 'Penggajian' },
         { divider: true },

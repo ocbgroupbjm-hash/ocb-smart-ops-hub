@@ -317,6 +317,365 @@ async def analyze_complaint(complaint_text: str, customer_id: str = ""):
         "priority": "high" if detected_category in ["produk_rusak", "pengiriman"] else "medium"
     }
 
+# ==================== CUSTOMER MANAGEMENT ====================
+
+class CustomerProfile(BaseModel):
+    name: str
+    phone: str = ""
+    email: str = ""
+    address: str = ""
+    birth_date: str = ""
+    gender: str = ""
+    notes: str = ""
+    tags: List[str] = []
+    source: str = ""  # walk-in, online, referral, social_media
+
+class CustomerCharacter(BaseModel):
+    customer_id: str
+    buying_frequency: str = "normal"  # rare, normal, frequent, vip
+    price_sensitivity: str = "normal"  # price_sensitive, normal, premium
+    communication_style: str = "formal"  # formal, casual, brief
+    preferred_channel: str = "whatsapp"  # whatsapp, phone, email
+    interests: List[str] = []
+    special_notes: str = ""
+
+@router.get("/customers")
+async def list_customers(search: Optional[str] = None, tag: Optional[str] = None, limit: int = 100):
+    """Get all customers with optional search"""
+    query = {}
+    if search:
+        query["$or"] = [
+            {"name": {"$regex": search, "$options": "i"}},
+            {"phone": {"$regex": search, "$options": "i"}},
+            {"email": {"$regex": search, "$options": "i"}}
+        ]
+    if tag:
+        query["tags"] = tag
+    
+    customers = await customers_col().find(query, {"_id": 0}).sort("name", 1).to_list(length=limit)
+    return {"customers": customers, "total": len(customers)}
+
+@router.get("/customers/{customer_id}")
+async def get_customer_detail(customer_id: str):
+    """Get customer detail with character analysis"""
+    customer = await customers_col().find_one({"id": customer_id}, {"_id": 0})
+    if not customer:
+        raise HTTPException(status_code=404, detail="Customer tidak ditemukan")
+    
+    # Get character profile
+    char_col = get_db()['customer_characters']
+    character = await char_col.find_one({"customer_id": customer_id}, {"_id": 0})
+    
+    # Get chat history
+    chat_count = await chat_history_col().count_documents({"customer_id": customer_id})
+    
+    # Get purchase stats
+    transactions_col = get_db()['transactions']
+    purchases = await transactions_col.find(
+        {"customer_id": customer_id}, {"_id": 0}
+    ).to_list(length=100)
+    
+    total_spent = sum(p.get("total", 0) for p in purchases)
+    avg_transaction = total_spent / len(purchases) if purchases else 0
+    
+    return {
+        "customer": customer,
+        "character": character,
+        "stats": {
+            "total_purchases": len(purchases),
+            "total_spent": total_spent,
+            "avg_transaction": avg_transaction,
+            "chat_count": chat_count,
+            "last_purchase": purchases[0].get("created_at") if purchases else None
+        }
+    }
+
+@router.post("/customers")
+async def create_customer(data: CustomerProfile):
+    """Create new customer"""
+    # Check duplicate phone
+    if data.phone:
+        existing = await customers_col().find_one({"phone": data.phone})
+        if existing:
+            raise HTTPException(status_code=400, detail="Nomor telepon sudah terdaftar")
+    
+    customer = {
+        "id": gen_id(),
+        **data.dict(),
+        "total_purchases": 0,
+        "total_spent": 0,
+        "last_purchase_date": "",
+        "created_at": now_iso(),
+        "updated_at": now_iso()
+    }
+    
+    await customers_col().insert_one(customer)
+    customer.pop("_id", None)  # Remove MongoDB _id before returning
+    return {"message": "Customer berhasil ditambahkan", "customer": customer}
+
+@router.put("/customers/{customer_id}")
+async def update_customer(customer_id: str, data: CustomerProfile):
+    """Update customer data"""
+    update_data = {**data.dict(), "updated_at": now_iso()}
+    await customers_col().update_one({"id": customer_id}, {"$set": update_data})
+    return {"message": "Customer berhasil diupdate"}
+
+@router.post("/customers/{customer_id}/character")
+async def save_customer_character(customer_id: str, data: CustomerCharacter):
+    """Save/update customer character profile"""
+    char_col = get_db()['customer_characters']
+    
+    character = {
+        "id": gen_id(),
+        **data.dict(),
+        "analyzed_at": now_iso()
+    }
+    
+    await char_col.update_one(
+        {"customer_id": customer_id},
+        {"$set": character},
+        upsert=True
+    )
+    
+    character.pop("_id", None)
+    return {"message": "Karakter customer berhasil disimpan", "character": character}
+
+@router.get("/customers/{customer_id}/character")
+async def get_customer_character(customer_id: str):
+    """Get customer character profile"""
+    char_col = get_db()['customer_characters']
+    character = await char_col.find_one({"customer_id": customer_id}, {"_id": 0})
+    
+    if not character:
+        # Auto-analyze from history
+        customer = await customers_col().find_one({"id": customer_id}, {"_id": 0})
+        purchases = await get_db()['transactions'].find(
+            {"customer_id": customer_id}
+        ).to_list(length=100)
+        
+        # Simple analysis
+        purchase_count = len(purchases)
+        buying_freq = "rare" if purchase_count < 3 else "normal" if purchase_count < 10 else "frequent"
+        
+        total_spent = sum(p.get("total", 0) for p in purchases)
+        avg_spent = total_spent / purchase_count if purchase_count else 0
+        
+        price_sens = "price_sensitive" if avg_spent < 100000 else "normal" if avg_spent < 500000 else "premium"
+        
+        character = {
+            "customer_id": customer_id,
+            "buying_frequency": buying_freq,
+            "price_sensitivity": price_sens,
+            "communication_style": "formal",
+            "preferred_channel": "whatsapp",
+            "interests": [],
+            "special_notes": f"Auto-analyzed: {purchase_count} transaksi, avg Rp {avg_spent:,.0f}",
+            "is_auto_analyzed": True
+        }
+    
+    return {"character": character}
+
+@router.post("/customers/{customer_id}/analyze")
+async def analyze_customer_ai(customer_id: str):
+    """AI analysis of customer behavior and preferences"""
+    customer = await customers_col().find_one({"id": customer_id}, {"_id": 0})
+    if not customer:
+        raise HTTPException(status_code=404, detail="Customer tidak ditemukan")
+    
+    # Get all data
+    purchases = await get_db()['transactions'].find(
+        {"customer_id": customer_id}, {"_id": 0}
+    ).sort("created_at", -1).to_list(length=50)
+    
+    chats = await chat_history_col().find(
+        {"customer_id": customer_id}, {"_id": 0}
+    ).sort("created_at", -1).to_list(length=100)
+    
+    # Analyze patterns
+    purchase_count = len(purchases)
+    chat_count = len(chats)
+    total_spent = sum(p.get("total", 0) for p in purchases)
+    
+    # Buying frequency analysis
+    if purchase_count == 0:
+        buying_freq = "new"
+        freq_note = "Customer baru, belum ada pembelian"
+    elif purchase_count < 3:
+        buying_freq = "rare"
+        freq_note = "Jarang belanja, perlu pendekatan khusus"
+    elif purchase_count < 10:
+        buying_freq = "normal"
+        freq_note = "Frekuensi normal, maintain hubungan baik"
+    elif purchase_count < 20:
+        buying_freq = "frequent"
+        freq_note = "Pelanggan loyal, berikan reward/diskon khusus"
+    else:
+        buying_freq = "vip"
+        freq_note = "VIP Customer! Prioritaskan pelayanan"
+    
+    # Price sensitivity analysis
+    avg_spent = total_spent / purchase_count if purchase_count else 0
+    if avg_spent < 100000:
+        price_sens = "price_sensitive"
+        price_note = "Sensitif harga, tawarkan promo/diskon"
+    elif avg_spent < 500000:
+        price_sens = "normal"
+        price_note = "Budget menengah, balance promo & kualitas"
+    else:
+        price_sens = "premium"
+        price_note = "Customer premium, fokus ke kualitas & layanan"
+    
+    # Communication analysis
+    customer_messages = [c for c in chats if c.get("is_from_customer")]
+    if len(customer_messages) > 5:
+        # Check message length
+        avg_length = sum(len(m.get("message", "")) for m in customer_messages) / len(customer_messages)
+        if avg_length < 20:
+            comm_style = "brief"
+            comm_note = "Suka pesan singkat, respons to the point"
+        elif avg_length < 100:
+            comm_style = "casual"
+            comm_note = "Gaya santai, bisa lebih friendly"
+        else:
+            comm_style = "formal"
+            comm_note = "Cenderung detail, berikan info lengkap"
+    else:
+        comm_style = "unknown"
+        comm_note = "Belum cukup data untuk analisis"
+    
+    # Save analysis
+    analysis = {
+        "customer_id": customer_id,
+        "buying_frequency": buying_freq,
+        "buying_frequency_note": freq_note,
+        "price_sensitivity": price_sens,
+        "price_sensitivity_note": price_note,
+        "communication_style": comm_style,
+        "communication_note": comm_note,
+        "preferred_channel": "whatsapp",
+        "stats": {
+            "total_purchases": purchase_count,
+            "total_spent": total_spent,
+            "avg_transaction": avg_spent,
+            "total_chats": chat_count
+        },
+        "recommendations": [],
+        "analyzed_at": now_iso()
+    }
+    
+    # Generate recommendations
+    if buying_freq == "new":
+        analysis["recommendations"].append("Kirim welcome message dan info produk populer")
+    if buying_freq == "rare":
+        analysis["recommendations"].append("Kirim reminder dan promo khusus untuk re-engage")
+    if buying_freq in ["frequent", "vip"]:
+        analysis["recommendations"].append("Berikan loyalty reward atau early access promo")
+    if price_sens == "price_sensitive":
+        analysis["recommendations"].append("Prioritaskan info diskon dan bundle deals")
+    if price_sens == "premium":
+        analysis["recommendations"].append("Tawarkan produk premium dan layanan eksklusif")
+    
+    # Save to database
+    char_col = get_db()['customer_characters']
+    await char_col.update_one(
+        {"customer_id": customer_id},
+        {"$set": analysis},
+        upsert=True
+    )
+    
+    return {
+        "customer": customer,
+        "analysis": analysis,
+        "message": "Analisis karakter customer berhasil"
+    }
+
+# ==================== AUTO RESPONSE GENERATOR ====================
+
+@router.post("/generate-response")
+async def generate_auto_response(customer_id: str, incoming_message: str):
+    """Generate intelligent auto-response based on customer character and context"""
+    # Get customer and character
+    customer = await customers_col().find_one({"id": customer_id}, {"_id": 0})
+    char_col = get_db()['customer_characters']
+    character = await char_col.find_one({"customer_id": customer_id}, {"_id": 0})
+    
+    customer_name = customer.get("name", "Pelanggan") if customer else "Pelanggan"
+    
+    # Analyze incoming message intent
+    message_lower = incoming_message.lower()
+    
+    intent = "general"
+    if any(w in message_lower for w in ["harga", "berapa", "price", "cost"]):
+        intent = "price_inquiry"
+    elif any(w in message_lower for w in ["promo", "diskon", "sale", "murah"]):
+        intent = "promo_inquiry"
+    elif any(w in message_lower for w in ["stok", "stock", "ada", "tersedia", "available"]):
+        intent = "stock_inquiry"
+    elif any(w in message_lower for w in ["komplain", "rusak", "kecewa", "tidak sesuai"]):
+        intent = "complaint"
+    elif any(w in message_lower for w in ["terima kasih", "thanks", "makasih"]):
+        intent = "gratitude"
+    elif any(w in message_lower for w in ["hai", "halo", "hello", "pagi", "siang", "sore", "malam"]):
+        intent = "greeting"
+    
+    # Build response based on character
+    comm_style = character.get("communication_style", "formal") if character else "formal"
+    price_sens = character.get("price_sensitivity", "normal") if character else "normal"
+    
+    responses = {
+        "greeting": {
+            "formal": f"Selamat datang, Kak {customer_name}! Ada yang bisa kami bantu?",
+            "casual": f"Hai Kak {customer_name}! Apa kabar? Ada yang bisa dibantu?",
+            "brief": f"Halo Kak {customer_name}! Butuh bantuan?"
+        },
+        "price_inquiry": {
+            "formal": f"Terima kasih Kak {customer_name} atas pertanyaannya. Berikut informasi harga produk kami...",
+            "casual": f"Oke Kak {customer_name}! Ini ya harganya...",
+            "brief": "Cek harga:"
+        },
+        "promo_inquiry": {
+            "formal": f"Kak {customer_name}, saat ini kami memiliki promo menarik...",
+            "casual": f"Wah pas banget Kak {customer_name}! Lagi ada promo nih...",
+            "brief": "Promo aktif:"
+        },
+        "stock_inquiry": {
+            "formal": f"Baik Kak {customer_name}, kami akan cek ketersediaan stok untuk Anda.",
+            "casual": f"Oke Kak {customer_name}! Cek stok dulu ya...",
+            "brief": "Cek stok:"
+        },
+        "complaint": {
+            "formal": f"Mohon maaf atas ketidaknyamanan yang dialami, Kak {customer_name}. Kami akan segera menindaklanjuti.",
+            "casual": f"Waduh, maaf banget ya Kak {customer_name}! Kita cek dulu masalahnya...",
+            "brief": f"Maaf Kak {customer_name}. Akan kami proses."
+        },
+        "gratitude": {
+            "formal": f"Sama-sama, Kak {customer_name}. Terima kasih telah berbelanja di OCB Group.",
+            "casual": f"Sama-sama Kak {customer_name}! Ditunggu orderan berikutnya ya!",
+            "brief": "Sama-sama!"
+        },
+        "general": {
+            "formal": f"Terima kasih sudah menghubungi kami, Kak {customer_name}. Ada yang bisa kami bantu?",
+            "casual": f"Hai Kak {customer_name}! Ada yang bisa dibantu?",
+            "brief": "Ada yang bisa dibantu?"
+        }
+    }
+    
+    response = responses.get(intent, responses["general"]).get(comm_style, responses["general"]["formal"])
+    
+    # Add extra for price-sensitive customers
+    if price_sens == "price_sensitive" and intent not in ["complaint", "gratitude"]:
+        response += "\n\n💰 Psst... Kak ada promo spesial lho!"
+    
+    return {
+        "customer_name": customer_name,
+        "incoming_message": incoming_message,
+        "detected_intent": intent,
+        "customer_style": comm_style,
+        "generated_response": response,
+        "can_auto_send": intent in ["greeting", "gratitude"],
+        "needs_review": intent in ["complaint", "price_inquiry", "stock_inquiry"]
+    }
+
 # ==================== SEED DEFAULT PROMPTS ====================
 
 @router.post("/seed-prompts")

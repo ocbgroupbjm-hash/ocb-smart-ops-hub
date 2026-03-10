@@ -49,6 +49,7 @@ import AdvancedExport from './pages/AdvancedExport';
 import ImportSystem from './pages/ImportSystem';
 import WhatsAppAlerts from './pages/WhatsAppAlerts';
 import WarRoomAlertPanel from './pages/WarRoomAlertPanel';
+import HRManagement from './pages/HRManagement';
 
 // Master Data Pages
 import { 
@@ -160,6 +161,7 @@ function App() {
             <Route path="master/payroll-rules" element={<MasterERP />} />
             <Route path="master-erp" element={<MasterERP />} />
             <Route path="erp-reports" element={<ERPReports />} />
+            <Route path="hr-management" element={<HRManagement />} />
             
             <Route path="kasir" element={<POS />} />
             <Route path="produk" element={<Products />} />

@@ -80,6 +80,7 @@ from routes.import_system import router as import_system_router
 from routes.file_upload import router as file_upload_router
 from routes.whatsapp_alerts import router as whatsapp_alerts_router
 from routes.warroom_alerts import router as warroom_alerts_router
+from routes.hr_advanced import router as hr_advanced_router
 
 # Mount all routers under /api - Core ERP
 app.include_router(auth_router, prefix="/api")
@@ -133,6 +134,7 @@ app.include_router(import_system_router)
 app.include_router(file_upload_router)
 app.include_router(whatsapp_alerts_router)
 app.include_router(warroom_alerts_router)
+app.include_router(hr_advanced_router)
 
 # Health check
 @app.get("/api/health")

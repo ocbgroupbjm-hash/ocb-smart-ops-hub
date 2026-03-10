@@ -155,6 +155,7 @@ async def create_department(dept: Department):
         "created_at": now_iso()
     }
     await departments_col().insert_one(doc)
+    doc.pop("_id", None)  # Remove MongoDB _id before returning
     return {"message": "Department berhasil dibuat", "department": doc}
 
 @router.put("/departments/{dept_id}")
@@ -310,6 +311,7 @@ async def create_training(training: Training):
         "created_at": now_iso()
     }
     await trainings_col().insert_one(doc)
+    doc.pop("_id", None)
     return {"message": "Training berhasil dibuat", "training": doc}
 
 @router.put("/trainings/{training_id}")
@@ -359,6 +361,7 @@ async def register_training(training_id: str, employee_id: str):
     }
     
     await training_participants_col().insert_one(participant)
+    participant.pop("_id", None)
     return {"message": "Berhasil mendaftar training", "participant": participant}
 
 @router.get("/trainings/{training_id}/participants")
