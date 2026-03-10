@@ -49,8 +49,28 @@ const Employees = () => {
     bank_name: '',
     bank_account: '',
     bank_holder: '',
+    // Enhanced Payroll Fields
+    salary_type: 'monthly', // monthly atau daily
     gaji_pokok: 0,
-    tunjangan_total: 0
+    upah_harian: 0,
+    tunjangan_jabatan: 0,
+    tunjangan_transport: 0,
+    tunjangan_makan: 0,
+    tunjangan_keluarga: 0,
+    tunjangan_lainnya: 0,
+    tunjangan_total: 0,
+    // Bonus Fields
+    bonus_kehadiran: 0,
+    bonus_performance: 0,
+    bonus_target: 0,
+    bonus_lainnya: 0,
+    // Deduction Fields
+    potongan_bpjs_kes: 0,
+    potongan_bpjs_tk: 0,
+    potongan_pinjaman: 0,
+    potongan_lainnya: 0,
+    // Payment
+    payment_method: 'transfer' // transfer, cash, ewallet
   });
 
   useEffect(() => {
@@ -71,7 +91,7 @@ const Employees = () => {
       if (filterBranch !== 'all') params.append('branch_id', filterBranch);
       if (filterStatus !== 'all') params.append('status', filterStatus);
       
-      const res = await api.get(`/api/erp/employees?${params.toString()}`);
+      const res = await api.get(`/erp/employees?${params.toString()}`);
       setEmployees(res.data.employees || []);
     } catch (err) {
       toast({ title: 'Error', description: 'Gagal memuat data karyawan', variant: 'destructive' });
@@ -82,7 +102,7 @@ const Employees = () => {
 
   const fetchBranches = async () => {
     try {
-      const res = await api.get('/api/branches');
+      const res = await api.get('/branches');
       setBranches(res.data.branches || res.data || []);
     } catch (err) {
       console.error('Error fetching branches:', err);
@@ -91,7 +111,7 @@ const Employees = () => {
 
   const fetchJabatan = async () => {
     try {
-      const res = await api.get('/api/erp/master/jabatan');
+      const res = await api.get('/erp/master/jabatan');
       setJabatanList(res.data.jabatan || []);
     } catch (err) {
       console.error('Error fetching jabatan:', err);
@@ -125,10 +145,10 @@ const Employees = () => {
     e.preventDefault();
     try {
       if (editData) {
-        await api.put(`/api/erp/employees/${editData.id}`, formData);
+        await api.put(`/erp/employees/${editData.id}`, formData);
         toast({ title: 'Sukses', description: 'Data karyawan berhasil diupdate' });
       } else {
-        await api.post('/api/erp/employees', formData);
+        await api.post('/erp/employees', formData);
         toast({ title: 'Sukses', description: 'Karyawan berhasil ditambahkan' });
       }
       
@@ -148,7 +168,7 @@ const Employees = () => {
   const handleDelete = async (id) => {
     if (!window.confirm('Yakin ingin menghapus karyawan ini?')) return;
     try {
-      await api.delete(`/api/erp/employees/${id}`);
+      await api.delete(`/erp/employees/${id}`);
       toast({ title: 'Sukses', description: 'Karyawan berhasil dihapus' });
       fetchData();
     } catch (err) {
@@ -181,8 +201,24 @@ const Employees = () => {
       bank_name: '',
       bank_account: '',
       bank_holder: '',
+      salary_type: 'monthly',
       gaji_pokok: 0,
-      tunjangan_total: 0
+      upah_harian: 0,
+      tunjangan_jabatan: 0,
+      tunjangan_transport: 0,
+      tunjangan_makan: 0,
+      tunjangan_keluarga: 0,
+      tunjangan_lainnya: 0,
+      tunjangan_total: 0,
+      bonus_kehadiran: 0,
+      bonus_performance: 0,
+      bonus_target: 0,
+      bonus_lainnya: 0,
+      potongan_bpjs_kes: 0,
+      potongan_bpjs_tk: 0,
+      potongan_pinjaman: 0,
+      potongan_lainnya: 0,
+      payment_method: 'transfer'
     });
   };
 
@@ -608,32 +644,254 @@ const Employees = () => {
               </TabsContent>
 
               <TabsContent value="salary" className="space-y-4 mt-4">
+                {/* Jenis Gaji */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-xs text-gray-400">Gaji Pokok</label>
-                    <Input
-                      type="number"
-                      value={formData.gaji_pokok}
-                      onChange={(e) => setFormData({...formData, gaji_pokok: parseFloat(e.target.value) || 0})}
-                      className="bg-red-950/30 border-red-900/30"
-                    />
+                    <label className="text-xs text-gray-400">Jenis Gaji *</label>
+                    <Select value={formData.salary_type} onValueChange={(v) => setFormData({...formData, salary_type: v})}>
+                      <SelectTrigger className="bg-red-950/30 border-red-900/30">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="monthly">Gaji Bulanan</SelectItem>
+                        <SelectItem value="daily">Gaji Harian</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div>
-                    <label className="text-xs text-gray-400">Total Tunjangan</label>
-                    <Input
-                      type="number"
-                      value={formData.tunjangan_total}
-                      onChange={(e) => setFormData({...formData, tunjangan_total: parseFloat(e.target.value) || 0})}
-                      className="bg-red-950/30 border-red-900/30"
-                    />
+                    <label className="text-xs text-gray-400">Metode Pembayaran</label>
+                    <Select value={formData.payment_method} onValueChange={(v) => setFormData({...formData, payment_method: v})}>
+                      <SelectTrigger className="bg-red-950/30 border-red-900/30">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="transfer">Transfer Bank</SelectItem>
+                        <SelectItem value="cash">Tunai</SelectItem>
+                        <SelectItem value="ewallet">E-Wallet</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
-                <div className="p-4 bg-green-900/20 rounded-lg">
-                  <p className="text-sm text-gray-400">Estimasi Take Home Pay:</p>
-                  <p className="text-2xl font-bold text-green-400">
-                    {formatRupiah((formData.gaji_pokok || 0) + (formData.tunjangan_total || 0))}
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">*Sebelum potongan</p>
+
+                {/* Gaji Pokok */}
+                <div className="border-t border-red-900/30 pt-4">
+                  <h4 className="text-sm font-semibold text-amber-200 mb-2">Gaji Pokok</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    {formData.salary_type === 'monthly' ? (
+                      <div>
+                        <label className="text-xs text-gray-400">Gaji Pokok (Bulanan)</label>
+                        <Input
+                          type="number"
+                          value={formData.gaji_pokok}
+                          onChange={(e) => setFormData({...formData, gaji_pokok: parseFloat(e.target.value) || 0})}
+                          className="bg-red-950/30 border-red-900/30"
+                        />
+                      </div>
+                    ) : (
+                      <div>
+                        <label className="text-xs text-gray-400">Upah Harian</label>
+                        <Input
+                          type="number"
+                          value={formData.upah_harian}
+                          onChange={(e) => setFormData({...formData, upah_harian: parseFloat(e.target.value) || 0})}
+                          className="bg-red-950/30 border-red-900/30"
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Tunjangan */}
+                <div className="border-t border-red-900/30 pt-4">
+                  <h4 className="text-sm font-semibold text-amber-200 mb-2">Tunjangan</h4>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div>
+                      <label className="text-xs text-gray-400">Tunjangan Jabatan</label>
+                      <Input
+                        type="number"
+                        value={formData.tunjangan_jabatan}
+                        onChange={(e) => setFormData({...formData, tunjangan_jabatan: parseFloat(e.target.value) || 0})}
+                        className="bg-red-950/30 border-red-900/30"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-400">Tunjangan Transport</label>
+                      <Input
+                        type="number"
+                        value={formData.tunjangan_transport}
+                        onChange={(e) => setFormData({...formData, tunjangan_transport: parseFloat(e.target.value) || 0})}
+                        className="bg-red-950/30 border-red-900/30"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-400">Tunjangan Makan</label>
+                      <Input
+                        type="number"
+                        value={formData.tunjangan_makan}
+                        onChange={(e) => setFormData({...formData, tunjangan_makan: parseFloat(e.target.value) || 0})}
+                        className="bg-red-950/30 border-red-900/30"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-400">Tunjangan Keluarga</label>
+                      <Input
+                        type="number"
+                        value={formData.tunjangan_keluarga}
+                        onChange={(e) => setFormData({...formData, tunjangan_keluarga: parseFloat(e.target.value) || 0})}
+                        className="bg-red-950/30 border-red-900/30"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-400">Tunjangan Lainnya</label>
+                      <Input
+                        type="number"
+                        value={formData.tunjangan_lainnya}
+                        onChange={(e) => setFormData({...formData, tunjangan_lainnya: parseFloat(e.target.value) || 0})}
+                        className="bg-red-950/30 border-red-900/30"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Bonus */}
+                <div className="border-t border-red-900/30 pt-4">
+                  <h4 className="text-sm font-semibold text-amber-200 mb-2">Bonus</h4>
+                  <div className="grid grid-cols-4 gap-3">
+                    <div>
+                      <label className="text-xs text-gray-400">Bonus Kehadiran</label>
+                      <Input
+                        type="number"
+                        value={formData.bonus_kehadiran}
+                        onChange={(e) => setFormData({...formData, bonus_kehadiran: parseFloat(e.target.value) || 0})}
+                        className="bg-red-950/30 border-red-900/30"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-400">Bonus Performance</label>
+                      <Input
+                        type="number"
+                        value={formData.bonus_performance}
+                        onChange={(e) => setFormData({...formData, bonus_performance: parseFloat(e.target.value) || 0})}
+                        className="bg-red-950/30 border-red-900/30"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-400">Bonus Target</label>
+                      <Input
+                        type="number"
+                        value={formData.bonus_target}
+                        onChange={(e) => setFormData({...formData, bonus_target: parseFloat(e.target.value) || 0})}
+                        className="bg-red-950/30 border-red-900/30"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-400">Bonus Lainnya</label>
+                      <Input
+                        type="number"
+                        value={formData.bonus_lainnya}
+                        onChange={(e) => setFormData({...formData, bonus_lainnya: parseFloat(e.target.value) || 0})}
+                        className="bg-red-950/30 border-red-900/30"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Potongan */}
+                <div className="border-t border-red-900/30 pt-4">
+                  <h4 className="text-sm font-semibold text-amber-200 mb-2">Potongan</h4>
+                  <div className="grid grid-cols-4 gap-3">
+                    <div>
+                      <label className="text-xs text-gray-400">BPJS Kesehatan</label>
+                      <Input
+                        type="number"
+                        value={formData.potongan_bpjs_kes}
+                        onChange={(e) => setFormData({...formData, potongan_bpjs_kes: parseFloat(e.target.value) || 0})}
+                        className="bg-red-950/30 border-red-900/30"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-400">BPJS TK</label>
+                      <Input
+                        type="number"
+                        value={formData.potongan_bpjs_tk}
+                        onChange={(e) => setFormData({...formData, potongan_bpjs_tk: parseFloat(e.target.value) || 0})}
+                        className="bg-red-950/30 border-red-900/30"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-400">Pot. Pinjaman</label>
+                      <Input
+                        type="number"
+                        value={formData.potongan_pinjaman}
+                        onChange={(e) => setFormData({...formData, potongan_pinjaman: parseFloat(e.target.value) || 0})}
+                        className="bg-red-950/30 border-red-900/30"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-400">Pot. Lainnya</label>
+                      <Input
+                        type="number"
+                        value={formData.potongan_lainnya}
+                        onChange={(e) => setFormData({...formData, potongan_lainnya: parseFloat(e.target.value) || 0})}
+                        className="bg-red-950/30 border-red-900/30"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Take Home Pay Simulation */}
+                <div className="p-4 bg-gradient-to-r from-green-900/30 to-emerald-900/20 rounded-lg border border-green-700/30">
+                  <h4 className="text-sm font-semibold text-green-400 mb-3">SIMULASI TAKE HOME PAY</h4>
+                  {(() => {
+                    const gajiPokok = formData.salary_type === 'monthly' 
+                      ? (formData.gaji_pokok || 0)
+                      : (formData.upah_harian || 0) * 26; // 26 hari kerja
+                    
+                    const totalTunjangan = (formData.tunjangan_jabatan || 0) +
+                      (formData.tunjangan_transport || 0) +
+                      (formData.tunjangan_makan || 0) +
+                      (formData.tunjangan_keluarga || 0) +
+                      (formData.tunjangan_lainnya || 0);
+                    
+                    const totalBonus = (formData.bonus_kehadiran || 0) +
+                      (formData.bonus_performance || 0) +
+                      (formData.bonus_target || 0) +
+                      (formData.bonus_lainnya || 0);
+                    
+                    const totalPotongan = (formData.potongan_bpjs_kes || 0) +
+                      (formData.potongan_bpjs_tk || 0) +
+                      (formData.potongan_pinjaman || 0) +
+                      (formData.potongan_lainnya || 0);
+                    
+                    const takeHomePay = gajiPokok + totalTunjangan + totalBonus - totalPotongan;
+                    
+                    return (
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-gray-400">Gaji Pokok {formData.salary_type === 'daily' && '(26 hari)'}</span>
+                          <span className="text-white">{formatRupiah(gajiPokok)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-400">Total Tunjangan</span>
+                          <span className="text-green-400">+ {formatRupiah(totalTunjangan)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-400">Total Bonus</span>
+                          <span className="text-green-400">+ {formatRupiah(totalBonus)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-400">Total Potongan</span>
+                          <span className="text-red-400">- {formatRupiah(totalPotongan)}</span>
+                        </div>
+                        <div className="border-t border-green-700/50 pt-2 mt-2">
+                          <div className="flex justify-between">
+                            <span className="text-lg font-bold text-green-400">TAKE HOME PAY</span>
+                            <span className="text-2xl font-bold text-green-400">{formatRupiah(takeHomePay)}</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               </TabsContent>
             </Tabs>

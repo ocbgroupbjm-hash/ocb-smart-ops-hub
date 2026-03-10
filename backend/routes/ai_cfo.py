@@ -11,8 +11,8 @@ router = APIRouter(prefix="/api/ai-cfo", tags=["AI CFO Module"])
 
 # Database connection
 def get_db():
-    from server import get_db as server_get_db
-    return server_get_db()
+    from database import get_db as db_get
+    return db_get()
 
 def gen_id():
     return str(uuid.uuid4())

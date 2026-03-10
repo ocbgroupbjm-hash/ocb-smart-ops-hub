@@ -180,9 +180,33 @@ class Employee(BaseModel):
     bank_account: str = ""
     bank_holder: str = ""
     
-    # Payroll
-    gaji_pokok: float = 0
-    tunjangan_total: float = 0
+    # Payroll - Enhanced
+    salary_type: str = "monthly"  # monthly atau daily
+    gaji_pokok: float = 0  # Gaji pokok bulanan
+    upah_harian: float = 0  # Upah harian (untuk salary_type=daily)
+    
+    # Tunjangan
+    tunjangan_jabatan: float = 0
+    tunjangan_transport: float = 0
+    tunjangan_makan: float = 0
+    tunjangan_keluarga: float = 0
+    tunjangan_lainnya: float = 0
+    tunjangan_total: float = 0  # Legacy field, will be computed
+    
+    # Bonus
+    bonus_kehadiran: float = 0
+    bonus_performance: float = 0
+    bonus_target: float = 0
+    bonus_lainnya: float = 0
+    
+    # Potongan
+    potongan_bpjs_kes: float = 0
+    potongan_bpjs_tk: float = 0
+    potongan_pinjaman: float = 0
+    potongan_lainnya: float = 0
+    
+    # Payment Method
+    payment_method: str = "transfer"  # transfer, cash, ewallet
     
     # Performance
     total_minus: float = 0

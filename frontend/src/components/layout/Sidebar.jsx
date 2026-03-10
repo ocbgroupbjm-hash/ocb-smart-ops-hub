@@ -70,6 +70,16 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       ]
     },
     {
+      name: '💼 AI CFO & War Room',
+      icon: Shield,
+      roles: ['owner', 'admin'],
+      highlight: true,
+      submenu: [
+        { name: '💰 CFO Dashboard', icon: DollarSign, path: '/cfo-dashboard', description: 'Analisis Keuangan AI' },
+        { name: '🛡️ AI Super War Room', icon: Shield, path: '/ai-warroom-super', description: 'Prediksi & Fraud Detection' },
+      ]
+    },
+    {
       name: '💰 Operasional',
       icon: Banknote,
       roles: ['owner', 'admin', 'supervisor', 'cashier'],

@@ -22,6 +22,7 @@ const HRManagement = () => {
   const [departments, setDepartments] = useState([]);
   const [trainings, setTrainings] = useState([]);
   const [orgStructure, setOrgStructure] = useState([]);
+  const [payrollSummary, setPayrollSummary] = useState(null);
   
   // Modal states
   const [showModal, setShowModal] = useState(false);
@@ -44,16 +45,18 @@ const HRManagement = () => {
   const fetchAllData = async () => {
     try {
       setLoading(true);
-      const [empRes, deptRes, trainRes, orgRes] = await Promise.all([
+      const [empRes, deptRes, trainRes, orgRes, payrollRes] = await Promise.all([
         api.get('/api/erp/employees?status=active'),
         api.get('/api/hr/departments'),
         api.get('/api/hr/trainings'),
-        api.get('/api/hr/organization/structure')
+        api.get('/api/hr/organization/structure'),
+        api.get('/api/payroll-files/dashboard-summary')
       ]);
       setEmployees(empRes.data.employees || []);
       setDepartments(deptRes.data.departments || []);
       setTrainings(trainRes.data.trainings || []);
       setOrgStructure(orgRes.data.structure || []);
+      setPayrollSummary(payrollRes.data);
     } catch (err) {
       console.error(err);
     } finally {
@@ -221,7 +224,46 @@ const HRManagement = () => {
         </TabsList>
 
         {/* EMPLOYEES TAB */}
-        <TabsContent value="employees" className="mt-4">
+        <TabsContent value="employees" className="mt-4 space-y-4">
+          {/* Payroll Summary Cards */}
+          {payrollSummary && (
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              <Card className="bg-gradient-to-br from-blue-900/40 to-blue-800/20 border-blue-700/30">
+                <CardContent className="p-4 text-center">
+                  <Users className="h-8 w-8 mx-auto mb-2 text-blue-400" />
+                  <p className="text-2xl font-bold text-blue-400">{payrollSummary.total_employees}</p>
+                  <p className="text-xs text-gray-400">Total Karyawan</p>
+                </CardContent>
+              </Card>
+              <Card className="bg-gradient-to-br from-green-900/40 to-green-800/20 border-green-700/30">
+                <CardContent className="p-4 text-center">
+                  <Calendar className="h-8 w-8 mx-auto mb-2 text-green-400" />
+                  <p className="text-2xl font-bold text-green-400">{payrollSummary.monthly_employees}</p>
+                  <p className="text-xs text-gray-400">Gaji Bulanan</p>
+                </CardContent>
+              </Card>
+              <Card className="bg-gradient-to-br from-amber-900/40 to-amber-800/20 border-amber-700/30">
+                <CardContent className="p-4 text-center">
+                  <Clock className="h-8 w-8 mx-auto mb-2 text-amber-400" />
+                  <p className="text-2xl font-bold text-amber-400">{payrollSummary.daily_employees}</p>
+                  <p className="text-xs text-gray-400">Gaji Harian</p>
+                </CardContent>
+              </Card>
+              <Card className="bg-gradient-to-br from-purple-900/40 to-purple-800/20 border-purple-700/30">
+                <CardContent className="p-4 text-center">
+                  <p className="text-lg font-bold text-purple-400">{formatRupiah(payrollSummary.estimated_monthly_payroll?.total_gross)}</p>
+                  <p className="text-xs text-gray-400">Total Gross</p>
+                </CardContent>
+              </Card>
+              <Card className="bg-gradient-to-br from-emerald-900/40 to-emerald-800/20 border-emerald-700/30">
+                <CardContent className="p-4 text-center">
+                  <p className="text-lg font-bold text-emerald-400">{formatRupiah(payrollSummary.estimated_monthly_payroll?.total_take_home_pay)}</p>
+                  <p className="text-xs text-gray-400">Total THP</p>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+          
           <Card className="bg-[#0f0a0a] border-red-900/20">
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-lg text-amber-200">Data Karyawan ({filteredEmployees.length})</CardTitle>

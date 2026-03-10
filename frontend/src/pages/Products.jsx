@@ -62,6 +62,69 @@ const Products = () => {
     setShowModal(true);
   };
 
+  // New product with photos - state for pending uploads when creating new product
+  const [pendingPhotos, setPendingPhotos] = useState([]);
+  const [newProductPhotoRef, setNewProductPhotoRef] = useState(null);
+  const newProductFileInputRef = useRef(null);
+
+  const handleNewProductPhotoSelect = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    
+    // Create preview objects
+    const newPhotos = files.map((file, idx) => ({
+      id: `pending-${Date.now()}-${idx}`,
+      file: file,
+      preview: URL.createObjectURL(file),
+      is_primary: pendingPhotos.length === 0 && idx === 0
+    }));
+    
+    setPendingPhotos(prev => [...prev, ...newPhotos]);
+    if (newProductFileInputRef.current) {
+      newProductFileInputRef.current.value = '';
+    }
+  };
+
+  const removePendingPhoto = (photoId) => {
+    setPendingPhotos(prev => {
+      const filtered = prev.filter(p => p.id !== photoId);
+      // If removed photo was primary and others exist, make first one primary
+      if (filtered.length > 0 && !filtered.some(p => p.is_primary)) {
+        filtered[0].is_primary = true;
+      }
+      return filtered;
+    });
+  };
+
+  const setPendingPrimary = (photoId) => {
+    setPendingPhotos(prev => prev.map(p => ({
+      ...p,
+      is_primary: p.id === photoId
+    })));
+  };
+
+  const uploadPendingPhotos = async (productId) => {
+    if (pendingPhotos.length === 0) return;
+    
+    for (const photo of pendingPhotos) {
+      const formData = new FormData();
+      formData.append('file', photo.file);
+      formData.append('product_id', productId);
+      formData.append('is_primary', photo.is_primary ? 'true' : 'false');
+      
+      try {
+        await fetch(`${API_URL}/api/files/products/photo`, {
+          method: 'POST',
+          body: formData
+        });
+      } catch (err) {
+        console.error('Upload error:', err);
+      }
+    }
+    
+    setPendingPhotos([]);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.name || !form.selling_price) { toast.error('Nama dan harga jual wajib diisi'); return; }
@@ -70,7 +133,20 @@ const Products = () => {
       const url = editingProduct ? `/api/products/${editingProduct.id}` : '/api/products';
       const method = editingProduct ? 'PUT' : 'POST';
       const res = await api(url, { method, body: JSON.stringify(form) });
-      if (res.ok) { toast.success(editingProduct ? 'Produk diperbarui' : 'Produk ditambahkan'); setShowModal(false); loadProducts(); }
+      if (res.ok) {
+        const result = await res.json();
+        
+        // If creating new product and has pending photos, upload them
+        if (!editingProduct && pendingPhotos.length > 0 && result.id) {
+          toast.info('Mengupload foto...');
+          await uploadPendingPhotos(result.id);
+        }
+        
+        toast.success(editingProduct ? 'Produk diperbarui' : 'Produk ditambahkan'); 
+        setShowModal(false); 
+        setPendingPhotos([]);
+        loadProducts(); 
+      }
       else { const error = await res.json(); toast.error(error.detail || 'Gagal menyimpan'); }
     } catch (err) { toast.error('Gagal menyimpan'); }
     finally { setSaving(false); }
@@ -378,6 +454,83 @@ const Products = () => {
                   </div>
                 </div>
               </div>
+
+              {/* Photo Upload Section - Available when adding new product */}
+              {!editingProduct && (
+                <div className="border-t border-red-900/30 pt-4">
+                  <h3 className="text-lg font-semibold mb-3 text-amber-100 flex items-center gap-2">
+                    <Camera className="h-5 w-5" /> Foto Produk
+                  </h3>
+                  
+                  <input
+                    type="file"
+                    ref={newProductFileInputRef}
+                    onChange={handleNewProductPhotoSelect}
+                    accept="image/jpeg,image/png,image/webp"
+                    multiple
+                    className="hidden"
+                  />
+                  
+                  <div className="border-2 border-dashed border-red-900/50 rounded-xl p-4 text-center mb-4">
+                    <Upload className="h-8 w-8 mx-auto text-gray-500 mb-2" />
+                    <p className="text-sm text-gray-400 mb-2">Upload foto produk</p>
+                    <button
+                      type="button"
+                      onClick={() => newProductFileInputRef.current?.click()}
+                      className="px-4 py-2 bg-gradient-to-r from-red-600 to-amber-600 text-white text-sm rounded-lg"
+                    >
+                      <Camera className="h-4 w-4 inline mr-2" /> Pilih Foto
+                    </button>
+                    <p className="text-xs text-gray-500 mt-2">Format: JPEG, PNG, WEBP. Bisa multiple.</p>
+                  </div>
+
+                  {/* Pending Photos Preview */}
+                  {pendingPhotos.length > 0 && (
+                    <div className="grid grid-cols-3 gap-3">
+                      {pendingPhotos.map(photo => (
+                        <div key={photo.id} className={`relative rounded-lg overflow-hidden border-2 ${photo.is_primary ? 'border-amber-500' : 'border-red-900/30'}`}>
+                          <img src={photo.preview} alt="Preview" className="w-full h-24 object-cover" />
+                          {photo.is_primary && (
+                            <div className="absolute top-1 left-1 px-1.5 py-0.5 bg-amber-600 text-black text-[10px] font-bold rounded">
+                              Utama
+                            </div>
+                          )}
+                          <div className="absolute inset-0 bg-black/50 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                            {!photo.is_primary && (
+                              <button
+                                type="button"
+                                onClick={() => setPendingPrimary(photo.id)}
+                                className="p-1.5 bg-amber-600 rounded text-black"
+                                title="Jadikan utama"
+                              >
+                                <Star className="h-3 w-3" />
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => removePendingPhoto(photo.id)}
+                              className="p-1.5 bg-red-600 rounded text-white"
+                              title="Hapus"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Note for edit mode */}
+              {editingProduct && (
+                <div className="border-t border-red-900/30 pt-4">
+                  <p className="text-sm text-gray-400 flex items-center gap-2">
+                    <Camera className="h-4 w-4" />
+                    Untuk kelola foto, klik ikon kamera di tabel setelah menyimpan.
+                  </p>
+                </div>
+              )}
 
               <div className="flex gap-3 pt-4">
                 <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-2 border border-red-900/30 rounded-lg hover:bg-red-900/20">Batal</button>

@@ -51,6 +51,10 @@ import WhatsAppAlerts from './pages/WhatsAppAlerts';
 import WarRoomAlertPanel from './pages/WarRoomAlertPanel';
 import HRManagement from './pages/HRManagement';
 
+// OCB TITAN AI Phase 3 Pages - AI Super War Room
+import CFODashboard from './pages/CFODashboard';
+import AIWarRoomSuper from './pages/AIWarRoomSuper';
+
 // Master Data Pages
 import { 
   MasterItems, MasterCategories, MasterUnits, MasterBrands, 
@@ -145,6 +149,10 @@ function App() {
             <Route path="import-system" element={<ImportSystem />} />
             <Route path="whatsapp-alerts" element={<WhatsAppAlerts />} />
             <Route path="warroom-alerts" element={<WarRoomAlertPanel />} />
+            
+            {/* OCB TITAN AI Phase 3 Routes - AI Super War Room */}
+            <Route path="cfo-dashboard" element={<CFODashboard />} />
+            <Route path="ai-warroom-super" element={<AIWarRoomSuper />} />
             
             {/* SUPER ERP Routes */}
             <Route path="setoran-harian" element={<SetoranHarian />} />

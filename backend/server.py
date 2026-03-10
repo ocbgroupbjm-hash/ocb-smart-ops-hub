@@ -82,6 +82,12 @@ from routes.whatsapp_alerts import router as whatsapp_alerts_router
 from routes.warroom_alerts import router as warroom_alerts_router
 from routes.hr_advanced import router as hr_advanced_router
 
+# Import OCB TITAN AI Phase 3 routers - AI Super War Room
+from routes.ai_store_prediction import router as ai_store_router
+from routes.ai_fraud_detection import router as ai_fraud_router
+from routes.payroll_files import router as payroll_files_router
+from routes.ai_warroom import router as ai_warroom_router
+
 # Mount all routers under /api - Core ERP
 app.include_router(auth_router, prefix="/api")
 app.include_router(products_router, prefix="/api")
@@ -135,6 +141,12 @@ app.include_router(file_upload_router)
 app.include_router(whatsapp_alerts_router)
 app.include_router(warroom_alerts_router)
 app.include_router(hr_advanced_router)
+
+# Mount OCB TITAN AI Phase 3 routers
+app.include_router(ai_store_router)
+app.include_router(ai_fraud_router)
+app.include_router(payroll_files_router)
+app.include_router(ai_warroom_router)
 
 # Health check
 @app.get("/api/health")
