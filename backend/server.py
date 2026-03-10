@@ -101,6 +101,12 @@ from routes.rbac_system import router as rbac_router
 from routes.pricing_system import router as pricing_router
 from routes.deposit_system import router as deposit_router
 
+# Import AR/AP and Accounting Engine routers
+from routes.ar_system import router as ar_router
+from routes.ap_system import router as ap_router
+from routes.approval_engine import router as approval_router
+from routes.accounting_engine import router as accounting_engine_router
+
 # Mount all routers under /api - Core ERP
 app.include_router(auth_router, prefix="/api")
 app.include_router(products_router, prefix="/api")
@@ -173,6 +179,12 @@ app.include_router(ssot_router)
 app.include_router(rbac_router)
 app.include_router(pricing_router)
 app.include_router(deposit_router)
+
+# Mount AR/AP and Accounting Engine routers
+app.include_router(ar_router)
+app.include_router(ap_router)
+app.include_router(approval_router)
+app.include_router(accounting_engine_router)
 
 # Health check
 @app.get("/api/health")

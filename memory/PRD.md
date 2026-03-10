@@ -1,203 +1,326 @@
-# OCB TITAN AI - ENTERPRISE RETAIL OPERATING SYSTEM
-## Product Requirements Document (PRD)
-
-### Overview
-Enterprise AI-powered retail operating system dengan **Supreme RBAC Security**, **Multi-Mode Pricing**, **ERP-Grade Item Management**, dan **Operasional Setoran Harian**.
+# OCB TITAN ERP - ENTERPRISE RETAIL OPERATING SYSTEM
+## Product Requirements Document (PRD) v12.0
 
 ---
 
-## LATEST UPDATE: March 10, 2026
+# OVERVIEW
 
-### ✅ OPERASIONAL SETORAN HARIAN (Daily Cash Deposit) - COMPLETE (100%)
-
-#### Key Features Implemented
-1. **Strict Role-Based Access Control**
-   - KASIR: Only see/create own deposits (filtered by user_id + branch_id)
-   - SUPERVISOR: View/verify all deposits within branch
-   - MANAGER/OWNER: View all deposits across branches
-   - FAIL-SAFE: Default DENY if user mapping incorrect
-
-2. **No Manual Sales Input**
-   - Auto-pull dari transaksi penjualan yang sudah ada
-   - Prevents fraud dari input manual
-   - Sales transaction marked with deposit_id setelah di-include
-
-3. **Full Status Workflow**
-   - Draft → Pending → Received → Verified → Approved → Posted
-   - Each status change logged in audit trail
-   - Cancel only allowed for draft/pending
-
-4. **Correct Accounting Journal Entries**
-   - Debit: Kas Kecil Pusat (actual received)
-   - Debit: Selisih Kurang Kas (if shortage)
-   - Credit: Selisih Lebih Kas (if overage)
-   - Credit: Kas Cabang (expected amount)
-   - Configurable account mapping per branch
-
-5. **Security Features**
-   - Server-side JWT validation on every request
-   - User scope derived from session, not frontend params
-   - IP address logging for audit trail
-   - Activity logging with severity levels
-
-#### API Endpoints
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| /api/deposit/init | POST | Initialize system with default accounts |
-| /api/deposit/seed-sales | POST | Create sample sales for testing |
-| /api/deposit/my-sales | GET | Get un-deposited sales for current user |
-| /api/deposit/create | POST | Create new deposit (auto-pull sales) |
-| /api/deposit/{id} | GET | Get deposit detail |
-| /api/deposit/{id} | PUT | Update cash received & notes |
-| /api/deposit/{id}/receive | POST | Mark as received |
-| /api/deposit/{id}/verify | POST | Verify deposit |
-| /api/deposit/{id}/approve | POST | Approve deposit |
-| /api/deposit/{id}/post | POST | Post to accounting journal |
-| /api/deposit/{id}/cancel | POST | Cancel deposit |
-| /api/deposit/list | GET | List deposits with filters |
-| /api/deposit/dashboard/summary | GET | Dashboard metrics |
-| /api/deposit/reconciliation/summary | GET | Reconciliation report |
-
-#### Frontend Components
-- `/pages/operasional/SetoranHarian.jsx` - List page with dashboard cards
-- `/components/operasional/SetoranForm.jsx` - Form modal with 4 tabs
-  - Ringkasan: Summary with READ-ONLY branch/cashier info
-  - Transaksi: List of included sales transactions
-  - Selisih: Difference analysis
-  - Jurnal: Accounting journal entries
-
-#### Test Results
-| Test Category | Result |
-|---------------|--------|
-| Backend API | 100% PASS (20/20) |
-| Frontend UI | 100% PASS |
-| Security (RBAC) | PASS - Kasir can only access own deposits |
-| Accounting | PASS - Journal entries balanced |
+OCB TITAN ERP adalah sistem ERP retail enterprise untuk bisnis multi-cabang dengan fitur lengkap:
+- **POS / Penjualan** dengan multi-mode pricing
+- **Pembelian** dengan AP integration
+- **Inventory / Stok** dengan movement tracking
+- **Setoran Harian** dengan security ketat
+- **Hutang Piutang** (AR/AP) dengan aging
+- **Akuntansi** dengan auto-journal
+- **Approval Engine** untuk otorisasi
+- **RBAC** dengan role hierarchy
+- **Audit Trail** untuk semua aktivitas
 
 ---
 
-### ✅ FORM TAMBAH ITEM REVISI - COMPLETE (100%)
+# LATEST UPDATE: March 10, 2026
 
-#### Struktur Form Baru (4 Tabs)
-- TAB 1: Data Umum (Kode, Nama, Tipe, Kategori, Satuan, Merek, etc.)
-- TAB 2: Harga Jual (Multi-Mode Pricing integrated)
-- TAB 3: Stok & Gudang
-- TAB 4: Akunting
+## ENTERPRISE BLUEPRINT IMPLEMENTED
+
+### ✅ NEW MODULES CREATED
+
+#### 1. Accounts Receivable (AR) - `/api/ar`
+- **File**: `/app/backend/routes/ar_system.py`
+- **Features**:
+  - Create AR dari penjualan kredit
+  - Payment recording dengan auto-journal
+  - Aging report (Current, 1-30, 31-60, 61-90, >90 days)
+  - Customer credit limit tracking
+  - Write-off dengan approval
+  - Role-based access (Finance/Manager level)
+
+#### 2. Accounts Payable (AP) - `/api/ap`
+- **File**: `/app/backend/routes/ap_system.py`
+- **Features**:
+  - Create AP dari pembelian kredit
+  - Payment recording dengan auto-journal
+  - Aging report
+  - Supplier outstanding tracking
+  - Due soon alerts
+  - Role-based access
+
+#### 3. Approval Engine - `/api/approval`
+- **File**: `/app/backend/routes/approval_engine.py`
+- **Features**:
+  - Configurable approval rules by module
+  - Multi-level approval hierarchy
+  - Condition-based triggers (amount, percentage)
+  - Default rules created:
+    - Pembelian > 10 Juta: Supervisor → Manager
+    - Void Penjualan > 1 Juta: Supervisor
+    - Diskon > 20%: Supervisor
+    - Selisih Setoran > 100rb: Supervisor → Finance
+
+#### 4. Accounting Engine - `/api/accounting`
+- **File**: `/app/backend/routes/accounting_engine.py`
+- **Features**:
+  - Chart of Accounts management
+  - Configurable Account Mapping per branch
+  - Manual journal entry creation
+  - General Ledger (GL)
+  - Trial Balance
+  - Balance Sheet (Neraca)
+  - Income Statement (Laba Rugi)
+  - Journal posting workflow
 
 ---
 
-### ✅ MULTI-MODE SELLING PRICE SYSTEM - COMPLETE
+## SYSTEM ARCHITECTURE
 
-| Mode | Deskripsi |
-|------|-----------|
-| Satu Harga | Satu harga tetap |
-| Berdasarkan Jumlah | Price tiers per qty |
-| Level Harga | Per customer type |
-| Berdasarkan Satuan | Per unit (PCS/PACK/DUS) |
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    AI INSIGHT LAYER                             │
+├─────────────────────────────────────────────────────────────────┤
+│                    REPORTING LAYER                              │
+│  GL │ Trial Balance │ Neraca │ Laba Rugi │ Dashboards          │
+├─────────────────────────────────────────────────────────────────┤
+│                    AUDIT & SECURITY LAYER                       │
+│  Audit Logs │ RBAC │ Activity Tracking │ IP Logging            │
+├─────────────────────────────────────────────────────────────────┤
+│                    APPROVAL LAYER                               │
+│  Multi-level Workflow │ Condition Rules │ Role-based           │
+├─────────────────────────────────────────────────────────────────┤
+│                    OPERATIONAL CONTROL                          │
+│  Setoran Harian │ Reconciliation │ Shift Management            │
+├─────────────────────────────────────────────────────────────────┤
+│                    ACCOUNTING ENGINE                            │
+│  Journal Entries │ Account Mapping │ Auto-Journal              │
+├─────────────────────────────────────────────────────────────────┤
+│                    INVENTORY CONTROL                            │
+│  Stock Movements │ Valuations │ Adjustments │ Transfers        │
+├─────────────────────────────────────────────────────────────────┤
+│                    TRANSACTION LAYER                            │
+│  Sales/POS │ Purchases │ Returns │ Payments │ AR/AP            │
+├─────────────────────────────────────────────────────────────────┤
+│                    MASTER DATA LAYER                            │
+│  Products │ Customers │ Suppliers │ Branches │ Users │ COA     │
+└─────────────────────────────────────────────────────────────────┘
+```
 
 ---
 
-### ✅ ENTERPRISE RBAC SECURITY SYSTEM - COMPLETE
+## SINGLE SOURCE OF TRUTH
 
-| Level | Role |
-|-------|------|
-| 0 | Super Admin |
-| 1 | Pemilik (inherit_all) |
-| 2 | Direktur |
-| 3 | Manager |
-| 4 | Supervisor |
-| 5 | Admin |
-| 6 | Gudang/Keuangan |
-| 7 | Kasir |
-| 8 | Viewer |
+| Domain | Collection | Status |
+|--------|------------|--------|
+| Master Barang | `products` | ✅ ACTIVE |
+| Pergerakan Stok | `stock_movements` | ✅ ACTIVE |
+| Penjualan | `sales_transactions` | ✅ ACTIVE |
+| Pembelian | `purchases` | ✅ ACTIVE |
+| Jurnal | `journal_entries` | ✅ ACTIVE |
+| Setoran | `deposits` | ✅ ACTIVE |
+| Piutang | `accounts_receivable` | ✅ NEW |
+| Hutang | `accounts_payable` | ✅ NEW |
+| Audit Logs | `audit_logs` | ✅ ACTIVE |
+| Approval | `approval_requests` | ✅ NEW |
+| COA | `chart_of_accounts` | ✅ ENHANCED |
 
 ---
 
-## System Stats
+## API ENDPOINTS SUMMARY
+
+### Core Modules
+- `/api/auth` - Authentication
+- `/api/products` - Product master
+- `/api/pos` - Point of Sale
+- `/api/purchase` - Purchasing
+- `/api/inventory` - Inventory
+
+### Enhanced Modules
+- `/api/deposit` - Setoran Harian (12 endpoints)
+- `/api/rbac` - Role-Based Access Control
+- `/api/pricing` - Multi-mode Pricing
+
+### NEW Modules (March 2026)
+- `/api/ar` - Accounts Receivable (11 endpoints)
+- `/api/ap` - Accounts Payable (10 endpoints)
+- `/api/approval` - Approval Engine (12 endpoints)
+- `/api/accounting` - Accounting Engine (15 endpoints)
+
+---
+
+## JOURNAL ENTRIES STANDARD
+
+### 1. Penjualan Cash
+```
+Debit:  1104 Kas Cabang
+Credit: 4101 Penjualan
+Credit: 2201 Pajak Keluaran
+Debit:  5101 HPP
+Credit: 1301 Persediaan
+```
+
+### 2. Penjualan Kredit
+```
+Debit:  1201 Piutang Dagang
+Credit: 4101 Penjualan
+Credit: 2201 Pajak Keluaran
+Debit:  5101 HPP
+Credit: 1301 Persediaan
+```
+
+### 3. Setoran Normal
+```
+Debit:  1103 Kas Kecil Pusat
+Credit: 1104 Kas Cabang
+```
+
+### 4. Setoran Selisih Kurang
+```
+Debit:  1103 Kas Kecil Pusat
+Debit:  6201 Selisih Kurang Kas
+Credit: 1104 Kas Cabang
+```
+
+### 5. Pelunasan Piutang
+```
+Debit:  1101 Kas
+Credit: 1201 Piutang Dagang
+```
+
+### 6. Pembayaran Hutang
+```
+Debit:  2101 Hutang Dagang
+Credit: 1102 Bank
+```
+
+---
+
+## SECURITY MATRIX
+
+| Role | Level | Scope | Special Access |
+|------|-------|-------|----------------|
+| Super Admin | 0 | All | Full system |
+| Pemilik | 1 | All | inherit_all |
+| Direktur | 2 | All | All branches |
+| Manager | 3 | Assigned | View margin |
+| Supervisor | 4 | Branch | Verify deposit |
+| Admin | 5 | Branch | Create transactions |
+| Finance | 6 | Branch | AP/AR payment |
+| Kasir | 7 | Own | Own data only |
+| Viewer | 8 | Limited | View only |
+
+---
+
+## TEST RESULTS
+
+| Iteration | Module | Result |
+|-----------|--------|--------|
+| 24 | Enterprise RBAC | ✅ 100% PASS |
+| 25 | Multi-Mode Pricing | ✅ 100% PASS |
+| 26 | Form Tambah Item | ✅ 100% PASS |
+| 27 | Setoran Harian | ✅ 100% PASS |
+| 28 | AR/AP/Approval/Accounting | ✅ INITIALIZED |
+
+---
+
+## COMPLETED FEATURES
+
+### Phase 1: Foundation ✅
+- [x] RBAC with role hierarchy
+- [x] Multi-mode pricing system
+- [x] ERP-grade item master
+- [x] Stock movements tracking
+
+### Phase 2: Operational ✅
+- [x] Setoran Harian full workflow
+- [x] Deposit journal integration
+- [x] Kasir-locked access
+- [x] Supervisor/Manager verification
+
+### Phase 3: Accounting ✅ (NEW)
+- [x] AR Module with aging
+- [x] AP Module with aging
+- [x] Approval Engine
+- [x] Accounting Engine
+- [x] Chart of Accounts
+- [x] Account Mapping config
+- [x] GL, Trial Balance
+- [x] Balance Sheet, Income Statement
+
+---
+
+## REMAINING TASKS
+
+### P0 - Critical
+- [ ] Frontend pages for AR/AP
+- [ ] Frontend for Approval Center
+- [ ] Frontend for Financial Reports
+- [ ] Integration: Sales → AR (credit)
+- [ ] Integration: Purchase → AP (credit)
+
+### P1 - High
+- [ ] Owner Dashboard with KPIs
+- [ ] Finance Dashboard
+- [ ] Operational Dashboard
+- [ ] Reconciliation reports
+
+### P2 - Medium
+- [ ] Cash flow statement
+- [ ] Export to Excel/PDF
+- [ ] Advanced audit trail UI
+- [ ] Period closing
+
+### P3 - Future
+- [ ] AI anomaly detection
+- [ ] Fraud indicators
+- [ ] Pricing recommendations
+- [ ] Restock suggestions
+
+---
+
+## FILE STRUCTURE
+
+```
+/app/backend/routes/
+├── deposit_system.py      ✅ Setoran Harian
+├── rbac_system.py         ✅ RBAC
+├── pricing_system.py      ✅ Pricing
+├── ar_system.py           ✅ NEW - AR
+├── ap_system.py           ✅ NEW - AP
+├── approval_engine.py     ✅ NEW - Approval
+├── accounting_engine.py   ✅ NEW - Accounting
+├── pos.py                 ✅ POS
+├── purchase.py            ✅ Purchase
+└── ... (other modules)
+
+/app/frontend/src/pages/
+├── operasional/
+│   └── SetoranHarian.jsx  ✅ Complete
+├── accounting/            🔴 TODO
+├── approval/              🔴 TODO
+└── dashboard/             🔴 TODO
+```
+
+---
+
+## CREDENTIALS
+
+| Role | Email | Password |
+|------|-------|----------|
+| Owner | ocbgroupbjm@gmail.com | admin123 |
+| Kasir | kasir_test@ocb.com | password123 |
+
+---
+
+## STATISTICS
 
 | Metric | Value |
 |--------|-------|
 | Total Branches | 46 |
-| Total Products | 34+ |
-| RBAC Modules | 104 (including Setoran Harian) |
-| RBAC Actions | 13 |
-| Pricing Modes | 4 |
-| Customer Levels | 5 |
+| Total Products | 31 |
+| RBAC Modules | 109 |
+| Chart of Accounts | 17 |
+| Approval Rules | 4 |
+| API Endpoints | 200+ |
 
 ---
 
-## Key Components
-
-### Setoran Harian (NEW)
-- `/app/backend/routes/deposit_system.py`
-- `/app/frontend/src/pages/operasional/SetoranHarian.jsx`
-- `/app/frontend/src/components/operasional/SetoranForm.jsx`
-
-### Form Tambah Item
-- `/app/frontend/src/components/master/ItemFormModal.jsx`
-
-### Pricing System
-- `/app/backend/routes/pricing_system.py`
-- `/app/frontend/src/components/pricing/PricingConfigModal.jsx`
-
-### RBAC System
-- `/app/backend/routes/rbac_system.py`
-- `/app/frontend/src/pages/settings/RBACManagement.jsx`
-
----
-
-## Test Results
-
-| Iteration | Feature | Result |
-|-----------|---------|--------|
-| 24 | Enterprise RBAC | 100% PASS |
-| 25 | Multi-Mode Pricing | 100% PASS |
-| 26 | Form Tambah Item Revisi | 100% PASS |
-| 27 | Setoran Harian | 100% PASS |
-
----
-
-## Test Credentials
-
-| Role | Email | Password |
-|------|-------|----------|
-| Owner/Admin | ocbgroupbjm@gmail.com | admin123 |
-| Kasir Test | kasir_test@ocb.com | password123 |
-
----
-
-## Deployment Readiness
-
-| Feature | Status |
-|---------|--------|
-| Global Master Item | ✅ READY |
-| Form 4 Tabs | ✅ READY |
-| Multi-Mode Pricing | ✅ READY |
-| Enterprise RBAC | ✅ READY |
-| Branch Stock Module | ✅ READY |
-| Setoran Harian | ✅ READY |
-
----
-
-## BACKLOG / Future Tasks
-
-### P1 - High Priority
-- [ ] Advanced reconciliation dashboard
-- [ ] Security alerts for large discrepancies
-- [ ] Export laporan setoran (Excel/PDF)
-
-### P2 - Medium Priority
-- [ ] Audit trail UI tab
-- [ ] Shift management integration
-- [ ] Multi-currency support
-
-### P3 - Nice to Have
-- [ ] Mobile-optimized setoran form
-- [ ] WhatsApp notification for pending deposits
-- [ ] Dashboard analytics with trends
-
----
-
-**Version:** 11.0.0 (Setoran Harian Module Added)
+**Version:** 12.0 (Enterprise Blueprint)
 **Last Updated:** March 10, 2026
-**Test Coverage:** 100%
+**Architecture:** SSOT, Non-Destructive, Additive
