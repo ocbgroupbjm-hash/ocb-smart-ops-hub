@@ -196,6 +196,13 @@ class ShiftCreate(BaseModel):
     end_time: str
     break_minutes: int = 60
 
+class ShiftUpdate(BaseModel):
+    code: Optional[str] = None
+    name: Optional[str] = None
+    start_time: Optional[str] = None
+    end_time: Optional[str] = None
+    break_minutes: Optional[int] = None
+
 @router.get("/master/shifts")
 async def list_shifts():
     cursor = shifts_col().find({"is_active": True}, {"_id": 0})
@@ -209,8 +216,11 @@ async def create_shift(data: ShiftCreate):
     return {"message": "Shift berhasil ditambahkan", "shift": shift.model_dump()}
 
 @router.put("/master/shifts/{shift_id}")
-async def update_shift(shift_id: str, data: ShiftCreate):
-    await shifts_col().update_one({"id": shift_id}, {"$set": data.model_dump()})
+async def update_shift(shift_id: str, data: ShiftUpdate):
+    update_data = {k: v for k, v in data.model_dump().items() if v is not None}
+    if not update_data:
+        raise HTTPException(status_code=400, detail="Tidak ada data untuk diupdate")
+    await shifts_col().update_one({"id": shift_id}, {"$set": update_data})
     return {"message": "Shift berhasil diupdate"}
 
 @router.delete("/master/shifts/{shift_id}")
@@ -226,6 +236,12 @@ class JabatanCreate(BaseModel):
     level: int = 1
     department: str = ""
 
+class JabatanUpdate(BaseModel):
+    code: Optional[str] = None
+    name: Optional[str] = None
+    level: Optional[int] = None
+    department: Optional[str] = None
+
 @router.get("/master/jabatan")
 async def list_jabatan():
     cursor = jabatan_col().find({"is_active": True}, {"_id": 0}).sort("level", 1)
@@ -239,8 +255,11 @@ async def create_jabatan(data: JabatanCreate):
     return {"message": "Jabatan berhasil ditambahkan", "jabatan": jab.model_dump()}
 
 @router.put("/master/jabatan/{jabatan_id}")
-async def update_jabatan(jabatan_id: str, data: JabatanCreate):
-    await jabatan_col().update_one({"id": jabatan_id}, {"$set": data.model_dump()})
+async def update_jabatan(jabatan_id: str, data: JabatanUpdate):
+    update_data = {k: v for k, v in data.model_dump().items() if v is not None}
+    if not update_data:
+        raise HTTPException(status_code=400, detail="Tidak ada data untuk diupdate")
+    await jabatan_col().update_one({"id": jabatan_id}, {"$set": update_data})
     return {"message": "Jabatan berhasil diupdate"}
 
 @router.delete("/master/jabatan/{jabatan_id}")
@@ -258,6 +277,14 @@ class LokasiAbsensiCreate(BaseModel):
     radius_meters: int = 100
     address: str = ""
 
+class LokasiAbsensiUpdate(BaseModel):
+    branch_id: Optional[str] = None
+    branch_name: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    radius_meters: Optional[int] = None
+    address: Optional[str] = None
+
 @router.get("/master/lokasi-absensi")
 async def list_lokasi_absensi():
     cursor = lokasi_absensi_col().find({"is_active": True}, {"_id": 0})
@@ -271,8 +298,11 @@ async def create_lokasi_absensi(data: LokasiAbsensiCreate):
     return {"message": "Lokasi absensi berhasil ditambahkan", "lokasi": lok.model_dump()}
 
 @router.put("/master/lokasi-absensi/{lokasi_id}")
-async def update_lokasi_absensi(lokasi_id: str, data: LokasiAbsensiCreate):
-    await lokasi_absensi_col().update_one({"id": lokasi_id}, {"$set": data.model_dump()})
+async def update_lokasi_absensi(lokasi_id: str, data: LokasiAbsensiUpdate):
+    update_data = {k: v for k, v in data.model_dump().items() if v is not None}
+    if not update_data:
+        raise HTTPException(status_code=400, detail="Tidak ada data untuk diupdate")
+    await lokasi_absensi_col().update_one({"id": lokasi_id}, {"$set": update_data})
     return {"message": "Lokasi absensi berhasil diupdate"}
 
 @router.delete("/master/lokasi-absensi/{lokasi_id}")

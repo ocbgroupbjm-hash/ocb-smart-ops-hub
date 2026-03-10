@@ -676,6 +676,49 @@ async def generate_auto_response(customer_id: str, incoming_message: str):
         "needs_review": intent in ["complaint", "price_inquiry", "stock_inquiry"]
     }
 
+@router.get("/recommendations")
+async def get_product_recommendations(customer_id: Optional[str] = None, limit: int = 5):
+    """Get AI product recommendations for customer"""
+    recommendations = []
+    customer_name = "Pelanggan"
+    
+    if customer_id:
+        customer = await customers_col().find_one({"id": customer_id}, {"_id": 0})
+        if customer:
+            customer_name = customer.get("name", "Pelanggan")
+        
+        # Get character for better recommendations
+        char_col = get_db()['customer_characters']
+        character = await char_col.find_one({"customer_id": customer_id}, {"_id": 0})
+        price_sens = character.get("price_sensitivity", "normal") if character else "normal"
+    else:
+        price_sens = "normal"
+    
+    # Get products
+    products_col = get_db()['products']
+    products = await products_col.find({"is_active": True}, {"_id": 0}).to_list(length=20)
+    
+    # Sort by price based on sensitivity
+    if price_sens == "price_sensitive":
+        products.sort(key=lambda x: x.get("selling_price", 0))
+    elif price_sens == "premium":
+        products.sort(key=lambda x: x.get("selling_price", 0), reverse=True)
+    
+    for prod in products[:limit]:
+        recommendations.append({
+            "product_id": prod.get("id"),
+            "name": prod.get("name"),
+            "price": prod.get("selling_price", 0),
+            "reason": "Populer" if price_sens == "normal" else "Harga Terjangkau" if price_sens == "price_sensitive" else "Premium Quality",
+            "match_score": 85
+        })
+    
+    return {
+        "customer_name": customer_name,
+        "recommendations": recommendations,
+        "total": len(recommendations)
+    }
+
 # ==================== SEED DEFAULT PROMPTS ====================
 
 @router.post("/seed-prompts")
