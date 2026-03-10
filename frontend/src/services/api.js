@@ -12,6 +12,17 @@ api.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  // Normalize URLs - ensure single /api prefix
+  if (config.url) {
+    // Remove double /api/api if exists
+    if (config.url.startsWith('/api/api')) {
+      config.url = config.url.replace('/api/api', '/api');
+    }
+    // Add /api if not present and not external URL
+    else if (!config.url.startsWith('/api') && !config.url.startsWith('http')) {
+      config.url = '/api' + config.url;
+    }
+  }
   return config;
 });
 
