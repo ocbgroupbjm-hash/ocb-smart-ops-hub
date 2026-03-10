@@ -58,6 +58,7 @@ const Products = () => {
     else {
       setEditingProduct(null);
       setForm({ code: '', barcode: '', name: '', description: '', category_id: '', brand: '', unit: 'pcs', cost_price: 0, selling_price: 0, wholesale_price: 0, member_price: 0, reseller_price: 0, min_stock: 5 });
+      setPendingPhotos([]);  // Reset pending photos when opening new product modal
     }
     setShowModal(true);
   };
