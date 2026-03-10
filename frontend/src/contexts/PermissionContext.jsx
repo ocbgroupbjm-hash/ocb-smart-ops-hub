@@ -6,9 +6,10 @@ const PermissionContext = createContext(null);
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 export function PermissionProvider({ children }) {
-  const { user, token } = useAuth();
+  const { user, token, logout } = useAuth();
   const [permissions, setPermissions] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [securityAlerts, setSecurityAlerts] = useState([]);
 
   const fetchPermissions = useCallback(async () => {
     if (!token || !user) {
@@ -24,7 +25,17 @@ export function PermissionProvider({ children }) {
       
       if (res.ok) {
         const data = await res.json();
-        setPermissions(data);
+        
+        // Check for error response
+        if (data.error) {
+          console.warn('Permission error:', data.error);
+          setPermissions(null);
+        } else {
+          setPermissions(data);
+        }
+      } else if (res.status === 401) {
+        // Session invalid - force logout
+        logout();
       } else {
         setPermissions(null);
       }
@@ -34,18 +45,42 @@ export function PermissionProvider({ children }) {
     } finally {
       setLoading(false);
     }
-  }, [token, user]);
+  }, [token, user, logout]);
+
+  // Fetch security alerts for owner/admin
+  const fetchSecurityAlerts = useCallback(async () => {
+    if (!token || !permissions?.can_manage_system) return;
+    
+    try {
+      const res = await fetch(`${API_URL}/api/rbac/security-alerts?limit=10`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setSecurityAlerts(data.alerts || []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch security alerts:', err);
+    }
+  }, [token, permissions?.can_manage_system]);
 
   useEffect(() => {
     fetchPermissions();
   }, [fetchPermissions]);
 
-  // Check if user has permission for module and action
+  useEffect(() => {
+    if (permissions?.role_level <= 1) {
+      fetchSecurityAlerts();
+    }
+  }, [permissions?.role_level, fetchSecurityAlerts]);
+
+  // FAIL-SAFE: Default is DENY
   const hasPermission = useCallback((module, action = 'view') => {
+    // Not loaded yet = DENY
     if (!permissions) return false;
     
-    // Super admin / all_permissions always has access
-    if (permissions.all_permissions) return true;
+    // Super admin / Pemilik = FULL ACCESS (inherit_all)
+    if (permissions.inherit_all) return true;
     
     // View only check
     if (permissions.view_only && action !== 'view') return false;
@@ -57,34 +92,46 @@ export function PermissionProvider({ children }) {
     return modulePerms.includes(action);
   }, [permissions]);
 
-  // Check if user has access to branch
+  // Branch access check
   const hasBranchAccess = useCallback((branchId) => {
     if (!permissions) return false;
-    if (permissions.all_branches) return true;
+    if (permissions.all_branches || permissions.inherit_all) return true;
     
     const branchAccess = permissions.branch_access || [];
     return branchAccess.length === 0 || branchAccess.includes(branchId);
   }, [permissions]);
 
-  // Check menu visibility
+  // Menu visibility check
   const canSeeMenu = useCallback((menuKey) => {
     if (!permissions) return false;
-    if (permissions.all_permissions) return true;
+    if (permissions.inherit_all) return true;
     
     return permissions.menu_visibility?.[menuKey] !== false;
   }, [permissions]);
 
-  // Get role info
+  // Role info
   const getRoleInfo = useCallback(() => {
     return {
       roleId: permissions?.role_id,
+      roleCode: permissions?.role_code,
       roleName: permissions?.role_name,
-      allPermissions: permissions?.all_permissions,
+      roleLevel: permissions?.role_level,
+      inheritAll: permissions?.inherit_all,
       allBranches: permissions?.all_branches,
       viewOnly: permissions?.view_only,
-      directCashier: permissions?.direct_cashier
+      canManageSystem: permissions?.can_manage_system
     };
   }, [permissions]);
+
+  // Check if user is owner or higher
+  const isOwnerOrHigher = useCallback(() => {
+    return permissions?.role_level <= 1;
+  }, [permissions]);
+
+  // Check if user can manage users/roles
+  const canManageUsers = useCallback(() => {
+    return permissions?.inherit_all || hasPermission('user_management', 'edit');
+  }, [permissions, hasPermission]);
 
   const value = {
     permissions,
@@ -93,7 +140,11 @@ export function PermissionProvider({ children }) {
     hasBranchAccess,
     canSeeMenu,
     getRoleInfo,
-    refreshPermissions: fetchPermissions
+    isOwnerOrHigher,
+    canManageUsers,
+    securityAlerts,
+    refreshPermissions: fetchPermissions,
+    refreshAlerts: fetchSecurityAlerts
   };
 
   return (
@@ -130,6 +181,7 @@ export function withPermission(WrappedComponent, module, action = 'view') {
           <div className="text-6xl mb-4">🚫</div>
           <h2 className="text-xl font-bold text-red-400 mb-2">Akses Ditolak</h2>
           <p className="text-gray-400">Anda tidak memiliki izin untuk mengakses fitur ini.</p>
+          <p className="text-xs text-gray-500 mt-2">Module: {module}, Action: {action}</p>
         </div>
       );
     }
@@ -139,18 +191,58 @@ export function withPermission(WrappedComponent, module, action = 'view') {
 }
 
 // Component for conditional rendering based on permission
-export function PermissionGate({ module, action = 'view', children, fallback = null }) {
+export function PermissionGate({ module, action = 'view', children, fallback = null, showDenied = false }) {
   const { hasPermission, loading } = usePermission();
   
   if (loading) return null;
-  if (!hasPermission(module, action)) return fallback;
+  
+  if (!hasPermission(module, action)) {
+    if (showDenied) {
+      return (
+        <div className="text-center py-4 text-gray-500">
+          <span className="text-red-400">🚫</span> Akses ditolak
+        </div>
+      );
+    }
+    return fallback;
+  }
   
   return children;
 }
 
-// Hook for checking multiple permissions
+// Component for branch-level access control
+export function BranchGate({ branchId, children, fallback = null }) {
+  const { hasBranchAccess, loading } = usePermission();
+  
+  if (loading) return null;
+  if (!hasBranchAccess(branchId)) return fallback;
+  
+  return children;
+}
+
+// Hook for checking multiple permissions at once
 export function usePermissions(checks) {
   const { hasPermission } = usePermission();
   
   return checks.map(({ module, action = 'view' }) => hasPermission(module, action));
+}
+
+// Hook for role-based checks
+export function useRoleCheck() {
+  const { permissions } = usePermission();
+  
+  return {
+    isSuperAdmin: permissions?.role_code === 'super_admin',
+    isPemilik: permissions?.role_code === 'pemilik',
+    isDirektur: permissions?.role_code === 'direktur',
+    isManager: permissions?.role_code === 'manager',
+    isSupervisor: permissions?.role_code === 'supervisor',
+    isAdmin: permissions?.role_code === 'admin',
+    isGudang: permissions?.role_code === 'gudang',
+    isKeuangan: permissions?.role_code === 'keuangan',
+    isKasir: permissions?.role_code === 'kasir',
+    isViewer: permissions?.role_code === 'viewer',
+    roleLevel: permissions?.role_level,
+    canManageSystem: permissions?.can_manage_system
+  };
 }
