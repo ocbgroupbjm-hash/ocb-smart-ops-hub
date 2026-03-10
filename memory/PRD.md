@@ -1,69 +1,65 @@
 # OCB TITAN ERP - ENTERPRISE RETAIL OPERATING SYSTEM
-## Product Requirements Document (PRD) v13.0
+## Product Requirements Document (PRD) v14.0
 
 ---
 
 # OVERVIEW
 
 OCB TITAN ERP adalah sistem ERP retail enterprise untuk bisnis multi-cabang dengan fitur lengkap:
-- **POS / Penjualan** dengan multi-mode pricing
-- **Pembelian** dengan AP integration
+- **POS / Penjualan** dengan multi-mode pricing + auto AR
+- **Pembelian** dengan AP integration + auto journal
 - **Inventory / Stok** dengan movement tracking
 - **Setoran Harian** dengan security ketat
-- **Hutang Piutang** (AR/AP) dengan aging + frontend UI
+- **Hutang Piutang** (AR/AP) dengan aging + auto-journal
 - **Akuntansi** dengan auto-journal + financial reports
 - **Approval Engine** untuk otorisasi + approval center UI
-- **RBAC** dengan role hierarchy
-- **Audit Trail** untuk semua aktivitas
+- **RBAC** dengan FAIL-SAFE enforcement (Backend validation)
+- **Audit Trail** untuk semua aktivitas sensitif
 
 ---
 
 # LATEST UPDATE: March 10, 2026
 
-## FRONTEND MODULES COMPLETED
+## CRITICAL SECURITY FIX: RBAC BACKEND ENFORCEMENT
 
-### ✅ NEW FRONTEND PAGES CREATED
+### Problem Fixed
+- Kasir role was able to delete data despite permission OFF in matrix
+- Frontend-only protection was inadequate (security theater)
 
-#### 1. Accounts Receivable (AR) Page - `/accounting/receivables`
-- **File**: `/app/frontend/src/pages/accounting/AccountsReceivable.jsx`
-- **Components**:
-  - ARDetailModal - `/app/frontend/src/components/accounting/ARDetailModal.jsx`
-  - ARPaymentModal - `/app/frontend/src/components/accounting/ARPaymentModal.jsx`
-- **Features**:
-  - Summary cards (Total Piutang, Jatuh Tempo, Due 7 Days, Outstanding)
-  - Aging report visual (Current, 1-30, 31-60, 61-90, >90 days)
-  - Customer filter, status filter, search
-  - View detail modal with payment history
-  - Record payment modal with auto-journal
+### Solution Implemented
+1. **Created `/app/backend/routes/rbac_middleware.py`**:
+   - `require_permission(module, action)` decorator
+   - `check_permission()` - FAIL-SAFE default DENY
+   - `check_branch_access()` - Branch-level scope
+   - `log_security_event()` - Audit logging
 
-#### 2. Accounts Payable (AP) Page - `/accounting/payables`
-- **File**: `/app/frontend/src/pages/accounting/AccountsPayable.jsx`
-- **Components**:
-  - APDetailModal - `/app/frontend/src/components/accounting/APDetailModal.jsx`
-  - APPaymentModal - `/app/frontend/src/components/accounting/APPaymentModal.jsx`
-- **Features**:
-  - Summary cards (Total Hutang, Jatuh Tempo, Due 7 Days, Outstanding)
-  - Aging report visual
-  - Supplier filter, status filter, search
-  - View detail modal with payment history
-  - Record payment modal with auto-journal
+2. **Updated Critical Routes with RBAC**:
+   - `pos.py` - All endpoints now use require_permission
+   - `purchase.py` - All endpoints now use require_permission
+   - `products.py` - All endpoints now use require_permission
 
-#### 3. Approval Center - `/approval-center`
-- **File**: `/app/frontend/src/pages/approval/ApprovalCenter.jsx`
-- **Features**:
-  - Summary cards (My Pending, Total Pending, Approved, Rejected)
-  - Tab navigation (Pending Approval, All Requests, Approval Rules)
-  - Approve/Reject actions with notes
-  - Rule management view
+### Verified Security Matrix (Tested)
+| Operation | Kasir | Owner |
+|-----------|-------|-------|
+| DELETE product | ❌ 403 | ✅ 404 |
+| DELETE held tx | ❌ 403 | ✅ Allowed |
+| VOID transaction | ❌ 403 | ✅ Allowed |
+| CANCEL PO | ❌ 403 | ✅ Allowed |
+| VIEW products | ✅ Allowed | ✅ Allowed |
+| CREATE sale | ✅ Allowed | ✅ Allowed |
 
-#### 4. Financial Reports - `/accounting/financial-reports`
-- **File**: `/app/frontend/src/pages/accounting/FinancialReports.jsx`
-- **Features**:
-  - Trial Balance with balanced/not balanced indicator
-  - Neraca (Balance Sheet) with assets, liabilities, equity sections
-  - Laba Rugi (Income Statement) with net profit/loss
-  - Date filters and Generate button
-  - Export to CSV
+## AUTO-INTEGRATION: Sales → AR & Purchase → AP
+
+### Sales Credit → AR
+- `is_credit: true` in POS transaction request
+- Auto-creates AR entry in `accounts_receivable` collection
+- Auto-creates journal entry (Debit: Piutang, Credit: Penjualan)
+- Sets due_date based on `credit_due_days` (default 30)
+
+### Purchase Receive → AP  
+- When PO fully received, auto-creates AP entry
+- Auto-creates journal entry (Debit: Persediaan, Credit: Hutang)
+- Links to source PO with `source_type: purchase`
 
 ---
 
@@ -214,24 +210,25 @@ Credit: 1102 Bank
 | 27 | Setoran Harian | 100% PASS |
 | 28 | AR/AP/Approval/Accounting Backend | 28/28 PASS |
 | 29 | AR/AP/Approval/Financial Reports Frontend | 85% PASS |
+| 30 | **RBAC Security Backend Enforcement** | **100% PASS (14/14)** |
 
 ---
 
 ## COMPLETED FEATURES
 
-### Phase 1: Foundation ✅
+### Phase 1: Foundation
 - [x] RBAC with role hierarchy
 - [x] Multi-mode pricing system
 - [x] ERP-grade item master
 - [x] Stock movements tracking
 
-### Phase 2: Operational ✅
+### Phase 2: Operational
 - [x] Setoran Harian full workflow
 - [x] Deposit journal integration
 - [x] Kasir-locked access
 - [x] Supervisor/Manager verification
 
-### Phase 3: Accounting ✅ (NEW)
+### Phase 3: Accounting
 - [x] AR Module with aging
 - [x] AP Module with aging
 - [x] Approval Engine
@@ -241,16 +238,23 @@ Credit: 1102 Bank
 - [x] GL, Trial Balance
 - [x] Balance Sheet, Income Statement
 
+### Phase 4: Security & Integration (NEW)
+- [x] **RBAC Backend Enforcement** - All destructive operations blocked for unauthorized roles
+- [x] **Sales → AR Integration** - Credit sales auto-create AR + journal
+- [x] **Purchase → AP Integration** - PO receive auto-create AP + journal
+- [x] **Audit Logging** - All security events recorded
+
 ---
 
 ## REMAINING TASKS
 
-### P0 - Critical ✅ COMPLETED
+### P0 - Critical (ALL COMPLETED)
 - [x] Frontend pages for AR/AP
 - [x] Frontend for Approval Center
 - [x] Frontend for Financial Reports
-- [ ] Integration: Sales → AR (credit)
-- [ ] Integration: Purchase → AP (credit)
+- [x] **RBAC Backend Enforcement (SECURITY FIX)**
+- [x] Integration: Sales → AR (credit)
+- [x] Integration: Purchase → AP (credit)
 
 ### P1 - High
 - [ ] Owner Dashboard with KPIs
