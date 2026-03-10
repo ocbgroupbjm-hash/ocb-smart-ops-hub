@@ -88,6 +88,10 @@ from routes.ai_fraud_detection import router as ai_fraud_router
 from routes.payroll_files import router as payroll_files_router
 from routes.ai_warroom import router as ai_warroom_router
 
+# Import OCB TITAN AI Phase 4 routers - Payroll & Performance
+from routes.payroll_auto import router as payroll_auto_router
+from routes.ai_employee_performance import router as ai_employee_router
+
 # Mount all routers under /api - Core ERP
 app.include_router(auth_router, prefix="/api")
 app.include_router(products_router, prefix="/api")
@@ -147,6 +151,10 @@ app.include_router(ai_store_router)
 app.include_router(ai_fraud_router)
 app.include_router(payroll_files_router)
 app.include_router(ai_warroom_router)
+
+# Mount OCB TITAN AI Phase 4 routers
+app.include_router(payroll_auto_router)
+app.include_router(ai_employee_router)
 
 # Health check
 @app.get("/api/health")
