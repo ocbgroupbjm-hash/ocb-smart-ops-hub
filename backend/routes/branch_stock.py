@@ -13,9 +13,7 @@ def get_db():
     from database import get_db as db_get
     return db_get()
 
-def get_current_user():
-    from routes.auth import get_current_user as auth_user
-    return auth_user
+from routes.auth import get_current_user
 
 # Collections
 def branch_stocks():
@@ -95,7 +93,7 @@ async def save_item_branch_stocks(
     data: BranchStockUpdate, 
     user: dict = Depends(get_current_user)
 ):
-    """Save branch stocks for an item"""
+    """Save branch stocks for an item (ONLY min/max - stock_current is managed by transactions)"""
     db = get_db()
     
     # Verify item exists (use products collection)
@@ -103,13 +101,20 @@ async def save_item_branch_stocks(
     if not item:
         raise HTTPException(status_code=404, detail="Item tidak ditemukan")
     
-    # Update or insert each branch stock
+    # Update or insert each branch stock - ONLY min and max (stock_current tidak boleh diubah manual)
     for bs in data.branch_stocks:
+        # Get existing stock_current (don't overwrite it)
+        existing = await db["item_branch_stock"].find_one(
+            {"item_id": item_id, "branch_id": bs.branch_id},
+            {"_id": 0, "stock_current": 1}
+        )
+        current_stock = existing.get("stock_current", 0) if existing else 0
+        
         stock_doc = {
             "item_id": item_id,
             "branch_id": bs.branch_id,
             "branch_name": bs.branch_name,
-            "stock_current": bs.stock_current,
+            "stock_current": current_stock,  # Preserve existing stock, tidak terima dari frontend
             "stock_minimum": bs.stock_minimum,
             "stock_maximum": bs.stock_maximum,
             "updated_at": datetime.now(timezone.utc).isoformat()
@@ -278,3 +283,140 @@ async def initialize_branch_stocks(item_id: str, user: dict = Depends(get_curren
         "total_branches": len(branches),
         "new_stocks_created": len(new_stocks)
     }
+
+
+# ==================== STOCK MOVEMENT FROM TRANSACTIONS ====================
+# Endpoint ini HANYA untuk dipanggil dari transaksi inventory internal
+
+class StockMovementRequest(BaseModel):
+    branch_id: str
+    quantity: int  # Positif untuk masuk, negatif untuk keluar
+    transaction_type: str  # purchase, sale, stock_in, stock_out, transfer_in, transfer_out, opname, retur_sale, retur_purchase, assembly
+    reference_id: str = ""  # ID transaksi referensi
+    notes: str = ""
+
+
+@router.post("/branch-stock/{item_id}/movement")
+async def record_stock_movement(
+    item_id: str,
+    data: StockMovementRequest,
+    user: dict = Depends(get_current_user)
+):
+    """
+    Record stock movement from inventory transaction.
+    This is the ONLY way to update stock_current.
+    
+    Transaction types:
+    - purchase: Pembelian/Penerimaan Barang (+)
+    - stock_in: Stok Masuk (+)
+    - sale: Penjualan (-)
+    - stock_out: Stok Keluar (-)
+    - transfer_in: Transfer Masuk (+)
+    - transfer_out: Transfer Keluar (-)
+    - opname: Stok Opname (adjustment)
+    - retur_sale: Retur Penjualan (+)
+    - retur_purchase: Retur Pembelian (-)
+    - assembly: Rakitan Produk (-)
+    """
+    db = get_db()
+    
+    # Verify item exists
+    item = await db["products"].find_one({"id": item_id}, {"_id": 0, "name": 1})
+    if not item:
+        raise HTTPException(status_code=404, detail="Item tidak ditemukan")
+    
+    # Get or create branch stock
+    branch_stock = await db["item_branch_stock"].find_one(
+        {"item_id": item_id, "branch_id": data.branch_id},
+        {"_id": 0}
+    )
+    
+    if not branch_stock:
+        # Initialize branch stock if not exists
+        branch = await db["branches"].find_one({"id": data.branch_id}, {"_id": 0, "name": 1})
+        branch_name = branch.get("name", "") if branch else ""
+        branch_stock = {
+            "id": str(uuid.uuid4()),
+            "item_id": item_id,
+            "branch_id": data.branch_id,
+            "branch_name": branch_name,
+            "stock_current": 0,
+            "stock_minimum": 0,
+            "stock_maximum": 0,
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db["item_branch_stock"].insert_one(branch_stock)
+    
+    # Calculate new stock
+    current_stock = branch_stock.get("stock_current", 0)
+    new_stock = current_stock + data.quantity
+    
+    # Prevent negative stock (optional - depends on business rules)
+    if new_stock < 0:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Stok tidak mencukupi. Stok saat ini: {current_stock}, permintaan: {data.quantity}"
+        )
+    
+    # Update stock_current
+    await db["item_branch_stock"].update_one(
+        {"item_id": item_id, "branch_id": data.branch_id},
+        {
+            "$set": {
+                "stock_current": new_stock,
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }
+        }
+    )
+    
+    # Record movement history
+    movement_record = {
+        "id": str(uuid.uuid4()),
+        "item_id": item_id,
+        "branch_id": data.branch_id,
+        "transaction_type": data.transaction_type,
+        "quantity": data.quantity,
+        "stock_before": current_stock,
+        "stock_after": new_stock,
+        "reference_id": data.reference_id,
+        "notes": data.notes,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_by": user.get("id")
+    }
+    await db["stock_movements"].insert_one(movement_record)
+    
+    return {
+        "message": "Stok berhasil diupdate",
+        "item_id": item_id,
+        "branch_id": data.branch_id,
+        "transaction_type": data.transaction_type,
+        "quantity": data.quantity,
+        "stock_before": current_stock,
+        "stock_after": new_stock
+    }
+
+
+@router.get("/branch-stock/{item_id}/movements")
+async def get_stock_movements(
+    item_id: str,
+    branch_id: str = "",
+    limit: int = 50,
+    user: dict = Depends(get_current_user)
+):
+    """Get stock movement history for an item"""
+    db = get_db()
+    
+    query = {"item_id": item_id}
+    if branch_id:
+        query["branch_id"] = branch_id
+    
+    movements = await db["stock_movements"].find(
+        query,
+        {"_id": 0}
+    ).sort("created_at", -1).limit(limit).to_list(limit)
+    
+    return {
+        "movements": movements,
+        "total": len(movements)
+    }
+

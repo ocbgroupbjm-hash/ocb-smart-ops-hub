@@ -1016,15 +1016,17 @@ const MasterItems = () => {
               </button>
             </div>
             <div className="p-4">
-              <p className="text-sm text-gray-400 mb-4">
-                Atur stok minimum dan maksimum untuk setiap cabang
-              </p>
+              <div className="mb-4 p-3 bg-blue-900/20 border border-blue-900/30 rounded-lg">
+                <p className="text-sm text-blue-300">
+                  <strong>Info:</strong> Stok Saat Ini hanya berubah melalui transaksi (Pembelian, Penjualan, Stok Masuk/Keluar, Transfer, Opname). Anda hanya dapat mengatur Stok Minimum dan Maksimum.
+                </p>
+              </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead className="bg-red-900/30">
                     <tr>
                       <th className="px-3 py-2 text-left text-amber-200">Cabang</th>
-                      <th className="px-3 py-2 text-right text-amber-200">Stok Saat Ini</th>
+                      <th className="px-3 py-2 text-center text-amber-200">Stok Saat Ini</th>
                       <th className="px-3 py-2 text-right text-amber-200">Stok Minimum</th>
                       <th className="px-3 py-2 text-right text-amber-200">Stok Maksimum</th>
                     </tr>
@@ -1033,13 +1035,15 @@ const MasterItems = () => {
                     {branchStockData.map(bs => (
                       <tr key={bs.branch_id} className="hover:bg-red-900/10">
                         <td className="px-3 py-2 text-gray-200">{bs.branch_name}</td>
-                        <td className="px-3 py-2">
-                          <input
-                            type="number"
-                            value={bs.stock_current}
-                            onChange={(e) => updateBranchStockValue(bs.branch_id, 'stock_current', e.target.value)}
-                            className="w-20 px-2 py-1 bg-[#0a0608] border border-red-900/30 rounded text-gray-200 text-right text-sm"
-                          />
+                        <td className="px-3 py-2 text-center">
+                          {/* STOK SAAT INI - READ ONLY (hanya berubah dari transaksi inventory) */}
+                          <span className={`inline-block min-w-[3rem] px-2 py-1 rounded text-sm font-medium text-right ${
+                            bs.stock_current <= bs.stock_minimum ? 'bg-red-900/50 text-red-300' :
+                            bs.stock_current <= bs.stock_minimum * 2 ? 'bg-yellow-900/50 text-yellow-300' :
+                            'bg-green-900/50 text-green-300'
+                          }`}>
+                            {bs.stock_current || 0}
+                          </span>
                         </td>
                         <td className="px-3 py-2">
                           <input
@@ -1047,6 +1051,7 @@ const MasterItems = () => {
                             value={bs.stock_minimum}
                             onChange={(e) => updateBranchStockValue(bs.branch_id, 'stock_minimum', e.target.value)}
                             className="w-20 px-2 py-1 bg-[#0a0608] border border-red-900/30 rounded text-gray-200 text-right text-sm"
+                            min="0"
                           />
                         </td>
                         <td className="px-3 py-2">
@@ -1055,6 +1060,7 @@ const MasterItems = () => {
                             value={bs.stock_maximum}
                             onChange={(e) => updateBranchStockValue(bs.branch_id, 'stock_maximum', e.target.value)}
                             className="w-20 px-2 py-1 bg-[#0a0608] border border-red-900/30 rounded text-gray-200 text-right text-sm"
+                            min="0"
                           />
                         </td>
                       </tr>
