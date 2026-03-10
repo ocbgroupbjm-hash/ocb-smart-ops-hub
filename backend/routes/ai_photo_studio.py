@@ -154,54 +154,95 @@ async def set_main_image(image_id: str, user: dict = Depends(get_current_user)):
 
 @router.post("/enhance")
 async def enhance_photo(data: PhotoEnhanceRequest, user: dict = Depends(get_current_user)):
-    """Enhance a product photo using AI"""
+    """
+    Enhance a product photo using AI IMAGE EDITING mode.
+    
+    IMPORTANT: This uses IMAGE EDITING, NOT IMAGE GENERATION.
+    The original product must remain EXACTLY the same.
+    Only background, lighting, and clarity can be modified.
+    """
     
     if not EMERGENT_LLM_KEY:
-        # Fallback to basic processing without AI
         return await basic_enhance(data)
     
     try:
-        from emergentintegrations.llm.openai.image_generation import OpenAIImageGeneration
+        from emergentintegrations.llm.chat import LlmChat, UserMessage, ImageContent
         
-        # Create prompt based on enhancement type
+        # Create STRICT prompts that preserve the original product
         prompts = {
-            "enhance": f"Enhance this product photo: improve lighting, sharpness, and color balance while keeping the product exactly the same. Professional product photography style.",
-            "remove_bg": f"Remove the background from this product photo and replace with pure white (#FFFFFF) background. Keep the product sharp and well-lit.",
-            "white_bg": f"Place this product on a clean white background with soft shadow. Professional e-commerce style photography.",
-            "catalog": f"Transform this into a professional {data.mode} catalog photo. Clean background, perfect lighting, product centered. Ready for marketplace listing.",
-            "sharpen": f"Sharpen this product photo while maintaining natural look. Enhance details and textures.",
-            "lighting": f"Improve the lighting of this product photo. Make it bright, professional, and appealing."
+            "enhance": """IMPORTANT: Keep the original product EXACTLY the same - same shape, same color, same details.
+ONLY improve the following:
+- Better lighting and exposure
+- Sharper details and clarity
+- Better color balance
+DO NOT change or replace the product. The product must remain identical.""",
+
+            "remove_bg": """IMPORTANT: Keep the original product EXACTLY the same - same shape, same color, same details.
+Remove the background and replace with transparent or pure white (#FFFFFF).
+The product must remain IDENTICAL - do not change its shape, color, or any details.
+Only remove what is behind the product.""",
+
+            "white_bg": """IMPORTANT: Keep the original product EXACTLY the same - same shape, same color, same details.
+Place this EXACT product on a clean white studio background.
+Add soft natural shadow underneath.
+The product itself must remain COMPLETELY UNCHANGED - same shape, same color, same everything.
+Only change the background to white.""",
+
+            "catalog": """IMPORTANT: Keep the original product EXACTLY the same - same shape, same color, same details.
+Create a professional e-commerce catalog style photo.
+- Clean white or light gray background
+- Professional studio lighting
+- Soft shadow
+The product MUST remain IDENTICAL to the original - do not replace or modify the product itself.
+Only improve background, lighting, and presentation.""",
+
+            "sharpen": """IMPORTANT: Keep the original product EXACTLY the same.
+Only sharpen and enhance the details of this EXACT product.
+Do not replace or modify the product. Just make it clearer and sharper.""",
+
+            "lighting": """IMPORTANT: Keep the original product EXACTLY the same.
+Only improve the lighting to make the product look more professional.
+Do not replace or modify the product itself."""
         }
         
         prompt = prompts.get(data.enhancement_type, prompts["enhance"])
         
-        # Generate enhanced image
-        image_gen = OpenAIImageGeneration(api_key=EMERGENT_LLM_KEY)
-        
-        # Decode input image
-        input_image = base64.b64decode(data.image_base64)
-        
-        # Generate with AI
-        images = await image_gen.generate_images(
-            prompt=prompt,
-            model="gpt-image-1",
-            number_of_images=1
+        # Initialize LlmChat with Gemini for IMAGE EDITING
+        chat = LlmChat(
+            api_key=EMERGENT_LLM_KEY,
+            session_id=f"photo-edit-{uuid.uuid4()}",
+            system_message="You are a professional product photographer AI. Your job is to EDIT existing product photos - improve lighting, background, and clarity while keeping the EXACT same product unchanged. NEVER replace or generate a different product."
         )
         
+        # Use Gemini Nano Banana for image editing
+        chat.with_model("gemini", "gemini-3-pro-image-preview").with_params(modalities=["image", "text"])
+        
+        # Create message with the reference image
+        msg = UserMessage(
+            text=prompt,
+            file_contents=[ImageContent(data.image_base64)]
+        )
+        
+        # Send for editing - this will use the reference image
+        text_response, images = await chat.send_message_multimodal_response(msg)
+        
         if images and len(images) > 0:
-            result_base64 = base64.b64encode(images[0]).decode('utf-8')
+            result_base64 = images[0].get('data', '')
+            
             return {
                 "success": True,
                 "enhanced_image": result_base64,
                 "enhancement_type": data.enhancement_type,
-                "mode": data.mode
+                "mode": data.mode,
+                "ai_response": text_response[:100] if text_response else ""
             }
         else:
-            raise HTTPException(status_code=500, detail="Gagal generate gambar")
+            raise HTTPException(status_code=500, detail="AI tidak menghasilkan gambar. Coba lagi.")
             
     except ImportError:
         return await basic_enhance(data)
     except Exception as e:
+        print(f"AI Enhancement error: {str(e)}")
         return await basic_enhance(data)
 
 

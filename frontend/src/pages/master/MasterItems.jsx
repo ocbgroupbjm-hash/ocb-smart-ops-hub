@@ -407,10 +407,16 @@ const MasterItems = () => {
       formData.append('mode', 'marketplace');
       formData.append('is_main', 'false');
       
-      const res = await api(`/api/ai-photo-studio/save-enhanced/${selectedItemForPhoto.id}`, {
+      // Gunakan fetch langsung seperti upload
+      const API_URL = process.env.REACT_APP_BACKEND_URL;
+      const token = localStorage.getItem('token');
+      
+      const res = await fetch(`${API_URL}/api/ai-photo-studio/save-enhanced/${selectedItemForPhoto.id}`, {
         method: 'POST',
         body: formData,
-        headers: {}
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
       });
       
       if (res.ok) {
@@ -423,9 +429,11 @@ const MasterItems = () => {
         }
         setEnhancedImage(null);
       } else {
-        toast.error('Gagal menyimpan foto');
+        const err = await res.json();
+        toast.error(err.detail || 'Gagal menyimpan foto');
       }
     } catch (err) {
+      console.error('Save error:', err);
       toast.error('Terjadi kesalahan');
     }
   };
