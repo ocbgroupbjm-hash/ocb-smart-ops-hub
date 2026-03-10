@@ -28,7 +28,7 @@ import Warroom from './pages/Warroom';
 import AISales from './pages/AISales';
 
 // SUPER ERP Pages
-import SetoranHarian from './pages/SetoranHarian';
+import SetoranHarian from './pages/operasional/SetoranHarian';
 import SelisihKas from './pages/SelisihKas';
 import Employees from './pages/Employees';
 import Absensi from './pages/Absensi';

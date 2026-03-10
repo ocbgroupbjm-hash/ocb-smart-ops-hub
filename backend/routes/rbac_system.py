@@ -161,6 +161,13 @@ MODULES = {
     "security_audit": {"name": "Audit Log", "category": "security"},
     "security_session": {"name": "Session Management", "category": "security"},
     "security_alert": {"name": "Security Alerts", "category": "security"},
+    
+    # Operasional Setoran Harian
+    "setoran_harian": {"name": "Setoran Harian", "category": "operasional"},
+    "setoran_verify": {"name": "Verifikasi Setoran", "category": "operasional"},
+    "setoran_approve": {"name": "Approval Setoran", "category": "operasional"},
+    "setoran_post": {"name": "Posting Setoran", "category": "operasional"},
+    "setoran_reconcile": {"name": "Rekonsiliasi Setoran", "category": "operasional"},
 }
 
 # ==================== CATEGORY LABELS ====================
@@ -175,7 +182,8 @@ CATEGORY_LABELS = {
     "menu": "Visibilitas Menu",
     "ai": "AI Modules",
     "hr": "HR & Payroll",
-    "security": "Security & System"
+    "security": "Security & System",
+    "operasional": "Operasional Keuangan"
 }
 
 # ==================== PYDANTIC MODELS ====================

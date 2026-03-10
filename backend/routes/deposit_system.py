@@ -1312,3 +1312,178 @@ async def initialize_deposit_system(user: dict = Depends(get_current_user)):
         "message": "Deposit system initialized",
         "default_accounts": list(DEFAULT_ACCOUNT_MAPPING.keys())
     }
+
+
+@router.post("/seed-sales")
+async def seed_sample_sales(
+    count: int = Query(default=10, ge=1, le=50),
+    sales_date: str = Query(default=""),
+    request: Request = None,
+    user: dict = Depends(get_current_user)
+):
+    """
+    Seed sample sales transactions for testing deposit system
+    Creates realistic POS transactions with various payment methods
+    """
+    import random
+    
+    user_id = user.get("user_id") or user.get("id")
+    user_name = user.get("name", "Kasir Test")
+    
+    # Get user's branch
+    db_user = await users_collection.find_one({"id": user_id}, {"_id": 0})
+    branch_id = db_user.get("branch_id") if db_user else None
+    
+    if not branch_id:
+        # Get first available branch
+        branch = await branches_collection.find_one({}, {"_id": 0, "id": 1, "name": 1, "code": 1})
+        if branch:
+            branch_id = branch.get("id")
+            branch_name = branch.get("name", "Cabang Default")
+            branch_code = branch.get("code", "HQ")
+        else:
+            branch_id = "branch-default"
+            branch_name = "Cabang Default"
+            branch_code = "HQ"
+    else:
+        branch = await branches_collection.find_one({"id": branch_id}, {"_id": 0})
+        branch_name = branch.get("name", "") if branch else "Cabang"
+        branch_code = branch.get("code", "HQ") if branch else "HQ"
+    
+    # Use provided date or today
+    if not sales_date:
+        sales_date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    
+    # Sample products for transactions
+    sample_items = [
+        {"name": "Produk A", "price": 25000, "qty_range": (1, 5)},
+        {"name": "Produk B", "price": 50000, "qty_range": (1, 3)},
+        {"name": "Produk C", "price": 15000, "qty_range": (1, 10)},
+        {"name": "Produk D", "price": 100000, "qty_range": (1, 2)},
+        {"name": "Produk E", "price": 75000, "qty_range": (1, 3)},
+        {"name": "Produk F", "price": 30000, "qty_range": (2, 8)},
+    ]
+    
+    # Payment method distribution
+    payment_methods = ["cash", "cash", "cash", "transfer", "qris", "ewallet"]
+    
+    created_transactions = []
+    
+    for i in range(count):
+        # Generate transaction number
+        seq = i + 1
+        trx_number = f"POS-{branch_code}-{sales_date.replace('-', '')}-{seq:04d}"
+        
+        # Random items (1-4 items per transaction)
+        num_items = random.randint(1, 4)
+        selected_items = random.sample(sample_items, min(num_items, len(sample_items)))
+        
+        items = []
+        gross_amount = 0
+        
+        for item in selected_items:
+            qty = random.randint(*item["qty_range"])
+            subtotal = item["price"] * qty
+            gross_amount += subtotal
+            items.append({
+                "item_name": item["name"],
+                "qty": qty,
+                "price": item["price"],
+                "subtotal": subtotal
+            })
+        
+        # Random discount (0-10%)
+        discount_percent = random.choice([0, 0, 0, 5, 10])
+        discount_amount = gross_amount * discount_percent / 100
+        
+        # Tax (11%)
+        tax_amount = (gross_amount - discount_amount) * 0.11
+        net_amount = gross_amount - discount_amount + tax_amount
+        
+        # Payment method
+        payment_method = random.choice(payment_methods)
+        
+        # Build payment info
+        payments = {
+            "cash": 0,
+            "change": 0,
+            "transfer": 0,
+            "qris": 0,
+            "ewallet": 0,
+            "card": 0,
+            "credit": 0
+        }
+        
+        if payment_method == "cash":
+            # Round up for cash
+            cash_given = ((int(net_amount) // 10000) + 1) * 10000
+            payments["cash"] = cash_given
+            payments["change"] = cash_given - net_amount
+        elif payment_method == "transfer":
+            payments["transfer"] = net_amount
+        elif payment_method == "qris":
+            payments["qris"] = net_amount
+        elif payment_method == "ewallet":
+            payments["ewallet"] = net_amount
+        
+        # Generate random time
+        hour = random.randint(8, 21)
+        minute = random.randint(0, 59)
+        trx_time = f"{hour:02d}:{minute:02d}:00"
+        
+        # Create transaction
+        transaction = {
+            "id": str(uuid.uuid4()),
+            "transaction_number": trx_number,
+            "transaction_date": sales_date,
+            "transaction_time": trx_time,
+            "branch_id": branch_id,
+            "branch_name": branch_name,
+            "cashier_id": user_id,
+            "cashier_name": user_name,
+            "customer_name": f"Pelanggan {random.randint(1, 100)}",
+            "items": items,
+            "gross_amount": gross_amount,
+            "discount_percent": discount_percent,
+            "discount_amount": discount_amount,
+            "tax_percent": 11,
+            "tax_amount": round(tax_amount, 2),
+            "net_amount": round(net_amount, 2),
+            "payment_method": payment_method,
+            "payments": payments,
+            "status": "completed",
+            "is_void": False,
+            "deposit_id": None,
+            "deposit_number": None,
+            "deposit_status": None,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "created_by": user_id
+        }
+        
+        await sales_transactions.insert_one(transaction)
+        created_transactions.append({
+            "id": transaction["id"],
+            "number": trx_number,
+            "net_amount": round(net_amount, 2),
+            "payment_method": payment_method
+        })
+    
+    # Calculate summary
+    total_cash = sum(t["net_amount"] for t in created_transactions if t["payment_method"] == "cash")
+    total_non_cash = sum(t["net_amount"] for t in created_transactions if t["payment_method"] != "cash")
+    
+    return {
+        "message": f"Berhasil membuat {count} transaksi penjualan sample",
+        "sales_date": sales_date,
+        "branch_id": branch_id,
+        "branch_name": branch_name,
+        "cashier_id": user_id,
+        "cashier_name": user_name,
+        "transactions": created_transactions,
+        "summary": {
+            "total_transactions": count,
+            "total_cash": round(total_cash, 2),
+            "total_non_cash": round(total_non_cash, 2),
+            "total_all": round(total_cash + total_non_cash, 2)
+        }
+    }
