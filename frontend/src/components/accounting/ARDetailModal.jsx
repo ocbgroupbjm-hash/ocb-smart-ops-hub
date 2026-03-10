@@ -64,8 +64,15 @@ export default function ARDetailModal({ ar, onClose }) {
   const statusCfg = STATUS_CONFIG[data.status] || STATUS_CONFIG.open;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" data-testid="ar-detail-modal">
-      <div className="bg-white rounded-lg w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
+    <div 
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" 
+      data-testid="ar-detail-modal"
+      onClick={() => onClose(false)}
+    >
+      <div 
+        className="bg-white rounded-lg w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b bg-gradient-to-r from-blue-600 to-blue-700 text-white">
           <div className="flex items-center gap-3">

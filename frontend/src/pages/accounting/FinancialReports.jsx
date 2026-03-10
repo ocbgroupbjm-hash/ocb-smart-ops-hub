@@ -231,8 +231,8 @@ export default function FinancialReports() {
                     Trial Balance
                   </CardTitle>
                   <div className="flex items-center gap-2">
-                    <Badge className={reportData.totals?.is_balanced ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
-                      {reportData.totals?.is_balanced ? (
+                    <Badge className={reportData.is_balanced ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
+                      {reportData.is_balanced ? (
                         <><CheckCircle className="w-3 h-3 mr-1" /> Balanced</>
                       ) : (
                         <><XCircle className="w-3 h-3 mr-1" /> Not Balanced</>
@@ -240,7 +240,7 @@ export default function FinancialReports() {
                     </Badge>
                   </div>
                 </div>
-                <p className="text-sm text-gray-500">Per {reportData.as_of_date || asOfDate}</p>
+                <p className="text-sm text-gray-500">Per {asOfDate}</p>
               </CardHeader>
               <CardContent>
                 <div className="overflow-x-auto">
@@ -249,24 +249,24 @@ export default function FinancialReports() {
                       <tr>
                         <th className="px-4 py-3 text-left font-medium text-gray-600">Kode</th>
                         <th className="px-4 py-3 text-left font-medium text-gray-600">Nama Akun</th>
-                        <th className="px-4 py-3 text-center font-medium text-gray-600">Tipe</th>
+                        <th className="px-4 py-3 text-center font-medium text-gray-600">Kategori</th>
                         <th className="px-4 py-3 text-right font-medium text-gray-600">Debit</th>
                         <th className="px-4 py-3 text-right font-medium text-gray-600">Credit</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y">
-                      {reportData.accounts?.map((acc, idx) => (
+                      {reportData.items?.map((acc, idx) => (
                         <tr key={idx} className="hover:bg-gray-50">
-                          <td className="px-4 py-3 font-mono">{acc.code}</td>
-                          <td className="px-4 py-3">{acc.name}</td>
+                          <td className="px-4 py-3 font-mono">{acc.account_code}</td>
+                          <td className="px-4 py-3">{acc.account_name}</td>
                           <td className="px-4 py-3 text-center">
-                            <Badge variant="outline">{acc.type}</Badge>
+                            <Badge variant="outline">{acc.category}</Badge>
                           </td>
                           <td className="px-4 py-3 text-right font-mono">
-                            {acc.debit > 0 ? formatCurrency(acc.debit) : '-'}
+                            {acc.debit_balance > 0 ? formatCurrency(acc.debit_balance) : '-'}
                           </td>
                           <td className="px-4 py-3 text-right font-mono">
-                            {acc.credit > 0 ? formatCurrency(acc.credit) : '-'}
+                            {acc.credit_balance > 0 ? formatCurrency(acc.credit_balance) : '-'}
                           </td>
                         </tr>
                       ))}
@@ -275,10 +275,10 @@ export default function FinancialReports() {
                       <tr>
                         <td colSpan="3" className="px-4 py-3 text-right">TOTAL</td>
                         <td className="px-4 py-3 text-right font-mono text-blue-600">
-                          {formatCurrency(reportData.totals?.debit)}
+                          {formatCurrency(reportData.total_debit)}
                         </td>
                         <td className="px-4 py-3 text-right font-mono text-blue-600">
-                          {formatCurrency(reportData.totals?.credit)}
+                          {formatCurrency(reportData.total_credit)}
                         </td>
                       </tr>
                     </tfoot>

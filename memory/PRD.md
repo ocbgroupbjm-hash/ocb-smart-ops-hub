@@ -1,5 +1,5 @@
 # OCB TITAN ERP - ENTERPRISE RETAIL OPERATING SYSTEM
-## Product Requirements Document (PRD) v12.0
+## Product Requirements Document (PRD) v13.0
 
 ---
 
@@ -10,9 +10,9 @@ OCB TITAN ERP adalah sistem ERP retail enterprise untuk bisnis multi-cabang deng
 - **Pembelian** dengan AP integration
 - **Inventory / Stok** dengan movement tracking
 - **Setoran Harian** dengan security ketat
-- **Hutang Piutang** (AR/AP) dengan aging
-- **Akuntansi** dengan auto-journal
-- **Approval Engine** untuk otorisasi
+- **Hutang Piutang** (AR/AP) dengan aging + frontend UI
+- **Akuntansi** dengan auto-journal + financial reports
+- **Approval Engine** untuk otorisasi + approval center UI
 - **RBAC** dengan role hierarchy
 - **Audit Trail** untuk semua aktivitas
 
@@ -20,53 +20,50 @@ OCB TITAN ERP adalah sistem ERP retail enterprise untuk bisnis multi-cabang deng
 
 # LATEST UPDATE: March 10, 2026
 
-## ENTERPRISE BLUEPRINT IMPLEMENTED
+## FRONTEND MODULES COMPLETED
 
-### ✅ NEW MODULES CREATED
+### ✅ NEW FRONTEND PAGES CREATED
 
-#### 1. Accounts Receivable (AR) - `/api/ar`
-- **File**: `/app/backend/routes/ar_system.py`
+#### 1. Accounts Receivable (AR) Page - `/accounting/receivables`
+- **File**: `/app/frontend/src/pages/accounting/AccountsReceivable.jsx`
+- **Components**:
+  - ARDetailModal - `/app/frontend/src/components/accounting/ARDetailModal.jsx`
+  - ARPaymentModal - `/app/frontend/src/components/accounting/ARPaymentModal.jsx`
 - **Features**:
-  - Create AR dari penjualan kredit
-  - Payment recording dengan auto-journal
-  - Aging report (Current, 1-30, 31-60, 61-90, >90 days)
-  - Customer credit limit tracking
-  - Write-off dengan approval
-  - Role-based access (Finance/Manager level)
+  - Summary cards (Total Piutang, Jatuh Tempo, Due 7 Days, Outstanding)
+  - Aging report visual (Current, 1-30, 31-60, 61-90, >90 days)
+  - Customer filter, status filter, search
+  - View detail modal with payment history
+  - Record payment modal with auto-journal
 
-#### 2. Accounts Payable (AP) - `/api/ap`
-- **File**: `/app/backend/routes/ap_system.py`
+#### 2. Accounts Payable (AP) Page - `/accounting/payables`
+- **File**: `/app/frontend/src/pages/accounting/AccountsPayable.jsx`
+- **Components**:
+  - APDetailModal - `/app/frontend/src/components/accounting/APDetailModal.jsx`
+  - APPaymentModal - `/app/frontend/src/components/accounting/APPaymentModal.jsx`
 - **Features**:
-  - Create AP dari pembelian kredit
-  - Payment recording dengan auto-journal
-  - Aging report
-  - Supplier outstanding tracking
-  - Due soon alerts
-  - Role-based access
+  - Summary cards (Total Hutang, Jatuh Tempo, Due 7 Days, Outstanding)
+  - Aging report visual
+  - Supplier filter, status filter, search
+  - View detail modal with payment history
+  - Record payment modal with auto-journal
 
-#### 3. Approval Engine - `/api/approval`
-- **File**: `/app/backend/routes/approval_engine.py`
+#### 3. Approval Center - `/approval-center`
+- **File**: `/app/frontend/src/pages/approval/ApprovalCenter.jsx`
 - **Features**:
-  - Configurable approval rules by module
-  - Multi-level approval hierarchy
-  - Condition-based triggers (amount, percentage)
-  - Default rules created:
-    - Pembelian > 10 Juta: Supervisor → Manager
-    - Void Penjualan > 1 Juta: Supervisor
-    - Diskon > 20%: Supervisor
-    - Selisih Setoran > 100rb: Supervisor → Finance
+  - Summary cards (My Pending, Total Pending, Approved, Rejected)
+  - Tab navigation (Pending Approval, All Requests, Approval Rules)
+  - Approve/Reject actions with notes
+  - Rule management view
 
-#### 4. Accounting Engine - `/api/accounting`
-- **File**: `/app/backend/routes/accounting_engine.py`
+#### 4. Financial Reports - `/accounting/financial-reports`
+- **File**: `/app/frontend/src/pages/accounting/FinancialReports.jsx`
 - **Features**:
-  - Chart of Accounts management
-  - Configurable Account Mapping per branch
-  - Manual journal entry creation
-  - General Ledger (GL)
-  - Trial Balance
-  - Balance Sheet (Neraca)
-  - Income Statement (Laba Rugi)
-  - Journal posting workflow
+  - Trial Balance with balanced/not balanced indicator
+  - Neraca (Balance Sheet) with assets, liabilities, equity sections
+  - Laba Rugi (Income Statement) with net profit/loss
+  - Date filters and Generate button
+  - Export to CSV
 
 ---
 
@@ -211,11 +208,12 @@ Credit: 1102 Bank
 
 | Iteration | Module | Result |
 |-----------|--------|--------|
-| 24 | Enterprise RBAC | ✅ 100% PASS |
-| 25 | Multi-Mode Pricing | ✅ 100% PASS |
-| 26 | Form Tambah Item | ✅ 100% PASS |
-| 27 | Setoran Harian | ✅ 100% PASS |
-| 28 | AR/AP/Approval/Accounting | ✅ INITIALIZED |
+| 24 | Enterprise RBAC | 100% PASS |
+| 25 | Multi-Mode Pricing | 100% PASS |
+| 26 | Form Tambah Item | 100% PASS |
+| 27 | Setoran Harian | 100% PASS |
+| 28 | AR/AP/Approval/Accounting Backend | 28/28 PASS |
+| 29 | AR/AP/Approval/Financial Reports Frontend | 85% PASS |
 
 ---
 
@@ -247,10 +245,10 @@ Credit: 1102 Bank
 
 ## REMAINING TASKS
 
-### P0 - Critical
-- [ ] Frontend pages for AR/AP
-- [ ] Frontend for Approval Center
-- [ ] Frontend for Financial Reports
+### P0 - Critical ✅ COMPLETED
+- [x] Frontend pages for AR/AP
+- [x] Frontend for Approval Center
+- [x] Frontend for Financial Reports
 - [ ] Integration: Sales → AR (credit)
 - [ ] Integration: Purchase → AP (credit)
 
@@ -281,10 +279,10 @@ Credit: 1102 Bank
 ├── deposit_system.py      ✅ Setoran Harian
 ├── rbac_system.py         ✅ RBAC
 ├── pricing_system.py      ✅ Pricing
-├── ar_system.py           ✅ NEW - AR
-├── ap_system.py           ✅ NEW - AP
-├── approval_engine.py     ✅ NEW - Approval
-├── accounting_engine.py   ✅ NEW - Accounting
+├── ar_system.py           ✅ AR Backend
+├── ap_system.py           ✅ AP Backend
+├── approval_engine.py     ✅ Approval Backend
+├── accounting_engine.py   ✅ Accounting Backend
 ├── pos.py                 ✅ POS
 ├── purchase.py            ✅ Purchase
 └── ... (other modules)
@@ -292,9 +290,19 @@ Credit: 1102 Bank
 /app/frontend/src/pages/
 ├── operasional/
 │   └── SetoranHarian.jsx  ✅ Complete
-├── accounting/            🔴 TODO
-├── approval/              🔴 TODO
+├── accounting/
+│   ├── AccountsReceivable.jsx  ✅ NEW
+│   ├── AccountsPayable.jsx     ✅ NEW
+│   └── FinancialReports.jsx    ✅ NEW
+├── approval/
+│   └── ApprovalCenter.jsx      ✅ NEW
 └── dashboard/             🔴 TODO
+
+/app/frontend/src/components/accounting/
+├── ARDetailModal.jsx      ✅ NEW
+├── ARPaymentModal.jsx     ✅ NEW
+├── APDetailModal.jsx      ✅ NEW
+└── APPaymentModal.jsx     ✅ NEW
 ```
 
 ---
