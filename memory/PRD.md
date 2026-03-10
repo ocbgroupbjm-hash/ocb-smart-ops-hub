@@ -33,11 +33,16 @@ The OCB TITAN AI is a comprehensive, enterprise-grade system that serves as the 
 │   │   ├── war_room_v2.py        # Owner command center
 │   │   ├── erp_reports.py        # Comprehensive reporting
 │   │   ├── global_map.py         # Global map monitoring
-│   │   ├── data_export.py        # Data export system
+│   │   ├── data_export.py        # Basic data export
 │   │   ├── kpi_performance.py    # KPI & AI ranking
 │   │   ├── ai_command_center.py  # AI business analysis
 │   │   ├── crm_ai.py             # CRM AI prompts
 │   │   ├── attendance_advanced.py # Advanced attendance
+│   │   ├── export_advanced.py    # Advanced Export (Excel/PDF)
+│   │   ├── import_system.py      # Import System
+│   │   ├── file_upload.py        # File Upload (KPI/Products)
+│   │   ├── whatsapp_alerts.py    # WhatsApp Alerts
+│   │   ├── warroom_alerts.py     # War Room Alert Panel
 │   │   └── ... (other routes)
 │   └── server.py
 └── frontend/
@@ -47,7 +52,10 @@ The OCB TITAN AI is a comprehensive, enterprise-grade system that serves as the 
         │   ├── AICommandCenter.jsx   # AI business analysis
         │   ├── KPIPerformance.jsx    # KPI & rankings
         │   ├── CRMAI.jsx             # CRM AI prompts
-        │   ├── DataExport.jsx        # Data export center
+        │   ├── AdvancedExport.jsx    # Export Excel/PDF/CSV/JSON
+        │   ├── ImportSystem.jsx      # Import Excel/CSV/JSON
+        │   ├── WhatsAppAlerts.jsx    # WhatsApp configuration
+        │   ├── WarRoomAlertPanel.jsx # Real-time alert panel
         │   ├── SetoranHarian.jsx     # Daily deposits
         │   ├── SelisihKas.jsx        # Cash variance
         │   ├── Employees.jsx         # Employee management
@@ -197,6 +205,49 @@ The OCB TITAN AI is a comprehensive, enterprise-grade system that serves as the 
 
 ---
 
+## 4.7 Advanced Export System (Phase 2) ✅
+- Export ke Excel (.xlsx), PDF, CSV, JSON
+- Semua modul: Master Data, HR, KPI, Sales, Inventory, Accounting, Audit, CRM
+- Special exports: Employee Ranking, Branch Ranking, Dashboard Summary
+- Period selection dan date range filter
+
+## 4.8 Import System (Phase 2) ✅
+- Import dari Excel, CSV, JSON
+- Templates untuk: Products, Suppliers, Customers, Branches, Employees, Stock Awal, Saldo Awal, KPI
+- Preview data sebelum import
+- Validasi kolom wajib dan duplicate checking
+- Error report per baris
+- Rollback support untuk undo import
+- Import history tracking
+
+## 4.9 File Upload System (Phase 2) ✅
+- KPI Evidence upload (foto/video)
+  - Timestamp otomatis
+  - Lokasi GPS
+  - Status tracking
+- Product Photo upload
+  - Multiple photos per product
+  - Primary photo selection
+  - AI Enhancement placeholder (butuh API key)
+
+## 4.10 WhatsApp Alert System (Phase 2) ✅
+- Alert triggers: Minus Kas, Stok Kosong, Stok Minimum, Cabang Belum Setor, SPV Leave Store, KPI Terlambat, Performance Rendah, Audit Minus, Cabang Bermasalah
+- Recipient management by role (Owner, HRD, SPV, Gudang, Admin)
+- Message templates with variables
+- API configuration panel
+- Alert logs and test functionality
+- Ready for WhatsApp API integration
+
+## 4.11 War Room Alert Panel (Phase 2) ✅
+- Real-time active alerts dashboard
+- Priority summary (Critical, High, Medium, Low)
+- Alert actions: Acknowledge, In Progress, Escalate, Resolve
+- Auto-check for minus kas, stock, unreported branches
+- Top affected branches display
+- Notification tracking per recipient role
+
+---
+
 ## 5. API Endpoints
 
 ### ERP Operations
@@ -343,6 +394,15 @@ The OCB TITAN AI is a comprehensive, enterprise-grade system that serves as the 
 ---
 
 ## 9. Change Log
+
+### March 10, 2026 (Phase 2 - OCB TITAN AI Continued)
+- ✅ Implemented Advanced Export System (Excel, PDF, CSV, JSON)
+- ✅ Built Import System with validation, preview, and rollback
+- ✅ Created File Upload System for KPI evidence and product photos
+- ✅ Developed WhatsApp Alert System with 9 trigger types
+- ✅ Built War Room Alert Panel with real-time monitoring
+- ✅ All new frontend pages with professional UI
+- ✅ Testing passed 100% (iteration_11.json)
 
 ### March 10, 2026 (Phase 2 - OCB TITAN AI)
 - ✅ Implemented Global Map Monitoring System with Leaflet

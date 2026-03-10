@@ -48,6 +48,7 @@ import CRMAI from './pages/CRMAI';
 import AdvancedExport from './pages/AdvancedExport';
 import ImportSystem from './pages/ImportSystem';
 import WhatsAppAlerts from './pages/WhatsAppAlerts';
+import WarRoomAlertPanel from './pages/WarRoomAlertPanel';
 
 // Master Data Pages
 import { 
@@ -142,6 +143,7 @@ function App() {
             <Route path="advanced-export" element={<AdvancedExport />} />
             <Route path="import-system" element={<ImportSystem />} />
             <Route path="whatsapp-alerts" element={<WhatsAppAlerts />} />
+            <Route path="warroom-alerts" element={<WarRoomAlertPanel />} />
             
             {/* SUPER ERP Routes */}
             <Route path="setoran-harian" element={<SetoranHarian />} />

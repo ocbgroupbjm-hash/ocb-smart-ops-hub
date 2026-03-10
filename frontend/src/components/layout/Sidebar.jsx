@@ -61,6 +61,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       submenu: [
         { name: '🗺️ Global Map', icon: MapPin, path: '/global-map', description: 'Monitor cabang real-time' },
         { name: '🧠 AI Command Center', icon: Brain, path: '/ai-command-center', description: 'Analisis AI' },
+        { name: '🚨 War Room Alerts', icon: Bell, path: '/warroom-alerts', description: 'Alert real-time' },
         { name: '🏆 KPI & Performance', icon: Target, path: '/kpi-performance', description: 'Ranking karyawan' },
         { name: '🤖 CRM AI', icon: Bot, path: '/crm-ai', description: 'AI untuk CRM' },
         { name: '📤 Advanced Export', icon: Download, path: '/advanced-export', description: 'Export Excel/PDF' },
