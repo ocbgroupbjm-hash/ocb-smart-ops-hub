@@ -55,6 +55,10 @@ import HRManagement from './pages/HRManagement';
 import CFODashboard from './pages/CFODashboard';
 import AIWarRoomSuper from './pages/AIWarRoomSuper';
 
+// OCB TITAN AI Phase 4 Pages - HR & Performance
+import AIPerformance from './pages/AIPerformance';
+import PayrollAuto from './pages/PayrollAuto';
+
 // Master Data Pages
 import { 
   MasterItems, MasterCategories, MasterUnits, MasterBrands, 
@@ -153,6 +157,10 @@ function App() {
             {/* OCB TITAN AI Phase 3 Routes - AI Super War Room */}
             <Route path="cfo-dashboard" element={<CFODashboard />} />
             <Route path="ai-warroom-super" element={<AIWarRoomSuper />} />
+            
+            {/* OCB TITAN AI Phase 4 Routes - HR & Performance */}
+            <Route path="ai-performance" element={<AIPerformance />} />
+            <Route path="payroll-auto" element={<PayrollAuto />} />
             
             {/* SUPER ERP Routes */}
             <Route path="setoran-harian" element={<SetoranHarian />} />

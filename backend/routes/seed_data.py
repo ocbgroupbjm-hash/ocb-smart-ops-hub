@@ -269,6 +269,7 @@ async def seed_transactions():
     start_date = today.replace(day=1)
     
     transactions = []
+    invoice_counter = 1
     
     for emp in employees:
         # Random number of transactions per employee per day
@@ -281,7 +282,7 @@ async def seed_transactions():
                     total = random.randint(50000, 2000000)
                     trans = {
                         "id": gen_id(),
-                        "invoice_number": f"INV-{current_date.strftime('%Y%m%d')}-{random.randint(1000, 9999)}",
+                        "invoice_number": f"SEED-{current_date.strftime('%Y%m%d')}-{invoice_counter:06d}",
                         "cashier_id": emp["id"],
                         "cashier_name": emp.get("name"),
                         "branch_id": emp.get("branch_id"),
@@ -292,13 +293,14 @@ async def seed_transactions():
                         "created_at": current_date.isoformat()
                     }
                     transactions.append(trans)
+                    invoice_counter += 1
             
             current_date += timedelta(days=1)
     
-    # Insert transactions
+    # Delete old seed transactions first
     if transactions:
         await db["transactions"].delete_many({
-            "created_at": {"$gte": start_date.isoformat()}
+            "invoice_number": {"$regex": "^SEED-"}
         })
         await db["transactions"].insert_many(transactions)
     

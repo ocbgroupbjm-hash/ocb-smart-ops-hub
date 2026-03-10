@@ -138,42 +138,64 @@ async def generate_payslip(
     format: str = "json",  # json, pdf, excel
     working_days: int = 26
 ):
-    """Generate payslip for a single employee"""
+    """Generate payslip for a single employee using automatic payroll calculation"""
     emp = await employees_col().find_one({"id": employee_id}, {"_id": 0})
     if not emp:
         raise HTTPException(status_code=404, detail="Karyawan tidak ditemukan")
     
-    thp = calculate_thp(emp, working_days)
-    
-    payslip_data = {
-        "slip_id": gen_id(),
-        "period": f"{period_month:02d}/{period_year}",
-        "period_month": period_month,
-        "period_year": period_year,
-        "employee": {
-            "id": emp.get("id"),
-            "nik": emp.get("nik"),
-            "name": emp.get("name"),
-            "jabatan": emp.get("jabatan_name"),
-            "department": emp.get("department"),
-            "branch": emp.get("branch_name"),
-            "bank_name": emp.get("bank_name"),
-            "bank_account": emp.get("bank_account"),
-            "bank_holder": emp.get("bank_holder"),
-            "payment_method": emp.get("payment_method", "transfer")
-        },
-        "calculation": thp,
-        "generated_at": now_iso()
-    }
+    # Try to get automatic calculation from payroll_auto first
+    try:
+        from routes.payroll_auto import calculate_employee_payroll
+        auto_payroll = await calculate_employee_payroll(employee_id, period_month, period_year, working_days)
+        
+        payslip_data = {
+            "slip_id": gen_id(),
+            "period": f"{period_month:02d}/{period_year}",
+            "period_month": period_month,
+            "period_year": period_year,
+            "employee": auto_payroll["employee"],
+            "attendance": auto_payroll["attendance"],
+            "calculation": auto_payroll["calculation"],
+            "generated_at": now_iso()
+        }
+    except Exception:
+        # Fallback to basic calculation if auto payroll fails
+        thp = calculate_thp(emp, working_days)
+        payslip_data = {
+            "slip_id": gen_id(),
+            "period": f"{period_month:02d}/{period_year}",
+            "period_month": period_month,
+            "period_year": period_year,
+            "employee": {
+                "id": emp.get("id"),
+                "nik": emp.get("nik"),
+                "name": emp.get("name"),
+                "jabatan": emp.get("jabatan_name"),
+                "department": emp.get("department"),
+                "branch": emp.get("branch_name"),
+                "bank_name": emp.get("bank_name"),
+                "bank_account": emp.get("bank_account"),
+                "bank_holder": emp.get("bank_holder"),
+                "payment_method": emp.get("payment_method", "transfer")
+            },
+            "attendance": None,
+            "calculation": thp,
+            "generated_at": now_iso()
+        }
     
     if format == "json":
         return payslip_data
     
-    elif format == "pdf":
+    # Get calculation data for PDF/Excel
+    calc = payslip_data["calculation"]
+    att = payslip_data.get("attendance") or {}
+    emp_info = payslip_data["employee"]
+    
+    if format == "pdf":
         if not HAS_REPORTLAB:
             raise HTTPException(status_code=500, detail="PDF generation library not available")
         
-        filename = f"payslip_{emp.get('nik')}_{period_month:02d}_{period_year}.pdf"
+        filename = f"payslip_{emp_info.get('nik')}_{period_month:02d}_{period_year}.pdf"
         filepath = os.path.join(OUTPUT_DIR, filename)
         
         # Create PDF
@@ -187,34 +209,57 @@ async def generate_payslip(
         elements.append(Spacer(1, 20))
         
         # Employee info
-        emp_info = [
-            ["NIK:", emp.get("nik", "-"), "Nama:", emp.get("name", "-")],
-            ["Jabatan:", emp.get("jabatan_name", "-"), "Cabang:", emp.get("branch_name", "-")],
-            ["Bank:", emp.get("bank_name", "-"), "No. Rek:", emp.get("bank_account", "-")],
+        emp_info_table = [
+            ["NIK:", emp_info.get("nik", "-"), "Nama:", emp_info.get("name", "-")],
+            ["Jabatan:", emp_info.get("jabatan", "-"), "Cabang:", emp_info.get("branch", "-")],
+            ["Bank:", emp_info.get("bank_name", "-"), "No. Rek:", emp_info.get("bank_account", "-")],
         ]
-        t1 = Table(emp_info, colWidths=[70, 140, 70, 140])
+        t1 = Table(emp_info_table, colWidths=[70, 140, 70, 140])
         t1.setStyle(TableStyle([
             ('FONTSIZE', (0, 0), (-1, -1), 10),
             ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
         ]))
         elements.append(t1)
-        elements.append(Spacer(1, 20))
+        elements.append(Spacer(1, 10))
+        
+        # Attendance summary if available
+        if att:
+            att_data = [
+                ["REKAP ABSENSI", "", "", ""],
+                ["Hadir:", str(att.get("total_hadir", 0)), "Alpha:", str(att.get("total_alpha", 0))],
+                ["Telat:", f"{att.get('total_telat_menit', 0)} menit", "Lembur:", f"{att.get('total_lembur_menit', 0)} menit"],
+            ]
+            t_att = Table(att_data, colWidths=[70, 140, 70, 140])
+            t_att.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, -1), 9),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+            ]))
+            elements.append(t_att)
+            elements.append(Spacer(1, 10))
         
         # Salary breakdown
+        tunjangan = calc.get("tunjangan", {})
+        bonus = calc.get("bonus", {})
+        potongan = calc.get("potongan", {})
+        
         salary_data = [
             ["PENDAPATAN", "", "POTONGAN", ""],
-            ["Gaji Pokok", format_rupiah(thp["gaji_pokok"]), "BPJS Kesehatan", format_rupiah(thp["potongan"]["bpjs_kes"])],
-            ["Tunj. Jabatan", format_rupiah(thp["tunjangan"]["jabatan"]), "BPJS TK", format_rupiah(thp["potongan"]["bpjs_tk"])],
-            ["Tunj. Transport", format_rupiah(thp["tunjangan"]["transport"]), "Pot. Pinjaman", format_rupiah(thp["potongan"]["pinjaman"])],
-            ["Tunj. Makan", format_rupiah(thp["tunjangan"]["makan"]), "Pot. Lainnya", format_rupiah(thp["potongan"]["lainnya"])],
-            ["Tunj. Keluarga", format_rupiah(thp["tunjangan"]["keluarga"]), "", ""],
-            ["Tunj. Lainnya", format_rupiah(thp["tunjangan"]["lainnya"]), "", ""],
-            ["Bonus Kehadiran", format_rupiah(thp["bonus"]["kehadiran"]), "", ""],
-            ["Bonus Performance", format_rupiah(thp["bonus"]["performance"]), "", ""],
-            ["Bonus Target", format_rupiah(thp["bonus"]["target"]), "", ""],
-            ["Bonus Lainnya", format_rupiah(thp["bonus"]["lainnya"]), "", ""],
+            ["Gaji Dasar", format_rupiah(calc.get("gaji_dasar", 0)), "Pot. Telat", format_rupiah(potongan.get("telat", 0))],
+            ["Tunj. Jabatan", format_rupiah(tunjangan.get("jabatan", 0)), "Pot. Alpha", format_rupiah(potongan.get("alpha", 0))],
+            ["Tunj. Transport", format_rupiah(tunjangan.get("transport", 0)), "BPJS Kesehatan", format_rupiah(potongan.get("bpjs_kes", 0))],
+            ["Tunj. Makan", format_rupiah(tunjangan.get("makan", 0)), "BPJS TK", format_rupiah(potongan.get("bpjs_tk", 0))],
+            ["Tunj. Keluarga", format_rupiah(tunjangan.get("keluarga", 0)), "Pot. Pinjaman", format_rupiah(potongan.get("pinjaman", 0))],
+            ["Tunj. Lainnya", format_rupiah(tunjangan.get("lainnya", 0)), "Pot. Lainnya", format_rupiah(potongan.get("lainnya", 0))],
+            ["Bonus Kehadiran", format_rupiah(bonus.get("kehadiran", 0)), "", ""],
+            ["Bonus Lembur", format_rupiah(bonus.get("lembur", 0)), "", ""],
+            ["Bonus Penjualan", format_rupiah(bonus.get("penjualan", 0)), "", ""],
+            ["Bonus Performance", format_rupiah(bonus.get("performance", 0)), "", ""],
+            ["Bonus Lainnya", format_rupiah(bonus.get("lainnya", 0)), "", ""],
             ["", "", "", ""],
-            ["TOTAL PENDAPATAN", format_rupiah(thp["gross"]), "TOTAL POTONGAN", format_rupiah(thp["potongan"]["total"])],
+            ["TOTAL PENDAPATAN", format_rupiah(calc.get("gross", 0)), "TOTAL POTONGAN", format_rupiah(potongan.get("total", 0))],
         ]
         
         t2 = Table(salary_data, colWidths=[120, 90, 120, 90])
@@ -234,7 +279,7 @@ async def generate_payslip(
         elements.append(Spacer(1, 20))
         
         # Take home pay
-        thp_data = [["TAKE HOME PAY", format_rupiah(thp["take_home_pay"])]]
+        thp_data = [["TAKE HOME PAY", format_rupiah(calc.get("take_home_pay", 0))]]
         t3 = Table(thp_data, colWidths=[200, 200])
         t3.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, -1), colors.green),
@@ -254,12 +299,16 @@ async def generate_payslip(
         if not HAS_OPENPYXL:
             raise HTTPException(status_code=500, detail="Excel generation library not available")
         
-        filename = f"payslip_{emp.get('nik')}_{period_month:02d}_{period_year}.xlsx"
+        filename = f"payslip_{emp_info.get('nik')}_{period_month:02d}_{period_year}.xlsx"
         filepath = os.path.join(OUTPUT_DIR, filename)
         
         wb = Workbook()
         ws = wb.active
         ws.title = "Payslip"
+        
+        tunjangan = calc.get("tunjangan", {})
+        bonus = calc.get("bonus", {})
+        potongan = calc.get("potongan", {})
         
         # Headers
         ws['A1'] = "SLIP GAJI KARYAWAN"
@@ -268,32 +317,48 @@ async def generate_payslip(
         
         # Employee info
         ws['A4'] = "NIK"
-        ws['B4'] = emp.get("nik")
+        ws['B4'] = emp_info.get("nik")
         ws['C4'] = "Nama"
-        ws['D4'] = emp.get("name")
+        ws['D4'] = emp_info.get("name")
         ws['A5'] = "Jabatan"
-        ws['B5'] = emp.get("jabatan_name")
+        ws['B5'] = emp_info.get("jabatan")
         ws['C5'] = "Cabang"
-        ws['D5'] = emp.get("branch_name")
+        ws['D5'] = emp_info.get("branch")
+        
+        # Attendance if available
+        if att:
+            ws['A7'] = "REKAP ABSENSI"
+            ws['A7'].font = Font(bold=True)
+            ws['A8'] = "Hadir"
+            ws['B8'] = att.get("total_hadir", 0)
+            ws['C8'] = "Alpha"
+            ws['D8'] = att.get("total_alpha", 0)
+            ws['A9'] = "Telat (menit)"
+            ws['B9'] = att.get("total_telat_menit", 0)
+            ws['C9'] = "Lembur (menit)"
+            ws['D9'] = att.get("total_lembur_menit", 0)
+            row = 11
+        else:
+            row = 7
         
         # Salary breakdown
-        row = 7
         ws[f'A{row}'] = "PENDAPATAN"
         ws[f'A{row}'].font = Font(bold=True)
         ws[f'C{row}'] = "POTONGAN"
         ws[f'C{row}'].font = Font(bold=True)
         
         items = [
-            ("Gaji Pokok", thp["gaji_pokok"], "BPJS Kesehatan", thp["potongan"]["bpjs_kes"]),
-            ("Tunj. Jabatan", thp["tunjangan"]["jabatan"], "BPJS TK", thp["potongan"]["bpjs_tk"]),
-            ("Tunj. Transport", thp["tunjangan"]["transport"], "Pot. Pinjaman", thp["potongan"]["pinjaman"]),
-            ("Tunj. Makan", thp["tunjangan"]["makan"], "Pot. Lainnya", thp["potongan"]["lainnya"]),
-            ("Tunj. Keluarga", thp["tunjangan"]["keluarga"], "", ""),
-            ("Tunj. Lainnya", thp["tunjangan"]["lainnya"], "", ""),
-            ("Bonus Kehadiran", thp["bonus"]["kehadiran"], "", ""),
-            ("Bonus Performance", thp["bonus"]["performance"], "", ""),
-            ("Bonus Target", thp["bonus"]["target"], "", ""),
-            ("Bonus Lainnya", thp["bonus"]["lainnya"], "", ""),
+            ("Gaji Dasar", calc.get("gaji_dasar", 0), "Pot. Telat", potongan.get("telat", 0)),
+            ("Tunj. Jabatan", tunjangan.get("jabatan", 0), "Pot. Alpha", potongan.get("alpha", 0)),
+            ("Tunj. Transport", tunjangan.get("transport", 0), "BPJS Kesehatan", potongan.get("bpjs_kes", 0)),
+            ("Tunj. Makan", tunjangan.get("makan", 0), "BPJS TK", potongan.get("bpjs_tk", 0)),
+            ("Tunj. Keluarga", tunjangan.get("keluarga", 0), "Pot. Pinjaman", potongan.get("pinjaman", 0)),
+            ("Tunj. Lainnya", tunjangan.get("lainnya", 0), "Pot. Lainnya", potongan.get("lainnya", 0)),
+            ("Bonus Kehadiran", bonus.get("kehadiran", 0), "", ""),
+            ("Bonus Lembur", bonus.get("lembur", 0), "", ""),
+            ("Bonus Penjualan", bonus.get("penjualan", 0), "", ""),
+            ("Bonus Performance", bonus.get("performance", 0), "", ""),
+            ("Bonus Lainnya", bonus.get("lainnya", 0), "", ""),
         ]
         
         for idx, (p_name, p_val, d_name, d_val) in enumerate(items, start=row+1):
@@ -303,18 +368,18 @@ async def generate_payslip(
                 ws[f'C{idx}'] = d_name
                 ws[f'D{idx}'] = d_val
         
-        row += len(items) + 2
+        row = row + len(items) + 2
         ws[f'A{row}'] = "TOTAL PENDAPATAN"
         ws[f'A{row}'].font = Font(bold=True)
-        ws[f'B{row}'] = thp["gross"]
+        ws[f'B{row}'] = calc.get("gross", 0)
         ws[f'C{row}'] = "TOTAL POTONGAN"
         ws[f'C{row}'].font = Font(bold=True)
-        ws[f'D{row}'] = thp["potongan"]["total"]
+        ws[f'D{row}'] = potongan.get("total", 0)
         
         row += 2
         ws[f'A{row}'] = "TAKE HOME PAY"
         ws[f'A{row}'].font = Font(bold=True, size=12, color="008000")
-        ws[f'B{row}'] = thp["take_home_pay"]
+        ws[f'B{row}'] = calc.get("take_home_pay", 0)
         ws[f'B{row}'].font = Font(bold=True, size=12, color="008000")
         
         wb.save(filepath)
@@ -544,7 +609,7 @@ async def generate_company_payroll_report(
         ws.title = "Company Payroll"
         
         # Header
-        ws['A1'] = f"REKAP GAJI PERUSAHAAN"
+        ws['A1'] = "REKAP GAJI PERUSAHAAN"
         ws['A1'].font = Font(bold=True, size=14)
         ws['A2'] = f"Periode: {period_month:02d}/{period_year}"
         

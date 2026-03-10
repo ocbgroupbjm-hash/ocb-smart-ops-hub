@@ -91,6 +91,7 @@ from routes.ai_warroom import router as ai_warroom_router
 # Import OCB TITAN AI Phase 4 routers - Payroll & Performance
 from routes.payroll_auto import router as payroll_auto_router
 from routes.ai_employee_performance import router as ai_employee_router
+from routes.seed_data import router as seed_data_router
 
 # Mount all routers under /api - Core ERP
 app.include_router(auth_router, prefix="/api")
@@ -155,6 +156,7 @@ app.include_router(ai_warroom_router)
 # Mount OCB TITAN AI Phase 4 routers
 app.include_router(payroll_auto_router)
 app.include_router(ai_employee_router)
+app.include_router(seed_data_router)
 
 # Health check
 @app.get("/api/health")

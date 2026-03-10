@@ -100,6 +100,8 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
         { name: 'HR Management', icon: Building2, path: '/hr-management', description: 'Training & Struktur' },
         { name: 'Absensi', icon: Fingerprint, path: '/absensi', description: 'Check-in/out GPS' },
         { name: 'Payroll', icon: BadgeDollarSign, path: '/payroll', description: 'Penggajian' },
+        { name: '🤖 AI Performance', icon: Target, path: '/ai-performance', description: 'Analisis performa AI' },
+        { name: '💰 Payroll Otomatis', icon: Calculator, path: '/payroll-auto', description: 'Gaji otomatis dari absensi' },
         { divider: true },
         { name: 'Master Shift', icon: Clock, path: '/master/shifts' },
         { name: 'Master Jabatan', icon: Briefcase, path: '/master/jabatan' },
