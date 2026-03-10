@@ -59,19 +59,26 @@ const Login = () => {
   const selectBusiness = async (business) => {
     setSelectedBusiness(business);
     
-    // Switch database immediately
     try {
-      const res = await fetch(`${API_URL}/api/business/switch/${business.db_name}`, {
+      // Switch database
+      const switchRes = await fetch(`${API_URL}/api/business/switch/${business.db_name}`, {
         method: 'POST'
       });
       
-      if (res.ok) {
-        toast.success(`Database: ${business.name}`);
-        setStep(2); // Move to login step
-      } else {
+      if (!switchRes.ok) {
         toast.error('Gagal memilih bisnis');
+        return;
       }
+      
+      // Ensure admin user exists in this database
+      await fetch(`${API_URL}/api/business/ensure-admin/${business.db_name}`, {
+        method: 'POST'
+      });
+      
+      toast.success(`Database: ${business.name}`);
+      setStep(2); // Move to login step
     } catch (err) {
+      console.error('Switch business error:', err);
       toast.error('Gagal memilih bisnis');
     }
   };

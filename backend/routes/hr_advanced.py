@@ -603,6 +603,94 @@ async def approve_promotion(promotion_id: str, approved_by: str):
 
 # ==================== MASS UPLOAD EMPLOYEES ====================
 
+@router.get("/employees/upload-template")
+async def get_employee_upload_template():
+    """Get Excel template for mass employee upload"""
+    import io
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Border, Side
+    from fastapi.responses import StreamingResponse
+    
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Template Karyawan"
+    
+    # Headers
+    headers = [
+        'nik', 'name', 'email', 'phone', 'jabatan', 'department', 
+        'branch', 'join_date', 'contract_type', 'gaji_pokok'
+    ]
+    
+    header_fill = PatternFill(start_color='8B0000', end_color='8B0000', fill_type='solid')
+    header_font = Font(bold=True, color='FFFFFF')
+    thin_border = Border(
+        left=Side(style='thin'),
+        right=Side(style='thin'),
+        top=Side(style='thin'),
+        bottom=Side(style='thin')
+    )
+    
+    for col, header in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col, value=header.upper())
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.border = thin_border
+    
+    # Sample data
+    sample_data = [
+        ['EMP-001', 'Budi Santoso', 'budi@email.com', '081234567890', 'Supervisor', 
+         'Operasional', 'OCB Banjarmasin', '2024-01-15', 'tetap', 5000000],
+        ['EMP-002', 'Siti Rahayu', 'siti@email.com', '081234567891', 'Kasir', 
+         'Sales', 'OCB Banjarmasin', '2024-02-01', 'kontrak', 3500000],
+    ]
+    
+    for row_idx, row_data in enumerate(sample_data, 2):
+        for col_idx, value in enumerate(row_data, 1):
+            cell = ws.cell(row=row_idx, column=col_idx, value=value)
+            cell.border = thin_border
+    
+    # Column widths
+    col_widths = [15, 25, 25, 18, 15, 15, 20, 15, 12, 15]
+    for col, width in enumerate(col_widths, 1):
+        ws.column_dimensions[ws.cell(row=1, column=col).column_letter].width = width
+    
+    # Instructions sheet
+    ws_info = wb.create_sheet("Petunjuk")
+    instructions = [
+        ["PETUNJUK PENGISIAN DATA KARYAWAN"],
+        [""],
+        ["Kolom", "Keterangan", "Wajib"],
+        ["nik", "Nomor Induk Karyawan (unique)", "Ya"],
+        ["name", "Nama lengkap karyawan", "Ya"],
+        ["email", "Email karyawan", "Tidak"],
+        ["phone", "Nomor HP", "Tidak"],
+        ["jabatan", "Nama jabatan", "Tidak"],
+        ["department", "Nama departemen", "Tidak"],
+        ["branch", "Nama cabang", "Tidak"],
+        ["join_date", "Tanggal masuk (YYYY-MM-DD)", "Tidak"],
+        ["contract_type", "Tipe kontrak: tetap/kontrak/magang/freelance", "Tidak"],
+        ["gaji_pokok", "Gaji pokok (angka)", "Tidak"],
+    ]
+    
+    for row_idx, row_data in enumerate(instructions, 1):
+        for col_idx, value in enumerate(row_data, 1):
+            ws_info.cell(row=row_idx, column=col_idx, value=value)
+    
+    ws_info.column_dimensions['A'].width = 15
+    ws_info.column_dimensions['B'].width = 45
+    ws_info.column_dimensions['C'].width = 10
+    
+    # Save to buffer
+    buffer = io.BytesIO()
+    wb.save(buffer)
+    buffer.seek(0)
+    
+    return StreamingResponse(
+        buffer,
+        media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        headers={"Content-Disposition": "attachment; filename=template_karyawan.xlsx"}
+    )
+
 @router.post("/employees/mass-upload")
 async def mass_upload_employees(file: UploadFile = File(...)):
     """Mass upload employees from Excel/CSV"""

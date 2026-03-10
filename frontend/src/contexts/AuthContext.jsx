@@ -38,22 +38,44 @@ export const AuthProvider = ({ children }) => {
   };
 
   const login = async (email, password) => {
-    const res = await fetch(`${API_URL}/api/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password })
-    });
-    
-    const data = await res.json();
-    
-    if (!res.ok) {
-      throw new Error(data.detail || 'Login failed');
+    try {
+      const res = await fetch(`${API_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      
+      // Clone response before reading to avoid "body stream already read" error
+      const resClone = res.clone();
+      
+      let data;
+      try {
+        data = await res.json();
+      } catch (jsonErr) {
+        // If JSON parse fails, try reading as text
+        const text = await resClone.text();
+        console.error('Login response not JSON:', text);
+        throw new Error('Server response error');
+      }
+      
+      if (!res.ok) {
+        throw new Error(data.detail || 'Login failed');
+      }
+      
+      localStorage.setItem('token', data.token);
+      setToken(data.token);
+      setUser(data.user);
+      
+      // Store current business/database info
+      if (data.business) {
+        localStorage.setItem('currentBusiness', JSON.stringify(data.business));
+      }
+      
+      return data;
+    } catch (err) {
+      console.error('Login error:', err);
+      throw err;
     }
-    
-    localStorage.setItem('token', data.token);
-    setToken(data.token);
-    setUser(data.user);
-    return data;
   };
 
   const register = async (userData) => {

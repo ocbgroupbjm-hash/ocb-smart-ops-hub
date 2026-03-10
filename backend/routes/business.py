@@ -183,6 +183,62 @@ async def switch_business(db_name: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Gagal switch database: {str(e)}")
 
+
+@router.post("/ensure-admin/{db_name}")
+async def ensure_admin_user(db_name: str, email: str = "ocbgroupbjm@gmail.com", password: str = "admin123"):
+    """Ensure admin user exists in the specified database"""
+    import uuid
+    
+    businesses = load_businesses()
+    business = next((b for b in businesses if b['db_name'] == db_name), None)
+    if not business:
+        raise HTTPException(status_code=404, detail="Database tidak ditemukan")
+    
+    # Get database reference
+    target_db = client[db_name]
+    
+    # Check if admin user exists
+    existing = await target_db['users'].find_one({"email": email})
+    if existing:
+        return {"message": "Admin user sudah ada", "exists": True}
+    
+    # Create default branch if not exists
+    branch = await target_db['branches'].find_one({"code": "HQ"})
+    if not branch:
+        branch = {
+            "id": str(uuid.uuid4()),
+            "code": "HQ",
+            "name": "Headquarters",
+            "address": "Main Office",
+            "phone": "",
+            "is_active": True,
+            "is_warehouse": True,
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await target_db['branches'].insert_one(branch)
+    
+    # Create admin user
+    admin_user = {
+        "id": str(uuid.uuid4()),
+        "email": email,
+        "password_hash": hash_password(password),
+        "name": "Admin",
+        "phone": "",
+        "role": "owner",
+        "branch_id": branch["id"],
+        "branch_ids": [branch["id"]],
+        "is_active": True,
+        "permissions": [],
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await target_db['users'].insert_one(admin_user)
+    
+    return {
+        "message": f"Admin user berhasil dibuat di {business['name']}",
+        "created": True,
+        "email": email
+    }
+
 @router.get("/current")
 async def get_current_business():
     """Get current active business"""

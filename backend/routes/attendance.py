@@ -503,6 +503,89 @@ async def reject_izin(attendance_id: str, rejected_by: str, alasan: str = ""):
     
     return {"message": "Izin ditolak"}
 
+# ==================== APPROVAL WORKFLOW ====================
+
+@router.get("/approvals/pending")
+async def get_pending_approvals(
+    branch_id: Optional[str] = None,
+    supervisor_id: Optional[str] = None
+):
+    """Get all pending attendance approvals (izin, cuti, sakit, lembur)"""
+    query = {"approval_status": "pending"}
+    
+    if branch_id:
+        query["branch_id"] = branch_id
+    
+    pending = await attendance_col().find(query, {"_id": 0}).sort("created_at", -1).to_list(length=100)
+    
+    return {
+        "pending": pending,
+        "total": len(pending)
+    }
+
+@router.put("/approvals/{attendance_id}/approve")
+async def approve_attendance(attendance_id: str, approver_id: str, approver_name: str, notes: str = ""):
+    """Approve attendance request (izin, cuti, sakit, lembur)"""
+    existing = await attendance_col().find_one({"id": attendance_id})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Data tidak ditemukan")
+    
+    await attendance_col().update_one(
+        {"id": attendance_id},
+        {"$set": {
+            "approval_status": "approved",
+            "approved_by": approver_id,
+            "approver_name": approver_name,
+            "approval_notes": notes,
+            "approved_at": now_iso(),
+            "updated_at": now_iso()
+        }}
+    )
+    
+    return {"message": "Berhasil disetujui", "attendance_id": attendance_id}
+
+@router.put("/approvals/{attendance_id}/reject")
+async def reject_attendance(attendance_id: str, approver_id: str, approver_name: str, reason: str = ""):
+    """Reject attendance request"""
+    existing = await attendance_col().find_one({"id": attendance_id})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Data tidak ditemukan")
+    
+    await attendance_col().update_one(
+        {"id": attendance_id},
+        {"$set": {
+            "approval_status": "rejected",
+            "approved_by": approver_id,
+            "approver_name": approver_name,
+            "approval_notes": f"Ditolak: {reason}",
+            "approved_at": now_iso(),
+            "updated_at": now_iso()
+        }}
+    )
+    
+    return {"message": "Ditolak", "attendance_id": attendance_id}
+
+@router.get("/approvals/history")
+async def get_approval_history(
+    branch_id: Optional[str] = None,
+    status: Optional[str] = None,
+    limit: int = 100
+):
+    """Get approval history"""
+    query = {"approval_status": {"$in": ["approved", "rejected"]}}
+    
+    if branch_id:
+        query["branch_id"] = branch_id
+    if status:
+        query["approval_status"] = status
+    
+    history = await attendance_col().find(query, {"_id": 0}).sort("approved_at", -1).to_list(length=limit)
+    
+    return {
+        "history": history,
+        "total": len(history)
+    }
+
 # ==================== DAILY SUMMARY ====================
 
 @router.get("/summary/daily")
