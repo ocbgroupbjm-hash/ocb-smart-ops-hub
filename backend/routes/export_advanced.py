@@ -177,9 +177,14 @@ def generate_csv(data: List[dict]):
         return output.getvalue()
     
     flat_data = [flatten_dict(d) for d in data]
-    headers = list(flat_data[0].keys())
     
-    writer = csv.DictWriter(output, fieldnames=headers)
+    # Collect all unique headers from all rows
+    all_headers = set()
+    for row in flat_data:
+        all_headers.update(row.keys())
+    headers = sorted(list(all_headers))
+    
+    writer = csv.DictWriter(output, fieldnames=headers, extrasaction='ignore')
     writer.writeheader()
     for row in flat_data:
         writer.writerow(row)
