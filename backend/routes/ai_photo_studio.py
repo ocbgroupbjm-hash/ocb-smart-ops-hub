@@ -51,8 +51,8 @@ async def upload_product_photo(
     """Upload a product photo"""
     db = get_db()
     
-    # Verify item exists
-    item = await db["items"].find_one({"id": item_id}, {"_id": 0})
+    # Verify item exists (use products collection)
+    item = await db["products"].find_one({"id": item_id}, {"_id": 0})
     if not item:
         raise HTTPException(status_code=404, detail="Item tidak ditemukan")
     
@@ -276,8 +276,8 @@ async def save_enhanced_photo(
     """Save an AI-enhanced photo to the item"""
     db = get_db()
     
-    # Verify item exists
-    item = await db["items"].find_one({"id": item_id}, {"_id": 0})
+    # Verify item exists (use products collection)
+    item = await db["products"].find_one({"id": item_id}, {"_id": 0})
     if not item:
         raise HTTPException(status_code=404, detail="Item tidak ditemukan")
     

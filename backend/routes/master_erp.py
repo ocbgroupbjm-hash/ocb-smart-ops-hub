@@ -35,6 +35,9 @@ class ItemCreate(BaseModel):
     category_id: str = ""
     unit_id: str = ""
     brand_id: str = ""
+    branch_id: str = ""  # CABANG sebagai lokasi utama
+    rack: str = ""
+    item_type: str = "barang"
     cost_price: float = 0
     selling_price: float = 0
     min_stock: int = 0
@@ -42,6 +45,7 @@ class ItemCreate(BaseModel):
     description: str = ""
     is_active: bool = True
     track_stock: bool = True
+    discontinued: bool = False
 
 @router.get("/items")
 async def list_items(
@@ -50,7 +54,7 @@ async def list_items(
     search: str = "",
     category_id: str = "",
     brand_id: str = "",
-    warehouse_id: str = "",
+    branch_id: str = "",  # CABANG sebagai lokasi utama
     item_type: str = "",
     rack: str = "",
     is_active: str = "",
@@ -78,9 +82,9 @@ async def list_items(
     if brand_id:
         query["brand_id"] = brand_id
     
-    # Warehouse filter
-    if warehouse_id:
-        query["warehouse_id"] = warehouse_id
+    # Branch filter (CABANG sebagai lokasi utama)
+    if branch_id:
+        query["branch_id"] = branch_id
     
     # Item type filter
     if item_type and item_type != "semua":
@@ -115,7 +119,7 @@ async def list_items(
     result = await cursor.to_list(limit)
     total = await items.count_documents(query)
     
-    # Add category/unit/brand/warehouse names
+    # Add category/unit/brand/branch names
     for item in result:
         if item.get("category_id"):
             cat = await categories.find_one({"id": item["category_id"]}, {"_id": 0, "name": 1})
@@ -126,9 +130,9 @@ async def list_items(
         if item.get("brand_id"):
             brand = await brands.find_one({"id": item["brand_id"]}, {"_id": 0, "name": 1})
             item["brand_name"] = brand["name"] if brand else ""
-        if item.get("warehouse_id"):
-            wh = await warehouses.find_one({"id": item["warehouse_id"]}, {"_id": 0, "name": 1})
-            item["warehouse_name"] = wh["name"] if wh else ""
+        if item.get("branch_id"):
+            branch = await db["branches"].find_one({"id": item["branch_id"]}, {"_id": 0, "name": 1})
+            item["branch_name"] = branch["name"] if branch else ""
     
     return {"items": result, "total": total, "page": page, "limit": limit}
 
@@ -141,10 +145,29 @@ async def create_item(data: ItemCreate, user: dict = Depends(get_current_user)):
     item = {
         "id": str(uuid.uuid4()),
         **data.model_dump(),
+        "stock": 0,  # Initial stock
         "created_at": datetime.now(timezone.utc).isoformat(),
         "created_by": user.get("id")
     }
     await items.insert_one(item)
+    
+    # Auto-initialize branch stocks for all branches
+    all_branches = await db["branches"].find({}, {"_id": 0, "id": 1, "name": 1}).to_list(500)
+    if all_branches:
+        branch_stocks = []
+        for branch in all_branches:
+            branch_stocks.append({
+                "id": str(uuid.uuid4()),
+                "item_id": item["id"],
+                "branch_id": branch["id"],
+                "branch_name": branch.get("name", ""),
+                "stock_current": 0,
+                "stock_minimum": 0,
+                "stock_maximum": 0,
+                "created_at": datetime.now(timezone.utc).isoformat()
+            })
+        await db["item_branch_stock"].insert_many(branch_stocks)
+    
     return {"id": item["id"], "message": "Item berhasil ditambahkan"}
 
 @router.put("/items/{item_id}")

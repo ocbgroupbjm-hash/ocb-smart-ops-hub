@@ -48,8 +48,8 @@ async def get_item_branch_stocks(item_id: str, user: dict = Depends(get_current_
     """Get all branch stocks for an item"""
     db = get_db()
     
-    # Verify item exists
-    item = await db["items"].find_one({"id": item_id}, {"_id": 0, "name": 1})
+    # Verify item exists (use products collection)
+    item = await db["products"].find_one({"id": item_id}, {"_id": 0, "name": 1})
     if not item:
         raise HTTPException(status_code=404, detail="Item tidak ditemukan")
     
@@ -98,8 +98,8 @@ async def save_item_branch_stocks(
     """Save branch stocks for an item"""
     db = get_db()
     
-    # Verify item exists
-    item = await db["items"].find_one({"id": item_id}, {"_id": 0})
+    # Verify item exists (use products collection)
+    item = await db["products"].find_one({"id": item_id}, {"_id": 0})
     if not item:
         raise HTTPException(status_code=404, detail="Item tidak ditemukan")
     
@@ -156,7 +156,7 @@ async def get_branch_stock_alerts(
     
     # Enrich with item info
     for alert in alerts:
-        item = await db["items"].find_one({"id": alert["item_id"]}, {"_id": 0, "code": 1, "name": 1})
+        item = await db["products"].find_one({"id": alert["item_id"]}, {"_id": 0, "code": 1, "name": 1})
         if item:
             alert["item_code"] = item.get("code")
             alert["item_name"] = item.get("name")
@@ -198,7 +198,7 @@ async def get_ai_restock_recommendations(
     
     recommendations = []
     for stock in low_stocks:
-        item = await db["items"].find_one({"id": stock["item_id"]}, {"_id": 0, "code": 1, "name": 1, "cost_price": 1})
+        item = await db["products"].find_one({"id": stock["item_id"]}, {"_id": 0, "code": 1, "name": 1, "cost_price": 1})
         if not item:
             continue
         
@@ -243,8 +243,8 @@ async def initialize_branch_stocks(item_id: str, user: dict = Depends(get_curren
     """Initialize branch stocks for a new item (all branches)"""
     db = get_db()
     
-    # Verify item exists
-    item = await db["items"].find_one({"id": item_id}, {"_id": 0})
+    # Verify item exists (use products collection)
+    item = await db["products"].find_one({"id": item_id}, {"_id": 0})
     if not item:
         raise HTTPException(status_code=404, detail="Item tidak ditemukan")
     
