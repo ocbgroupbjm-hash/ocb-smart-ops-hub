@@ -77,7 +77,7 @@ import {
 import { SalesList, SalesReturns, SalesDelivery } from './pages/sales';
 
 // Inventory Pages
-import { StockCards, StockMovements, StockTransfers, StockOpname } from './pages/inventory';
+import { StockCards, StockMovements, StockTransfers, StockOpname, KartuStok } from './pages/inventory';
 import SerialNumbers from './pages/inventory/SerialNumbers';
 import ProductAssembly from './pages/inventory/ProductAssembly';
 
@@ -239,6 +239,7 @@ function App() {
             {/* Inventory Routes */}
             <Route path="inventory/stock-list" element={<Inventory />} />
             <Route path="inventory/stock-cards" element={<StockCards />} />
+            <Route path="inventory/kartu-stok" element={<KartuStok />} />
             <Route path="inventory/stock-in" element={<StockMovements />} />
             <Route path="inventory/stock-out" element={<StockMovements />} />
             <Route path="inventory/transfer" element={<StockTransfers />} />

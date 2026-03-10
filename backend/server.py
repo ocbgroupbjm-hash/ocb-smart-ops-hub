@@ -95,6 +95,7 @@ from routes.seed_data import router as seed_data_router
 from routes.audit_data import router as audit_data_router
 from routes.branch_stock import router as branch_stock_router
 from routes.ai_photo_studio import router as ai_photo_router
+from routes.stock_card import router as stock_card_router
 
 # Mount all routers under /api - Core ERP
 app.include_router(auth_router, prefix="/api")
@@ -163,6 +164,7 @@ app.include_router(seed_data_router)
 app.include_router(audit_data_router)
 app.include_router(branch_stock_router, prefix="/api")
 app.include_router(ai_photo_router)
+app.include_router(stock_card_router)
 
 # Health check
 @app.get("/api/health")

@@ -180,7 +180,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       roles: ['owner', 'admin', 'supervisor', 'inventory'],
       submenu: [
         { name: 'Daftar Stok', icon: Package, path: '/inventory/stock-list' },
-        { name: 'Kartu Stok', icon: ClipboardList, path: '/inventory/stock-cards' },
+        { name: 'Kartu Stok', icon: ClipboardList, path: '/inventory/kartu-stok' },
         { name: 'Stok Masuk', icon: Download, path: '/inventory/stock-in' },
         { name: 'Stok Keluar', icon: Upload, path: '/inventory/stock-out' },
         { name: 'Transfer Stok', icon: ArrowLeftRight, path: '/inventory/transfer' },
