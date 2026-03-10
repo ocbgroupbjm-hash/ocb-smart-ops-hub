@@ -1176,9 +1176,12 @@ const MasterItems = () => {
                   </div>
 
                   {/* AI Tools */}
-                  {selectedImage && (
+                  {selectedImage ? (
                     <div className="mt-4">
-                      <h4 className="text-sm font-semibold text-amber-200 mb-2">AI Enhancement Tools</h4>
+                      <h4 className="text-sm font-semibold text-amber-200 mb-2">
+                        AI Enhancement Tools
+                        {selectedImage.ai_generated && <span className="ml-2 text-xs text-purple-400">(Re-enhance)</span>}
+                      </h4>
                       <div className="grid grid-cols-2 gap-2">
                         <button 
                           onClick={() => enhanceWithAI('enhance')}
@@ -1219,6 +1222,12 @@ const MasterItems = () => {
                           Memproses dengan AI...
                         </div>
                       )}
+                    </div>
+                  ) : (
+                    <div className="mt-4 p-4 bg-blue-900/20 border border-blue-900/30 rounded-lg text-center">
+                      <p className="text-sm text-blue-300">
+                        Pilih foto dari galeri untuk mengaktifkan AI Enhancement Tools
+                      </p>
                     </div>
                   )}
                 </div>
