@@ -26,7 +26,7 @@ export default function AIPerformance() {
 
   const loadBranches = async () => {
     try {
-      const res = await api.get('/api/erp-operations/branches');
+      const res = await api.get('/api/global-map/branches');
       setBranches(res.data.branches || []);
     } catch (err) {
       console.error('Error loading branches:', err);
