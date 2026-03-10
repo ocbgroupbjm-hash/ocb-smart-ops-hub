@@ -46,27 +46,76 @@ class ItemCreate(BaseModel):
 @router.get("/items")
 async def list_items(
     page: int = 1,
-    limit: int = 20,
+    limit: int = 50,
     search: str = "",
     category_id: str = "",
+    brand_id: str = "",
+    warehouse_id: str = "",
+    item_type: str = "",
+    rack: str = "",
+    is_active: str = "",
+    has_stock: str = "",
+    discontinued: str = "",
+    sort_by: str = "code",
+    sort_order: str = "asc",
     user: dict = Depends(get_current_user)
 ):
     query = {}
+    
+    # Search filter
     if search:
         query["$or"] = [
             {"name": {"$regex": search, "$options": "i"}},
             {"code": {"$regex": search, "$options": "i"}},
             {"barcode": {"$regex": search, "$options": "i"}}
         ]
+    
+    # Category filter
     if category_id:
         query["category_id"] = category_id
     
+    # Brand filter
+    if brand_id:
+        query["brand_id"] = brand_id
+    
+    # Warehouse filter
+    if warehouse_id:
+        query["warehouse_id"] = warehouse_id
+    
+    # Item type filter
+    if item_type and item_type != "semua":
+        query["item_type"] = item_type
+    
+    # Rack filter
+    if rack:
+        query["rack"] = {"$regex": rack, "$options": "i"}
+    
+    # Active filter
+    if is_active == "true":
+        query["is_active"] = True
+    elif is_active == "false":
+        query["is_active"] = False
+    
+    # Stock filter
+    if has_stock == "true":
+        query["stock"] = {"$gt": 0}
+    elif has_stock == "false":
+        query["$or"] = query.get("$or", []) + [{"stock": {"$lte": 0}}, {"stock": {"$exists": False}}]
+    
+    # Discontinued filter
+    if discontinued == "true":
+        query["discontinued"] = True
+    
+    # Sorting
+    sort_field = sort_by if sort_by in ["code", "name", "selling_price", "cost_price", "stock", "brand_name"] else "code"
+    sort_direction = 1 if sort_order == "asc" else -1
+    
     skip = (page - 1) * limit
-    cursor = items.find(query, {"_id": 0}).sort("name", 1).skip(skip).limit(limit)
+    cursor = items.find(query, {"_id": 0}).sort(sort_field, sort_direction).skip(skip).limit(limit)
     result = await cursor.to_list(limit)
     total = await items.count_documents(query)
     
-    # Add category/unit/brand names
+    # Add category/unit/brand/warehouse names
     for item in result:
         if item.get("category_id"):
             cat = await categories.find_one({"id": item["category_id"]}, {"_id": 0, "name": 1})
@@ -77,6 +126,9 @@ async def list_items(
         if item.get("brand_id"):
             brand = await brands.find_one({"id": item["brand_id"]}, {"_id": 0, "name": 1})
             item["brand_name"] = brand["name"] if brand else ""
+        if item.get("warehouse_id"):
+            wh = await warehouses.find_one({"id": item["warehouse_id"]}, {"_id": 0, "name": 1})
+            item["warehouse_name"] = wh["name"] if wh else ""
     
     return {"items": result, "total": total, "page": page, "limit": limit}
 
