@@ -94,6 +94,13 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       ]
     },
     {
+      name: '✅ Approval Center',
+      icon: Shield,
+      path: '/approval-center',
+      roles: ['owner', 'admin', 'supervisor', 'finance'],
+      highlight: true
+    },
+    {
       name: '👥 HR & Payroll',
       icon: UserPlus,
       roles: ['owner', 'admin', 'supervisor'],
@@ -199,6 +206,9 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       submenu: [
         { name: 'Daftar Perkiraan', icon: BookOpen, path: '/accounting/coa' },
         { divider: true },
+        { name: 'Piutang (AR)', icon: CreditCard, path: '/accounting/receivables' },
+        { name: 'Hutang (AP)', icon: Wallet, path: '/accounting/payables' },
+        { divider: true },
         { name: 'Kas Masuk', icon: Download, path: '/accounting/cash-in' },
         { name: 'Kas Keluar', icon: Upload, path: '/accounting/cash-out' },
         { name: 'Kas Transfer', icon: ArrowLeftRight, path: '/accounting/cash-transfer' },
@@ -208,6 +218,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
         { divider: true },
         { name: 'Daftar Jurnal', icon: FileText, path: '/accounting/journals' },
         { name: 'Buku Besar', icon: BookOpen, path: '/accounting/ledger' },
+        { name: 'Lap. Keuangan', icon: BarChart2, path: '/accounting/financial-reports' },
         { divider: true },
         { name: 'Saldo Awal', icon: Wallet, path: '/accounting/opening-balance' },
         { name: 'Tutup Tahun', icon: Archive, path: '/accounting/year-end' },

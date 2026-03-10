@@ -94,6 +94,12 @@ import TrialBalance from './pages/accounting/TrialBalance';
 import BalanceSheet from './pages/accounting/BalanceSheet';
 import IncomeStatement from './pages/accounting/IncomeStatement';
 import CashFlow from './pages/accounting/CashFlow';
+import AccountsReceivable from './pages/accounting/AccountsReceivable';
+import AccountsPayable from './pages/accounting/AccountsPayable';
+import FinancialReports from './pages/accounting/FinancialReports';
+
+// Approval Pages
+import ApprovalCenter from './pages/approval/ApprovalCenter';
 
 import './index.css';
 
@@ -266,6 +272,12 @@ function App() {
             <Route path="accounting/opening-balance" element={<ChartOfAccounts />} />
             <Route path="accounting/year-end" element={<ChartOfAccounts />} />
             <Route path="accounting/coa-settings" element={<ChartOfAccounts />} />
+            <Route path="accounting/receivables" element={<AccountsReceivable />} />
+            <Route path="accounting/payables" element={<AccountsPayable />} />
+            <Route path="accounting/financial-reports" element={<FinancialReports />} />
+            
+            {/* Approval Routes */}
+            <Route path="approval-center" element={<ApprovalCenter />} />
             
             {/* Reports Routes */}
             <Route path="reports/sales" element={<Reports />} />
