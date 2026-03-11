@@ -144,12 +144,13 @@ async def create_transaction(
     total_tax = sum(item.tax_amount for item in tx_items)
     total = subtotal - tx_discount + total_tax
     
-    # Validate payments
+    # Validate payments - for credit sales, allow partial or no payment
     paid_amount = sum(p.amount for p in data.payments)
-    if paid_amount < total:
+    if not data.is_credit and paid_amount < total:
         raise HTTPException(status_code=400, detail=f"Insufficient payment. Total: {total}, Paid: {paid_amount}")
     
-    change = paid_amount - total
+    # For credit sales, outstanding amount will become AR
+    change = max(0, paid_amount - total)
     
     # Generate invoice number
     invoice = await get_next_sequence("invoice", "INV")
@@ -253,19 +254,27 @@ async def create_transaction(
             ar_entry = {
                 "id": str(uuid.uuid4()),
                 "ar_number": f"AR-{invoice}",
+                "ar_no": f"AR-{invoice}",  # Also store as ar_no for compatibility
                 "customer_id": data.customer_id,
                 "customer_name": data.customer_name or "Unknown",
                 "source_type": "sales",
                 "source_id": tx.id,
                 "source_number": invoice,
+                "source_no": invoice,
                 "branch_id": branch_id,
+                "ar_date": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+                "due_date": due_date.strftime("%Y-%m-%d"),
+                "original_amount": outstanding,
                 "amount": outstanding,
                 "paid_amount": 0,
-                "due_date": due_date.isoformat(),
-                "status": "unpaid",
+                "outstanding_amount": outstanding,
+                "status": "open",
+                "currency": "IDR",
                 "notes": f"Piutang dari penjualan kredit {invoice}",
                 "created_by": user.get("user_id", ""),
-                "created_at": datetime.now(timezone.utc).isoformat()
+                "created_by_name": user.get("name", ""),
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "updated_at": datetime.now(timezone.utc).isoformat()
             }
             
             await db["accounts_receivable"].insert_one(ar_entry)

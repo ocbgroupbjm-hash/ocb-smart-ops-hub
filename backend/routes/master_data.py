@@ -73,16 +73,42 @@ async def create_branch(data: BranchCreate, request: Request, user: dict = Depen
     branch = Branch(**data.model_dump())
     await branches.insert_one(branch.model_dump())
     
+    # If is_warehouse, also create warehouse entry
+    warehouse_id = None
+    if data.is_warehouse:
+        db = get_db()
+        warehouse_entry = {
+            "id": branch.id,  # Same ID as branch for easy relation
+            "code": f"WH-{data.code}",
+            "name": f"Gudang {data.name}",
+            "branch_id": branch.id,
+            "branch_name": data.name,
+            "address": data.address,
+            "city": data.city,
+            "is_default": True,  # Default warehouse for this branch
+            "is_active": True,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db["warehouses"].insert_one(warehouse_entry)
+        warehouse_id = warehouse_entry["id"]
+        
+        # Update branch with default warehouse reference
+        await branches.update_one(
+            {"id": branch.id},
+            {"$set": {"default_warehouse_id": warehouse_id}}
+        )
+    
     # Audit log
     db = get_db()
     await log_security_event(
         db, user.get("user_id", ""), user.get("name", ""),
         "create", "master_branch",
-        f"Membuat cabang baru: {data.name} ({data.code})",
+        f"Membuat cabang baru: {data.name} ({data.code})" + (f" dengan gudang {warehouse_id}" if warehouse_id else ""),
         request.client.host if request.client else ""
     )
     
-    return {"id": branch.id, "message": "Branch created"}
+    return {"id": branch.id, "warehouse_id": warehouse_id, "message": "Branch created"}
 
 @router.put("/branches/{branch_id}")
 async def update_branch(branch_id: str, data: BranchUpdate, request: Request, user: dict = Depends(require_permission("master_branch", "edit"))):
