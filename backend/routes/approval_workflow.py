@@ -19,7 +19,7 @@ from routes.auth import get_current_user
 from routes.rbac_middleware import require_permission
 import uuid
 
-router = APIRouter(prefix="/api/approval", tags=["Approval Workflow Engine"])
+router = APIRouter(prefix="/api/approval-workflow", tags=["Approval Workflow Engine"])
 
 # ==================== APPROVAL TYPES & RULES ====================
 

@@ -212,6 +212,10 @@ app.include_router(consistency_checker_router)
 app.include_router(auto_journal_engine_router)
 app.include_router(reconciliation_router)
 
+# Mount Phase 3 Operational Control Modules
+from routes.approval_workflow import router as approval_workflow_router
+app.include_router(approval_workflow_router)
+
 # Health check
 @app.get("/api/health")
 async def health_check():
