@@ -1,12 +1,13 @@
 # OCB TITAN ERP - ENTERPRISE RETAIL OPERATING SYSTEM
-## Product Requirements Document (PRD) v20.0
+## Product Requirements Document (PRD) v21.0
 
 ---
 
 # OVERVIEW
 
 OCB TITAN ERP adalah sistem ERP retail enterprise untuk bisnis multi-cabang dengan fitur lengkap:
-- **Master Data iPOS Style** dengan 21 menu lengkap (NEW!)
+- **Setting Akun ERP iPOS Style** dengan Account Derivation Engine (NEW!)
+- **Master Data iPOS Style** dengan 21 menu lengkap
 - **POS / Penjualan** dengan multi-mode pricing + auto AR
 - **Sales Module iPOS Style** dengan full integration
 - **Pembelian Enterprise** dengan full lifecycle (PO→Receive→AP→Payment→Journal)
@@ -26,7 +27,87 @@ OCB TITAN ERP adalah sistem ERP retail enterprise untuk bisnis multi-cabang deng
 
 ---
 
-# LATEST UPDATE: March 11, 2026 - MASTER DATA ERP iPOS STYLE
+# LATEST UPDATE: March 11, 2026 - SETTING AKUN ERP iPOS STYLE
+
+## Account Settings Module - FULLY IMPLEMENTED & TESTED ✅
+
+### Menu Location
+```
+Master Data
+   └ Setting Akun ERP
+```
+
+### 12 Tabs (iPOS Structure)
+| Tab | Purpose | Account Keys |
+|-----|---------|--------------|
+| Data Item | Akun inventory & HPP | hpp, pendapatan_jual, persediaan_barang, biaya_overhead |
+| Pembelian | Akun purchase & AP | potongan_pembelian, ppn_masukan, hutang_dagang, uang_muka_po |
+| Penjualan 1 | Akun sales & AR | potongan_penjualan, ppn_keluaran, pembayaran_tunai/debit/kredit |
+| Penjualan 2 | Akun retur & donasi | retur_potongan, retur_ppn, donasi |
+| Konsinyasi | Akun konsinyasi in/out | hutang_konsinyasi, piutang_konsinyasi |
+| Hutang Piutang | Akun settlement | potongan_hutang/piutang, laba/rugi_selisih_kurs |
+| Lain-lain | Akun modal & laba | prive, laba_ditahan, laba_tahun_berjalan |
+| Cabang | Override per branch | kas, bank, pendapatan per cabang |
+| Gudang | Override per warehouse | persediaan per gudang |
+| Kategori | Override per category | pendapatan, hpp per kategori |
+| Payment Method | Override per payment | kas, bank per metode bayar |
+| Pajak | Override per tax type | ppn_masukan, ppn_keluaran per jenis pajak |
+
+### Account Derivation Engine
+```
+Priority Order (Highest to Lowest):
+1. Branch Mapping     → specific to branch
+2. Warehouse Mapping  → specific to warehouse  
+3. Category Mapping   → specific to product category
+4. Payment Mapping    → specific to payment method
+5. Tax Mapping        → specific to tax type
+6. Global Setting     → from account_settings table
+7. Default Fallback   → hard-coded DEFAULT_ACCOUNTS
+```
+
+### API Endpoints
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| /api/account-settings/ | GET | List all settings by tab |
+| /api/account-settings/by-tab/{tab} | GET | Get settings for specific tab |
+| /api/account-settings/ | POST | Create/update account setting |
+| /api/account-settings/initialize-defaults | POST | Bulk initialize defaults |
+| /api/account-settings/derive-account | GET | Account Derivation Engine |
+| /api/account-settings/chart-of-accounts | GET | COA for dropdown |
+| /api/account-settings/branch-mapping | GET/POST | Branch account mapping |
+| /api/account-settings/warehouse-mapping | GET/POST | Warehouse mapping |
+| /api/account-settings/category-mapping | GET/POST | Category mapping |
+| /api/account-settings/payment-mapping | GET/POST | Payment method mapping |
+| /api/account-settings/tax-mapping | GET/POST | Tax type mapping |
+| /api/account-settings/fiscal-periods | GET/POST | Fiscal period system |
+
+### Integration with ERP Modules
+```
+Sales Module (sales_module.py):
+├── derive_account("pembayaran_tunai") → Debit Kas
+├── derive_account("pembayaran_kredit") → Debit Piutang
+├── derive_account("pendapatan_jual") → Credit Penjualan
+├── derive_account("ppn_keluaran") → Credit PPN
+├── derive_account("hpp") → Debit HPP
+└── derive_account("persediaan_barang") → Credit Persediaan
+```
+
+### Test Results (Iteration 36)
+```
+BACKEND: 100% - 32/32 tests passed
+FRONTEND: 100% - All UI elements and tab interactions working
+
+Verified:
+✅ All 12 tabs with correct fields
+✅ Account Derivation Engine with priority chain
+✅ Branch/Warehouse/Category/Payment/Tax mappings
+✅ Fiscal Period System with overlap validation
+✅ Sales Invoice integration (journals use derived accounts)
+```
+
+---
+
+# PREVIOUS UPDATE: March 11, 2026 - MASTER DATA ERP iPOS STYLE
 
 ## Master Data Module - FULLY IMPLEMENTED & TESTED ✅
 
