@@ -202,6 +202,14 @@ app.include_router(account_settings_router)
 from routes.erp_hardening import router as erp_hardening_router
 app.include_router(erp_hardening_router)
 
+# Mount Phase 2 Financial Control Modules
+from routes.tax_engine import router as tax_engine_router
+from routes.consistency_checker import router as consistency_checker_router
+from routes.auto_journal_engine import router as auto_journal_engine_router
+app.include_router(tax_engine_router)
+app.include_router(consistency_checker_router)
+app.include_router(auto_journal_engine_router)
+
 # Health check
 @app.get("/api/health")
 async def health_check():

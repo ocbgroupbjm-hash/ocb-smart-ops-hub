@@ -66,6 +66,9 @@ import PayrollAuto from './pages/PayrollAuto';
 // ERP Hardening - Fiscal Period & Multi-Currency
 import ERPHardening from './pages/ERPHardening';
 
+// Financial Control - Phase 2
+import FinancialControl from './pages/FinancialControl';
+
 // Master Data Pages
 import { 
   MasterItems, MasterCategories, MasterUnits, MasterBrands, 
@@ -262,6 +265,10 @@ function App() {
             {/* ERP Hardening - Fiscal Period & Multi-Currency */}
             <Route path="erp-hardening" element={<ERPHardening />} />
             <Route path="master/erp-hardening" element={<ERPHardening />} />
+            
+            {/* Financial Control - Phase 2 */}
+            <Route path="financial-control" element={<FinancialControl />} />
+            <Route path="accounting/financial-control" element={<FinancialControl />} />
             
             {/* Purchase Routes - iPOS Style */}
             <Route path="purchase" element={<PurchaseModule />} />

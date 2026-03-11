@@ -180,6 +180,9 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
         { name: 'Neraca Saldo', icon: Scale, path: '/accounting/trial-balance' },
         { name: 'Neraca', icon: BookOpen, path: '/accounting/balance-sheet' },
         { name: 'Laba Rugi', icon: BarChart2, path: '/accounting/income-statement' },
+        { divider: true, label: 'Financial Control' },
+        { name: 'Multi Tax Engine', icon: Percent, path: '/accounting/financial-control' },
+        { name: 'Consistency Checker', icon: AlertCircle, path: '/accounting/financial-control' },
       ]
     },
 
