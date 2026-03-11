@@ -1,8 +1,9 @@
 # OCB TITAN - Purchase Management API
 # SECURITY: All operations require RBAC validation
+# INTEGRATED: Account Derivation Engine from Setting Akun ERP
 from fastapi import APIRouter, HTTPException, Depends, Request
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Optional, List, Dict
 from database import (
     purchase_orders, suppliers, products, product_stocks, 
     stock_movements, branches, get_next_sequence, get_db
@@ -11,8 +12,78 @@ from utils.auth import get_current_user
 from models.titan_models import PurchaseOrder, PurchaseOrderItem, PurchaseStatus, StockMovement, StockMovementType, ProductStock
 from routes.rbac_middleware import require_permission, log_security_event
 from datetime import datetime, timezone
+import uuid
 
 router = APIRouter(prefix="/purchase", tags=["Purchase"])
+
+# ==================== ACCOUNT DERIVATION ENGINE ====================
+# Default account settings for fallback (from Setting Akun ERP - Tab Pembelian)
+DEFAULT_PURCHASE_ACCOUNTS = {
+    "persediaan_barang": {"code": "1-1400", "name": "Persediaan Barang"},
+    "pembayaran_kredit_pembelian": {"code": "2-1100", "name": "Hutang Dagang"},
+    "pembayaran_tunai_pembelian": {"code": "1-1100", "name": "Kas"},
+    "potongan_pembelian": {"code": "5-1100", "name": "Potongan Pembelian"},
+    "ppn_masukan": {"code": "1-1500", "name": "PPN Masukan"},
+    "biaya_lain_pembelian": {"code": "5-1200", "name": "Biaya Lain Pembelian"},
+    "uang_muka_po": {"code": "1-1600", "name": "Uang Muka Pembelian"},
+    "deposit_supplier": {"code": "2-1200", "name": "Deposit Supplier"},
+    "retur_potongan_pembelian": {"code": "5-1100", "name": "Potongan Pembelian"},
+    "retur_ppn_pembelian": {"code": "1-1500", "name": "PPN Masukan"},
+}
+
+async def derive_purchase_account(db, account_key: str, branch_id: str = None, 
+                                  warehouse_id: str = None, category_id: str = None,
+                                  payment_method: str = None) -> Dict[str, str]:
+    """
+    ACCOUNT DERIVATION ENGINE for Purchase Module
+    Priority: Branch > Warehouse > Category > Payment > Global > Default
+    """
+    # Priority 1: Branch mapping
+    if branch_id:
+        mapping = await db.account_mapping_branch.find_one({
+            "branch_id": branch_id, "account_key": account_key
+        }, {"_id": 0})
+        if mapping:
+            return {"code": mapping["account_code"], "name": mapping["account_name"]}
+    
+    # Priority 2: Warehouse mapping
+    if warehouse_id:
+        mapping = await db.account_mapping_warehouse.find_one({
+            "warehouse_id": warehouse_id, "account_key": account_key
+        }, {"_id": 0})
+        if mapping:
+            return {"code": mapping["account_code"], "name": mapping["account_name"]}
+    
+    # Priority 3: Category mapping
+    if category_id:
+        mapping = await db.account_mapping_category.find_one({
+            "category_id": category_id, "account_key": account_key
+        }, {"_id": 0})
+        if mapping:
+            return {"code": mapping["account_code"], "name": mapping["account_name"]}
+    
+    # Priority 4: Payment method mapping
+    if payment_method:
+        mapping = await db.account_mapping_payment.find_one({
+            "payment_method_id": payment_method, "account_key": account_key
+        }, {"_id": 0})
+        if mapping:
+            return {"code": mapping["account_code"], "name": mapping["account_name"]}
+    
+    # Priority 5: Global setting from account_settings
+    global_setting = await db.account_settings.find_one({
+        "account_key": account_key
+    }, {"_id": 0})
+    if global_setting:
+        return {"code": global_setting["account_code"], "name": global_setting["account_name"]}
+    
+    # Priority 6: Default fallback
+    default = DEFAULT_PURCHASE_ACCOUNTS.get(account_key)
+    if default:
+        return default
+    
+    # Final fallback
+    return {"code": "9-9999", "name": f"Unknown Account ({account_key})"}
 
 class POItemInput(BaseModel):
     product_id: str
@@ -306,8 +377,24 @@ async def receive_purchase_order(po_id: str, data: ReceivePO, request: Request, 
         ap_id = ap_entry["id"]
         
         # Create journal entry for purchase (Debit: Inventory, Credit: AP)
+        # Using Account Derivation Engine from Setting Akun ERP
         journal_id = str(uuid.uuid4())
         journal_no = f"JV-AP-{po.get('po_number')}"
+        
+        # Get warehouse info for category lookup
+        warehouse_id = po.get("warehouse_id")
+        
+        # Derive accounts from Setting Akun ERP
+        inventory_account = await derive_purchase_account(
+            db, "persediaan_barang",
+            branch_id=branch_id,
+            warehouse_id=warehouse_id
+        )
+        ap_account = await derive_purchase_account(
+            db, "pembayaran_kredit_pembelian",
+            branch_id=branch_id,
+            warehouse_id=warehouse_id
+        )
         
         journal_entry = {
             "id": journal_id,
@@ -325,13 +412,13 @@ async def receive_purchase_order(po_id: str, data: ReceivePO, request: Request, 
         }
         await db["journal_entries"].insert_one(journal_entry)
         
-        # Journal lines
+        # Journal lines using derived accounts
         journal_lines = [
             {
                 "id": str(uuid.uuid4()),
                 "journal_id": journal_id,
-                "account_code": "1301",  # Persediaan
-                "account_name": "Persediaan Barang Dagang",
+                "account_code": inventory_account["code"],
+                "account_name": inventory_account["name"],
                 "debit": po_total,
                 "credit": 0,
                 "description": f"Persediaan dari {po.get('po_number')}"
@@ -339,8 +426,8 @@ async def receive_purchase_order(po_id: str, data: ReceivePO, request: Request, 
             {
                 "id": str(uuid.uuid4()),
                 "journal_id": journal_id,
-                "account_code": "2101",  # Hutang Dagang
-                "account_name": "Hutang Dagang",
+                "account_code": ap_account["code"],
+                "account_name": ap_account["name"],
                 "debit": 0,
                 "credit": po_total,
                 "description": f"Hutang ke {po.get('supplier_name')}"

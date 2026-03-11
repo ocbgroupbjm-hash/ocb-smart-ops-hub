@@ -44,19 +44,48 @@ DIFFERENCE_STATUS = {
 }
 
 # ==================== DEFAULT ACCOUNT MAPPING ====================
-
+# Updated to use iPOS-style account codes (Setting Akun ERP)
 DEFAULT_ACCOUNT_MAPPING = {
-    "kas_kecil_pusat": {"code": "1101", "name": "Kas Kecil Pusat"},
-    "kas_cabang": {"code": "1102", "name": "Kas Cabang"},
-    "kas_kasir": {"code": "1103", "name": "Kas Kasir"},
-    "kas_dalam_perjalanan": {"code": "1104", "name": "Kas Dalam Perjalanan"},
-    "piutang_karyawan": {"code": "1302", "name": "Piutang Karyawan"},
-    "minus_kasir": {"code": "1303", "name": "Minus Kasir"},
-    "selisih_kurang_kas": {"code": "6201", "name": "Selisih Kurang Kas"},
-    "selisih_lebih_kas": {"code": "4201", "name": "Selisih Lebih Kas"},
-    "beban_selisih_kas": {"code": "6202", "name": "Beban Selisih Kas"},
-    "clearing_setoran": {"code": "2101", "name": "Clearing Setoran Harian"}
+    "kas_kecil_pusat": {"code": "1-1100", "name": "Kas"},
+    "kas_cabang": {"code": "1-1100", "name": "Kas"},
+    "kas_kasir": {"code": "1-1100", "name": "Kas"},
+    "kas_dalam_perjalanan": {"code": "1-1110", "name": "Kas Dalam Perjalanan"},
+    "piutang_karyawan": {"code": "1-1310", "name": "Piutang Karyawan"},
+    "minus_kasir": {"code": "1-1320", "name": "Minus Kasir"},
+    "selisih_kurang_kas": {"code": "5-9100", "name": "Selisih Persediaan"},
+    "selisih_lebih_kas": {"code": "4-9000", "name": "Pendapatan Pembulatan"},
+    "beban_selisih_kas": {"code": "5-9100", "name": "Selisih Persediaan"},
+    "clearing_setoran": {"code": "2-1900", "name": "Clearing Setoran Harian"}
 }
+
+# ==================== ACCOUNT DERIVATION ENGINE ====================
+async def derive_deposit_account(account_key: str, branch_id: str = None) -> Dict[str, str]:
+    """
+    ACCOUNT DERIVATION ENGINE for Deposit System
+    Priority: Branch > Global > Default
+    """
+    # Priority 1: Branch mapping
+    if branch_id:
+        mapping = await db.account_mapping_branch.find_one({
+            "branch_id": branch_id, "account_key": account_key
+        }, {"_id": 0})
+        if mapping:
+            return {"code": mapping["account_code"], "name": mapping["account_name"]}
+    
+    # Priority 2: Global setting from account_settings
+    global_setting = await db.account_settings.find_one({
+        "account_key": account_key
+    }, {"_id": 0})
+    if global_setting:
+        return {"code": global_setting["account_code"], "name": global_setting["account_name"]}
+    
+    # Priority 3: Default fallback
+    default = DEFAULT_ACCOUNT_MAPPING.get(account_key)
+    if default:
+        return default
+    
+    # Final fallback
+    return {"code": "9-9999", "name": f"Unknown Account ({account_key})"}
 
 # ==================== PYDANTIC MODELS ====================
 

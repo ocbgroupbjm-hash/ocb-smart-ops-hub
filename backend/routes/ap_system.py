@@ -31,10 +31,57 @@ AP_STATUS = {
 
 # ==================== DEFAULT ACCOUNTS ====================
 DEFAULT_AP_ACCOUNTS = {
-    "ap_account": {"code": "2101", "name": "Hutang Dagang"},
-    "cash_account": {"code": "1101", "name": "Kas"},
-    "bank_account": {"code": "1102", "name": "Bank"}
+    "ap_account": {"code": "2-1100", "name": "Hutang Dagang"},
+    "cash_account": {"code": "1-1100", "name": "Kas"},
+    "bank_account": {"code": "1-1200", "name": "Bank"},
+    "potongan_hutang": {"code": "4-3000", "name": "Potongan Hutang"},
 }
+
+# ==================== ACCOUNT DERIVATION ENGINE ====================
+async def derive_ap_account(account_key: str, branch_id: str = None, 
+                            warehouse_id: str = None, payment_method: str = None) -> Dict[str, str]:
+    """
+    ACCOUNT DERIVATION ENGINE for AP Module
+    Priority: Branch > Warehouse > Payment > Global > Default
+    """
+    # Priority 1: Branch mapping
+    if branch_id:
+        mapping = await db.account_mapping_branch.find_one({
+            "branch_id": branch_id, "account_key": account_key
+        }, {"_id": 0})
+        if mapping:
+            return {"code": mapping["account_code"], "name": mapping["account_name"]}
+    
+    # Priority 2: Warehouse mapping
+    if warehouse_id:
+        mapping = await db.account_mapping_warehouse.find_one({
+            "warehouse_id": warehouse_id, "account_key": account_key
+        }, {"_id": 0})
+        if mapping:
+            return {"code": mapping["account_code"], "name": mapping["account_name"]}
+    
+    # Priority 3: Payment method mapping
+    if payment_method:
+        mapping = await db.account_mapping_payment.find_one({
+            "payment_method_id": payment_method, "account_key": account_key
+        }, {"_id": 0})
+        if mapping:
+            return {"code": mapping["account_code"], "name": mapping["account_name"]}
+    
+    # Priority 4: Global setting from account_settings
+    global_setting = await db.account_settings.find_one({
+        "account_key": account_key
+    }, {"_id": 0})
+    if global_setting:
+        return {"code": global_setting["account_code"], "name": global_setting["account_name"]}
+    
+    # Priority 5: Default fallback
+    default = DEFAULT_AP_ACCOUNTS.get(account_key)
+    if default:
+        return default
+    
+    # Final fallback
+    return {"code": "9-9999", "name": f"Unknown Account ({account_key})"}
 
 # ==================== PYDANTIC MODELS ====================
 
@@ -162,20 +209,31 @@ async def create_ap_payment_journal(
     account_map: Dict,
     user: dict
 ) -> str:
-    """Create journal entry for AP payment"""
+    """Create journal entry for AP payment using Account Derivation Engine"""
     user_id = user.get("user_id") or user.get("id")
     user_name = user.get("name", "System")
+    branch_id = ap.get("branch_id")
+    payment_method = payment.get("payment_method", "cash")
     
     today = datetime.now(timezone.utc).strftime("%Y%m%d")
     journal_number = f"JV-APP-{today}-{uuid.uuid4().hex[:6].upper()}"
     
-    # Debit AP, Credit Cash/Bank
-    debit_account = account_map.get("ap_account", DEFAULT_AP_ACCOUNTS["ap_account"])
+    # Derive accounts using Account Derivation Engine
+    debit_account = await derive_ap_account("pembayaran_kredit_pembelian", branch_id=branch_id)
     
-    if payment.get("payment_method") == "bank" or payment.get("payment_method") == "transfer":
-        credit_account = account_map.get("bank_account", DEFAULT_AP_ACCOUNTS["bank_account"])
+    # Credit account based on payment method
+    if payment_method in ["bank", "transfer"]:
+        credit_account_key = "pembayaran_tunai_pembelian"  # Bank for transfer
+        credit_account = await derive_ap_account(credit_account_key, branch_id=branch_id, payment_method=payment_method)
+        # Override with bank if available
+        bank_setting = await db.account_settings.find_one({"account_key": "bank_account"}, {"_id": 0})
+        if bank_setting:
+            credit_account = {"code": bank_setting["account_code"], "name": bank_setting["account_name"]}
+        else:
+            credit_account = await derive_ap_account("pembayaran_tunai_pembelian", branch_id=branch_id)
+            credit_account = {"code": "1-1200", "name": "Bank"}  # Default bank
     else:
-        credit_account = account_map.get("cash_account", DEFAULT_AP_ACCOUNTS["cash_account"])
+        credit_account = await derive_ap_account("pembayaran_tunai_pembelian", branch_id=branch_id, payment_method=payment_method)
     
     entries = [
         {
@@ -202,7 +260,7 @@ async def create_ap_payment_journal(
         "reference_id": payment.get("id"),
         "reference_number": payment.get("payment_no"),
         "description": f"Pembayaran Hutang {ap.get('ap_no')} - {ap.get('supplier_name')}",
-        "branch_id": ap.get("branch_id"),
+        "branch_id": branch_id,
         "entries": entries,
         "total_debit": payment.get("amount", 0),
         "total_credit": payment.get("amount", 0),

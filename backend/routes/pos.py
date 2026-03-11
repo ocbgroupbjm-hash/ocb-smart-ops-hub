@@ -1,8 +1,9 @@
 # OCB TITAN - POS (Point of Sale) API
 # SECURITY: All destructive operations require RBAC validation
+# INTEGRATED: Account Derivation Engine from Setting Akun ERP
 from fastapi import APIRouter, HTTPException, Depends, Request
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Optional, List, Dict
 from database import (
     transactions, held_transactions, products, product_stocks, 
     customers, branches, cash_movements, stock_movements, get_next_sequence, get_db
@@ -17,6 +18,71 @@ from datetime import datetime, timezone
 import uuid
 
 router = APIRouter(prefix="/pos", tags=["POS"])
+
+# ==================== ACCOUNT DERIVATION ENGINE ====================
+# Default account settings for fallback (from Setting Akun ERP)
+DEFAULT_POS_ACCOUNTS = {
+    "pembayaran_tunai": {"code": "1-1100", "name": "Kas"},
+    "pembayaran_kredit": {"code": "1-1300", "name": "Piutang Usaha"},
+    "pendapatan_jual": {"code": "4-1000", "name": "Penjualan"},
+    "ppn_keluaran": {"code": "2-1400", "name": "PPN Keluaran"},
+    "hpp": {"code": "5-1000", "name": "Harga Pokok Penjualan"},
+    "persediaan_barang": {"code": "1-1400", "name": "Persediaan Barang"},
+}
+
+async def derive_pos_account(db, account_key: str, branch_id: str = None, 
+                             warehouse_id: str = None, category_id: str = None,
+                             payment_method: str = None) -> Dict[str, str]:
+    """
+    ACCOUNT DERIVATION ENGINE for POS Module
+    Priority: Branch > Warehouse > Category > Payment > Global > Default
+    """
+    # Priority 1: Branch mapping
+    if branch_id:
+        mapping = await db.account_mapping_branch.find_one({
+            "branch_id": branch_id, "account_key": account_key
+        }, {"_id": 0})
+        if mapping:
+            return {"code": mapping["account_code"], "name": mapping["account_name"]}
+    
+    # Priority 2: Warehouse mapping
+    if warehouse_id:
+        mapping = await db.account_mapping_warehouse.find_one({
+            "warehouse_id": warehouse_id, "account_key": account_key
+        }, {"_id": 0})
+        if mapping:
+            return {"code": mapping["account_code"], "name": mapping["account_name"]}
+    
+    # Priority 3: Category mapping
+    if category_id:
+        mapping = await db.account_mapping_category.find_one({
+            "category_id": category_id, "account_key": account_key
+        }, {"_id": 0})
+        if mapping:
+            return {"code": mapping["account_code"], "name": mapping["account_name"]}
+    
+    # Priority 4: Payment method mapping
+    if payment_method:
+        mapping = await db.account_mapping_payment.find_one({
+            "payment_method_id": payment_method, "account_key": account_key
+        }, {"_id": 0})
+        if mapping:
+            return {"code": mapping["account_code"], "name": mapping["account_name"]}
+    
+    # Priority 5: Global setting from account_settings
+    global_setting = await db.account_settings.find_one({
+        "account_key": account_key
+    }, {"_id": 0})
+    if global_setting:
+        return {"code": global_setting["account_code"], "name": global_setting["account_name"]}
+    
+    # Priority 6: Default fallback
+    default = DEFAULT_POS_ACCOUNTS.get(account_key)
+    if default:
+        return default
+    
+    # Final fallback
+    return {"code": "9-9999", "name": f"Unknown Account ({account_key})"}
 
 class CartItem(BaseModel):
     product_id: str
@@ -176,7 +242,9 @@ async def create_transaction(
         status=TransactionStatus.COMPLETED,
         total_cost=total_cost,
         profit=total - total_cost,
-        notes=data.notes
+        notes=data.notes,
+        is_credit=data.is_credit,
+        credit_due_days=data.credit_due_days
     )
     
     await transactions.insert_one(tx.model_dump())
@@ -281,8 +349,13 @@ async def create_transaction(
             ar_id = ar_entry["id"]
             
             # Create journal entry for credit sale (Debit: AR, Credit: Sales)
+            # Using Account Derivation Engine from Setting Akun ERP
             journal_id = str(uuid.uuid4())
             journal_no = f"JV-AR-{invoice}"
+            
+            # Derive accounts from Setting Akun ERP
+            ar_account = await derive_pos_account(db, "pembayaran_kredit", branch_id=branch_id)
+            sales_account = await derive_pos_account(db, "pendapatan_jual", branch_id=branch_id)
             
             journal_entry = {
                 "id": journal_id,
@@ -300,13 +373,13 @@ async def create_transaction(
             }
             await db["journal_entries"].insert_one(journal_entry)
             
-            # Journal lines
+            # Journal lines using derived accounts
             journal_lines = [
                 {
                     "id": str(uuid.uuid4()),
                     "journal_id": journal_id,
-                    "account_code": "1201",  # Piutang Dagang
-                    "account_name": "Piutang Dagang",
+                    "account_code": ar_account["code"],
+                    "account_name": ar_account["name"],
                     "debit": outstanding,
                     "credit": 0,
                     "description": f"Piutang {data.customer_name}"
@@ -314,8 +387,8 @@ async def create_transaction(
                 {
                     "id": str(uuid.uuid4()),
                     "journal_id": journal_id,
-                    "account_code": "4101",  # Penjualan
-                    "account_name": "Penjualan",
+                    "account_code": sales_account["code"],
+                    "account_name": sales_account["name"],
                     "debit": 0,
                     "credit": outstanding,
                     "description": f"Penjualan kredit {invoice}"

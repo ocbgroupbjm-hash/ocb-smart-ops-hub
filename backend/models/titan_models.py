@@ -290,6 +290,11 @@ class Transaction(BaseModel):
     # Status
     status: TransactionStatus = TransactionStatus.COMPLETED
     
+    # Credit Sale Fields
+    is_credit: bool = False
+    credit_due_days: int = 30
+    ar_id: Optional[str] = None
+    
     # Profit
     total_cost: float = 0.0
     profit: float = 0.0

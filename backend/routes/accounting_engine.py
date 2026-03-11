@@ -69,37 +69,84 @@ DEFAULT_ACCOUNTS = {
 }
 
 # ==================== DEFAULT ACCOUNT MAPPING ====================
+# Updated to use new iPOS-style account codes (Setting Akun ERP)
 DEFAULT_MAPPING = {
     # Sales
-    "sales_cash_account": {"code": "1104", "name": "Kas Cabang"},
-    "sales_revenue_account": {"code": "4101", "name": "Penjualan"},
-    "sales_tax_account": {"code": "2201", "name": "Pajak Keluaran"},
-    "sales_discount_account": {"code": "4102", "name": "Diskon Penjualan"},
-    "cogs_account": {"code": "5101", "name": "Harga Pokok Penjualan"},
-    "inventory_account": {"code": "1301", "name": "Persediaan Barang Dagang"},
+    "sales_cash_account": {"code": "1-1100", "name": "Kas"},
+    "sales_revenue_account": {"code": "4-1000", "name": "Pendapatan Penjualan"},
+    "sales_tax_account": {"code": "2-1400", "name": "PPN Keluaran"},
+    "sales_discount_account": {"code": "4-2000", "name": "Potongan Penjualan"},
+    "cogs_account": {"code": "5-1000", "name": "Harga Pokok Penjualan"},
+    "inventory_account": {"code": "1-1400", "name": "Persediaan Barang"},
     
     # Purchase
-    "purchase_inventory_account": {"code": "1301", "name": "Persediaan Barang Dagang"},
-    "purchase_expense_account": {"code": "5102", "name": "Pembelian"},
-    "purchase_tax_account": {"code": "1501", "name": "Pajak Masukan"},
+    "purchase_inventory_account": {"code": "1-1400", "name": "Persediaan Barang"},
+    "purchase_expense_account": {"code": "5-1000", "name": "Harga Pokok Penjualan"},
+    "purchase_tax_account": {"code": "1-1500", "name": "PPN Masukan"},
     
     # AR/AP
-    "ar_account": {"code": "1201", "name": "Piutang Dagang"},
-    "ap_account": {"code": "2101", "name": "Hutang Dagang"},
-    "employee_receivable_account": {"code": "1202", "name": "Piutang Karyawan"},
+    "ar_account": {"code": "1-1300", "name": "Piutang Usaha"},
+    "ap_account": {"code": "2-1100", "name": "Hutang Dagang"},
+    "employee_receivable_account": {"code": "1-1310", "name": "Piutang Karyawan"},
     
     # Deposit / Cash
-    "central_cash_account": {"code": "1103", "name": "Kas Kecil Pusat"},
-    "branch_cash_account": {"code": "1104", "name": "Kas Cabang"},
-    "cashier_cash_account": {"code": "1105", "name": "Kas Kasir"},
-    "cash_in_transit_account": {"code": "1106", "name": "Kas Dalam Perjalanan"},
-    "shortage_account": {"code": "6201", "name": "Selisih Kurang Kas"},
-    "overage_account": {"code": "4201", "name": "Selisih Lebih Kas"},
+    "central_cash_account": {"code": "1-1100", "name": "Kas"},
+    "branch_cash_account": {"code": "1-1100", "name": "Kas"},
+    "cashier_cash_account": {"code": "1-1100", "name": "Kas"},
+    "cash_in_transit_account": {"code": "1-1110", "name": "Kas Dalam Perjalanan"},
+    "shortage_account": {"code": "5-9100", "name": "Selisih Persediaan"},
+    "overage_account": {"code": "4-9000", "name": "Pendapatan Pembulatan"},
     
     # Bank
-    "bank_account": {"code": "1102", "name": "Bank"},
-    "cash_account": {"code": "1101", "name": "Kas"}
+    "bank_account": {"code": "1-1200", "name": "Bank"},
+    "cash_account": {"code": "1-1100", "name": "Kas"}
 }
+
+# ==================== ACCOUNT DERIVATION ENGINE ====================
+async def derive_accounting_account(account_key: str, branch_id: str = None, 
+                                    warehouse_id: str = None, category_id: str = None) -> Dict[str, str]:
+    """
+    ACCOUNT DERIVATION ENGINE for Accounting Module
+    Priority: Branch > Warehouse > Category > Global > Default
+    """
+    # Priority 1: Branch mapping
+    if branch_id:
+        mapping = await db.account_mapping_branch.find_one({
+            "branch_id": branch_id, "account_key": account_key
+        }, {"_id": 0})
+        if mapping:
+            return {"code": mapping["account_code"], "name": mapping["account_name"]}
+    
+    # Priority 2: Warehouse mapping
+    if warehouse_id:
+        mapping = await db.account_mapping_warehouse.find_one({
+            "warehouse_id": warehouse_id, "account_key": account_key
+        }, {"_id": 0})
+        if mapping:
+            return {"code": mapping["account_code"], "name": mapping["account_name"]}
+    
+    # Priority 3: Category mapping
+    if category_id:
+        mapping = await db.account_mapping_category.find_one({
+            "category_id": category_id, "account_key": account_key
+        }, {"_id": 0})
+        if mapping:
+            return {"code": mapping["account_code"], "name": mapping["account_name"]}
+    
+    # Priority 4: Global setting from account_settings
+    global_setting = await db.account_settings.find_one({
+        "account_key": account_key
+    }, {"_id": 0})
+    if global_setting:
+        return {"code": global_setting["account_code"], "name": global_setting["account_name"]}
+    
+    # Priority 5: Default fallback
+    default = DEFAULT_MAPPING.get(account_key)
+    if default:
+        return default
+    
+    # Final fallback
+    return {"code": "9-9999", "name": f"Unknown Account ({account_key})"}
 
 # ==================== PYDANTIC MODELS ====================
 
