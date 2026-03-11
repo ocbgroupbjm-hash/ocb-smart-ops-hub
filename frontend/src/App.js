@@ -69,6 +69,9 @@ import ERPHardening from './pages/ERPHardening';
 // Financial Control - Phase 2
 import FinancialControl from './pages/FinancialControl';
 
+// Credit Control - Phase 3
+import CreditControl from './pages/CreditControl';
+
 // Master Data Pages
 import { 
   MasterItems, MasterCategories, MasterUnits, MasterBrands, 
@@ -359,6 +362,9 @@ function App() {
             
             {/* Approval Routes */}
             <Route path="approval-center" element={<ApprovalCenter />} />
+            
+            {/* Credit Control Routes - Phase 3 */}
+            <Route path="credit-control" element={<CreditControl />} />
             
             {/* Dashboard Routes */}
             <Route path="owner-dashboard" element={<OwnerDashboard />} />

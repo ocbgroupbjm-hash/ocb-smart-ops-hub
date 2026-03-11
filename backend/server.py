@@ -216,6 +216,9 @@ app.include_router(reconciliation_router)
 from routes.approval_workflow import router as approval_workflow_router
 app.include_router(approval_workflow_router)
 
+from routes.credit_control import router as credit_control_router
+app.include_router(credit_control_router)
+
 # Health check
 @app.get("/api/health")
 async def health_check():

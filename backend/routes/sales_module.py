@@ -474,6 +474,31 @@ async def create_sales_invoice(data: SalesInvoiceCreate):
     is_credit = data.payment_type in ["credit", "combo"] and data.credit_amount > 0
     credit_amount = grand_total - data.cash_amount - data.dp_used - data.deposit_used if is_credit else 0
     
+    # =============== CREDIT CONTROL - HARD STOP ===============
+    if is_credit and credit_amount > 0:
+        from routes.credit_control import check_credit_transaction
+        credit_check = await check_credit_transaction(db, data.customer_id, credit_amount, {})
+        
+        if not credit_check["allowed"]:
+            # Check if there's an approved override
+            override_approval = await db.approval_requests.find_one({
+                "reference_id": data.customer_id,
+                "approval_type": "credit_override",
+                "status": "approved",
+                "data.requested_amount": {"$gte": credit_amount}
+            })
+            
+            if not override_approval:
+                raise HTTPException(
+                    status_code=403, 
+                    detail={
+                        "message": credit_check["reason"],
+                        "error_type": "CREDIT_LIMIT_EXCEEDED",
+                        "requires_override": credit_check.get("requires_override", False),
+                        "credit_info": credit_check.get("credit_info")
+                    }
+                )
+    
     invoice_number = await generate_number("INV", db)
     
     invoice = {
