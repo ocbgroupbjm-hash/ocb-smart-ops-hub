@@ -1,5 +1,5 @@
 # OCB TITAN ERP - ENTERPRISE RETAIL OPERATING SYSTEM
-## Product Requirements Document (PRD) v16.0
+## Product Requirements Document (PRD) v17.0
 
 ---
 
@@ -7,7 +7,7 @@
 
 OCB TITAN ERP adalah sistem ERP retail enterprise untuk bisnis multi-cabang dengan fitur lengkap:
 - **POS / Penjualan** dengan multi-mode pricing + auto AR
-- **Pembelian** dengan AP integration + auto journal
+- **Pembelian Enterprise** dengan full lifecycle (PO→Receive→AP→Payment→Journal)
 - **Inventory / Stok** dengan movement tracking
 - **Setoran Harian** dengan security ketat
 - **Hutang Piutang** (AR/AP) dengan aging + auto-journal
@@ -19,105 +19,94 @@ OCB TITAN ERP adalah sistem ERP retail enterprise untuk bisnis multi-cabang deng
 
 ---
 
-# LATEST UPDATE: March 11, 2026 - COMPREHENSIVE RBAC SECURITY AUDIT
+# LATEST UPDATE: March 11, 2026 - PURCHASE MODULE ENTERPRISE
 
-## SECURITY INCIDENT RESPONSE - COMPLETE AUDIT
+## Modul Pembelian Enterprise - IMPLEMENTED & TESTED ✅
 
-### Root Cause Analysis
-**Problem**: RBAC tidak diterapkan secara menyeluruh. Banyak route files hanya menggunakan `get_current_user()` yang TIDAK melakukan validasi permission. User role Kasir masih bisa mengakses endpoint DELETE dan operasi sensitif lainnya.
-
-**Celah yang ditemukan sebelum fix:**
-- `erp_operations.py`: 0 RBAC checks (5 DELETE endpoints)
-- `master_erp.py`: 2 RBAC checks (13 DELETE endpoints)
-- `inventory.py`: 0 RBAC checks (multiple sensitive endpoints)
-
-### Solution: Comprehensive RBAC Patch
-
-**Files yang di-patch dengan require_permission decorator:**
-
-| File | RBAC Checks Added |
-|------|-------------------|
-| erp_operations.py | 20 |
-| master_erp.py | 14 |
-| inventory.py | 13 |
-| master_data.py | 14 |
-| users.py | 7 |
-| branches.py | 6 |
-| accounting.py | 5 |
-
-### Endpoints yang Sekarang Dilindungi
-
-**ERP Operations:**
-- GET/POST/PUT/DELETE /api/erp/employees
-- GET/POST/PUT/DELETE /api/erp/master/shifts
-- GET/POST/PUT/DELETE /api/erp/master/jabatan
-- GET/POST/PUT/DELETE /api/erp/master/lokasi-absensi
-- GET/POST /api/erp/master/target-cabang
-
-**Master Data ERP:**
-- DELETE /api/master/items, categories, units, brands
-- DELETE /api/master/warehouses, sales-persons
-- DELETE /api/master/customer-groups, banks
-- DELETE /api/master/discounts, promotions, regions
-- DELETE /api/master/emoney, shipping-costs
-
-**Inventory:**
-- GET/POST /api/inventory/stock, movements
-- POST /api/inventory/adjust, stock-in, stock-out
-- POST /api/inventory/transfer, opname
-- POST /api/inventory/opname/{id}/approve
-
-### Test Results
-
+### Flow Pembelian Lengkap
 ```
-COMPREHENSIVE SECURITY TEST RESULTS
-===================================
-Total Tests: 21
-Passed: 20
-Failed: 1 (endpoint tidak ada - bukan celah keamanan)
-Effective Success Rate: 100%
-
-Verified Scenarios:
-✅ Kasir BLOCKED dari DELETE Employee
-✅ Kasir BLOCKED dari DELETE Shift/Jabatan/Lokasi
-✅ Kasir BLOCKED dari DELETE Category/Unit/Brand
-✅ Kasir BLOCKED dari DELETE Warehouse/Sales Person
-✅ Kasir BLOCKED dari DELETE Bank/Discount/Promotion
-✅ Kasir BLOCKED dari DELETE Item/Product
-✅ Kasir BLOCKED dari VOID POS Transaction
-✅ Kasir BLOCKED dari Stock Adjustment
-✅ Owner DAPAT AKSES semua endpoint
+PESANAN PEMBELIAN (PO)
+        ↓
+TERIMA BARANG / PEMBELIAN
+        ↓
+TERBENTUK HUTANG DAGANG (AP) - AUTO
+        ↓
+JURNAL AKUNTANSI - AUTO
+        ↓
+PEMBAYARAN HUTANG
+        ↓
+NERACA & LAPORAN KEUANGAN
 ```
 
-### Response Format
+### Menu yang Diimplementasi
+1. ✅ **Daftar Pesanan Pembelian** - Filter status, supplier, search, pagination
+2. ✅ **Tambah Pesanan Pembelian** - Form dengan supplier, gudang, items, PPN, kredit
+3. ✅ **Daftar Pembelian** - Barang yang sudah diterima
+4. ✅ **Tambah Pembelian** - Terima barang dari PO
+5. ✅ **History Harga Beli** - Riwayat harga per supplier/produk
+6. ✅ **Daftar Pembayaran Hutang** - List pembayaran dengan referensi
+7. ✅ **Tambah Pembayaran Hutang** - Pilih hutang, bayar, potongan
+8. ✅ **Daftar Retur Pembelian** - List retur
+9. ✅ **Tambah Retur Pembelian** - Retur dengan update stok & hutang
+
+### Integrasi
+| Modul | Integrasi | Status |
+|-------|-----------|--------|
+| Inventory | Stock movement type: purchase_in | ✅ |
+| AP | Auto-create AP-PO{number} on receive | ✅ |
+| Akuntansi | Debit Persediaan, Credit Hutang | ✅ |
+| Price History | Record per receive transaction | ✅ |
+
+### Test Results (Iteration 32)
 ```
-HTTP 403 FORBIDDEN
-{"detail": "AKSES DITOLAK: Anda tidak memiliki izin untuk {action} pada modul {module}"}
+BACKEND: 16/16 tests PASSED (100%)
+FRONTEND: 6/6 tabs verified (100%)
+
+Verified Features:
+✅ Create PO with items, supplier, credit terms
+✅ Submit PO to supplier (status: ordered)
+✅ Receive goods with auto AP + journal
+✅ Cancel draft/ordered POs
+✅ Payment creation with reference
+✅ Return creation with stock update
+✅ Price history auto-recording
 ```
 
 ---
 
-## Previous Fixes (Still Active)
+## Previous Security Update (March 11, 2026)
 
-### POS Buttons Fixed
-- `handlePrintReceipt()` - Opens print window
-- `handleShareWhatsApp()` - Opens WhatsApp with message
-
-### Employee Tunjangan/Bonus Storage Fixed
-Extended `EmployeeUpdate` with: tunjangan_jabatan, tunjangan_transport, tunjangan_makan, tunjangan_keluarga, tunjangan_lainnya, bonus_kehadiran, bonus_performance, bonus_target, bonus_lainnya, potongan_bpjs_kes, potongan_bpjs_tk
-
-### Payroll Rules CRUD Completed
-- PUT /api/erp/master/payroll-rules/{rule_id}
-- DELETE /api/erp/master/payroll-rules/{rule_id}
-
-### Price Fallback Logic Fixed
-```javascript
-const price = product.selling_price || product.wholesale_price || product.cost_price || 0;
-```
+### RBAC Security Audit - COMPLETE
+- Extended RBAC to: erp_operations.py, master_erp.py, inventory.py, master_data.py, users.py, branches.py, accounting.py
+- All DELETE and sensitive endpoints protected
+- Kasir blocked (403) from all destructive operations
+- Owner full access verified
 
 ---
 
-# PREVIOUS UPDATE: March 10, 2026
+# DATABASE COLLECTIONS
+
+## Purchase Module
+- `purchase_orders` - PO header + items
+- `accounts_payable` - AP records (auto-created)
+- `journal_entries` - Journal headers
+- `journal_entry_lines` - Debit/Credit lines
+- `purchase_payments` - Payment records
+- `purchase_returns` - Return records
+- `purchase_price_history` - Price tracking
+
+---
+
+# FILES REFERENCE
+
+## Frontend
+- `/app/frontend/src/pages/PurchaseModule.jsx` - Complete purchase UI
+- `/app/frontend/src/App.js` - Route /purchase
+
+## Backend
+- `/app/backend/routes/purchase.py` - Full purchase API with AP/journal integration
+
+---
 
 ## CRITICAL SECURITY FIX: RBAC BACKEND ENFORCEMENT
 
