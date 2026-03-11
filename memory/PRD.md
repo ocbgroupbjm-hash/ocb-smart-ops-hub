@@ -1,5 +1,5 @@
 # OCB TITAN ERP - ENTERPRISE RETAIL OPERATING SYSTEM
-## Product Requirements Document (PRD) v14.0
+## Product Requirements Document (PRD) v15.0
 
 ---
 
@@ -15,10 +15,90 @@ OCB TITAN ERP adalah sistem ERP retail enterprise untuk bisnis multi-cabang deng
 - **Approval Engine** untuk otorisasi + approval center UI
 - **RBAC** dengan FAIL-SAFE enforcement (Backend validation)
 - **Audit Trail** untuk semua aktivitas sensitif
+- **HR & Payroll** dengan tunjangan dan bonus tracking
 
 ---
 
-# LATEST UPDATE: March 10, 2026
+# LATEST UPDATE: March 11, 2026
+
+## CRITICAL BUG FIXES - All Verified ✅
+
+### 1. RBAC Security Extended
+**Problem**: RBAC hanya diterapkan pada beberapa routes (pos.py, purchase.py, products.py).
+
+**Solution**: Extended RBAC ke routes tambahan:
+- `inventory.py` - Stock movements, transfers, opnames
+- `master_data.py` - Branches, customers, suppliers
+- `users.py` - User management
+- `branches.py` - Branch CRUD
+- `accounting.py` - Chart of accounts
+- `erp_operations.py` - Employee management
+
+**Verification**: Kasir mendapat 403 saat mencoba void/delete, Owner dapat akses semua.
+
+### 2. POS Buttons Fixed
+**Problem**: Tombol "Cetak Struk" dan "WhatsApp" di modal sukses tidak berfungsi.
+
+**Solution**: 
+- Added `handlePrintReceipt()` - Opens print window with formatted receipt
+- Added `handleShareWhatsApp()` - Opens WhatsApp with formatted message
+- Added `data-testid` attributes for testing
+
+**Verification**: Testing agent confirmed buttons have onClick handlers.
+
+### 3. Employee Tunjangan/Bonus Storage Fixed
+**Problem**: Field tunjangan dan bonus tidak tersimpan saat update employee.
+
+**Solution**: Extended `EmployeeUpdate` Pydantic model with fields:
+- `tunjangan_jabatan`, `tunjangan_transport`, `tunjangan_makan`
+- `tunjangan_keluarga`, `tunjangan_lainnya`
+- `bonus_kehadiran`, `bonus_performance`, `bonus_target`, `bonus_lainnya`
+- `potongan_bpjs_kes`, `potongan_bpjs_tk`, etc.
+
+**Verification**: Testing agent confirmed all fields persist correctly.
+
+### 4. Payroll Rules CRUD Completed
+**Problem**: Tidak bisa edit/delete payroll rules.
+
+**Solution**: Added endpoints:
+- `PUT /api/erp/master/payroll-rules/{rule_id}` - Update rule
+- `DELETE /api/erp/master/payroll-rules/{rule_id}` - Soft delete rule
+
+**Verification**: Testing agent confirmed both endpoints work correctly.
+
+### 5. Price Fallback Logic Fixed
+**Problem**: Item dengan harga kosong menyebabkan masalah di POS.
+
+**Solution**: Updated `addToCart()` with fallback logic:
+```javascript
+const price = product.selling_price || product.wholesale_price || product.cost_price || 0;
+if (price <= 0) {
+  toast.error(`Harga produk "${product.name}" tidak valid...`);
+  return;
+}
+```
+
+---
+
+## TEST RESULTS: iteration_31.json
+
+```
+SUCCESS RATE: 100%
+- Backend: 8/8 tests passed
+- Frontend: POS transaction flow verified
+
+Bugs Fixed:
+✅ RBAC Kasir Blocked - 403 on void/delete
+✅ POS Print Button - onClick handler present  
+✅ POS WhatsApp Button - onClick handler present
+✅ Employee Tunjangan - Fields persist correctly
+✅ Payroll Rules PUT - Endpoint works
+✅ Payroll Rules DELETE - Endpoint works (soft delete)
+```
+
+---
+
+# PREVIOUS UPDATE: March 10, 2026
 
 ## CRITICAL SECURITY FIX: RBAC BACKEND ENFORCEMENT
 
