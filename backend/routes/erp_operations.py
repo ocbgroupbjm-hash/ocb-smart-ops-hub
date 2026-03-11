@@ -1,13 +1,16 @@
 # OCB GROUP SUPER ERP - Operations Routes
 # Setoran Harian, Selisih Kas, Master Data
+# SECURITY: All operations require RBAC validation
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Request
 from typing import List, Optional
 from datetime import datetime, timezone
 from pydantic import BaseModel
 import uuid
 
 from database import get_db
+from utils.auth import get_current_user
+from routes.rbac_middleware import require_permission, log_security_event
 from models.erp_models import (
     Employee, SetoranHarian, SelisihKas, 
     MasterShift, MasterJabatan, MasterLokasiAbsensi,
@@ -164,8 +167,10 @@ async def list_employees(
     branch_id: Optional[str] = None,
     department: Optional[str] = None,
     status: str = "active",
-    search: Optional[str] = None
+    search: Optional[str] = None,
+    user: dict = Depends(require_permission("hr_management", "view"))
 ):
+    """List employees - Requires hr_management.view permission"""
     query = {}
     if branch_id:
         query["branch_id"] = branch_id
@@ -185,14 +190,16 @@ async def list_employees(
     return {"employees": employees, "total": len(employees)}
 
 @router.get("/employees/{employee_id}")
-async def get_employee(employee_id: str):
+async def get_employee(employee_id: str, user: dict = Depends(require_permission("hr_management", "view"))):
+    """Get employee details - Requires hr_management.view permission"""
     emp = await employees_col().find_one({"id": employee_id}, {"_id": 0})
     if not emp:
         raise HTTPException(status_code=404, detail="Karyawan tidak ditemukan")
     return emp
 
 @router.post("/employees")
-async def create_employee(data: EmployeeCreate):
+async def create_employee(data: EmployeeCreate, request: Request, user: dict = Depends(require_permission("hr_management", "create"))):
+    """Create employee - Requires hr_management.create permission"""
     # Check NIK unique
     existing = await employees_col().find_one({"nik": data.nik})
     if existing:
@@ -208,7 +215,8 @@ async def create_employee(data: EmployeeCreate):
     return {"message": "Karyawan berhasil ditambahkan", "employee": emp.model_dump()}
 
 @router.put("/employees/{employee_id}")
-async def update_employee(employee_id: str, data: EmployeeUpdate):
+async def update_employee(employee_id: str, data: EmployeeUpdate, request: Request, user: dict = Depends(require_permission("hr_management", "edit"))):
+    """Update employee - Requires hr_management.edit permission"""
     emp = await employees_col().find_one({"id": employee_id})
     if not emp:
         raise HTTPException(status_code=404, detail="Karyawan tidak ditemukan")
@@ -221,10 +229,19 @@ async def update_employee(employee_id: str, data: EmployeeUpdate):
     return {"message": "Data karyawan berhasil diupdate", "employee": updated}
 
 @router.delete("/employees/{employee_id}")
-async def delete_employee(employee_id: str):
+async def delete_employee(employee_id: str, request: Request, user: dict = Depends(require_permission("hr_management", "delete"))):
+    """Delete employee - Requires hr_management.delete permission"""
     result = await employees_col().delete_one({"id": employee_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Karyawan tidak ditemukan")
+    
+    # Audit log
+    await log_security_event(
+        get_db(), user.get("user_id", ""), user.get("name", ""),
+        "delete", "hr_management",
+        f"Menghapus karyawan: {employee_id}",
+        request.client.host if request.client else ""
+    )
     return {"message": "Karyawan berhasil dihapus"}
 
 # ==================== MASTER SHIFT ====================
@@ -244,19 +261,22 @@ class ShiftUpdate(BaseModel):
     break_minutes: Optional[int] = None
 
 @router.get("/master/shifts")
-async def list_shifts():
+async def list_shifts(user: dict = Depends(require_permission("master_shift", "view"))):
+    """List shifts - Requires master_shift.view permission"""
     cursor = shifts_col().find({"is_active": True}, {"_id": 0})
     shifts = await cursor.to_list(length=100)
     return {"shifts": shifts}
 
 @router.post("/master/shifts")
-async def create_shift(data: ShiftCreate):
+async def create_shift(data: ShiftCreate, request: Request, user: dict = Depends(require_permission("master_shift", "create"))):
+    """Create shift - Requires master_shift.create permission"""
     shift = MasterShift(id=gen_id(), **data.model_dump())
     await shifts_col().insert_one(shift.model_dump())
     return {"message": "Shift berhasil ditambahkan", "shift": shift.model_dump()}
 
 @router.put("/master/shifts/{shift_id}")
-async def update_shift(shift_id: str, data: ShiftUpdate):
+async def update_shift(shift_id: str, data: ShiftUpdate, request: Request, user: dict = Depends(require_permission("master_shift", "edit"))):
+    """Update shift - Requires master_shift.edit permission"""
     update_data = {k: v for k, v in data.model_dump().items() if v is not None}
     if not update_data:
         raise HTTPException(status_code=400, detail="Tidak ada data untuk diupdate")
@@ -264,8 +284,14 @@ async def update_shift(shift_id: str, data: ShiftUpdate):
     return {"message": "Shift berhasil diupdate"}
 
 @router.delete("/master/shifts/{shift_id}")
-async def delete_shift(shift_id: str):
+async def delete_shift(shift_id: str, request: Request, user: dict = Depends(require_permission("master_shift", "delete"))):
+    """Delete shift - Requires master_shift.delete permission"""
     await shifts_col().update_one({"id": shift_id}, {"$set": {"is_active": False}})
+    await log_security_event(
+        get_db(), user.get("user_id", ""), user.get("name", ""),
+        "delete", "master_shift", f"Menghapus shift: {shift_id}",
+        request.client.host if request.client else ""
+    )
     return {"message": "Shift berhasil dihapus"}
 
 # ==================== MASTER JABATAN ====================
@@ -283,19 +309,22 @@ class JabatanUpdate(BaseModel):
     department: Optional[str] = None
 
 @router.get("/master/jabatan")
-async def list_jabatan():
+async def list_jabatan(user: dict = Depends(require_permission("master_jabatan", "view"))):
+    """List jabatan - Requires master_jabatan.view permission"""
     cursor = jabatan_col().find({"is_active": True}, {"_id": 0}).sort("level", 1)
     jabatan = await cursor.to_list(length=100)
     return {"jabatan": jabatan}
 
 @router.post("/master/jabatan")
-async def create_jabatan(data: JabatanCreate):
+async def create_jabatan(data: JabatanCreate, request: Request, user: dict = Depends(require_permission("master_jabatan", "create"))):
+    """Create jabatan - Requires master_jabatan.create permission"""
     jab = MasterJabatan(id=gen_id(), **data.model_dump())
     await jabatan_col().insert_one(jab.model_dump())
     return {"message": "Jabatan berhasil ditambahkan", "jabatan": jab.model_dump()}
 
 @router.put("/master/jabatan/{jabatan_id}")
-async def update_jabatan(jabatan_id: str, data: JabatanUpdate):
+async def update_jabatan(jabatan_id: str, data: JabatanUpdate, request: Request, user: dict = Depends(require_permission("master_jabatan", "edit"))):
+    """Update jabatan - Requires master_jabatan.edit permission"""
     update_data = {k: v for k, v in data.model_dump().items() if v is not None}
     if not update_data:
         raise HTTPException(status_code=400, detail="Tidak ada data untuk diupdate")
@@ -303,8 +332,14 @@ async def update_jabatan(jabatan_id: str, data: JabatanUpdate):
     return {"message": "Jabatan berhasil diupdate"}
 
 @router.delete("/master/jabatan/{jabatan_id}")
-async def delete_jabatan(jabatan_id: str):
+async def delete_jabatan(jabatan_id: str, request: Request, user: dict = Depends(require_permission("master_jabatan", "delete"))):
+    """Delete jabatan - Requires master_jabatan.delete permission"""
     await jabatan_col().update_one({"id": jabatan_id}, {"$set": {"is_active": False}})
+    await log_security_event(
+        get_db(), user.get("user_id", ""), user.get("name", ""),
+        "delete", "master_jabatan", f"Menghapus jabatan: {jabatan_id}",
+        request.client.host if request.client else ""
+    )
     return {"message": "Jabatan berhasil dihapus"}
 
 # ==================== MASTER LOKASI ABSENSI ====================
@@ -326,19 +361,22 @@ class LokasiAbsensiUpdate(BaseModel):
     address: Optional[str] = None
 
 @router.get("/master/lokasi-absensi")
-async def list_lokasi_absensi():
+async def list_lokasi_absensi(user: dict = Depends(require_permission("master_lokasi", "view"))):
+    """List lokasi absensi - Requires master_lokasi.view permission"""
     cursor = lokasi_absensi_col().find({"is_active": True}, {"_id": 0})
     lokasi = await cursor.to_list(length=100)
     return {"lokasi": lokasi}
 
 @router.post("/master/lokasi-absensi")
-async def create_lokasi_absensi(data: LokasiAbsensiCreate):
+async def create_lokasi_absensi(data: LokasiAbsensiCreate, request: Request, user: dict = Depends(require_permission("master_lokasi", "create"))):
+    """Create lokasi absensi - Requires master_lokasi.create permission"""
     lok = MasterLokasiAbsensi(id=gen_id(), **data.model_dump())
     await lokasi_absensi_col().insert_one(lok.model_dump())
     return {"message": "Lokasi absensi berhasil ditambahkan", "lokasi": lok.model_dump()}
 
 @router.put("/master/lokasi-absensi/{lokasi_id}")
-async def update_lokasi_absensi(lokasi_id: str, data: LokasiAbsensiUpdate):
+async def update_lokasi_absensi(lokasi_id: str, data: LokasiAbsensiUpdate, request: Request, user: dict = Depends(require_permission("master_lokasi", "edit"))):
+    """Update lokasi absensi - Requires master_lokasi.edit permission"""
     update_data = {k: v for k, v in data.model_dump().items() if v is not None}
     if not update_data:
         raise HTTPException(status_code=400, detail="Tidak ada data untuk diupdate")
@@ -346,8 +384,14 @@ async def update_lokasi_absensi(lokasi_id: str, data: LokasiAbsensiUpdate):
     return {"message": "Lokasi absensi berhasil diupdate"}
 
 @router.delete("/master/lokasi-absensi/{lokasi_id}")
-async def delete_lokasi_absensi(lokasi_id: str):
+async def delete_lokasi_absensi(lokasi_id: str, request: Request, user: dict = Depends(require_permission("master_lokasi", "delete"))):
+    """Delete lokasi absensi - Requires master_lokasi.delete permission"""
     await lokasi_absensi_col().update_one({"id": lokasi_id}, {"$set": {"is_active": False}})
+    await log_security_event(
+        get_db(), user.get("user_id", ""), user.get("name", ""),
+        "delete", "master_lokasi", f"Menghapus lokasi absensi: {lokasi_id}",
+        request.client.host if request.client else ""
+    )
     return {"message": "Lokasi absensi berhasil dihapus"}
 
 # ==================== TARGET CABANG ====================
@@ -362,7 +406,8 @@ class TargetCabangCreate(BaseModel):
     target_profit: float = 0
 
 @router.get("/master/target-cabang")
-async def list_target_cabang(month: Optional[int] = None, year: Optional[int] = None):
+async def list_target_cabang(month: Optional[int] = None, year: Optional[int] = None, user: dict = Depends(require_permission("master_target", "view"))):
+    """List target cabang - Requires master_target.view permission"""
     query = {}
     if month:
         query["period_month"] = month
@@ -373,7 +418,8 @@ async def list_target_cabang(month: Optional[int] = None, year: Optional[int] = 
     return {"targets": targets}
 
 @router.post("/master/target-cabang")
-async def create_target_cabang(data: TargetCabangCreate):
+async def create_target_cabang(data: TargetCabangCreate, request: Request, user: dict = Depends(require_permission("master_target", "create"))):
+    """Create/update target cabang - Requires master_target.create permission"""
     # Upsert - update if exists
     existing = await target_cabang_col().find_one({
         "branch_id": data.branch_id,

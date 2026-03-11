@@ -255,10 +255,16 @@ async def update_category(category_id: str, data: CategoryUpdate, user: dict = D
     return {"message": "Kategori berhasil diupdate"}
 
 @router.delete("/categories/{category_id}")
-async def delete_category(category_id: str, user: dict = Depends(get_current_user)):
+async def delete_category(category_id: str, request: Request, user: dict = Depends(require_permission("master_category", "delete"))):
+    """Delete category - Requires master_category.delete permission"""
     result = await categories.delete_one({"id": category_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Kategori tidak ditemukan")
+    await log_activity(
+        db, user.get("user_id"), user.get("name", ""),
+        "delete", "master_category", f"Menghapus kategori: {category_id}",
+        request.client.host if request.client else ""
+    )
     return {"message": "Kategori berhasil dihapus"}
 
 # ==================== UNITS ====================
@@ -310,10 +316,12 @@ async def update_unit(unit_id: str, data: UnitUpdate, user: dict = Depends(get_c
     return {"message": "Satuan berhasil diupdate"}
 
 @router.delete("/units/{unit_id}")
-async def delete_unit(unit_id: str, user: dict = Depends(get_current_user)):
+async def delete_unit(unit_id: str, request: Request, user: dict = Depends(require_permission("master_unit", "delete"))):
+    """Delete unit - Requires master_unit.delete permission"""
     result = await units.delete_one({"id": unit_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Satuan tidak ditemukan")
+    await log_activity(db, user.get("user_id"), user.get("name", ""), "delete", "master_unit", f"Menghapus satuan: {unit_id}", request.client.host if request.client else "")
     return {"message": "Satuan berhasil dihapus"}
 
 # ==================== BRANDS ====================
@@ -365,10 +373,12 @@ async def update_brand(brand_id: str, data: BrandUpdate, user: dict = Depends(ge
     return {"message": "Merk berhasil diupdate"}
 
 @router.delete("/brands/{brand_id}")
-async def delete_brand(brand_id: str, user: dict = Depends(get_current_user)):
+async def delete_brand(brand_id: str, request: Request, user: dict = Depends(require_permission("master_brand", "delete"))):
+    """Delete brand - Requires master_brand.delete permission"""
     result = await brands.delete_one({"id": brand_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Merk tidak ditemukan")
+    await log_activity(db, user.get("user_id"), user.get("name", ""), "delete", "master_brand", f"Menghapus merk: {brand_id}", request.client.host if request.client else "")
     return {"message": "Merk berhasil dihapus"}
 
 # ==================== WAREHOUSES ====================
@@ -422,10 +432,12 @@ async def update_warehouse(warehouse_id: str, data: WarehouseCreate, user: dict 
     return {"message": "Gudang berhasil diupdate"}
 
 @router.delete("/warehouses/{warehouse_id}")
-async def delete_warehouse(warehouse_id: str, user: dict = Depends(get_current_user)):
+async def delete_warehouse(warehouse_id: str, request: Request, user: dict = Depends(require_permission("master_warehouse", "delete"))):
+    """Delete warehouse - Requires master_warehouse.delete permission"""
     result = await warehouses.delete_one({"id": warehouse_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Gudang tidak ditemukan")
+    await log_activity(db, user.get("user_id"), user.get("name", ""), "delete", "master_warehouse", f"Menghapus gudang: {warehouse_id}", request.client.host if request.client else "")
     return {"message": "Gudang berhasil dihapus"}
 
 # ==================== SALES PERSONS ====================
@@ -481,10 +493,12 @@ async def update_sales_person(sp_id: str, data: SalesPersonCreate, user: dict = 
     return {"message": "Sales berhasil diupdate"}
 
 @router.delete("/sales-persons/{sp_id}")
-async def delete_sales_person(sp_id: str, user: dict = Depends(get_current_user)):
+async def delete_sales_person(sp_id: str, request: Request, user: dict = Depends(require_permission("master_sales_person", "delete"))):
+    """Delete sales person - Requires master_sales_person.delete permission"""
     result = await sales_persons.delete_one({"id": sp_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Sales tidak ditemukan")
+    await log_activity(db, user.get("user_id"), user.get("name", ""), "delete", "master_sales_person", f"Menghapus sales: {sp_id}", request.client.host if request.client else "")
     return {"message": "Sales berhasil dihapus"}
 
 # ==================== CUSTOMER GROUPS ====================
@@ -523,10 +537,12 @@ async def update_customer_group(group_id: str, data: CustomerGroupCreate, user: 
     return {"message": "Grup pelanggan berhasil diupdate"}
 
 @router.delete("/customer-groups/{group_id}")
-async def delete_customer_group(group_id: str, user: dict = Depends(get_current_user)):
+async def delete_customer_group(group_id: str, request: Request, user: dict = Depends(require_permission("master_customer_group", "delete"))):
+    """Delete customer group - Requires master_customer_group.delete permission"""
     result = await customer_groups.delete_one({"id": group_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Grup tidak ditemukan")
+    await log_activity(db, user.get("user_id"), user.get("name", ""), "delete", "master_customer_group", f"Menghapus grup: {group_id}", request.client.host if request.client else "")
     return {"message": "Grup pelanggan berhasil dihapus"}
 
 # ==================== BANKS ====================
@@ -567,10 +583,12 @@ async def update_bank(bank_id: str, data: BankCreate, user: dict = Depends(get_c
     return {"message": "Bank berhasil diupdate"}
 
 @router.delete("/banks/{bank_id}")
-async def delete_bank(bank_id: str, user: dict = Depends(get_current_user)):
+async def delete_bank(bank_id: str, request: Request, user: dict = Depends(require_permission("master_bank", "delete"))):
+    """Delete bank - Requires master_bank.delete permission"""
     result = await banks.delete_one({"id": bank_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Bank tidak ditemukan")
+    await log_activity(db, user.get("user_id"), user.get("name", ""), "delete", "master_bank", f"Menghapus bank: {bank_id}", request.client.host if request.client else "")
     return {"message": "Bank berhasil dihapus"}
 
 # ==================== DISCOUNTS ====================
@@ -613,10 +631,12 @@ async def update_discount(discount_id: str, data: DiscountCreate, user: dict = D
     return {"message": "Diskon berhasil diupdate"}
 
 @router.delete("/discounts/{discount_id}")
-async def delete_discount(discount_id: str, user: dict = Depends(get_current_user)):
+async def delete_discount(discount_id: str, request: Request, user: dict = Depends(require_permission("master_discount", "delete"))):
+    """Delete discount - Requires master_discount.delete permission"""
     result = await discounts.delete_one({"id": discount_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Diskon tidak ditemukan")
+    await log_activity(db, user.get("user_id"), user.get("name", ""), "delete", "master_discount", f"Menghapus diskon: {discount_id}", request.client.host if request.client else "")
     return {"message": "Diskon berhasil dihapus"}
 
 # ==================== PROMOTIONS ====================
@@ -658,10 +678,12 @@ async def update_promotion(promo_id: str, data: PromotionCreate, user: dict = De
     return {"message": "Promosi berhasil diupdate"}
 
 @router.delete("/promotions/{promo_id}")
-async def delete_promotion(promo_id: str, user: dict = Depends(get_current_user)):
+async def delete_promotion(promo_id: str, request: Request, user: dict = Depends(require_permission("master_promotion", "delete"))):
+    """Delete promotion - Requires master_promotion.delete permission"""
     result = await promotions.delete_one({"id": promo_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Promosi tidak ditemukan")
+    await log_activity(db, user.get("user_id"), user.get("name", ""), "delete", "master_promotion", f"Menghapus promosi: {promo_id}", request.client.host if request.client else "")
     return {"message": "Promosi berhasil dihapus"}
 
 # ==================== REGIONS ====================
@@ -702,10 +724,12 @@ async def update_region(region_id: str, data: RegionCreate, user: dict = Depends
     return {"message": "Wilayah berhasil diupdate"}
 
 @router.delete("/regions/{region_id}")
-async def delete_region(region_id: str, user: dict = Depends(get_current_user)):
+async def delete_region(region_id: str, request: Request, user: dict = Depends(require_permission("master_region", "delete"))):
+    """Delete region - Requires master_region.delete permission"""
     result = await regions.delete_one({"id": region_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Wilayah tidak ditemukan")
+    await log_activity(db, user.get("user_id"), user.get("name", ""), "delete", "master_region", f"Menghapus wilayah: {region_id}", request.client.host if request.client else "")
     return {"message": "Wilayah berhasil dihapus"}
 
 # ==================== E-MONEY ====================
@@ -748,10 +772,12 @@ async def update_emoney(emoney_id: str, data: EmoneyCreate, user: dict = Depends
     return {"message": "E-Money berhasil diupdate"}
 
 @router.delete("/emoney/{emoney_id}")
-async def delete_emoney(emoney_id: str, user: dict = Depends(get_current_user)):
+async def delete_emoney(emoney_id: str, request: Request, user: dict = Depends(require_permission("master_emoney", "delete"))):
+    """Delete e-money - Requires master_emoney.delete permission"""
     result = await emoney.delete_one({"id": emoney_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="E-Money tidak ditemukan")
+    await log_activity(db, user.get("user_id"), user.get("name", ""), "delete", "master_emoney", f"Menghapus e-money: {emoney_id}", request.client.host if request.client else "")
     return {"message": "E-Money berhasil dihapus"}
 
 # ==================== SHIPPING COSTS ====================
@@ -798,10 +824,12 @@ async def update_shipping_cost(sc_id: str, data: ShippingCostCreate, user: dict 
     return {"message": "Ongkir berhasil diupdate"}
 
 @router.delete("/shipping-costs/{sc_id}")
-async def delete_shipping_cost(sc_id: str, user: dict = Depends(get_current_user)):
+async def delete_shipping_cost(sc_id: str, request: Request, user: dict = Depends(require_permission("master_shipping", "delete"))):
+    """Delete shipping cost - Requires master_shipping.delete permission"""
     result = await shipping_costs.delete_one({"id": sc_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Ongkir tidak ditemukan")
+    await log_activity(db, user.get("user_id"), user.get("name", ""), "delete", "master_shipping", f"Menghapus ongkir: {sc_id}", request.client.host if request.client else "")
     return {"message": "Ongkir berhasil dihapus"}
 
 # ==================== CUSTOMER POINTS ====================
