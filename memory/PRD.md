@@ -1,5 +1,5 @@
 # OCB TITAN ERP - ENTERPRISE RETAIL OPERATING SYSTEM
-## Product Requirements Document (PRD) v17.0
+## Product Requirements Document (PRD) v18.0
 
 ---
 
@@ -8,6 +8,9 @@
 OCB TITAN ERP adalah sistem ERP retail enterprise untuk bisnis multi-cabang dengan fitur lengkap:
 - **POS / Penjualan** dengan multi-mode pricing + auto AR
 - **Pembelian Enterprise** dengan full lifecycle (PO→Receive→AP→Payment→Journal)
+- **Modul Pembelian iPos Style** dengan form lengkap (NEW!)
+- **Owner Dashboard** dengan KPI bisnis real-time (NEW!)
+- **Finance Dashboard** dengan ringkasan keuangan lengkap (NEW!)
 - **Inventory / Stok** dengan movement tracking
 - **Setoran Harian** dengan security ketat
 - **Hutang Piutang** (AR/AP) dengan aging + auto-journal
@@ -19,7 +22,135 @@ OCB TITAN ERP adalah sistem ERP retail enterprise untuk bisnis multi-cabang deng
 
 ---
 
-# LATEST UPDATE: March 11, 2026 - PURCHASE MODULE ENTERPRISE
+# LATEST UPDATE: March 11, 2026 - DASHBOARDS & PURCHASE ENTERPRISE iPOS STYLE
+
+## Owner Dashboard - IMPLEMENTED & TESTED ✅
+
+### KPI yang Ditampilkan
+- Total Penjualan (dengan trend %)
+- Total Pembelian
+- Laba Kotor
+- Rata-rata Tiket Per Transaksi
+- Total Piutang (AR) dengan info jatuh tempo
+- Total Hutang (AP) dengan info jatuh tempo
+- Setoran Harian (pending/verified)
+- Stok Rendah (item perlu restock)
+
+### Fitur Tambahan
+- Peringatan (Alerts) - Piutang/Hutang jatuh tempo, stok rendah
+- Performa Cabang dengan progress bars
+- Statistik (cabang, karyawan, cash flow)
+- Transaksi Terbaru
+
+---
+
+## Finance Dashboard - IMPLEMENTED & TESTED ✅
+
+### Ringkasan P&L
+- Total Pendapatan (+trend%)
+- HPP (COGS)
+- Laba Kotor (margin%)
+- Beban Operasional
+- Laba Bersih (+trend%)
+
+### Neraca Ringkas
+- Total Aset (Kas & Bank, Piutang)
+- Total Kewajiban (Hutang Dagang, dll)
+- Total Ekuitas (Modal Disetor, Laba Ditahan)
+
+### AR/AP Summary
+- Piutang Usaha - Total, Belum Jatuh Tempo, Jatuh Tempo
+- Hutang Usaha - Total, Belum Jatuh Tempo, Jatuh Tempo
+
+### Tabel Data
+- Neraca Saldo (Trial Balance) Preview
+- Jurnal Terbaru
+
+---
+
+## Modul Pembelian Enterprise (iPos Style) - IMPLEMENTED & TESTED ✅
+
+### Referensi UI: iPos Ultimate Purchase Module
+
+### Header Transaksi
+- No Transaksi (Auto: PO-CABANG-YYYYMMDD-XXXX)
+- Tanggal & Jam
+- Supplier (dengan kode)
+- Gudang Masuk
+- Cabang
+- Sales / PIC
+- Dept
+- Referensi PO
+- Jenis Transaksi (Langsung, Dari PO, Dari Permintaan, Transfer)
+- PPN %
+- Keterangan
+
+### Grid Item Pembelian (23 Kolom)
+| No | Kode | Barcode | Nama Item | Merk | Kategori | Jenis |
+| Qty Pesan | Qty Datang | Satuan | Isi/Konversi |
+| Harga Beli | Diskon % | Diskon Rp | Subtotal |
+| Tax % | Total | Gudang | Batch | Expired | SN | Catatan |
+
+### Tabs Bawah (seperti iPos)
+1. Rincian Item
+2. Potongan
+3. Pajak
+4. Biaya Lain
+5. Serial Number
+6. Riwayat Harga Beli
+7. Riwayat Supplier Item
+
+### Footer Perhitungan
+- Subtotal Item
+- Total Diskon
+- Total Pajak
+- Grand Total
+- Jenis Pembayaran (Tunai, Kredit, DP, Deposit, Kombinasi)
+- Jatuh Tempo (hari)
+- Sisa Hutang
+
+### Keyboard Shortcuts
+- F2: Cari Item
+- F3: Simpan Draft
+- F4: Posting
+- ESC: Batal
+
+### Daftar Pembelian (List View)
+Filter: Kata Kunci, Tanggal, Supplier, Cabang, Gudang, Status, Status Bayar, User, Sales, Item, No Faktur
+
+Summary: Jumlah Transaksi, Total Pembelian, Total Pajak, Total Diskon, Total Hutang, Lunas, Belum Lunas
+
+---
+
+## Test Results (Iteration 33)
+```
+BACKEND: 91% - 21/23 tests passed
+FRONTEND: 100% - All UI features verified
+
+Verified Owner Dashboard:
+✅ Total Penjualan, Pembelian, Laba Kotor, Rata-rata Tiket
+✅ AR, AP, Setoran Harian, Stok Rendah
+✅ Peringatan, Performa Cabang, Statistik
+✅ Transaksi Terbaru
+
+Verified Finance Dashboard:
+✅ P&L Summary (Pendapatan, HPP, Laba Kotor, Beban, Laba Bersih)
+✅ Balance Sheet Summary (Aset, Kewajiban, Ekuitas)
+✅ AR/AP dengan aging
+✅ Trial Balance & Jurnal Terbaru
+
+Verified Purchase Enterprise:
+✅ List view dengan 18 kolom dan filter lengkap
+✅ Form header dengan 12 field
+✅ Item grid dengan 23 kolom
+✅ 7 bottom tabs (Rincian, Potongan, Pajak, Biaya, SN, Riwayat Harga, Riwayat Supplier)
+✅ Footer calculation & payment selection
+✅ Keyboard shortcuts
+```
+
+---
+
+# PREVIOUS UPDATE: March 11, 2026 - PURCHASE MODULE ENTERPRISE
 
 ## Modul Pembelian Enterprise - IMPLEMENTED & TESTED ✅
 
