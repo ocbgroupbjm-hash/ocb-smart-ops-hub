@@ -102,6 +102,13 @@ import FinancialReports from './pages/accounting/FinancialReports';
 // Approval Pages
 import ApprovalCenter from './pages/approval/ApprovalCenter';
 
+// Dashboard Pages
+import OwnerDashboard from './pages/OwnerDashboard';
+import FinanceDashboard from './pages/FinanceDashboard';
+
+// Enterprise Purchase Module
+import PurchaseEnterprise from './pages/PurchaseEnterprise';
+
 import './index.css';
 
 const PrivateRoute = ({ children }) => {
@@ -280,6 +287,13 @@ function App() {
             
             {/* Approval Routes */}
             <Route path="approval-center" element={<ApprovalCenter />} />
+            
+            {/* Dashboard Routes */}
+            <Route path="owner-dashboard" element={<OwnerDashboard />} />
+            <Route path="finance-dashboard" element={<FinanceDashboard />} />
+            
+            {/* Enterprise Purchase Module */}
+            <Route path="purchase-enterprise" element={<PurchaseEnterprise />} />
             
             {/* Reports Routes */}
             <Route path="reports/sales" element={<Reports />} />

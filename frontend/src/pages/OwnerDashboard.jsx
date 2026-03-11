@@ -104,7 +104,7 @@ const OwnerDashboard = () => {
         api('/api/purchase/orders?status=received&limit=200'),
         api('/api/ar/list?limit=500'),
         api('/api/ap/list?limit=500'),
-        api('/api/deposits?limit=200'),
+        api('/api/deposit/list?limit=200'),
         api('/api/inventory/stock?low_stock_only=true'),
         api('/api/erp/employees'),
         api('/api/branches'),
@@ -158,7 +158,8 @@ const OwnerDashboard = () => {
       // Process Deposits
       let depositData = { total: 0, pending: 0, pending_count: 0 };
       if (depositsRes.ok) {
-        const deposits = (await depositsRes.json()).items || [];
+        const res = await depositsRes.json();
+        const deposits = res.deposits || res.items || [];
         depositData.total = deposits.reduce((sum, d) => sum + (d.total_deposit || 0), 0);
         const pending = deposits.filter(d => d.status === 'pending' || d.status === 'submitted');
         depositData.pending = pending.reduce((sum, d) => sum + (d.total_deposit || 0), 0);

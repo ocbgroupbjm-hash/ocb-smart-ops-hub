@@ -39,8 +39,12 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     { 
       name: 'Dashboard', 
       icon: LayoutDashboard, 
-      path: '/dashboard', 
-      roles: ['owner', 'admin', 'supervisor', 'cashier', 'finance', 'inventory'] 
+      roles: ['owner', 'admin', 'supervisor', 'cashier', 'finance', 'inventory'],
+      submenu: [
+        { name: 'Dashboard Utama', icon: LayoutDashboard, path: '/dashboard' },
+        { name: '📊 Owner Dashboard', icon: BarChart2, path: '/owner-dashboard', description: 'KPI Pemilik' },
+        { name: '💰 Finance Dashboard', icon: DollarSign, path: '/finance-dashboard', description: 'Ringkasan Keuangan' },
+      ]
     },
     {
       name: '🚀 SUPER AI',
@@ -155,6 +159,8 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       icon: Truck,
       roles: ['owner', 'admin', 'supervisor', 'inventory'],
       submenu: [
+        { name: '🏢 Form Pembelian Enterprise', icon: FileText, path: '/purchase-enterprise', description: 'Form lengkap iPos style' },
+        { divider: true },
         { name: 'Pesanan Pembelian', icon: ClipboardList, path: '/purchase/orders' },
         { name: 'Daftar Pembelian', icon: FileText, path: '/purchase/list' },
         { name: 'Penerimaan Barang', icon: Package, path: '/purchase/receiving' },

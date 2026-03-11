@@ -78,7 +78,7 @@ const FinanceDashboard = () => {
       const [
         trialRes, arRes, apRes, journalRes, salesRes, purchaseRes
       ] = await Promise.all([
-        api('/api/accounting/reports/trial-balance'),
+        api('/api/accounting/trial-balance'),
         api('/api/ar/list?limit=500'),
         api('/api/ap/list?limit=500'),
         api('/api/accounting/journals?limit=20'),
@@ -90,15 +90,15 @@ const FinanceDashboard = () => {
       let trialBalance = [];
       if (trialRes.ok) {
         const data = await trialRes.json();
-        trialBalance = data.accounts || data || [];
+        trialBalance = data.items || data.accounts || data || [];
         setAccounts(trialBalance.slice(0, 15));
         
         // Calculate summary from trial balance
         let assets = 0, liabilities = 0, equity = 0, revenue = 0, expenses = 0;
         trialBalance.forEach(acc => {
-          const code = acc.code || '';
-          const balance = acc.balance || 0;
-          if (code.startsWith('1')) assets += balance;
+          const code = acc.account_code || acc.code || '';
+          const balance = (acc.debit_balance || 0) - (acc.credit_balance || 0);
+          if (code.startsWith('1')) assets += Math.abs(balance);
           else if (code.startsWith('2')) liabilities += Math.abs(balance);
           else if (code.startsWith('3')) equity += Math.abs(balance);
           else if (code.startsWith('4')) revenue += Math.abs(balance);
@@ -414,11 +414,11 @@ const FinanceDashboard = () => {
               ) : accounts.map((acc, idx) => (
                 <AccountRow
                   key={idx}
-                  code={acc.code}
-                  name={acc.name}
-                  debit={acc.debit || 0}
-                  credit={acc.credit || 0}
-                  balance={acc.balance || 0}
+                  code={acc.account_code || acc.code}
+                  name={acc.account_name || acc.name}
+                  debit={acc.debit_balance || acc.debit || 0}
+                  credit={acc.credit_balance || acc.credit || 0}
+                  balance={(acc.debit_balance || 0) - (acc.credit_balance || 0)}
                 />
               ))}
             </tbody>
