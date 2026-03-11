@@ -1,13 +1,15 @@
 # OCB TITAN - Inventory Management API
-from fastapi import APIRouter, HTTPException, Depends
+# SECURITY: All operations require RBAC validation
+from fastapi import APIRouter, HTTPException, Depends, Request
 from pydantic import BaseModel
 from typing import Optional, List
 from database import (
     products, product_stocks, stock_movements, stock_transfers, 
-    stock_opnames, branches, get_next_sequence
+    stock_opnames, branches, get_next_sequence, get_db
 )
 from utils.auth import get_current_user
 from models.titan_models import StockMovement, StockMovementType, StockTransfer, StockOpname, ProductStock
+from routes.rbac_middleware import require_permission, log_security_event
 from datetime import datetime, timezone
 
 router = APIRouter(prefix="/inventory", tags=["Inventory"])
@@ -44,7 +46,7 @@ async def get_branch_stock(
     search: str = "",
     skip: int = 0,
     limit: int = 100,
-    user: dict = Depends(get_current_user)
+    user: dict = Depends(require_permission("stock_card", "view"))
 ):
     """Get stock for a branch"""
     branch = branch_id or user.get("branch_id")
@@ -123,7 +125,7 @@ async def get_branch_stock(
     return {"items": items, "total": total}
 
 @router.get("/stock/low")
-async def get_low_stock_alerts(user: dict = Depends(get_current_user)):
+async def get_low_stock_alerts(user: dict = Depends(require_permission("stock_card", "view"))):
     """Get products with low stock across all accessible branches"""
     branch_ids = user.get("branch_ids", [])
     if user.get("branch_id"):
@@ -185,7 +187,7 @@ async def get_stock_movements(
     date_to: str = "",
     skip: int = 0,
     limit: int = 100,
-    user: dict = Depends(get_current_user)
+    user: dict = Depends(require_permission("stock_movement", "view"))
 ):
     """Get stock movement history"""
     query = {}
@@ -223,8 +225,8 @@ async def get_stock_movements(
     return {"items": items, "total": total}
 
 @router.post("/adjust")
-async def adjust_stock(data: StockAdjustment, user: dict = Depends(get_current_user)):
-    """Adjust stock quantity"""
+async def adjust_stock(data: StockAdjustment, request: Request, user: dict = Depends(require_permission("stock_opname", "edit"))):
+    """Adjust stock quantity - Requires stock_opname.edit permission"""
     branch_id = user.get("branch_id")
     if not branch_id:
         raise HTTPException(status_code=400, detail="User not assigned to a branch")
@@ -272,8 +274,8 @@ class StockInOut(BaseModel):
     notes: str = ""
 
 @router.post("/stock-in")
-async def stock_in(data: StockInOut, user: dict = Depends(get_current_user)):
-    """Add stock (stock in)"""
+async def stock_in(data: StockInOut, request: Request, user: dict = Depends(require_permission("stock_in", "create"))):
+    """Add stock (stock in) - Requires stock_in.create permission"""
     branch_id = user.get("branch_id")
     if not branch_id:
         raise HTTPException(status_code=400, detail="User tidak terhubung ke cabang")
@@ -324,8 +326,8 @@ async def stock_in(data: StockInOut, user: dict = Depends(get_current_user)):
     return {"message": "Stok berhasil ditambahkan", "new_quantity": new_qty}
 
 @router.post("/stock-out")
-async def stock_out(data: StockInOut, user: dict = Depends(get_current_user)):
-    """Remove stock (stock out)"""
+async def stock_out(data: StockInOut, request: Request, user: dict = Depends(require_permission("stock_out", "create"))):
+    """Remove stock (stock out) - Requires stock_out.create permission"""
     branch_id = user.get("branch_id")
     if not branch_id:
         raise HTTPException(status_code=400, detail="User tidak terhubung ke cabang")
@@ -363,8 +365,8 @@ async def stock_out(data: StockInOut, user: dict = Depends(get_current_user)):
     return {"message": "Stok berhasil dikurangi", "new_quantity": new_qty}
 
 @router.post("/transfer")
-async def create_transfer(data: CreateTransfer, user: dict = Depends(get_current_user)):
-    """Create a stock transfer request"""
+async def create_transfer(data: CreateTransfer, request: Request, user: dict = Depends(require_permission("stock_transfer", "create"))):
+    """Create a stock transfer request - Requires stock_transfer.create permission"""
     from_branch = await branches.find_one({"id": data.from_branch_id}, {"_id": 0})
     to_branch = await branches.find_one({"id": data.to_branch_id}, {"_id": 0})
     
@@ -426,9 +428,9 @@ async def list_transfers(
     status: str = "",
     skip: int = 0,
     limit: int = 50,
-    user: dict = Depends(get_current_user)
+    user: dict = Depends(require_permission("stock_transfer", "view"))
 ):
-    """List stock transfers"""
+    """List stock transfers - Requires stock_transfer.view permission"""
     branch_id = user.get("branch_id")
     query = {
         "$or": [
@@ -446,8 +448,8 @@ async def list_transfers(
     return {"items": items, "total": total}
 
 @router.post("/transfer/{transfer_id}/send")
-async def send_transfer(transfer_id: str, user: dict = Depends(get_current_user)):
-    """Mark transfer as sent (in transit)"""
+async def send_transfer(transfer_id: str, request: Request, user: dict = Depends(require_permission("stock_transfer", "edit"))):
+    """Mark transfer as sent (in transit) - Requires stock_transfer.edit permission"""
     transfer = await stock_transfers.find_one({"id": transfer_id}, {"_id": 0})
     if not transfer:
         raise HTTPException(status_code=404, detail="Transfer not found")
@@ -486,8 +488,8 @@ async def send_transfer(transfer_id: str, user: dict = Depends(get_current_user)
     return {"message": "Transfer sent"}
 
 @router.post("/transfer/{transfer_id}/receive")
-async def receive_transfer(transfer_id: str, user: dict = Depends(get_current_user)):
-    """Receive a transfer at destination branch"""
+async def receive_transfer(transfer_id: str, request: Request, user: dict = Depends(require_permission("stock_transfer", "edit"))):
+    """Receive a transfer at destination branch - Requires stock_transfer.edit permission"""
     transfer = await stock_transfers.find_one({"id": transfer_id}, {"_id": 0})
     if not transfer:
         raise HTTPException(status_code=404, detail="Transfer not found")
@@ -541,8 +543,8 @@ async def receive_transfer(transfer_id: str, user: dict = Depends(get_current_us
 # ==================== STOCK OPNAME ====================
 
 @router.post("/opname")
-async def create_opname(data: CreateOpname, user: dict = Depends(get_current_user)):
-    """Create stock opname (physical count)"""
+async def create_opname(data: CreateOpname, request: Request, user: dict = Depends(require_permission("stock_opname", "create"))):
+    """Create stock opname (physical count) - Requires stock_opname.create permission"""
     branch_id = user.get("branch_id")
     if not branch_id:
         raise HTTPException(status_code=400, detail="User not assigned to a branch")
@@ -584,8 +586,8 @@ async def create_opname(data: CreateOpname, user: dict = Depends(get_current_use
     return {"id": opname.id, "opname_number": opname_number}
 
 @router.post("/opname/{opname_id}/approve")
-async def approve_opname(opname_id: str, user: dict = Depends(get_current_user)):
-    """Approve and apply stock opname adjustments"""
+async def approve_opname(opname_id: str, request: Request, user: dict = Depends(require_permission("stock_opname", "approve"))):
+    """Approve and apply stock opname adjustments - Requires stock_opname.approve permission"""
     opname = await stock_opnames.find_one({"id": opname_id}, {"_id": 0})
     if not opname:
         raise HTTPException(status_code=404, detail="Opname not found")

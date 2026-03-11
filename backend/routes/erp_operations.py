@@ -86,7 +86,27 @@ class EmployeeCreate(BaseModel):
     bank_account: str = ""
     bank_holder: str = ""
     gaji_pokok: float = 0
+    # Enhanced Payroll Fields
+    salary_type: str = "monthly"  # monthly atau daily
+    upah_harian: float = 0
+    tunjangan_jabatan: float = 0
+    tunjangan_transport: float = 0
+    tunjangan_makan: float = 0
+    tunjangan_keluarga: float = 0
+    tunjangan_lainnya: float = 0
     tunjangan_total: float = 0
+    # Bonus Fields
+    bonus_kehadiran: float = 0
+    bonus_performance: float = 0
+    bonus_target: float = 0
+    bonus_lainnya: float = 0
+    # Deduction Fields
+    potongan_bpjs_kes: float = 0
+    potongan_bpjs_tk: float = 0
+    potongan_pinjaman: float = 0
+    potongan_lainnya: float = 0
+    # Payment
+    payment_method: str = "transfer"  # transfer, cash, ewallet
     photo_url: str = ""
     user_id: str = ""
 
@@ -115,7 +135,27 @@ class EmployeeUpdate(BaseModel):
     bank_account: Optional[str] = None
     bank_holder: Optional[str] = None
     gaji_pokok: Optional[float] = None
+    # Enhanced Payroll Fields
+    salary_type: Optional[str] = None  # monthly atau daily
+    upah_harian: Optional[float] = None
+    tunjangan_jabatan: Optional[float] = None
+    tunjangan_transport: Optional[float] = None
+    tunjangan_makan: Optional[float] = None
+    tunjangan_keluarga: Optional[float] = None
+    tunjangan_lainnya: Optional[float] = None
     tunjangan_total: Optional[float] = None
+    # Bonus Fields
+    bonus_kehadiran: Optional[float] = None
+    bonus_performance: Optional[float] = None
+    bonus_target: Optional[float] = None
+    bonus_lainnya: Optional[float] = None
+    # Deduction Fields
+    potongan_bpjs_kes: Optional[float] = None
+    potongan_bpjs_tk: Optional[float] = None
+    potongan_pinjaman: Optional[float] = None
+    potongan_lainnya: Optional[float] = None
+    # Payment
+    payment_method: Optional[str] = None  # transfer, cash, ewallet
     photo_url: Optional[str] = None
     user_id: Optional[str] = None
 
@@ -444,6 +484,35 @@ async def create_payroll_rule(data: PayrollRuleCreate):
     rule = MasterPayrollRule(id=gen_id(), **data.model_dump())
     await payroll_rule_col().insert_one(rule.model_dump())
     return {"message": "Aturan payroll berhasil ditambahkan", "rule": rule.model_dump()}
+
+@router.put("/master/payroll-rules/{rule_id}")
+async def update_payroll_rule(rule_id: str, data: PayrollRuleCreate):
+    """Update existing payroll rule"""
+    existing = await payroll_rule_col().find_one({"id": rule_id})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Aturan payroll tidak ditemukan")
+    
+    update_data = data.model_dump()
+    update_data["updated_at"] = now_iso()
+    
+    await payroll_rule_col().update_one(
+        {"id": rule_id},
+        {"$set": update_data}
+    )
+    return {"message": "Aturan payroll berhasil diupdate"}
+
+@router.delete("/master/payroll-rules/{rule_id}")
+async def delete_payroll_rule(rule_id: str):
+    """Delete payroll rule (soft delete)"""
+    existing = await payroll_rule_col().find_one({"id": rule_id})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Aturan payroll tidak ditemukan")
+    
+    await payroll_rule_col().update_one(
+        {"id": rule_id},
+        {"$set": {"is_active": False, "updated_at": now_iso()}}
+    )
+    return {"message": "Aturan payroll berhasil dihapus"}
 
 # ==================== SETORAN HARIAN ====================
 

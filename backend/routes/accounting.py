@@ -1,10 +1,12 @@
 # OCB AI TITAN - Accounting Routes
-from fastapi import APIRouter, Depends, HTTPException
+# SECURITY: All operations require RBAC validation
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime, timezone
-from database import db
+from database import db, get_db
 from utils.auth import get_current_user
+from routes.rbac_middleware import require_permission, log_security_event
 import uuid
 
 router = APIRouter(prefix="/api/accounting", tags=["Accounting"])
@@ -33,8 +35,9 @@ async def list_accounts(
     category: str = "",
     search: str = "",
     include_inactive: bool = False,
-    user: dict = Depends(get_current_user)
+    user: dict = Depends(require_permission("master_coa", "view"))
 ):
+    """List chart of accounts - Requires master_coa.view permission"""
     query = {}
     if category:
         query["category"] = category
@@ -50,14 +53,16 @@ async def list_accounts(
     return {"items": items, "total": len(items)}
 
 @router.get("/accounts/{account_id}")
-async def get_account(account_id: str, user: dict = Depends(get_current_user)):
+async def get_account(account_id: str, user: dict = Depends(require_permission("master_coa", "view"))):
+    """Get account details - Requires master_coa.view permission"""
     account = await accounts.find_one({"id": account_id}, {"_id": 0})
     if not account:
         raise HTTPException(status_code=404, detail="Akun tidak ditemukan")
     return account
 
 @router.post("/accounts")
-async def create_account(data: AccountCreate, user: dict = Depends(get_current_user)):
+async def create_account(data: AccountCreate, request: Request, user: dict = Depends(require_permission("master_coa", "create"))):
+    """Create account - Requires master_coa.create permission"""
     # Check code exists
     existing = await accounts.find_one({"code": data.code})
     if existing:
@@ -74,7 +79,8 @@ async def create_account(data: AccountCreate, user: dict = Depends(get_current_u
     return {"id": account["id"], "message": "Akun berhasil ditambahkan"}
 
 @router.put("/accounts/{account_id}")
-async def update_account(account_id: str, data: AccountCreate, user: dict = Depends(get_current_user)):
+async def update_account(account_id: str, data: AccountCreate, request: Request, user: dict = Depends(require_permission("master_coa", "edit"))):
+    """Update account - Requires master_coa.edit permission"""
     update_data = data.model_dump()
     update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
     result = await accounts.update_one({"id": account_id}, {"$set": update_data})

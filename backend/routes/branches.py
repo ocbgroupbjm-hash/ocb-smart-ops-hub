@@ -1,14 +1,16 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from typing import List
 from models.branch import BranchCreate, BranchUpdate, BranchResponse, Branch
-from database import branches_collection, sales_orders_collection
+from database import branches_collection, sales_orders_collection, get_db
 from utils.dependencies import get_current_user
+from routes.rbac_middleware import require_permission, log_security_event
 from datetime import datetime, timezone
 
 router = APIRouter(prefix="/branches", tags=["Branches"])
 
 @router.post("/", response_model=BranchResponse)
-async def create_branch(branch_data: BranchCreate, current_user: dict = Depends(get_current_user)):
+async def create_branch(branch_data: BranchCreate, request: Request, current_user: dict = Depends(require_permission("master_branch", "create"))):
+    """Create branch - Requires master_branch.create permission"""
     company_id = current_user.get("company_id")
     
     if not company_id:
@@ -34,7 +36,8 @@ async def create_branch(branch_data: BranchCreate, current_user: dict = Depends(
     return BranchResponse(**branch.model_dump())
 
 @router.get("/", response_model=List[BranchResponse])
-async def get_branches(current_user: dict = Depends(get_current_user)):
+async def get_branches(current_user: dict = Depends(require_permission("master_branch", "view"))):
+    """List branches - Requires master_branch.view permission"""
     company_id = current_user.get("company_id")
     
     branches = await branches_collection.find(
@@ -51,7 +54,8 @@ async def get_branches(current_user: dict = Depends(get_current_user)):
     return branches
 
 @router.get("/{branch_id}", response_model=BranchResponse)
-async def get_branch(branch_id: str, current_user: dict = Depends(get_current_user)):
+async def get_branch(branch_id: str, current_user: dict = Depends(require_permission("master_branch", "view"))):
+    """Get branch details - Requires master_branch.view permission"""
     company_id = current_user.get("company_id")
     
     branch = await branches_collection.find_one(
@@ -73,8 +77,10 @@ async def get_branch(branch_id: str, current_user: dict = Depends(get_current_us
 async def update_branch(
     branch_id: str,
     update_data: BranchUpdate,
-    current_user: dict = Depends(get_current_user)
+    request: Request,
+    current_user: dict = Depends(require_permission("master_branch", "edit"))
 ):
+    """Update branch - Requires master_branch.edit permission"""
     company_id = current_user.get("company_id")
     
     branch = await branches_collection.find_one(
@@ -106,7 +112,8 @@ async def update_branch(
     return updated_branch
 
 @router.delete("/{branch_id}")
-async def delete_branch(branch_id: str, current_user: dict = Depends(get_current_user)):
+async def delete_branch(branch_id: str, request: Request, current_user: dict = Depends(require_permission("master_branch", "delete"))):
+    """Delete branch - Requires master_branch.delete permission"""
     company_id = current_user.get("company_id")
     
     result = await branches_collection.delete_one({"id": branch_id, "company_id": company_id})

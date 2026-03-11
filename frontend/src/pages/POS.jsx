@@ -73,6 +73,14 @@ const POS = () => {
   };
 
   const addToCart = (product) => {
+    // Price fallback logic: selling_price -> wholesale_price -> cost_price -> 0
+    const price = product.selling_price || product.wholesale_price || product.cost_price || 0;
+    
+    if (price <= 0) {
+      toast.error(`Harga produk "${product.name}" tidak valid (Rp 0). Silakan set harga jual di Master Item.`);
+      return; // Prevent adding item with no price
+    }
+    
     setCart(prev => {
       const existing = prev.find(item => item.id === product.id);
       if (existing) {
@@ -80,7 +88,7 @@ const POS = () => {
       }
       return [...prev, {
         id: product.id, code: product.code, name: product.name,
-        price: product.selling_price, cost: product.cost_price,
+        price: price, cost: product.cost_price || 0,
         stock: product.stock || product.available || 999, qty: 1, discount: 0
       }];
     });
@@ -198,6 +206,96 @@ const POS = () => {
   };
 
   useEffect(() => { loadHeldTransactions(); }, []);
+
+  const handlePrintReceipt = (invoice) => {
+    // Build receipt content
+    const receiptContent = `
+========================================
+           OCB GROUP - STRUK
+========================================
+No. Invoice: ${invoice.invoice_number}
+Tanggal: ${new Date().toLocaleString('id-ID')}
+Kasir: ${user?.name || '-'}
+Cabang: ${user?.branch?.name || '-'}
+----------------------------------------
+${invoice.items.map(item => 
+  `${item.name}
+   ${item.qty} x ${formatRupiah(item.price)} = ${formatRupiah(item.price * item.qty)}`
+).join('\n')}
+----------------------------------------
+Subtotal: ${formatRupiah(invoice.total)}
+Diskon: -${formatRupiah(invoice.total - (invoice.total / (1 - (discountPercent/100))) * (discountPercent/100))}
+TOTAL: ${formatRupiah(invoice.total)}
+Dibayar: ${formatRupiah(invoice.paid)}
+Kembalian: ${formatRupiah(invoice.change)}
+========================================
+    Terima Kasih Telah Berbelanja!
+========================================
+`;
+    
+    // Open print window
+    const printWindow = window.open('', '_blank', 'width=400,height=600');
+    if (printWindow) {
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Struk ${invoice.invoice_number}</title>
+            <style>
+              body { font-family: monospace; font-size: 12px; padding: 20px; }
+              pre { white-space: pre-wrap; word-wrap: break-word; }
+            </style>
+          </head>
+          <body>
+            <pre>${receiptContent}</pre>
+            <script>
+              window.onload = function() {
+                window.print();
+                setTimeout(function() { window.close(); }, 500);
+              }
+            </script>
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+      toast.success('Struk sedang dicetak...');
+    } else {
+      toast.error('Tidak dapat membuka jendela print. Periksa pop-up blocker.');
+    }
+  };
+
+  const handleShareWhatsApp = (invoice) => {
+    const message = `*STRUK PEMBELIAN OCB GROUP*
+━━━━━━━━━━━━━━━━━━━━
+No. Invoice: ${invoice.invoice_number}
+Tanggal: ${new Date().toLocaleString('id-ID')}
+━━━━━━━━━━━━━━━━━━━━
+${invoice.items.map(item => 
+  `• ${item.name}
+  ${item.qty} x ${formatRupiah(item.price)} = *${formatRupiah(item.price * item.qty)}*`
+).join('\n')}
+━━━━━━━━━━━━━━━━━━━━
+*TOTAL: ${formatRupiah(invoice.total)}*
+Dibayar: ${formatRupiah(invoice.paid)}
+Kembalian: ${formatRupiah(invoice.change)}
+━━━━━━━━━━━━━━━━━━━━
+_Terima kasih atas kunjungan Anda!_`;
+
+    const encodedMessage = encodeURIComponent(message);
+    const customerPhone = invoice.customer_phone || customer?.phone || '';
+    
+    if (customerPhone) {
+      // Format phone for WhatsApp (remove leading 0, add 62)
+      let formattedPhone = customerPhone.replace(/\D/g, '');
+      if (formattedPhone.startsWith('0')) {
+        formattedPhone = '62' + formattedPhone.substring(1);
+      }
+      window.open(`https://wa.me/${formattedPhone}?text=${encodedMessage}`, '_blank');
+    } else {
+      // Open WhatsApp without specific number
+      window.open(`https://wa.me/?text=${encodedMessage}`, '_blank');
+    }
+    toast.success('Membuka WhatsApp...');
+  };
 
   const paymentLabels = {
     cash: 'Tunai', bank_transfer: 'Transfer Bank', qris: 'QRIS', ewallet: 'E-Wallet', store_credit: 'Kredit Toko'
@@ -454,10 +552,18 @@ const POS = () => {
             </div>
 
             <div className="flex gap-3">
-              <button className="flex-1 py-3 bg-blue-600/20 text-blue-400 rounded-lg hover:bg-blue-600/30 flex items-center justify-center gap-2">
+              <button 
+                onClick={() => handlePrintReceipt(lastInvoice)}
+                data-testid="print-receipt-btn"
+                className="flex-1 py-3 bg-blue-600/20 text-blue-400 rounded-lg hover:bg-blue-600/30 flex items-center justify-center gap-2"
+              >
                 <Printer className="h-5 w-5" /> Cetak Struk
               </button>
-              <button className="flex-1 py-3 bg-green-600/20 text-green-400 rounded-lg hover:bg-green-600/30 flex items-center justify-center gap-2">
+              <button 
+                onClick={() => handleShareWhatsApp(lastInvoice)}
+                data-testid="share-whatsapp-btn"
+                className="flex-1 py-3 bg-green-600/20 text-green-400 rounded-lg hover:bg-green-600/30 flex items-center justify-center gap-2"
+              >
                 <MessageCircle className="h-5 w-5" /> WhatsApp
               </button>
             </div>

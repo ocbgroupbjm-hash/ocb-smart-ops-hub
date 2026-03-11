@@ -1,10 +1,12 @@
 # OCB TITAN - User Management API
-from fastapi import APIRouter, HTTPException, Depends
+# SECURITY: All operations require RBAC validation
+from fastapi import APIRouter, HTTPException, Depends, Request
 from pydantic import BaseModel
 from typing import Optional, List
-from database import users, branches, audit_logs
+from database import users, branches, audit_logs, get_db
 from utils.auth import get_current_user, hash_password, require_roles
 from models.titan_models import User, UserRole, AuditLog
+from routes.rbac_middleware import require_permission, log_security_event
 from datetime import datetime, timezone
 
 router = APIRouter(prefix="/users", tags=["Users"])
@@ -37,9 +39,9 @@ async def list_users(
     role: str = "",
     search: str = "",
     limit: int = 200,
-    user: dict = Depends(get_current_user)
+    user: dict = Depends(require_permission("master_user", "view"))
 ):
-    """List users (admin/owner only)"""
+    """List users - Requires master_user.view permission"""
     if user.get("role") not in ["owner", "admin"]:
         # Regular users can only see their branch
         branch_id = user.get("branch_id", "")
@@ -69,7 +71,8 @@ async def list_users(
     return {"items": items, "total": len(items)}
 
 @router.get("/{user_id}")
-async def get_user(user_id: str, user: dict = Depends(get_current_user)):
+async def get_user(user_id: str, user: dict = Depends(require_permission("master_user", "view"))):
+    """Get user details - Requires master_user.view permission"""
     user_data = await users.find_one({"id": user_id}, {"_id": 0, "password_hash": 0})
     if not user_data:
         raise HTTPException(status_code=404, detail="User not found")
@@ -81,8 +84,8 @@ async def get_user(user_id: str, user: dict = Depends(get_current_user)):
     return user_data
 
 @router.post("")
-async def create_user(data: UserCreate, user: dict = Depends(get_current_user)):
-    """Create new user (admin/owner only)"""
+async def create_user(data: UserCreate, request: Request, user: dict = Depends(require_permission("master_user", "create"))):
+    """Create new user - Requires master_user.create permission"""
     if user.get("role") not in ["owner", "admin"]:
         raise HTTPException(status_code=403, detail="Insufficient permissions")
     
@@ -117,8 +120,8 @@ async def create_user(data: UserCreate, user: dict = Depends(get_current_user)):
     return {"id": new_user.id, "message": "User created"}
 
 @router.put("/{user_id}")
-async def update_user(user_id: str, data: UserUpdate, user: dict = Depends(get_current_user)):
-    """Update user"""
+async def update_user(user_id: str, data: UserUpdate, request: Request, user: dict = Depends(require_permission("master_user", "edit"))):
+    """Update user - Requires master_user.edit permission"""
     if user.get("role") not in ["owner", "admin"] and user.get("user_id") != user_id:
         raise HTTPException(status_code=403, detail="Insufficient permissions")
     
@@ -182,8 +185,8 @@ async def change_password(user_id: str, data: ChangePassword, user: dict = Depen
     return {"message": "Password changed"}
 
 @router.delete("/{user_id}")
-async def delete_user(user_id: str, hard: bool = False, user: dict = Depends(get_current_user)):
-    """Delete user (soft or hard delete)"""
+async def delete_user(user_id: str, hard: bool = False, request: Request = None, user: dict = Depends(require_permission("master_user", "delete"))):
+    """Delete user (soft or hard delete) - Requires master_user.delete permission"""
     if user.get("role") not in ["owner", "admin"]:
         raise HTTPException(status_code=403, detail="Insufficient permissions")
     
@@ -233,9 +236,9 @@ async def get_audit_logs(
     date_from: str = "",
     skip: int = 0,
     limit: int = 100,
-    user: dict = Depends(get_current_user)
+    user: dict = Depends(require_permission("audit_log", "view"))
 ):
-    """Get audit logs (admin/owner only)"""
+    """Get audit logs - Requires audit_log.view permission"""
     if user.get("role") not in ["owner", "admin"]:
         raise HTTPException(status_code=403, detail="Insufficient permissions")
     

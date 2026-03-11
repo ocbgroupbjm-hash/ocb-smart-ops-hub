@@ -1,7 +1,8 @@
 # OCB TITAN AI - Advanced HR System
 # Complete HR with relations, documents, training, structure
+# SECURITY: All operations require RBAC validation
 
-from fastapi import APIRouter, HTTPException, UploadFile, File, Form
+from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Depends, Request
 from typing import List, Optional
 from datetime import datetime, timezone, timedelta
 from pydantic import BaseModel
@@ -10,6 +11,8 @@ import os
 import aiofiles
 
 from database import get_db
+from utils.auth import get_current_user
+from routes.rbac_middleware import require_permission, log_security_event
 
 router = APIRouter(prefix="/api/hr", tags=["HR System"])
 
@@ -123,8 +126,8 @@ class EmployeePromotion(BaseModel):
 # ==================== DEPARTMENTS ====================
 
 @router.get("/departments")
-async def get_departments():
-    """Get all departments with hierarchy"""
+async def get_departments(user: dict = Depends(require_permission("hr_management", "view"))):
+    """Get all departments with hierarchy - Requires hr_management.view permission"""
     depts = await departments_col().find({}, {"_id": 0}).to_list(length=100)
     
     # Build hierarchy
@@ -146,8 +149,8 @@ async def get_departments():
     return {"departments": depts}
 
 @router.post("/departments")
-async def create_department(dept: Department):
-    """Create department"""
+async def create_department(dept: Department, request: Request, user: dict = Depends(require_permission("hr_management", "create"))):
+    """Create department - Requires hr_management.create permission"""
     doc = {
         "id": gen_id(),
         **dept.dict(),
