@@ -206,9 +206,11 @@ app.include_router(erp_hardening_router)
 from routes.tax_engine import router as tax_engine_router
 from routes.consistency_checker import router as consistency_checker_router
 from routes.auto_journal_engine import router as auto_journal_engine_router
+from routes.reconciliation_engine import router as reconciliation_router
 app.include_router(tax_engine_router)
 app.include_router(consistency_checker_router)
 app.include_router(auto_journal_engine_router)
+app.include_router(reconciliation_router)
 
 # Health check
 @app.get("/api/health")
