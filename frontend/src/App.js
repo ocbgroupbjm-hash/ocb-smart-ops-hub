@@ -10,6 +10,7 @@ import POS from './pages/POS';
 import Products from './pages/Products';
 import Inventory from './pages/Inventory';
 import Purchase from './pages/Purchase';
+import PurchaseModule from './pages/PurchaseModule';
 import Suppliers from './pages/Suppliers';
 import Customers from './pages/Customers';
 import Finance from './pages/Finance';
@@ -224,6 +225,7 @@ function App() {
             <Route path="master/promotions" element={<MasterPromotions />} />
             
             {/* Purchase Routes */}
+            <Route path="purchase" element={<PurchaseModule />} />
             <Route path="purchase/orders" element={<PurchaseOrders />} />
             <Route path="purchase/list" element={<PurchaseList />} />
             <Route path="purchase/receiving" element={<PurchaseReceiving />} />

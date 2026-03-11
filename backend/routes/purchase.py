@@ -241,6 +241,24 @@ async def receive_purchase_order(po_id: str, data: ReceivePO, request: Request, 
                     {"$set": {"cost_price": po_item.get("unit_cost", 0)}}
                 )
                 
+                # Save price history
+                price_record = {
+                    "id": str(uuid.uuid4()) if 'uuid' in dir() else f"PH{datetime.now().strftime('%Y%m%d%H%M%S%f')}",
+                    "product_id": receive_item.product_id,
+                    "product_code": po_item.get("product_code", ""),
+                    "product_name": po_item.get("product_name", ""),
+                    "supplier_id": po.get("supplier_id"),
+                    "supplier_name": po.get("supplier_name", ""),
+                    "po_number": po.get("po_number"),
+                    "unit": po_item.get("unit", "PCS"),
+                    "unit_cost": po_item.get("unit_cost", 0),
+                    "quantity": receive_item.quantity,
+                    "discount_percent": po_item.get("discount_percent", 0),
+                    "date": datetime.now(timezone.utc).isoformat(),
+                    "created_at": datetime.now(timezone.utc).isoformat()
+                }
+                await price_history.insert_one(price_record)
+                
                 break
     
     # Update PO status
