@@ -107,6 +107,9 @@ from routes.ap_system import router as ap_router
 from routes.approval_engine import router as approval_router
 from routes.accounting_engine import router as accounting_engine_router
 
+# Import Sales Module - iPOS Style (Enterprise Sales)
+from routes.sales_module import router as sales_module_router
+
 # Mount all routers under /api - Core ERP
 app.include_router(auth_router, prefix="/api")
 app.include_router(products_router, prefix="/api")
@@ -185,6 +188,9 @@ app.include_router(ar_router)
 app.include_router(ap_router)
 app.include_router(approval_router)
 app.include_router(accounting_engine_router)
+
+# Mount Sales Module - iPOS Style (Enterprise Sales)
+app.include_router(sales_module_router)
 
 # Health check
 @app.get("/api/health")
