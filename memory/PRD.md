@@ -22,7 +22,98 @@ OCB TITAN ERP adalah sistem ERP retail enterprise untuk bisnis multi-cabang deng
 
 ---
 
-# LATEST UPDATE: March 11, 2026 - DASHBOARDS & PURCHASE ENTERPRISE iPOS STYLE
+# LATEST UPDATE: March 11, 2026 - SALES MODULE iPOS STYLE
+
+## Sales Module iPOS Style - IMPLEMENTED & TESTED ✅
+
+### Referensi UI: iPos Ultimate Sales Module
+
+### API Endpoints Implemented
+1. **Sales Orders (Pesanan Jual)**
+   - `GET /api/sales/orders` - List dengan filter customer, status, date
+   - `POST /api/sales/orders` - Create dengan item, qty, harga, diskon
+   - `GET /api/sales/orders/{id}` - Detail order
+
+2. **Sales Invoices (Penjualan)**
+   - `GET /api/sales/invoices` - List dengan filter customer, status, date, has_tax
+   - `POST /api/sales/invoices` - Create dengan integrasi stok, jurnal, piutang
+   
+3. **Sales Returns (Retur Penjualan)**
+   - `GET /api/sales/returns` - List returns
+   - `POST /api/sales/returns` - Create dengan integrasi stok kembali, jurnal, AR deduct
+
+4. **Supporting Features**
+   - `GET /api/sales/price-history` - History harga jual per customer/product
+   - `GET /api/sales/trade-in` - Daftar tukar tambah
+   - `POST /api/sales/trade-in` - Create trade-in
+   - `GET /api/sales/points` - Point transaksi customer
+   - `POST /api/sales/points/redeem` - Redeem points
+   - `GET /api/sales/commission-payments` - Daftar pembayaran komisi sales
+   - `POST /api/sales/commission-payments` - Bayar komisi
+   - `GET /api/sales/deliveries` - Daftar pengiriman
+   - `PUT /api/sales/deliveries/{id}` - Update status/resi
+   - `POST /api/sales/tax-export/csv` - Export faktur pajak CSV
+   - `POST /api/sales/tax-export/xml` - Export faktur pajak XML
+   - `GET /api/sales/ar-payments` - Daftar pembayaran piutang
+
+### Integrasi Otomatis
+| Modul | Integrasi | Status |
+|-------|-----------|--------|
+| Inventory | Stock decrement on sale (sales_out) | ✅ |
+| Inventory | Stock increment on return (sales_return_in) | ✅ |
+| Accounting | Debit Kas/Piutang, Credit Penjualan, Credit PPN | ✅ |
+| Accounting | Debit HPP, Credit Persediaan | ✅ |
+| AR | Auto-create receivable on credit sale | ✅ |
+| AR | Auto-reduce on sales return | ✅ |
+| Price History | Record per transaction | ✅ |
+
+### Frontend Pages Implemented
+- `SalesOrderList.jsx` - Pesanan Jual List dengan filter, search, summary
+- `SalesOrderAdd.jsx` - Form tambah pesanan
+- `SalesList.jsx` - Daftar Penjualan dengan summary (Jumlah Transaksi, Total, Total Dibayar)
+- `SalesAdd.jsx` - Form tambah penjualan
+- `SalesReturnList.jsx` - Daftar Retur dengan summary
+- `SalesReturnAdd.jsx` - Form tambah retur
+- `SalesPriceHistory.jsx` - History harga jual
+- `TradeInList.jsx` - Daftar tukar tambah
+- `PointTransaksi.jsx` - Point transaksi
+- `CommissionPaymentsList.jsx` - Komisi sales
+- `DeliveriesList.jsx` - Daftar pengiriman
+- `TaxExport.jsx` - Export faktur pajak
+- `ARPaymentsList.jsx` - Pembayaran piutang
+- `ARPaymentAdd.jsx` - Form pembayaran piutang
+- `CashierList.jsx` - Kasir / POS
+
+### Test Results (Iteration 34)
+```
+BACKEND: 100% - 20/20 tests passed
+FRONTEND: 100% - All pages verified working
+
+Verified Sales Orders:
+✅ Create SO with SO-YYYYMMDD-XXXX format
+✅ List with customer enrichment
+✅ Frontend with filters and actions
+
+Verified Sales Invoices:
+✅ Cash sale - stock movement + journal
+✅ Credit sale - AR entry + journal
+✅ Summary footer (Jumlah, Total, Dibayar)
+
+Verified Sales Returns:
+✅ Stock add-back
+✅ AR deduction (ar_deduct mode)
+✅ Reversal journal
+
+Verified Integrations:
+✅ stock_movements collection updated
+✅ journal_entries collection updated
+✅ general_ledger collection updated
+✅ accounts_receivable collection updated
+```
+
+---
+
+# PREVIOUS UPDATE: March 11, 2026 - DASHBOARDS & PURCHASE ENTERPRISE iPOS STYLE
 
 ## Owner Dashboard - IMPLEMENTED & TESTED ✅
 
