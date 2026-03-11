@@ -45,6 +45,8 @@ import DataExport from './pages/DataExport';
 import KPIPerformance from './pages/KPIPerformance';
 import AICommandCenter from './pages/AICommandCenter';
 import CRMAI from './pages/CRMAI';
+import CRM from './pages/CRM';
+import Analytics from './pages/Analytics';
 
 // OCB TITAN AI Phase 2 Pages
 import AdvancedExport from './pages/AdvancedExport';
@@ -177,6 +179,8 @@ function App() {
             <Route path="kpi-performance" element={<KPIPerformance />} />
             <Route path="ai-command-center" element={<AICommandCenter />} />
             <Route path="crm-ai" element={<CRMAI />} />
+            <Route path="crm" element={<CRM />} />
+            <Route path="analytics" element={<Analytics />} />
             
             {/* OCB TITAN AI Phase 2 Routes */}
             <Route path="advanced-export" element={<AdvancedExport />} />
