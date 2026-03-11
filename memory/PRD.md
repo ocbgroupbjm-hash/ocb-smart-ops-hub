@@ -115,7 +115,7 @@ OCB TITAN ERP adalah sistem ERP retail enterprise untuk bisnis multi-cabang deng
 |-------|------|--------|------------|
 | 1 | Core Transaction Engine | ✅ Complete | 100% |
 | 2 | Financial Control System | ✅ Complete | 100% |
-| 3 | Operational Control System | ⏳ In Progress | 30% |
+| 3 | Operational Control System | ⏳ In Progress | 60% |
 | 4 | Business Intelligence | ⏳ Pending | 0% |
 | 5 | KPI System | ✅ Partial | 60% |
 | 6 | AI Business Engine | ✅ Partial | 70% |
@@ -169,6 +169,7 @@ OCB TITAN ERP adalah sistem ERP retail enterprise untuk bisnis multi-cabang deng
 | 39 | Financial Control Phase 2 | **100%** | **100%** |
 | 40 | Approval Workflow Engine (P3) | **100%** | **100%** |
 | 41 | Credit Control Engine (P3) | **100%** | **100%** |
+| 42 | Stock Reorder & Warehouse (P3) | **100%** | **100%** |
 
 ---
 
@@ -285,9 +286,22 @@ OCB TITAN ERP adalah sistem ERP retail enterprise untuk bisnis multi-cabang deng
   - HARD STOP di sales module - transaksi kredit ditolak jika melebihi limit
   - Approval override integration via Approval Workflow
   - Audit trail untuk semua perubahan credit
-- [ ] Stock Reorder Engine (P2 - NEXT)
-- [ ] Warehouse Control (P3)
-- [ ] Purchase Planning Engine (P4)
+- [x] **Stock Reorder Engine** ✅ COMPLETE (March 11, 2026)
+  - Min/Max stock settings per product
+  - Sales velocity calculation (average daily sales)
+  - Automatic reorder suggestions dengan urgency levels
+  - Reorder point & safety stock calculation
+  - Lead time consideration
+  - Generate PO draft from suggestions
+  - Low stock alerts
+- [x] **Warehouse Control** ✅ COMPLETE (March 11, 2026)
+  - Multi-warehouse management per branch
+  - Warehouse stock tracking (per product)
+  - Stock transfer between warehouses
+  - Transfer approval workflow (pending → approved → completed)
+  - Transfer status tracking
+  - Dashboard summary
+- [ ] Purchase Planning Engine (P4 - NEXT)
 - [ ] Sales Target System (P5)
 - [ ] Commission Engine Enhancement (P6)
 - [ ] Deposit & Cash Control Enhancement (P7)
@@ -305,7 +319,7 @@ OCB TITAN ERP adalah sistem ERP retail enterprise untuk bisnis multi-cabang deng
 
 ---
 
-**Version:** 26.0 (Phase 3 Credit Control Complete)
+**Version:** 27.0 (Phase 3 Stock Reorder & Warehouse Complete)
 **Last Updated:** March 11, 2026
 **Architecture:** SSOT, Non-Destructive, Additive
 **Governance:** OCB TITAN AI MASTER LAW
