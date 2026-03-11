@@ -75,8 +75,22 @@ import {
   PurchasePayments, PurchaseReturns, PurchasePriceHistory 
 } from './pages/purchase';
 
-// Sales Pages
-import { SalesList, SalesReturns, SalesDelivery } from './pages/sales';
+// Sales Pages - iPOS Style
+import SalesOrderList from './pages/sales/SalesOrderList';
+import SalesOrderAdd from './pages/sales/SalesOrderAdd';
+import SalesList from './pages/sales/SalesList';
+import SalesAdd from './pages/sales/SalesAdd';
+import CashierList from './pages/sales/CashierList';
+import SalesPriceHistory from './pages/sales/SalesPriceHistory';
+import TradeInList from './pages/sales/TradeInList';
+import ARPaymentsList from './pages/sales/ARPaymentsList';
+import ARPaymentAdd from './pages/sales/ARPaymentAdd';
+import SalesReturnList from './pages/sales/SalesReturnList';
+import SalesReturnAdd from './pages/sales/SalesReturnAdd';
+import PointTransaksi from './pages/sales/PointTransaksi';
+import CommissionPaymentsList from './pages/sales/CommissionPaymentsList';
+import DeliveriesList from './pages/sales/DeliveriesList';
+import TaxExport from './pages/sales/TaxExport';
 
 // Inventory Pages
 import { StockCards, StockMovements, StockTransfers, StockOpname, KartuStok } from './pages/inventory';
@@ -231,27 +245,60 @@ function App() {
             <Route path="master/discounts" element={<MasterDiscounts />} />
             <Route path="master/promotions" element={<MasterPromotions />} />
             
-            {/* Purchase Routes */}
+            {/* Purchase Routes - iPOS Style */}
             <Route path="purchase" element={<PurchaseModule />} />
             <Route path="purchase/orders" element={<PurchaseOrders />} />
+            <Route path="purchase/orders/add" element={<PurchaseEnterprise />} />
             <Route path="purchase/list" element={<PurchaseList />} />
+            <Route path="purchase/add" element={<PurchaseEnterprise />} />
             <Route path="purchase/receiving" element={<PurchaseReceiving />} />
             <Route path="purchase/price-history" element={<PurchasePriceHistory />} />
+            <Route path="purchase/ap-payments" element={<PurchasePayments />} />
+            <Route path="purchase/ap-payments/add" element={<PurchasePayments />} />
             <Route path="purchase/payments" element={<PurchasePayments />} />
             <Route path="purchase/payment-status" element={<PurchasePayments />} />
             <Route path="purchase/returns" element={<PurchaseReturns />} />
+            <Route path="purchase/returns/add" element={<PurchaseReturns />} />
             
-            {/* Sales Routes */}
-            <Route path="sales/orders" element={<POS />} />
+            {/* Hutang (AP) Routes - iPOS Style */}
+            <Route path="hutang/list" element={<AccountsPayable />} />
+            <Route path="hutang/payments" element={<PurchasePayments />} />
+            <Route path="hutang/aging" element={<AccountsPayable />} />
+            
+            {/* Piutang (AR) Routes - iPOS Style */}
+            <Route path="piutang/list" element={<AccountsReceivable />} />
+            <Route path="piutang/payments" element={<ARPaymentsList />} />
+            <Route path="piutang/aging" element={<AccountsReceivable />} />
+            
+            {/* Kas / Bank Routes - iPOS Style */}
+            <Route path="kas/in" element={<CashTransactions />} />
+            <Route path="kas/out" element={<CashTransactions />} />
+            <Route path="kas/mutations" element={<CashTransactions />} />
+            
+            {/* Inventory Routes - iPOS Style */}
+            <Route path="inventory/stock-list" element={<Inventory />} />
+            <Route path="inventory/stock-cards" element={<StockCards />} />
+            <Route path="inventory/kartu-stok" element={<KartuStok />} />
+            <Route path="inventory/adjustment" element={<StockOpname />} />
+            
+            {/* Sales Routes - iPOS Style */}
+            <Route path="sales/orders" element={<SalesOrderList />} />
+            <Route path="sales/orders/add" element={<SalesOrderAdd />} />
             <Route path="sales/list" element={<SalesList />} />
-            <Route path="sales/cashier-sales" element={<POS />} />
-            <Route path="sales/price-history" element={<Products />} />
-            <Route path="sales/trade-in" element={<POS />} />
-            <Route path="sales/payments" element={<Finance />} />
-            <Route path="sales/payment-status" element={<Finance />} />
-            <Route path="sales/returns" element={<SalesReturns />} />
-            <Route path="sales/points" element={<Customers />} />
-            <Route path="sales/deliveries" element={<SalesDelivery />} />
+            <Route path="sales/add" element={<SalesAdd />} />
+            <Route path="sales/cashier-list" element={<CashierList />} />
+            <Route path="sales/price-history" element={<SalesPriceHistory />} />
+            <Route path="sales/trade-in" element={<TradeInList />} />
+            <Route path="sales/trade-in/add" element={<SalesAdd />} />
+            <Route path="sales/ar-payments" element={<ARPaymentsList />} />
+            <Route path="sales/ar-payments/add" element={<ARPaymentAdd />} />
+            <Route path="sales/returns" element={<SalesReturnList />} />
+            <Route path="sales/returns/add" element={<SalesReturnAdd />} />
+            <Route path="sales/points" element={<PointTransaksi />} />
+            <Route path="sales/commission-payments" element={<CommissionPaymentsList />} />
+            <Route path="sales/commission-payments/add" element={<CommissionPaymentsList />} />
+            <Route path="sales/deliveries" element={<DeliveriesList />} />
+            <Route path="sales/tax-export" element={<TaxExport />} />
             
             {/* Inventory Routes */}
             <Route path="inventory/stock-list" element={<Inventory />} />
@@ -295,15 +342,17 @@ function App() {
             {/* Enterprise Purchase Module */}
             <Route path="purchase-enterprise" element={<PurchaseEnterprise />} />
             
-            {/* Reports Routes */}
+            {/* Reports Routes - iPOS Style */}
             <Route path="reports/sales" element={<Reports />} />
             <Route path="reports/purchase" element={<Reports />} />
             <Route path="reports/inventory" element={<Reports />} />
+            <Route path="reports/stock-card" element={<KartuStok />} />
             <Route path="reports/best-sellers" element={<Reports />} />
-            <Route path="reports/payables" element={<Reports />} />
-            <Route path="reports/receivables" element={<Reports />} />
-            <Route path="reports/cash" element={<Reports />} />
-            <Route path="reports/profit-loss" element={<Reports />} />
+            <Route path="reports/payables" element={<AccountsPayable />} />
+            <Route path="reports/receivables" element={<AccountsReceivable />} />
+            <Route path="reports/cash" element={<CashTransactions />} />
+            <Route path="reports/profit-loss" element={<IncomeStatement />} />
+            <Route path="reports/balance-sheet" element={<BalanceSheet />} />
             <Route path="reports/branches" element={<Reports />} />
             <Route path="reports/cashiers" element={<Reports />} />
             <Route path="reports/suppliers" element={<Reports />} />

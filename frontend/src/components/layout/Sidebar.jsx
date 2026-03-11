@@ -11,7 +11,7 @@ import {
   Upload, Download, Layers, BarChart2, ShoppingBag, UserCheck, Star,
   Activity, Bot, MessageSquare, Target, Megaphone, Banknote, UserPlus,
   CalendarCheck, Briefcase, BadgeDollarSign, Bell, Eye, Fingerprint, FileBarChart,
-  Globe
+  Globe, Plus, List, ChevronsRight, Send
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { usePermission } from '../../contexts/PermissionContext';
@@ -34,228 +34,215 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     }));
   };
 
-  // Menu structure like iPOS
+  // ============================================================
+  // STRUKTUR MENU PERSIS SEPERTI iPOS ULTIMATE
+  // ============================================================
   const menuStructure = [
+    // Dashboard
     { 
       name: 'Dashboard', 
       icon: LayoutDashboard, 
-      roles: ['owner', 'admin', 'supervisor', 'cashier', 'finance', 'inventory'],
-      submenu: [
-        { name: 'Dashboard Utama', icon: LayoutDashboard, path: '/dashboard' },
-        { name: '📊 Owner Dashboard', icon: BarChart2, path: '/owner-dashboard', description: 'KPI Pemilik' },
-        { name: '💰 Finance Dashboard', icon: DollarSign, path: '/finance-dashboard', description: 'Ringkasan Keuangan' },
-      ]
+      path: '/dashboard',
+      roles: ['owner', 'admin', 'supervisor', 'cashier', 'finance', 'inventory']
     },
-    {
-      name: '🚀 SUPER AI',
-      icon: Activity,
-      roles: ['owner', 'admin', 'supervisor'],
-      highlight: true,
-      submenu: [
-        { name: '🏢 Warroom', icon: Activity, path: '/warroom', description: 'Monitor seluruh cabang' },
-        { name: '⚔️ War Room V2', icon: Eye, path: '/war-room-v2', description: 'Command Center Owner' },
-        { name: '🤖 AI Sales', icon: Bot, path: '/ai-sales', description: 'Penjualan otomatis' },
-        { name: '💬 Hallo OCB AI', icon: MessageSquare, path: '/hallo-ai' },
-        { name: '📊 AI Bisnis', icon: Brain, path: '/ai-bisnis' },
-      ]
-    },
-    {
-      name: '🌍 OCB TITAN AI',
-      icon: Eye,
-      roles: ['owner', 'admin'],
-      highlight: true,
-      submenu: [
-        { name: '🗺️ Global Map', icon: MapPin, path: '/global-map', description: 'Monitor cabang real-time' },
-        { name: '🧠 AI Command Center', icon: Brain, path: '/ai-command-center', description: 'Analisis AI' },
-        { name: '🚨 War Room Alerts', icon: Bell, path: '/warroom-alerts', description: 'Alert real-time' },
-        { name: '🏆 KPI & Performance', icon: Target, path: '/kpi-performance', description: 'Ranking karyawan' },
-        { name: '🤖 CRM AI', icon: Bot, path: '/crm-ai', description: 'AI untuk CRM' },
-        { name: '📤 Advanced Export', icon: Download, path: '/advanced-export', description: 'Export Excel/PDF' },
-        { name: '📥 Import Data', icon: Upload, path: '/import-system', description: 'Import Excel/CSV' },
-        { name: '📱 WhatsApp Alerts', icon: Bell, path: '/whatsapp-alerts', description: 'Notifikasi WA' },
-      ]
-    },
-    {
-      name: '💼 AI CFO & War Room',
-      icon: Shield,
-      roles: ['owner', 'admin'],
-      highlight: true,
-      submenu: [
-        { name: '💰 CFO Dashboard', icon: DollarSign, path: '/cfo-dashboard', description: 'Analisis Keuangan AI' },
-        { name: '🛡️ AI Super War Room', icon: Shield, path: '/ai-warroom-super', description: 'Prediksi & Fraud Detection' },
-      ]
-    },
-    {
-      name: '💰 Operasional',
-      icon: Banknote,
-      roles: ['owner', 'admin', 'supervisor', 'cashier'],
-      highlight: true,
-      submenu: [
-        { name: 'Setoran Harian', icon: Banknote, path: '/setoran-harian', description: 'Input setoran cabang' },
-        { name: 'Selisih Kas', icon: AlertCircle, path: '/selisih-kas', description: 'Plus/Minus tracking' },
-        { name: 'Dashboard ERP', icon: BarChart2, path: '/erp-dashboard', description: 'Summary operasional' },
-        { name: 'Laporan ERP', icon: FileText, path: '/erp-reports', description: 'Comprehensive reports' },
-      ]
-    },
-    {
-      name: '✅ Approval Center',
-      icon: Shield,
-      path: '/approval-center',
-      roles: ['owner', 'admin', 'supervisor', 'finance'],
-      highlight: true
-    },
-    {
-      name: '👥 HR & Payroll',
-      icon: UserPlus,
-      roles: ['owner', 'admin', 'supervisor'],
-      submenu: [
-        { name: 'Data Karyawan', icon: Users, path: '/employees', description: 'Master karyawan' },
-        { name: 'HR Management', icon: Building2, path: '/hr-management', description: 'Training & Struktur' },
-        { name: 'Absensi', icon: Fingerprint, path: '/absensi', description: 'Check-in/out GPS' },
-        { name: 'Payroll', icon: BadgeDollarSign, path: '/payroll', description: 'Penggajian' },
-        { name: '🤖 AI Performance', icon: Target, path: '/ai-performance', description: 'Analisis performa AI' },
-        { name: '💰 Payroll Otomatis', icon: Calculator, path: '/payroll-auto', description: 'Gaji otomatis dari absensi' },
-        { divider: true },
-        { name: 'Master Shift', icon: Clock, path: '/master/shifts' },
-        { name: 'Master Jabatan', icon: Briefcase, path: '/master/jabatan' },
-        { name: 'Lokasi Absensi', icon: MapPin, path: '/master/lokasi-absensi' },
-        { name: 'Aturan Payroll', icon: Settings, path: '/master/payroll-rules' },
-      ]
-    },
-    {
-      name: 'Kasir (POS)',
-      icon: ShoppingCart,
-      path: '/kasir',
-      roles: ['owner', 'admin', 'supervisor', 'cashier']
-    },
+
+    // ============================================================
+    // MASTER DATA - iPOS Style
+    // ============================================================
     {
       name: 'Master Data',
       icon: Database,
       roles: ['owner', 'admin', 'supervisor', 'inventory'],
       submenu: [
-        { name: 'Daftar Item', icon: Package, path: '/master/items' },
-        { name: 'Kategori Item', icon: Tags, path: '/master/categories' },
+        { name: 'Data Barang', icon: Package, path: '/master/items' },
+        { name: 'Kategori Barang', icon: Tags, path: '/master/categories' },
+        { name: 'Merk Barang', icon: Star, path: '/master/brands' },
+        { name: 'Supplier', icon: Truck, path: '/master/suppliers' },
+        { name: 'Customer', icon: Users, path: '/master/customers' },
         { name: 'Satuan', icon: Scale, path: '/master/units' },
-        { name: 'Merk', icon: Star, path: '/master/brands' },
-        { name: 'Dept/Gudang', icon: Building, path: '/master/warehouses' },
-        { name: 'Kartu Stok', icon: ClipboardList, path: '/master/stock-cards' },
-        { name: 'Diskon Periode', icon: Percent, path: '/master/discounts' },
-        { name: 'Promosi', icon: Gift, path: '/master/promotions' },
-        { divider: true },
-        { name: 'Daftar Supplier', icon: Truck, path: '/master/suppliers' },
-        { name: 'Daftar Pelanggan', icon: Users, path: '/master/customers' },
-        { name: 'Daftar Sales', icon: UserCheck, path: '/master/sales-persons' },
-        { name: 'Grup Pelanggan', icon: Users, path: '/master/customer-groups' },
-        { name: 'Point Pelanggan', icon: Star, path: '/master/customer-points' },
-        { name: 'Wilayah', icon: MapPin, path: '/master/regions' },
-        { divider: true },
-        { name: 'E-Money', icon: CreditCard, path: '/master/emoney' },
-        { name: 'Bank', icon: Building2, path: '/master/banks' },
-        { name: 'Ongkir', icon: Truck, path: '/master/shipping-costs' },
+        { name: 'Gudang', icon: Warehouse, path: '/master/warehouses' },
+        { name: 'Cabang', icon: Building2, path: '/settings/branches' },
+        { name: 'User', icon: UserCog, path: '/settings/users' },
       ]
     },
-    {
-      name: 'Pembelian',
-      icon: Truck,
-      roles: ['owner', 'admin', 'supervisor', 'inventory'],
-      submenu: [
-        { name: '🏢 Form Pembelian Enterprise', icon: FileText, path: '/purchase-enterprise', description: 'Form lengkap iPos style' },
-        { divider: true },
-        { name: 'Pesanan Pembelian', icon: ClipboardList, path: '/purchase/orders' },
-        { name: 'Daftar Pembelian', icon: FileText, path: '/purchase/list' },
-        { name: 'Penerimaan Barang', icon: Package, path: '/purchase/receiving' },
-        { name: 'History Harga Beli', icon: History, path: '/purchase/price-history' },
-        { name: 'Daftar Pembayaran', icon: Wallet, path: '/purchase/payments' },
-        { name: 'Status Lunas', icon: FileCheck, path: '/purchase/payment-status' },
-        { name: 'Retur Pembelian', icon: RotateCcw, path: '/purchase/returns' },
-      ]
-    },
+
+    // ============================================================
+    // PENJUALAN - iPOS Style (FULL)
+    // ============================================================
     {
       name: 'Penjualan',
       icon: ShoppingBag,
       roles: ['owner', 'admin', 'supervisor', 'cashier'],
       submenu: [
-        { name: 'Pesanan Penjualan', icon: ClipboardList, path: '/sales/orders' },
+        { name: 'Pesanan Jual List', icon: List, path: '/sales/orders' },
+        { name: 'Tambah Pesanan Penjualan', icon: Plus, path: '/sales/orders/add' },
+        { divider: true },
         { name: 'Daftar Penjualan', icon: FileText, path: '/sales/list' },
-        { name: 'Penjualan Kasir', icon: ShoppingCart, path: '/sales/cashier-sales' },
+        { name: 'Tambah Penjualan', icon: Plus, path: '/sales/add' },
+        { divider: true },
+        { name: 'Daftar Kasir', icon: ShoppingCart, path: '/sales/cashier-list' },
+        { name: 'Tambah Kasir', icon: Plus, path: '/kasir' },
+        { divider: true },
         { name: 'History Harga Jual', icon: History, path: '/sales/price-history' },
-        { name: 'Tukar Tambah', icon: ArrowLeftRight, path: '/sales/trade-in' },
         { divider: true },
-        { name: 'Daftar Pembayaran', icon: Wallet, path: '/sales/payments' },
-        { name: 'Status Lunas', icon: FileCheck, path: '/sales/payment-status' },
+        { name: 'Daftar Tukar Tambah', icon: ArrowLeftRight, path: '/sales/trade-in' },
+        { name: 'Tambah Tukar Tambah', icon: Plus, path: '/sales/trade-in/add' },
         { divider: true },
-        { name: 'Retur Penjualan', icon: RotateCcw, path: '/sales/returns' },
-        { name: 'Point Penjualan', icon: Star, path: '/sales/points' },
-        { name: 'Data Pengiriman', icon: Truck, path: '/sales/deliveries' },
+        { name: 'Daftar Pembayaran Piutang', icon: Wallet, path: '/sales/ar-payments' },
+        { name: 'Tambah Pembayaran Piutang', icon: Plus, path: '/sales/ar-payments/add' },
+        { divider: true },
+        { name: 'Daftar Retur Penjualan', icon: RotateCcw, path: '/sales/returns' },
+        { name: 'Tambah Retur Penjualan', icon: Plus, path: '/sales/returns/add' },
+        { divider: true },
+        { name: 'Point Transaksi', icon: Star, path: '/sales/points' },
+        { divider: true },
+        { name: 'Daftar Pembayaran Komisi Sales', icon: BadgeDollarSign, path: '/sales/commission-payments' },
+        { name: 'Tambah Pembayaran Komisi Sales', icon: Plus, path: '/sales/commission-payments/add' },
+        { divider: true },
+        { name: 'Daftar Pengiriman', icon: Send, path: '/sales/deliveries' },
+        { divider: true },
+        { name: 'Laporan CSV/XML Faktur Pajak', icon: FileSpreadsheet, path: '/sales/tax-export' },
       ]
     },
+
+    // ============================================================
+    // PEMBELIAN - iPOS Style
+    // ============================================================
     {
-      name: 'Persediaan',
+      name: 'Pembelian',
+      icon: Truck,
+      roles: ['owner', 'admin', 'supervisor', 'inventory'],
+      submenu: [
+        { name: 'Pesanan Pembelian', icon: List, path: '/purchase/orders' },
+        { name: 'Tambah Pesanan Pembelian', icon: Plus, path: '/purchase/orders/add' },
+        { divider: true },
+        { name: 'Daftar Pembelian', icon: FileText, path: '/purchase/list' },
+        { name: 'Tambah Pembelian', icon: Plus, path: '/purchase/add' },
+        { divider: true },
+        { name: 'History Harga Beli', icon: History, path: '/purchase/price-history' },
+        { divider: true },
+        { name: 'Daftar Pembayaran Hutang', icon: Wallet, path: '/purchase/ap-payments' },
+        { name: 'Tambah Pembayaran Hutang', icon: Plus, path: '/purchase/ap-payments/add' },
+        { divider: true },
+        { name: 'Daftar Retur Pembelian', icon: RotateCcw, path: '/purchase/returns' },
+        { name: 'Tambah Retur Pembelian', icon: Plus, path: '/purchase/returns/add' },
+      ]
+    },
+
+    // ============================================================
+    // INVENTORY / PERSEDIAAN - iPOS Style
+    // ============================================================
+    {
+      name: 'Inventory',
       icon: Boxes,
       roles: ['owner', 'admin', 'supervisor', 'inventory'],
       submenu: [
-        { name: 'Daftar Stok', icon: Package, path: '/inventory/stock-list' },
+        { name: 'Stok Barang', icon: Package, path: '/inventory/stock-list' },
         { name: 'Kartu Stok', icon: ClipboardList, path: '/inventory/kartu-stok' },
-        { name: 'Stok Masuk', icon: Download, path: '/inventory/stock-in' },
-        { name: 'Stok Keluar', icon: Upload, path: '/inventory/stock-out' },
-        { name: 'Transfer Stok', icon: ArrowLeftRight, path: '/inventory/transfer' },
-        { name: 'Mutasi Stok', icon: History, path: '/inventory/mutations' },
-        { name: 'Stok Opname', icon: ClipboardList, path: '/inventory/opname' },
-        { name: 'Serial Number', icon: FileText, path: '/inventory/serial-numbers' },
-        { name: 'Rakitan Produk', icon: Layers, path: '/inventory/assemblies' },
+        { name: 'Mutasi Gudang', icon: History, path: '/inventory/mutations' },
+        { name: 'Transfer Gudang', icon: ArrowLeftRight, path: '/inventory/transfer' },
+        { name: 'Stock Opname', icon: ClipboardList, path: '/inventory/opname' },
+        { name: 'Penyesuaian Stok', icon: Settings, path: '/inventory/adjustment' },
       ]
     },
+
+    // ============================================================
+    // AKUNTANSI - iPOS Style
+    // ============================================================
     {
       name: 'Akuntansi',
       icon: Calculator,
       roles: ['owner', 'admin', 'finance'],
       submenu: [
-        { name: 'Daftar Perkiraan', icon: BookOpen, path: '/accounting/coa' },
-        { divider: true },
-        { name: 'Piutang (AR)', icon: CreditCard, path: '/accounting/receivables' },
-        { name: 'Hutang (AP)', icon: Wallet, path: '/accounting/payables' },
-        { divider: true },
-        { name: 'Kas Masuk', icon: Download, path: '/accounting/cash-in' },
-        { name: 'Kas Keluar', icon: Upload, path: '/accounting/cash-out' },
-        { name: 'Kas Transfer', icon: ArrowLeftRight, path: '/accounting/cash-transfer' },
-        { divider: true },
-        { name: 'Deposit Pelanggan', icon: PiggyBank, path: '/accounting/customer-deposit' },
-        { name: 'Deposit Supplier', icon: PiggyBank, path: '/accounting/supplier-deposit' },
-        { divider: true },
-        { name: 'Daftar Jurnal', icon: FileText, path: '/accounting/journals' },
+        { name: 'Chart Of Accounts', icon: BookOpen, path: '/accounting/coa' },
+        { name: 'Jurnal Umum', icon: FileText, path: '/accounting/journals' },
         { name: 'Buku Besar', icon: BookOpen, path: '/accounting/ledger' },
-        { name: 'Lap. Keuangan', icon: BarChart2, path: '/accounting/financial-reports' },
-        { divider: true },
-        { name: 'Saldo Awal', icon: Wallet, path: '/accounting/opening-balance' },
-        { name: 'Tutup Tahun', icon: Archive, path: '/accounting/year-end' },
-        { name: 'Setting Perkiraan', icon: Settings, path: '/accounting/coa-settings' },
+        { name: 'Neraca Saldo', icon: Scale, path: '/accounting/trial-balance' },
+        { name: 'Neraca', icon: BookOpen, path: '/accounting/balance-sheet' },
+        { name: 'Laba Rugi', icon: BarChart2, path: '/accounting/income-statement' },
       ]
     },
+
+    // ============================================================
+    // HUTANG (AP) - iPOS Style
+    // ============================================================
+    {
+      name: 'Hutang',
+      icon: Wallet,
+      roles: ['owner', 'admin', 'finance'],
+      submenu: [
+        { name: 'Daftar Hutang', icon: List, path: '/hutang/list' },
+        { name: 'Pembayaran Hutang', icon: CreditCard, path: '/hutang/payments' },
+        { name: 'Umur Hutang', icon: Clock, path: '/hutang/aging' },
+      ]
+    },
+
+    // ============================================================
+    // PIUTANG (AR) - iPOS Style
+    // ============================================================
+    {
+      name: 'Piutang',
+      icon: CreditCard,
+      roles: ['owner', 'admin', 'finance'],
+      submenu: [
+        { name: 'Daftar Piutang', icon: List, path: '/piutang/list' },
+        { name: 'Pembayaran Piutang', icon: Wallet, path: '/piutang/payments' },
+        { name: 'Umur Piutang', icon: Clock, path: '/piutang/aging' },
+      ]
+    },
+
+    // ============================================================
+    // KAS / BANK - iPOS Style
+    // ============================================================
+    {
+      name: 'Kas / Bank',
+      icon: Banknote,
+      roles: ['owner', 'admin', 'finance', 'cashier'],
+      submenu: [
+        { name: 'Kas Masuk', icon: Download, path: '/kas/in' },
+        { name: 'Kas Keluar', icon: Upload, path: '/kas/out' },
+        { name: 'Mutasi Kas', icon: ArrowLeftRight, path: '/kas/mutations' },
+      ]
+    },
+
+    // ============================================================
+    // LAPORAN - iPOS Style
+    // ============================================================
     {
       name: 'Laporan',
       icon: BarChart3,
       roles: ['owner', 'admin', 'supervisor', 'finance'],
       submenu: [
-        { name: 'Lap. Penjualan', icon: TrendingUp, path: '/reports/sales' },
-        { name: 'Lap. Pembelian', icon: Truck, path: '/reports/purchase' },
-        { name: 'Lap. Persediaan', icon: Boxes, path: '/reports/inventory' },
-        { name: 'Lap. Produk Terlaris', icon: Star, path: '/reports/best-sellers' },
-        { divider: true },
-        { name: 'Lap. Hutang', icon: FileText, path: '/reports/payables' },
-        { name: 'Lap. Piutang', icon: FileText, path: '/reports/receivables' },
-        { name: 'Lap. Kas', icon: Wallet, path: '/reports/cash' },
-        { divider: true },
-        { name: 'Neraca Saldo', icon: Scale, path: '/accounting/trial-balance' },
-        { name: 'Neraca', icon: BookOpen, path: '/accounting/balance-sheet' },
-        { name: 'Lap. Laba Rugi', icon: BarChart2, path: '/accounting/income-statement' },
-        { name: 'Lap. Arus Kas', icon: ArrowLeftRight, path: '/accounting/cash-flow' },
-        { divider: true },
-        { name: 'Lap. Cabang', icon: Building2, path: '/reports/branches' },
-        { name: 'Lap. Kasir', icon: UserCheck, path: '/reports/cashiers' },
-        { name: 'Lap. Supplier', icon: Truck, path: '/reports/suppliers' },
-        { name: 'Lap. Pelanggan', icon: Users, path: '/reports/customers' },
+        { name: 'Laporan Penjualan', icon: TrendingUp, path: '/reports/sales' },
+        { name: 'Laporan Pembelian', icon: Truck, path: '/reports/purchase' },
+        { name: 'Laporan Stok', icon: Boxes, path: '/reports/inventory' },
+        { name: 'Laporan Hutang', icon: Wallet, path: '/reports/payables' },
+        { name: 'Laporan Piutang', icon: CreditCard, path: '/reports/receivables' },
+        { name: 'Laporan Laba Rugi', icon: BarChart2, path: '/reports/profit-loss' },
+        { name: 'Laporan Neraca', icon: BookOpen, path: '/reports/balance-sheet' },
+        { name: 'Laporan Kartu Stok', icon: ClipboardList, path: '/reports/stock-card' },
       ]
     },
+
+    // ============================================================
+    // HR & PAYROLL
+    // ============================================================
+    {
+      name: 'HR & Payroll',
+      icon: UserPlus,
+      roles: ['owner', 'admin', 'supervisor'],
+      submenu: [
+        { name: 'Data Karyawan', icon: Users, path: '/employees' },
+        { name: 'Absensi', icon: Fingerprint, path: '/absensi' },
+        { name: 'Payroll', icon: BadgeDollarSign, path: '/payroll' },
+        { name: 'Master Shift', icon: Clock, path: '/master/shifts' },
+        { name: 'Master Jabatan', icon: Briefcase, path: '/master/jabatan' },
+      ]
+    },
+
+    // ============================================================
+    // PENGATURAN
+    // ============================================================
     {
       name: 'Pengaturan',
       icon: Settings,
@@ -264,42 +251,45 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
         { name: 'Data User', icon: UserCog, path: '/settings/users' },
         { name: 'Hak Akses', icon: Shield, path: '/settings/roles' },
         { name: 'Data Perusahaan', icon: Building2, path: '/settings/company' },
-        { name: 'Pengaturan Umum', icon: Settings, path: '/settings/general' },
-        { divider: true },
         { name: 'Cabang', icon: Building2, path: '/settings/branches' },
-        { name: 'Periode Transaksi', icon: Clock, path: '/settings/periods' },
-        { name: 'Setting Nomor', icon: FileText, path: '/settings/numbering' },
         { divider: true },
         { name: 'Printer & Struk', icon: Printer, path: '/settings/printer' },
-        { name: 'Tema', icon: Layers, path: '/settings/theme' },
-        { divider: true },
         { name: 'Import Excel', icon: Upload, path: '/settings/import' },
         { name: 'Export Excel', icon: Download, path: '/settings/export' },
-        { name: 'Backup & Restore', icon: HardDrive, path: '/settings/backup' },
-        { name: 'Kelola Bisnis', icon: Building2, path: '/kelola-bisnis' },
         { divider: true },
         { name: 'Log Aktivitas', icon: Clock, path: '/settings/activity-log' },
-        { name: 'Analisa Sistem', icon: AlertCircle, path: '/settings/system-analysis' },
-        { name: 'Panduan', icon: HelpCircle, path: '/settings/help' },
-        { name: 'Informasi', icon: Info, path: '/settings/info' },
+        { name: 'Backup & Restore', icon: HardDrive, path: '/settings/backup' },
+      ]
+    },
+
+    // ============================================================
+    // SUPER AI (Fitur tambahan OCB TITAN)
+    // ============================================================
+    {
+      name: 'AI Tools',
+      icon: Brain,
+      roles: ['owner', 'admin'],
+      submenu: [
+        { name: 'Owner Dashboard', icon: BarChart2, path: '/owner-dashboard' },
+        { name: 'Finance Dashboard', icon: DollarSign, path: '/finance-dashboard' },
+        { divider: true },
+        { name: 'War Room', icon: Activity, path: '/warroom' },
+        { name: 'AI Command Center', icon: Brain, path: '/ai-command-center' },
+        { name: 'Hallo OCB AI', icon: MessageSquare, path: '/hallo-ai' },
       ]
     },
   ];
 
   // Filter menus based on RBAC permissions
   const filteredMenus = menuStructure.filter(item => {
-    // If user has all_permissions (super admin), show all
     if (permissions?.all_permissions) return true;
-    
-    // Check role-based visibility first
     const roleAllowed = item.roles?.includes(user?.role || 'cashier');
     if (!roleAllowed) return false;
     
-    // Check RBAC menu visibility
     if (item.name.includes('Master Data')) return canSeeMenu('master');
     if (item.name.includes('Pembelian')) return canSeeMenu('purchase');
     if (item.name.includes('Penjualan')) return canSeeMenu('sales');
-    if (item.name.includes('Persediaan')) return canSeeMenu('inventory');
+    if (item.name.includes('Inventory')) return canSeeMenu('inventory');
     if (item.name.includes('Akuntansi')) return canSeeMenu('accounting');
     if (item.name.includes('Laporan')) return canSeeMenu('report');
     if (item.name.includes('Pengaturan')) return canSeeMenu('setting');
@@ -369,15 +359,12 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
           `flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
             isActive
               ? 'bg-gradient-to-r from-red-900/40 to-amber-900/20 text-amber-200 border border-red-700/30 shadow-lg shadow-red-900/20'
-              : item.highlight
-                ? 'text-purple-300 hover:bg-purple-900/20 hover:text-purple-200 border border-purple-700/20'
-                : 'text-gray-400 hover:bg-red-900/10 hover:text-red-200 border border-transparent'
+              : 'text-gray-400 hover:bg-red-900/10 hover:text-red-200 border border-transparent'
           }`
         }
       >
-        <item.icon className={`h-5 w-5 ${item.highlight ? 'text-purple-400' : ''}`} />
+        <item.icon className="h-5 w-5" />
         <span className="font-medium">{item.name}</span>
-        {item.highlight && <span className="ml-auto text-[10px] px-1.5 py-0.5 bg-purple-600/30 text-purple-300 rounded">AI</span>}
       </NavLink>
     );
   };
@@ -402,7 +389,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
             <h1 className="text-xl font-bold bg-gradient-to-r from-red-400 via-amber-400 to-yellow-300 bg-clip-text text-transparent">
               OCB AI TITAN
             </h1>
-            <p className="text-[10px] text-red-300/50 mt-0.5">Enterprise Retail AI System</p>
+            <p className="text-[10px] text-red-300/50 mt-0.5">Enterprise Retail System - iPOS Style</p>
           </div>
 
           {/* Navigation */}

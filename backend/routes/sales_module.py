@@ -1,0 +1,957 @@
+"""
+Sales Module API - iPOS Ultimate Style
+Modul Penjualan Enterprise lengkap dengan integrasi Stok, Piutang, dan Akuntansi
+"""
+
+from fastapi import APIRouter, HTTPException, Depends
+from pydantic import BaseModel, Field
+from typing import List, Optional
+from datetime import datetime, timezone, timedelta
+from bson import ObjectId
+import os
+
+router = APIRouter(prefix="/api/sales", tags=["Sales Module"])
+
+# Get MongoDB connection
+def get_db():
+    from server import db
+    return db
+
+# ==================== MODELS ====================
+
+class SalesOrderItem(BaseModel):
+    product_id: str
+    quantity: int
+    unit_price: float
+    discount_percent: float = 0
+    tax_percent: float = 0
+
+class SalesOrderCreate(BaseModel):
+    customer_id: str
+    sales_person_id: Optional[str] = None
+    warehouse_id: Optional[str] = None
+    delivery_date: Optional[str] = None
+    ppn_type: str = "exclude"
+    ppn_percent: float = 11
+    notes: Optional[str] = None
+    items: List[SalesOrderItem]
+    subtotal: float = 0
+    discount_amount: float = 0
+    tax_amount: float = 0
+    total: float = 0
+    dp_amount: float = 0
+
+class SalesInvoiceCreate(BaseModel):
+    sales_order_id: Optional[str] = None
+    customer_id: str
+    sales_person_id: Optional[str] = None
+    warehouse_id: Optional[str] = None
+    ppn_type: str = "exclude"
+    ppn_percent: float = 11
+    notes: Optional[str] = None
+    voucher_code: Optional[str] = None
+    items: List[SalesOrderItem]
+    subtotal: float = 0
+    discount_amount: float = 0
+    tax_amount: float = 0
+    other_cost: float = 0
+    total: float = 0
+    payment_type: str = "cash"
+    cash_amount: float = 0
+    credit_amount: float = 0
+    dp_used: float = 0
+    deposit_used: float = 0
+
+class SalesReturnCreate(BaseModel):
+    customer_id: str
+    sales_person_id: Optional[str] = None
+    warehouse_id: Optional[str] = None
+    ppn_type: str = "exclude"
+    notes: Optional[str] = None
+    refund_type: str = "ar_deduct"
+    items: List[dict]
+    subtotal: float = 0
+    discount_amount: float = 0
+    tax_amount: float = 0
+    total: float = 0
+    cash_refund: float = 0
+    deposit_add: float = 0
+
+class ARPaymentCreate(BaseModel):
+    customer_id: str
+    account_id: Optional[str] = None
+    payment_method: str = "cash"
+    reference_no: Optional[str] = None
+    notes: Optional[str] = None
+    items: List[dict]
+    total_discount: float = 0
+    total_amount: float = 0
+
+# ==================== HELPER FUNCTIONS ====================
+
+def generate_number(prefix: str, db) -> str:
+    """Generate auto number like iPOS: PREFIX-YYYYMMDD-XXXX"""
+    date_str = datetime.now().strftime("%Y%m%d")
+    
+    # Find last number for today
+    pattern = f"^{prefix}-{date_str}-"
+    last = db.counters.find_one({"prefix": prefix, "date": date_str})
+    
+    if last:
+        seq = last.get("seq", 0) + 1
+        db.counters.update_one({"prefix": prefix, "date": date_str}, {"$set": {"seq": seq}})
+    else:
+        seq = 1
+        db.counters.insert_one({"prefix": prefix, "date": date_str, "seq": seq})
+    
+    return f"{prefix}-{date_str}-{str(seq).zfill(4)}"
+
+def get_product_info(db, product_id: str) -> dict:
+    """Get product information"""
+    product = db.products.find_one({"id": product_id}, {"_id": 0})
+    return product or {}
+
+def get_customer_info(db, customer_id: str) -> dict:
+    """Get customer information"""
+    customer = db.customers.find_one({"id": customer_id}, {"_id": 0})
+    return customer or {}
+
+def update_stock(db, product_id: str, warehouse_id: str, qty_change: int, movement_type: str, reference: str, user_id: str = None):
+    """Update stock and create movement record"""
+    # Update product stock
+    db.products.update_one(
+        {"id": product_id},
+        {"$inc": {"stock": qty_change}}
+    )
+    
+    # Create stock movement
+    movement = {
+        "id": str(ObjectId()),
+        "product_id": product_id,
+        "warehouse_id": warehouse_id,
+        "quantity": qty_change,
+        "type": movement_type,
+        "reference": reference,
+        "user_id": user_id,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    db.stock_movements.insert_one(movement)
+    return movement
+
+def create_journal_entry(db, entries: List[dict], reference: str, description: str, user_id: str = None):
+    """Create journal entry with multiple lines"""
+    journal = {
+        "id": str(ObjectId()),
+        "journal_number": generate_number("JV", db),
+        "date": datetime.now(timezone.utc).isoformat(),
+        "reference": reference,
+        "description": description,
+        "entries": entries,
+        "status": "posted",
+        "created_by": user_id,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    db.journal_entries.insert_one(journal)
+    
+    # Update general ledger for each entry
+    for entry in entries:
+        ledger_entry = {
+            "id": str(ObjectId()),
+            "journal_id": journal["id"],
+            "account_code": entry.get("account_code"),
+            "account_name": entry.get("account_name"),
+            "debit": entry.get("debit", 0),
+            "credit": entry.get("credit", 0),
+            "date": journal["date"],
+            "reference": reference,
+            "description": description
+        }
+        db.general_ledger.insert_one(ledger_entry)
+    
+    return journal
+
+def create_receivable(db, customer_id: str, invoice_number: str, amount: float, due_days: int = 30):
+    """Create accounts receivable entry"""
+    customer = get_customer_info(db, customer_id)
+    due_date = datetime.now(timezone.utc) + timedelta(days=due_days)
+    
+    ar = {
+        "id": str(ObjectId()),
+        "ar_number": generate_number("AR", db),
+        "invoice_number": invoice_number,
+        "customer_id": customer_id,
+        "customer_name": customer.get("name", ""),
+        "customer_code": customer.get("code", ""),
+        "amount": amount,
+        "paid_amount": 0,
+        "remaining_amount": amount,
+        "due_date": due_date.isoformat(),
+        "status": "open",
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    db.accounts_receivable.insert_one(ar)
+    return ar
+
+# ==================== SALES ORDER ENDPOINTS ====================
+
+@router.get("/orders")
+async def get_sales_orders(
+    status: Optional[str] = None,
+    customer_id: Optional[str] = None,
+    limit: int = 100
+):
+    """Get list of sales orders - Pesanan Jual List"""
+    db = get_db()
+    
+    query = {}
+    if status:
+        query["status"] = status
+    if customer_id:
+        query["customer_id"] = customer_id
+    
+    orders = list(db.sales_orders.find(query, {"_id": 0}).sort("created_at", -1).limit(limit))
+    
+    # Enrich with customer info
+    for order in orders:
+        customer = get_customer_info(db, order.get("customer_id", ""))
+        order["customer_name"] = customer.get("name", "")
+        order["customer_code"] = customer.get("code", "")
+    
+    return {"items": orders, "total": len(orders)}
+
+@router.post("/orders")
+async def create_sales_order(data: SalesOrderCreate):
+    """Create sales order - Tambah Pesanan Penjualan"""
+    db = get_db()
+    
+    # Get customer info
+    customer = get_customer_info(db, data.customer_id)
+    if not customer:
+        raise HTTPException(status_code=404, detail="Customer tidak ditemukan")
+    
+    # Calculate totals
+    subtotal = 0
+    items_data = []
+    
+    for item in data.items:
+        product = get_product_info(db, item.product_id)
+        if not product:
+            raise HTTPException(status_code=404, detail=f"Produk {item.product_id} tidak ditemukan")
+        
+        item_subtotal = item.quantity * item.unit_price
+        item_discount = item_subtotal * (item.discount_percent / 100)
+        item_after_disc = item_subtotal - item_discount
+        item_tax = item_after_disc * (item.tax_percent / 100)
+        item_total = item_after_disc + item_tax
+        
+        items_data.append({
+            "product_id": item.product_id,
+            "product_code": product.get("code", ""),
+            "product_name": product.get("name", ""),
+            "quantity": item.quantity,
+            "delivered_qty": 0,
+            "unit": product.get("unit", "PCS"),
+            "unit_price": item.unit_price,
+            "discount_percent": item.discount_percent,
+            "discount_amount": item_discount,
+            "tax_percent": item.tax_percent,
+            "tax_amount": item_tax,
+            "subtotal": item_subtotal,
+            "total": item_total
+        })
+        subtotal += item_total
+    
+    # Apply transaction discount and tax
+    trans_discount = data.discount_amount or 0
+    after_discount = subtotal - trans_discount
+    ppn_amount = after_discount * (data.ppn_percent / 100) if data.ppn_type == "exclude" else 0
+    grand_total = after_discount + ppn_amount
+    
+    # Create order
+    order = {
+        "id": str(ObjectId()),
+        "order_number": generate_number("SO", db),
+        "date": datetime.now(timezone.utc).isoformat(),
+        "customer_id": data.customer_id,
+        "customer_name": customer.get("name", ""),
+        "customer_code": customer.get("code", ""),
+        "sales_person_id": data.sales_person_id,
+        "warehouse_id": data.warehouse_id,
+        "delivery_date": data.delivery_date,
+        "ppn_type": data.ppn_type,
+        "ppn_percent": data.ppn_percent,
+        "notes": data.notes,
+        "items": items_data,
+        "subtotal": subtotal,
+        "discount_amount": trans_discount,
+        "tax_amount": ppn_amount,
+        "total": grand_total,
+        "dp_amount": data.dp_amount,
+        "total_qty": sum(i["quantity"] for i in items_data),
+        "delivered_qty": 0,
+        "status": "confirmed",
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    db.sales_orders.insert_one(order)
+    
+    # Remove _id for response
+    order.pop("_id", None)
+    
+    return order
+
+@router.get("/orders/{order_id}")
+async def get_sales_order(order_id: str):
+    """Get sales order detail"""
+    db = get_db()
+    order = db.sales_orders.find_one({"id": order_id}, {"_id": 0})
+    if not order:
+        raise HTTPException(status_code=404, detail="Sales order tidak ditemukan")
+    return order
+
+# ==================== SALES INVOICE ENDPOINTS ====================
+
+@router.get("/invoices")
+async def get_sales_invoices(
+    customer_id: Optional[str] = None,
+    status: Optional[str] = None,
+    has_tax: Optional[str] = None,
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+    limit: int = 100
+):
+    """Get list of sales invoices - Daftar Penjualan"""
+    db = get_db()
+    
+    query = {}
+    if customer_id:
+        query["customer_id"] = customer_id
+    if status:
+        query["status"] = status
+    if has_tax == "true":
+        query["tax_amount"] = {"$gt": 0}
+    
+    invoices = list(db.sales_invoices.find(query, {"_id": 0}).sort("created_at", -1).limit(limit))
+    
+    return {"items": invoices, "total": len(invoices)}
+
+@router.post("/invoices")
+async def create_sales_invoice(data: SalesInvoiceCreate):
+    """Create sales invoice - Tambah Penjualan with full integration"""
+    db = get_db()
+    
+    # Get customer info
+    customer = get_customer_info(db, data.customer_id)
+    if not customer:
+        raise HTTPException(status_code=404, detail="Customer tidak ditemukan")
+    
+    # Process items
+    subtotal = 0
+    total_hpp = 0
+    items_data = []
+    
+    for item in data.items:
+        product = get_product_info(db, item.product_id)
+        if not product:
+            raise HTTPException(status_code=404, detail=f"Produk {item.product_id} tidak ditemukan")
+        
+        # Check stock
+        current_stock = product.get("stock", 0)
+        if current_stock < item.quantity:
+            raise HTTPException(status_code=400, detail=f"Stok {product.get('name')} tidak cukup ({current_stock} tersedia)")
+        
+        # Calculate item totals
+        item_subtotal = item.quantity * item.unit_price
+        item_discount = item_subtotal * (item.discount_percent / 100)
+        item_after_disc = item_subtotal - item_discount
+        item_tax = item_after_disc * (item.tax_percent / 100)
+        item_total = item_after_disc + item_tax
+        item_hpp = item.quantity * product.get("cost_price", 0)
+        
+        items_data.append({
+            "product_id": item.product_id,
+            "product_code": product.get("code", ""),
+            "product_name": product.get("name", ""),
+            "quantity": item.quantity,
+            "unit": product.get("unit", "PCS"),
+            "unit_price": item.unit_price,
+            "cost_price": product.get("cost_price", 0),
+            "discount_percent": item.discount_percent,
+            "discount_amount": item_discount,
+            "tax_percent": item.tax_percent,
+            "tax_amount": item_tax,
+            "subtotal": item_subtotal,
+            "total": item_total,
+            "hpp": item_hpp
+        })
+        subtotal += item_total
+        total_hpp += item_hpp
+    
+    # Calculate grand total
+    trans_discount = data.discount_amount or 0
+    after_discount = subtotal - trans_discount
+    ppn_amount = after_discount * (data.ppn_percent / 100) if data.ppn_type == "exclude" else 0
+    other_cost = data.other_cost or 0
+    grand_total = after_discount + ppn_amount + other_cost
+    
+    # Determine payment
+    is_credit = data.payment_type in ["credit", "combo"] and data.credit_amount > 0
+    credit_amount = grand_total - data.cash_amount - data.dp_used - data.deposit_used if is_credit else 0
+    
+    # Generate invoice number
+    invoice_number = generate_number("INV", db)
+    
+    # Create invoice
+    invoice = {
+        "id": str(ObjectId()),
+        "invoice_number": invoice_number,
+        "sales_order_id": data.sales_order_id,
+        "date": datetime.now(timezone.utc).isoformat(),
+        "customer_id": data.customer_id,
+        "customer_name": customer.get("name", ""),
+        "customer_code": customer.get("code", ""),
+        "customer_npwp": customer.get("npwp", ""),
+        "customer_address": customer.get("address", ""),
+        "sales_person_id": data.sales_person_id,
+        "warehouse_id": data.warehouse_id,
+        "ppn_type": data.ppn_type,
+        "ppn_percent": data.ppn_percent,
+        "notes": data.notes,
+        "voucher_code": data.voucher_code,
+        "items": items_data,
+        "subtotal": subtotal,
+        "discount_amount": trans_discount,
+        "tax_amount": ppn_amount,
+        "other_cost": other_cost,
+        "total": grand_total,
+        "total_hpp": total_hpp,
+        "payment_type": data.payment_type,
+        "cash_amount": data.cash_amount,
+        "credit_amount": credit_amount,
+        "dp_used": data.dp_used,
+        "deposit_used": data.deposit_used,
+        "paid_amount": data.cash_amount + data.dp_used + data.deposit_used,
+        "is_credit": is_credit,
+        "status": "completed",
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    db.sales_invoices.insert_one(invoice)
+    
+    # ===== INTEGRATION: Update Stock =====
+    for item in items_data:
+        update_stock(
+            db,
+            item["product_id"],
+            data.warehouse_id or "main",
+            -item["quantity"],  # Negative for sales
+            "sales_out",
+            invoice_number
+        )
+    
+    # ===== INTEGRATION: Create Receivable if credit =====
+    if is_credit and credit_amount > 0:
+        create_receivable(db, data.customer_id, invoice_number, credit_amount)
+    
+    # ===== INTEGRATION: Create Journal Entries =====
+    journal_entries = []
+    
+    if data.cash_amount > 0:
+        # Debit Kas/Bank
+        journal_entries.append({
+            "account_code": "1-1100",
+            "account_name": "Kas",
+            "debit": data.cash_amount,
+            "credit": 0
+        })
+    
+    if credit_amount > 0:
+        # Debit Piutang Usaha
+        journal_entries.append({
+            "account_code": "1-1300",
+            "account_name": "Piutang Usaha",
+            "debit": credit_amount,
+            "credit": 0
+        })
+    
+    # Credit Penjualan
+    sales_net = grand_total - ppn_amount
+    journal_entries.append({
+        "account_code": "4-1000",
+        "account_name": "Penjualan",
+        "debit": 0,
+        "credit": sales_net
+    })
+    
+    if ppn_amount > 0:
+        # Credit PPN Keluaran
+        journal_entries.append({
+            "account_code": "2-1400",
+            "account_name": "PPN Keluaran",
+            "debit": 0,
+            "credit": ppn_amount
+        })
+    
+    # Debit HPP, Credit Persediaan
+    if total_hpp > 0:
+        journal_entries.append({
+            "account_code": "5-1000",
+            "account_name": "Harga Pokok Penjualan",
+            "debit": total_hpp,
+            "credit": 0
+        })
+        journal_entries.append({
+            "account_code": "1-1400",
+            "account_name": "Persediaan Barang",
+            "debit": 0,
+            "credit": total_hpp
+        })
+    
+    create_journal_entry(db, journal_entries, invoice_number, f"Penjualan {invoice_number}")
+    
+    # ===== INTEGRATION: Record Price History =====
+    for item in items_data:
+        price_history = {
+            "id": str(ObjectId()),
+            "product_id": item["product_id"],
+            "product_code": item["product_code"],
+            "product_name": item["product_name"],
+            "customer_id": data.customer_id,
+            "customer_name": customer.get("name", ""),
+            "invoice_number": invoice_number,
+            "date": datetime.now(timezone.utc).isoformat(),
+            "unit_price": item["unit_price"],
+            "quantity": item["quantity"],
+            "unit": item["unit"],
+            "discount_percent": item["discount_percent"],
+            "tax_percent": item["tax_percent"],
+            "sales_person_id": data.sales_person_id
+        }
+        db.sales_price_history.insert_one(price_history)
+    
+    # Remove _id for response
+    invoice.pop("_id", None)
+    
+    return invoice
+
+# ==================== SALES RETURNS ENDPOINTS ====================
+
+@router.get("/returns")
+async def get_sales_returns(limit: int = 100):
+    """Get list of sales returns - Daftar Retur Penjualan"""
+    db = get_db()
+    returns = list(db.sales_returns.find({}, {"_id": 0}).sort("created_at", -1).limit(limit))
+    return {"items": returns, "total": len(returns)}
+
+@router.post("/returns")
+async def create_sales_return(data: SalesReturnCreate):
+    """Create sales return - Tambah Retur Penjualan with full integration"""
+    db = get_db()
+    
+    customer = get_customer_info(db, data.customer_id)
+    if not customer:
+        raise HTTPException(status_code=404, detail="Customer tidak ditemukan")
+    
+    return_number = generate_number("SRT", db)
+    
+    # Process items
+    items_data = []
+    total_return = 0
+    total_hpp_return = 0
+    
+    for item in data.items:
+        product = get_product_info(db, item.get("product_id"))
+        qty = item.get("quantity", 0)
+        price = item.get("unit_price", 0)
+        item_total = qty * price
+        hpp = qty * product.get("cost_price", 0) if product else 0
+        
+        items_data.append({
+            "invoice_id": item.get("invoice_id"),
+            "product_id": item.get("product_id"),
+            "product_code": product.get("code", "") if product else "",
+            "product_name": product.get("name", "") if product else "",
+            "quantity": qty,
+            "unit_price": price,
+            "total": item_total,
+            "hpp": hpp
+        })
+        total_return += item_total
+        total_hpp_return += hpp
+    
+    # Create return record
+    sales_return = {
+        "id": str(ObjectId()),
+        "return_number": return_number,
+        "date": datetime.now(timezone.utc).isoformat(),
+        "customer_id": data.customer_id,
+        "customer_name": customer.get("name", ""),
+        "customer_code": customer.get("code", ""),
+        "sales_person_id": data.sales_person_id,
+        "warehouse_id": data.warehouse_id,
+        "ppn_type": data.ppn_type,
+        "notes": data.notes,
+        "refund_type": data.refund_type,
+        "items": items_data,
+        "subtotal": total_return,
+        "discount_amount": data.discount_amount,
+        "tax_amount": data.tax_amount,
+        "total": data.total or total_return,
+        "cash_refund": data.cash_refund,
+        "deposit_add": data.deposit_add,
+        "status": "completed",
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    db.sales_returns.insert_one(sales_return)
+    
+    # ===== INTEGRATION: Update Stock (add back) =====
+    for item in items_data:
+        if item.get("product_id"):
+            update_stock(
+                db,
+                item["product_id"],
+                data.warehouse_id or "main",
+                item["quantity"],  # Positive for return
+                "sales_return_in",
+                return_number
+            )
+    
+    # ===== INTEGRATION: Reduce AR if refund_type is ar_deduct =====
+    if data.refund_type == "ar_deduct":
+        ar_deduct = data.total - data.cash_refund - data.deposit_add
+        if ar_deduct > 0:
+            # Find open AR for customer and reduce
+            ar = db.accounts_receivable.find_one(
+                {"customer_id": data.customer_id, "status": "open"},
+                sort=[("created_at", 1)]
+            )
+            if ar:
+                new_remaining = max(0, ar.get("remaining_amount", 0) - ar_deduct)
+                new_status = "paid" if new_remaining == 0 else "open"
+                db.accounts_receivable.update_one(
+                    {"id": ar["id"]},
+                    {"$set": {"remaining_amount": new_remaining, "status": new_status}}
+                )
+    
+    # ===== INTEGRATION: Create Journal for Return =====
+    journal_entries = []
+    
+    # Debit Retur Penjualan
+    journal_entries.append({
+        "account_code": "4-1100",
+        "account_name": "Retur Penjualan",
+        "debit": total_return,
+        "credit": 0
+    })
+    
+    # Credit based on refund type
+    if data.cash_refund > 0:
+        journal_entries.append({
+            "account_code": "1-1100",
+            "account_name": "Kas",
+            "debit": 0,
+            "credit": data.cash_refund
+        })
+    
+    ar_deduct_amount = total_return - data.cash_refund - data.deposit_add
+    if ar_deduct_amount > 0:
+        journal_entries.append({
+            "account_code": "1-1300",
+            "account_name": "Piutang Usaha",
+            "debit": 0,
+            "credit": ar_deduct_amount
+        })
+    
+    # Reverse HPP: Debit Persediaan, Credit HPP
+    if total_hpp_return > 0:
+        journal_entries.append({
+            "account_code": "1-1400",
+            "account_name": "Persediaan Barang",
+            "debit": total_hpp_return,
+            "credit": 0
+        })
+        journal_entries.append({
+            "account_code": "5-1000",
+            "account_name": "Harga Pokok Penjualan",
+            "debit": 0,
+            "credit": total_hpp_return
+        })
+    
+    create_journal_entry(db, journal_entries, return_number, f"Retur Penjualan {return_number}")
+    
+    sales_return.pop("_id", None)
+    return sales_return
+
+# ==================== PRICE HISTORY ENDPOINTS ====================
+
+@router.get("/price-history")
+async def get_sales_price_history(
+    customer_id: Optional[str] = None,
+    product_id: Optional[str] = None,
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+    limit: int = 500
+):
+    """Get sales price history - History Harga Jual"""
+    db = get_db()
+    
+    query = {}
+    if customer_id:
+        query["customer_id"] = customer_id
+    if product_id:
+        query["product_id"] = product_id
+    
+    history = list(db.sales_price_history.find(query, {"_id": 0}).sort("date", -1).limit(limit))
+    return {"items": history, "total": len(history)}
+
+# ==================== TRADE-IN ENDPOINTS ====================
+
+@router.get("/trade-in")
+async def get_trade_in_list(limit: int = 100):
+    """Get trade-in transactions - Daftar Tukar Tambah"""
+    db = get_db()
+    transactions = list(db.trade_in_transactions.find({}, {"_id": 0}).sort("created_at", -1).limit(limit))
+    return {"items": transactions, "total": len(transactions)}
+
+@router.post("/trade-in")
+async def create_trade_in(data: dict):
+    """Create trade-in transaction - Tambah Tukar Tambah"""
+    db = get_db()
+    
+    trade_in_number = generate_number("TI", db)
+    
+    trade_in = {
+        "id": str(ObjectId()),
+        "transaction_number": trade_in_number,
+        "date": datetime.now(timezone.utc).isoformat(),
+        "customer_id": data.get("customer_id"),
+        "customer_name": data.get("customer_name", ""),
+        "sales_person_id": data.get("sales_person_id"),
+        "warehouse_id": data.get("warehouse_id"),
+        "items_in": data.get("items_in", []),
+        "items_out": data.get("items_out", []),
+        "total_in": data.get("total_in", 0),
+        "total_out": data.get("total_out", 0),
+        "difference": data.get("total_out", 0) - data.get("total_in", 0),
+        "notes": data.get("notes"),
+        "status": "completed",
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    db.trade_in_transactions.insert_one(trade_in)
+    
+    # Update stock for items_in (add) and items_out (subtract)
+    for item in data.get("items_in", []):
+        update_stock(db, item["product_id"], data.get("warehouse_id", "main"), item["quantity"], "trade_in", trade_in_number)
+    
+    for item in data.get("items_out", []):
+        update_stock(db, item["product_id"], data.get("warehouse_id", "main"), -item["quantity"], "trade_out", trade_in_number)
+    
+    trade_in.pop("_id", None)
+    return trade_in
+
+# ==================== POINTS ENDPOINTS ====================
+
+@router.get("/points")
+async def get_customer_points(customer_id: Optional[str] = None, limit: int = 100):
+    """Get customer loyalty points - Point Transaksi"""
+    db = get_db()
+    
+    query = {}
+    if customer_id:
+        query["customer_id"] = customer_id
+    
+    points = list(db.loyalty_points.find(query, {"_id": 0}).sort("date", -1).limit(limit))
+    return {"items": points, "total": len(points)}
+
+@router.post("/points/redeem")
+async def redeem_points(data: dict):
+    """Redeem customer points - Ambil Point"""
+    db = get_db()
+    
+    customer_id = data.get("customer_id")
+    points_to_redeem = data.get("points", 0)
+    
+    # Calculate available points
+    total_points = db.loyalty_points.aggregate([
+        {"$match": {"customer_id": customer_id}},
+        {"$group": {"_id": None, "total": {"$sum": "$points"}}}
+    ])
+    total_points = list(total_points)
+    available = total_points[0]["total"] if total_points else 0
+    
+    if points_to_redeem > available:
+        raise HTTPException(status_code=400, detail="Point tidak cukup")
+    
+    # Create redemption record
+    redemption = {
+        "id": str(ObjectId()),
+        "customer_id": customer_id,
+        "transaction_type": "redeem",
+        "points": -points_to_redeem,
+        "date": datetime.now(timezone.utc).isoformat(),
+        "notes": data.get("notes", "Point redemption")
+    }
+    db.loyalty_points.insert_one(redemption)
+    
+    return {"success": True, "redeemed": points_to_redeem, "remaining": available - points_to_redeem}
+
+# ==================== COMMISSION PAYMENTS ENDPOINTS ====================
+
+@router.get("/commission-payments")
+async def get_commission_payments(limit: int = 100):
+    """Get commission payments - Daftar Pembayaran Komisi Sales"""
+    db = get_db()
+    payments = list(db.commission_payments.find({}, {"_id": 0}).sort("created_at", -1).limit(limit))
+    return {"items": payments, "total": len(payments)}
+
+@router.post("/commission-payments")
+async def create_commission_payment(data: dict):
+    """Create commission payment - Tambah Pembayaran Komisi Sales"""
+    db = get_db()
+    
+    payment_number = generate_number("COM", db)
+    
+    payment = {
+        "id": str(ObjectId()),
+        "payment_number": payment_number,
+        "date": datetime.now(timezone.utc).isoformat(),
+        "sales_person_id": data.get("sales_person_id"),
+        "sales_name": data.get("sales_name", ""),
+        "account_id": data.get("account_id"),
+        "payment_method": data.get("payment_method", "cash"),
+        "period_from": data.get("period_from"),
+        "period_to": data.get("period_to"),
+        "transactions": data.get("transactions", []),
+        "total_sales": data.get("total_sales", 0),
+        "total_return": data.get("total_return", 0),
+        "commission_rate": data.get("commission_rate", 0),
+        "amount": data.get("amount", 0),
+        "notes": data.get("notes"),
+        "status": "paid",
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    db.commission_payments.insert_one(payment)
+    
+    # Create journal: Debit Beban Komisi, Credit Kas
+    journal_entries = [
+        {"account_code": "5-2000", "account_name": "Beban Komisi Sales", "debit": payment["amount"], "credit": 0},
+        {"account_code": "1-1100", "account_name": "Kas", "debit": 0, "credit": payment["amount"]}
+    ]
+    create_journal_entry(db, journal_entries, payment_number, f"Pembayaran Komisi {payment_number}")
+    
+    payment.pop("_id", None)
+    return payment
+
+# ==================== DELIVERIES ENDPOINTS ====================
+
+@router.get("/deliveries")
+async def get_deliveries(
+    status: Optional[str] = None,
+    courier: Optional[str] = None,
+    limit: int = 100
+):
+    """Get deliveries - Daftar Pengiriman"""
+    db = get_db()
+    
+    query = {}
+    if status:
+        query["status"] = status
+    if courier:
+        query["courier"] = courier
+    
+    deliveries = list(db.deliveries.find(query, {"_id": 0}).sort("created_at", -1).limit(limit))
+    return {"items": deliveries, "total": len(deliveries)}
+
+@router.put("/deliveries/{delivery_id}")
+async def update_delivery(delivery_id: str, data: dict):
+    """Update delivery status"""
+    db = get_db()
+    
+    update_data = {}
+    if "status" in data:
+        update_data["status"] = data["status"]
+    if "tracking_number" in data:
+        update_data["tracking_number"] = data["tracking_number"]
+    if "courier" in data:
+        update_data["courier"] = data["courier"]
+    if "ship_date" in data:
+        update_data["ship_date"] = data["ship_date"]
+    
+    update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    
+    result = db.deliveries.update_one({"id": delivery_id}, {"$set": update_data})
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Delivery tidak ditemukan")
+    
+    return {"success": True, "updated": delivery_id}
+
+# ==================== TAX EXPORT ENDPOINTS ====================
+
+@router.post("/tax-export/csv")
+async def export_tax_csv(data: dict):
+    """Export tax invoices to CSV - Laporan CSV Faktur Pajak"""
+    db = get_db()
+    
+    invoice_ids = data.get("invoice_ids", [])
+    if not invoice_ids:
+        raise HTTPException(status_code=400, detail="Pilih minimal 1 faktur")
+    
+    invoices = list(db.sales_invoices.find({"id": {"$in": invoice_ids}}, {"_id": 0}))
+    
+    # Generate CSV content
+    csv_lines = ["FK,KD_JENIS_TRANSAKSI,FG_PENGGANTI,NOMOR_FAKTUR,MASA_PAJAK,TAHUN_PAJAK,TANGGAL_FAKTUR,NPWP,NAMA,ALAMAT_LENGKAP,JUMLAH_DPP,JUMLAH_PPN,JUMLAH_PPNBM,ID_KETERANGAN_TAMBAHAN,FG_UANG_MUKA,UANG_MUKA_DPP,UANG_MUKA_PPN,UANG_MUKA_PPNBM,REFERENSI"]
+    
+    for inv in invoices:
+        date_obj = datetime.fromisoformat(inv.get("date", "").replace("Z", "+00:00"))
+        dpp = inv.get("total", 0) - inv.get("tax_amount", 0)
+        ppn = inv.get("tax_amount", 0)
+        
+        line = f"FK,01,0,{inv.get('tax_invoice_number', '')},{date_obj.month},{date_obj.year},{date_obj.strftime('%d/%m/%Y')},{inv.get('customer_npwp', '')},{inv.get('customer_name', '')},{inv.get('customer_address', '')},{dpp},{ppn},0,,0,0,0,0,{inv.get('invoice_number', '')}"
+        csv_lines.append(line)
+    
+    csv_content = "\n".join(csv_lines)
+    
+    from fastapi.responses import Response
+    return Response(
+        content=csv_content,
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=faktur_pajak.csv"}
+    )
+
+@router.post("/tax-export/xml")
+async def export_tax_xml(data: dict):
+    """Export tax invoices to XML - Laporan XML Faktur Pajak"""
+    db = get_db()
+    
+    invoice_ids = data.get("invoice_ids", [])
+    if not invoice_ids:
+        raise HTTPException(status_code=400, detail="Pilih minimal 1 faktur")
+    
+    invoices = list(db.sales_invoices.find({"id": {"$in": invoice_ids}}, {"_id": 0}))
+    
+    # Generate XML content
+    xml_lines = ['<?xml version="1.0" encoding="UTF-8"?>', '<FakturPajak>']
+    
+    for inv in invoices:
+        xml_lines.append('  <Faktur>')
+        xml_lines.append(f'    <NomorFaktur>{inv.get("tax_invoice_number", "")}</NomorFaktur>')
+        xml_lines.append(f'    <TanggalFaktur>{inv.get("date", "")[:10]}</TanggalFaktur>')
+        xml_lines.append(f'    <NPWP>{inv.get("customer_npwp", "")}</NPWP>')
+        xml_lines.append(f'    <NamaPKP>{inv.get("customer_name", "")}</NamaPKP>')
+        xml_lines.append(f'    <DPP>{inv.get("total", 0) - inv.get("tax_amount", 0)}</DPP>')
+        xml_lines.append(f'    <PPN>{inv.get("tax_amount", 0)}</PPN>')
+        xml_lines.append('  </Faktur>')
+    
+    xml_lines.append('</FakturPajak>')
+    xml_content = "\n".join(xml_lines)
+    
+    from fastapi.responses import Response
+    return Response(
+        content=xml_content,
+        media_type="application/xml",
+        headers={"Content-Disposition": "attachment; filename=faktur_pajak.xml"}
+    )
