@@ -63,6 +63,9 @@ import AIWarRoomSuper from './pages/AIWarRoomSuper';
 import AIPerformance from './pages/AIPerformance';
 import PayrollAuto from './pages/PayrollAuto';
 
+// ERP Hardening - Fiscal Period & Multi-Currency
+import ERPHardening from './pages/ERPHardening';
+
 // Master Data Pages
 import { 
   MasterItems, MasterCategories, MasterUnits, MasterBrands, 
@@ -255,6 +258,10 @@ function App() {
             <Route path="master/barcode" element={<MasterBarcode />} />
             <Route path="master/datasheet" element={<MasterDatasheet />} />
             <Route path="master/setting-akun" element={<SettingAkunERP />} />
+            
+            {/* ERP Hardening - Fiscal Period & Multi-Currency */}
+            <Route path="erp-hardening" element={<ERPHardening />} />
+            <Route path="master/erp-hardening" element={<ERPHardening />} />
             
             {/* Purchase Routes - iPOS Style */}
             <Route path="purchase" element={<PurchaseModule />} />

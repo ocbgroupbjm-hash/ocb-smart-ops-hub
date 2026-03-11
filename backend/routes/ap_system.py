@@ -1,5 +1,6 @@
 # OCB TITAN ERP - ACCOUNTS PAYABLE (AP) MODULE
 # Hutang Dagang dengan Auto-Journal Integration
+# INTEGRATED: Fiscal Period Validation & Multi-Currency Support
 
 from fastapi import APIRouter, HTTPException, Depends, Query, Request
 from pydantic import BaseModel, Field
@@ -11,6 +12,22 @@ from routes.rbac_system import check_permission, log_activity, check_branch_acce
 import uuid
 
 router = APIRouter(prefix="/api/ap", tags=["Accounts Payable - Hutang Dagang"])
+
+# ==================== FISCAL PERIOD IMPORTS ====================
+async def enforce_fiscal_period(transaction_date: str, action: str = "create"):
+    """Enforce fiscal period validation"""
+    from routes.erp_hardening import enforce_fiscal_period as _enforce
+    return await _enforce(transaction_date, action)
+
+async def get_exchange_rate(currency_code: str, transaction_date: str = None) -> float:
+    """Get exchange rate for multi-currency"""
+    from routes.erp_hardening import get_exchange_rate as _get_rate
+    return await _get_rate(currency_code, transaction_date)
+
+async def calculate_exchange_gain_loss(original_amount, original_rate, current_rate, currency_code) -> Dict:
+    """Calculate exchange gain/loss"""
+    from routes.erp_hardening import calculate_exchange_gain_loss as _calc
+    return await _calc(original_amount, original_rate, current_rate, currency_code)
 
 # Collections
 ap_collection = db["accounts_payable"]

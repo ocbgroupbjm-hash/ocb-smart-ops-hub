@@ -1,6 +1,7 @@
 # OCB TITAN - POS (Point of Sale) API
 # SECURITY: All destructive operations require RBAC validation
 # INTEGRATED: Account Derivation Engine from Setting Akun ERP
+# INTEGRATED: Fiscal Period Validation & Multi-Currency Support
 from fastapi import APIRouter, HTTPException, Depends, Request
 from pydantic import BaseModel
 from typing import Optional, List, Dict
@@ -18,6 +19,22 @@ from datetime import datetime, timezone
 import uuid
 
 router = APIRouter(prefix="/pos", tags=["POS"])
+
+# ==================== FISCAL PERIOD & MULTI-CURRENCY IMPORTS ====================
+async def enforce_fiscal_period(transaction_date: str, action: str = "create"):
+    """Enforce fiscal period validation"""
+    from routes.erp_hardening import enforce_fiscal_period as _enforce
+    return await _enforce(transaction_date, action)
+
+async def get_exchange_rate(currency_code: str, transaction_date: str = None) -> float:
+    """Get exchange rate for multi-currency"""
+    from routes.erp_hardening import get_exchange_rate as _get_rate
+    return await _get_rate(currency_code, transaction_date)
+
+async def convert_to_base_currency(amount: float, currency_code: str, transaction_date: str = None) -> Dict:
+    """Convert to base currency (IDR)"""
+    from routes.erp_hardening import convert_to_base_currency as _convert
+    return await _convert(amount, currency_code, transaction_date)
 
 # ==================== ACCOUNT DERIVATION ENGINE ====================
 # Default account settings for fallback (from Setting Akun ERP)
@@ -128,6 +145,10 @@ async def create_transaction(
     branch_id = user.get("branch_id")
     if not branch_id:
         raise HTTPException(status_code=400, detail="User not assigned to a branch")
+    
+    # =============== FISCAL PERIOD VALIDATION ===============
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    await enforce_fiscal_period(today, "create")
     
     # Validate and build items
     tx_items = []

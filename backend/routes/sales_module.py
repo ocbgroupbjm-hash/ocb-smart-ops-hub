@@ -2,17 +2,34 @@
 Sales Module API - iPOS Ultimate Style
 Modul Penjualan Enterprise lengkap dengan integrasi Stok, Piutang, dan Akuntansi
 ASYNC Version - Compatible with Motor MongoDB driver
+INTEGRATED: Fiscal Period Validation & Multi-Currency Support
 """
 
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import List, Optional, Dict
 from datetime import datetime, timezone, timedelta
 from bson import ObjectId
 import os
 from database import get_db as get_database
 
 router = APIRouter(prefix="/api/sales", tags=["Sales Module"])
+
+# ==================== FISCAL PERIOD & MULTI-CURRENCY IMPORTS ====================
+async def enforce_fiscal_period(transaction_date: str, action: str = "create"):
+    """Enforce fiscal period validation"""
+    from routes.erp_hardening import enforce_fiscal_period as _enforce
+    return await _enforce(transaction_date, action)
+
+async def get_exchange_rate(currency_code: str, transaction_date: str = None) -> float:
+    """Get exchange rate for multi-currency"""
+    from routes.erp_hardening import get_exchange_rate as _get_rate
+    return await _get_rate(currency_code, transaction_date)
+
+async def convert_to_base_currency(amount: float, currency_code: str, transaction_date: str = None) -> Dict:
+    """Convert to base currency (IDR)"""
+    from routes.erp_hardening import convert_to_base_currency as _convert
+    return await _convert(amount, currency_code, transaction_date)
 
 # ==================== MODELS ====================
 
@@ -285,6 +302,10 @@ async def create_sales_order(data: SalesOrderCreate):
     """Create sales order - Tambah Pesanan Penjualan"""
     db = get_database()
     
+    # =============== FISCAL PERIOD VALIDATION ===============
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    await enforce_fiscal_period(today, "create")
+    
     customer = await get_customer_info(db, data.customer_id)
     if not customer:
         raise HTTPException(status_code=404, detail="Customer tidak ditemukan")
@@ -396,6 +417,10 @@ async def get_sales_invoices(
 async def create_sales_invoice(data: SalesInvoiceCreate):
     """Create sales invoice - Tambah Penjualan with full integration"""
     db = get_database()
+    
+    # =============== FISCAL PERIOD VALIDATION ===============
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    await enforce_fiscal_period(today, "create")
     
     customer = await get_customer_info(db, data.customer_id)
     if not customer:

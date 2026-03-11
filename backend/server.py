@@ -198,6 +198,10 @@ app.include_router(sales_module_router)
 # Mount Account Settings Module - iPOS Style
 app.include_router(account_settings_router)
 
+# Mount ERP Hardening Module - Fiscal Period & Multi-Currency
+from routes.erp_hardening import router as erp_hardening_router
+app.include_router(erp_hardening_router)
+
 # Health check
 @app.get("/api/health")
 async def health_check():
