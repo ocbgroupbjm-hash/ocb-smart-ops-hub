@@ -305,6 +305,26 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     },
 
     // ============================================================
+    // PURCHASE PLANNING - Phase 3
+    // ============================================================
+    {
+      name: 'Purchase Planning',
+      icon: ClipboardList,
+      path: '/purchase-planning',
+      roles: ['owner', 'admin', 'purchasing']
+    },
+
+    // ============================================================
+    // SALES TARGET - Phase 3
+    // ============================================================
+    {
+      name: 'Sales Target',
+      icon: Target,
+      path: '/sales-target',
+      roles: ['owner', 'admin', 'sales_manager']
+    },
+
+    // ============================================================
     // PENGATURAN
     // ============================================================
     {

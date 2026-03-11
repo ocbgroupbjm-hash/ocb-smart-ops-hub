@@ -78,6 +78,12 @@ import StockReorder from './pages/StockReorder';
 // Warehouse Control - Phase 3
 import WarehouseControl from './pages/WarehouseControl';
 
+// Purchase Planning - Phase 3
+import PurchasePlanning from './pages/PurchasePlanning';
+
+// Sales Target - Phase 3
+import SalesTargetSystem from './pages/SalesTargetSystem';
+
 // Master Data Pages
 import { 
   MasterItems, MasterCategories, MasterUnits, MasterBrands, 
@@ -377,6 +383,12 @@ function App() {
             
             {/* Warehouse Control Routes - Phase 3 */}
             <Route path="warehouse-control" element={<WarehouseControl />} />
+            
+            {/* Purchase Planning Routes - Phase 3 */}
+            <Route path="purchase-planning" element={<PurchasePlanning />} />
+            
+            {/* Sales Target Routes - Phase 3 */}
+            <Route path="sales-target" element={<SalesTargetSystem />} />
             
             {/* Dashboard Routes */}
             <Route path="owner-dashboard" element={<OwnerDashboard />} />

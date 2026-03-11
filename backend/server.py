@@ -225,6 +225,12 @@ app.include_router(stock_reorder_router)
 from routes.warehouse_control import router as warehouse_control_router
 app.include_router(warehouse_control_router)
 
+from routes.purchase_planning import router as purchase_planning_router
+app.include_router(purchase_planning_router)
+
+from routes.sales_target import router as sales_target_router
+app.include_router(sales_target_router)
+
 # Health check
 @app.get("/api/health")
 async def health_check():
