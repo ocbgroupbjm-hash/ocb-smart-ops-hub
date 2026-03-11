@@ -115,7 +115,7 @@ OCB TITAN ERP adalah sistem ERP retail enterprise untuk bisnis multi-cabang deng
 |-------|------|--------|------------|
 | 1 | Core Transaction Engine | ✅ Complete | 100% |
 | 2 | Financial Control System | ✅ Complete | 100% |
-| 3 | Operational Control System | ⏳ Pending | 0% |
+| 3 | Operational Control System | ⏳ In Progress | 15% |
 | 4 | Business Intelligence | ⏳ Pending | 0% |
 | 5 | KPI System | ✅ Partial | 60% |
 | 6 | AI Business Engine | ✅ Partial | 70% |
@@ -167,6 +167,7 @@ OCB TITAN ERP adalah sistem ERP retail enterprise untuk bisnis multi-cabang deng
 | 37 | Account Derivation | 94% | 100% |
 | 38 | ERP Hardening Phase 1 | 96% | 100% |
 | 39 | Financial Control Phase 2 | **100%** | **100%** |
+| 40 | Approval Workflow Engine (P3) | **100%** | **100%** |
 
 ---
 
@@ -181,22 +182,64 @@ OCB TITAN ERP adalah sistem ERP retail enterprise untuk bisnis multi-cabang deng
 ## Frontend
 - `/app/frontend/src/pages/ERPHardening.jsx` - Fiscal & Currency UI
 - `/app/frontend/src/pages/FinancialControl.jsx` - Tax, Consistency, Journal UI
+- `/app/frontend/src/pages/approval/ApprovalCenter.jsx` - Approval Workflow UI (Phase 3)
+
+---
+
+# PHASE 3 - APPROVAL WORKFLOW ENGINE ✅ COMPLETE
+
+## 5 Tipe Approval
+| Tipe | Deskripsi | Auto Approve Threshold |
+|------|-----------|------------------------|
+| Purchase Order | Approval untuk PO | < Rp 10.000.000 |
+| Discount | Approval untuk diskon | < 10% |
+| Void Transaction | Approval untuk pembatalan | Never (selalu butuh) |
+| Price Override | Approval untuk perubahan harga | < 5% variance |
+| Credit Override | Approval untuk melebihi credit limit | Never (selalu butuh) |
+
+## Multi-Level Approval (Purchase Order Example)
+| Level | Range | Approvers |
+|-------|-------|-----------|
+| L0 | Rp 0 - 10jt | Auto Approve |
+| L1 | Rp 10jt - 50jt | purchasing_manager |
+| L2 | Rp 50jt - 100jt | finance_manager, admin |
+| L3 | Rp 100jt+ | owner |
+
+## API Endpoints
+- `GET /api/approval-workflow/types`
+- `POST /api/approval-workflow/check`
+- `POST /api/approval-workflow/request`
+- `GET /api/approval-workflow/pending`
+- `GET /api/approval-workflow/my-requests`
+- `GET /api/approval-workflow/{id}`
+- `POST /api/approval-workflow/{id}/action`
+- `GET /api/approval-workflow/dashboard/summary`
+
+## Frontend Features
+- Dashboard dengan 4 summary cards
+- 3 Tabs: Pending Approvals, My Requests, Approval Rules
+- Detail Modal dengan approve/reject buttons
+- Search & Filter functionality
+- Audit trail display
 
 ---
 
 # NEXT PHASE: OPERATIONAL CONTROL SYSTEM
 
-## P3 - Phase 3 Modules (Not Started)
-- [ ] Approval Workflow Engine
-- [ ] Branch Management Enhancement
-- [ ] Warehouse Control
-- [ ] Stock Reorder Engine
-- [ ] Supplier Performance Analysis
-- [ ] Customer Credit Limit Control
-- [ ] Purchase Planning Engine
-- [ ] Sales Target System
-- [ ] Commission Engine Enhancement
-- [ ] Deposit & Cash Control Enhancement
+## P3 - Phase 3 Modules
+- [x] **Approval Workflow Engine** ✅ COMPLETE (March 11, 2026)
+  - 5 tipe approval: Purchase Order, Discount, Void Transaction, Price Override, Credit Override
+  - Multi-level approval berdasarkan threshold (L0-L3)
+  - Role-based access control (Owner/Admin approve semua, Kasir tidak bisa approve)
+  - Dashboard summary, Pending list, My Requests, Approval Rules
+  - Audit trail untuk setiap action
+- [ ] Customer Credit Limit Control (P1 - NEXT)
+- [ ] Stock Reorder Engine (P2)
+- [ ] Warehouse Control (P3)
+- [ ] Purchase Planning Engine (P4)
+- [ ] Sales Target System (P5)
+- [ ] Commission Engine Enhancement (P6)
+- [ ] Deposit & Cash Control Enhancement (P7)
 
 ---
 
@@ -211,7 +254,7 @@ OCB TITAN ERP adalah sistem ERP retail enterprise untuk bisnis multi-cabang deng
 
 ---
 
-**Version:** 24.0 (Phase 2 Financial Control Complete)
+**Version:** 25.0 (Phase 3 Approval Workflow Complete)
 **Last Updated:** March 11, 2026
 **Architecture:** SSOT, Non-Destructive, Additive
 **Governance:** OCB TITAN AI MASTER LAW
