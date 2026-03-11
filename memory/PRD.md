@@ -115,7 +115,7 @@ OCB TITAN ERP adalah sistem ERP retail enterprise untuk bisnis multi-cabang deng
 |-------|------|--------|------------|
 | 1 | Core Transaction Engine | ✅ Complete | 100% |
 | 2 | Financial Control System | ✅ Complete | 100% |
-| 3 | Operational Control System | ⏳ In Progress | 60% |
+| 3 | Operational Control System | ⏳ In Progress | 85% |
 | 4 | Business Intelligence | ⏳ Pending | 0% |
 | 5 | KPI System | ✅ Partial | 60% |
 | 6 | AI Business Engine | ✅ Partial | 70% |
@@ -170,6 +170,7 @@ OCB TITAN ERP adalah sistem ERP retail enterprise untuk bisnis multi-cabang deng
 | 40 | Approval Workflow Engine (P3) | **100%** | **100%** |
 | 41 | Credit Control Engine (P3) | **100%** | **100%** |
 | 42 | Stock Reorder & Warehouse (P3) | **100%** | **100%** |
+| 43 | Purchase Planning & Sales Target (P3) | **95%** | **100%** |
 
 ---
 
@@ -301,10 +302,83 @@ OCB TITAN ERP adalah sistem ERP retail enterprise untuk bisnis multi-cabang deng
   - Transfer approval workflow (pending → approved → completed)
   - Transfer status tracking
   - Dashboard summary
-- [ ] Purchase Planning Engine (P4 - NEXT)
-- [ ] Sales Target System (P5)
-- [ ] Commission Engine Enhancement (P6)
+- [x] **Purchase Planning Engine** ✅ COMPLETE (March 11, 2026)
+  - Forecast purchasing berdasarkan sales history
+  - Supplier lead time integration
+  - Rekomendasi qty pembelian & tanggal order
+  - Urgency levels: critical, high, medium, low, none
+  - Status workflow: draft → reviewed → approved → po_created
+  - Create PO draft from approved planning items
+  - Dashboard summary per status dan urgency
+- [x] **Sales Target System** ✅ COMPLETE (March 11, 2026)
+  - Target per Branch/Salesman/Category
+  - Period types: daily, weekly, monthly, quarterly, yearly
+  - Achievement tracking: actual_value, achievement_percent, gap
+  - Status: on_track, behind, at_risk, achieved, exceeded, failed
+  - Leaderboard dengan ranking per achievement
+  - Dashboard summary dengan overall achievement
+- [ ] Commission Engine Enhancement (P6 - NEXT)
 - [ ] Deposit & Cash Control Enhancement (P7)
+
+---
+
+# PHASE 3 - PURCHASE PLANNING ENGINE ✅ COMPLETE
+
+## Planning Workflow
+| Status | Description | Transitions |
+|--------|-------------|-------------|
+| draft | Initial state | → reviewed, cancelled |
+| reviewed | Manager reviewed | → approved, draft, cancelled |
+| approved | Ready for PO | → po_created, reviewed, cancelled |
+| po_created | PO already generated | Final state |
+| cancelled | Cancelled | Final state |
+
+## Urgency Levels
+| Level | Condition |
+|-------|-----------|
+| critical | Stock = 0 OR stock ≤ 50% min_stock |
+| high | Stock ≤ min_stock |
+| medium | Stock ≤ reorder_point |
+| low/none | Stock > reorder_point |
+
+## API Endpoints
+- `POST /api/purchase-planning/generate` - Generate planning recommendations
+- `GET /api/purchase-planning/list` - List with filters
+- `GET /api/purchase-planning/dashboard/summary` - Dashboard summary
+- `GET /api/purchase-planning/{id}` - Get detail
+- `POST /api/purchase-planning/{id}/status` - Update status
+- `POST /api/purchase-planning/create-po` - Create PO from approved
+- `DELETE /api/purchase-planning/{id}` - Delete draft
+
+---
+
+# PHASE 3 - SALES TARGET SYSTEM ✅ COMPLETE
+
+## Target Types
+| Type | Description |
+|------|-------------|
+| branch | Target per cabang |
+| salesman | Target per sales |
+| category | Target per kategori produk |
+
+## Target Status (Auto-calculated)
+| Status | Condition |
+|--------|-----------|
+| exceeded | Achievement ≥ 110% |
+| achieved | Achievement ≥ 100% (period ended) |
+| on_track | Achievement ≥ 80% |
+| behind | Achievement 60-80% |
+| at_risk | Achievement < 60% |
+| failed | Period ended, achievement < 100% |
+
+## API Endpoints
+- `POST /api/sales-target` - Create target
+- `GET /api/sales-target/list` - List with filters
+- `GET /api/sales-target/dashboard/summary` - Dashboard
+- `GET /api/sales-target/leaderboard` - Salesman ranking
+- `GET /api/sales-target/{id}` - Get detail (enriched)
+- `PUT /api/sales-target/{id}` - Update target
+- `DELETE /api/sales-target/{id}` - Delete target
 
 ---
 
@@ -319,7 +393,7 @@ OCB TITAN ERP adalah sistem ERP retail enterprise untuk bisnis multi-cabang deng
 
 ---
 
-**Version:** 27.0 (Phase 3 Stock Reorder & Warehouse Complete)
+**Version:** 28.0 (Phase 3 Purchase Planning & Sales Target Complete)
 **Last Updated:** March 11, 2026
 **Architecture:** SSOT, Non-Destructive, Additive
 **Governance:** OCB TITAN AI MASTER LAW
