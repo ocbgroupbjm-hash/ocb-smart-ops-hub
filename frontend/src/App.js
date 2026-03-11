@@ -69,7 +69,8 @@ import {
   MasterWarehouses, MasterSuppliers, MasterCustomers, MasterSalesPersons,
   MasterCustomerGroups, MasterRegions, MasterBanks, MasterEmoney,
   MasterShippingCosts, MasterDiscounts, MasterPromotions,
-  MasterItemTypes, MasterCustomerPoints, MasterBarcode, MasterStockCards, MasterDatasheet
+  MasterItemTypes, MasterCustomerPoints, MasterBarcode, MasterStockCards, MasterDatasheet,
+  SettingAkunERP
 } from './pages/master';
 
 // Purchase Pages
@@ -253,6 +254,7 @@ function App() {
             <Route path="master/customer-points" element={<MasterCustomerPoints />} />
             <Route path="master/barcode" element={<MasterBarcode />} />
             <Route path="master/datasheet" element={<MasterDatasheet />} />
+            <Route path="master/setting-akun" element={<SettingAkunERP />} />
             
             {/* Purchase Routes - iPOS Style */}
             <Route path="purchase" element={<PurchaseModule />} />

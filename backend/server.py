@@ -51,6 +51,9 @@ from routes.serial_number import router as serial_router
 from routes.assembly import router as assembly_router
 from routes.business import router as business_router
 
+# Import Account Settings router
+from routes.account_settings import router as account_settings_router
+
 # Import SUPER AI routers
 from routes.ai_sales import router as ai_sales_router
 from routes.warroom import router as warroom_router
@@ -191,6 +194,9 @@ app.include_router(accounting_engine_router)
 
 # Mount Sales Module - iPOS Style (Enterprise Sales)
 app.include_router(sales_module_router)
+
+# Mount Account Settings Module - iPOS Style
+app.include_router(account_settings_router)
 
 # Health check
 @app.get("/api/health")

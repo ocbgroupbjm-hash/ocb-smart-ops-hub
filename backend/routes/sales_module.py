@@ -111,6 +111,71 @@ async def get_customer_info(db, customer_id: str) -> dict:
     customer = await db.customers.find_one({"id": customer_id}, {"_id": 0})
     return customer or {}
 
+# Default account settings for fallback
+DEFAULT_ACCOUNTS = {
+    "pembayaran_tunai": {"code": "1-1100", "name": "Kas"},
+    "pembayaran_kredit": {"code": "1-1300", "name": "Piutang Usaha"},
+    "pendapatan_jual": {"code": "4-1000", "name": "Penjualan"},
+    "ppn_keluaran": {"code": "2-1400", "name": "PPN Keluaran"},
+    "hpp": {"code": "5-1000", "name": "Harga Pokok Penjualan"},
+    "persediaan_barang": {"code": "1-1400", "name": "Persediaan Barang"},
+    "retur_penjualan": {"code": "4-1100", "name": "Retur Penjualan"},
+    "komisi_sales": {"code": "5-4000", "name": "Beban Komisi Sales"},
+}
+
+async def derive_account(db, account_key: str, branch_id: str = None, warehouse_id: str = None, 
+                        category_id: str = None, payment_method: str = None) -> dict:
+    """
+    ACCOUNT DERIVATION ENGINE
+    Priority: Branch > Warehouse > Category > Payment > Global > Default
+    """
+    # Priority 1: Branch mapping
+    if branch_id:
+        mapping = await db.account_mapping_branch.find_one({
+            "branch_id": branch_id, "account_key": account_key
+        }, {"_id": 0})
+        if mapping:
+            return {"code": mapping["account_code"], "name": mapping["account_name"]}
+    
+    # Priority 2: Warehouse mapping
+    if warehouse_id:
+        mapping = await db.account_mapping_warehouse.find_one({
+            "warehouse_id": warehouse_id, "account_key": account_key
+        }, {"_id": 0})
+        if mapping:
+            return {"code": mapping["account_code"], "name": mapping["account_name"]}
+    
+    # Priority 3: Category mapping
+    if category_id:
+        mapping = await db.account_mapping_category.find_one({
+            "category_id": category_id, "account_key": account_key
+        }, {"_id": 0})
+        if mapping:
+            return {"code": mapping["account_code"], "name": mapping["account_name"]}
+    
+    # Priority 4: Payment method mapping
+    if payment_method:
+        mapping = await db.account_mapping_payment.find_one({
+            "payment_method_id": payment_method, "account_key": account_key
+        }, {"_id": 0})
+        if mapping:
+            return {"code": mapping["account_code"], "name": mapping["account_name"]}
+    
+    # Priority 5: Global setting
+    global_setting = await db.account_settings.find_one({
+        "account_key": account_key
+    }, {"_id": 0})
+    if global_setting:
+        return {"code": global_setting["account_code"], "name": global_setting["account_name"]}
+    
+    # Priority 6: Default fallback
+    default = DEFAULT_ACCOUNTS.get(account_key)
+    if default:
+        return default
+    
+    # Final fallback
+    return {"code": "9-9999", "name": f"Unknown Account ({account_key})"}
+
 async def update_stock(db, product_id: str, warehouse_id: str, qty_change: int, movement_type: str, reference: str, user_id: str = None):
     """Update stock and create movement record"""
     await db.products.update_one(
@@ -437,51 +502,70 @@ async def create_sales_invoice(data: SalesInvoiceCreate):
     if is_credit and credit_amount > 0:
         await create_receivable(db, data.customer_id, invoice_number, credit_amount)
     
-    # ===== INTEGRATION: Create Journal Entries =====
+    # ===== INTEGRATION: Create Journal Entries using Account Derivation Engine =====
     journal_entries = []
     
+    # Get product category for account derivation (use first item's category)
+    first_item = items_data[0] if items_data else {}
+    product = await get_product_info(db, first_item.get("product_id", ""))
+    category_id = product.get("category_id")
+    
     if data.cash_amount > 0:
+        cash_account = await derive_account(db, "pembayaran_tunai", 
+            branch_id=None, warehouse_id=data.warehouse_id, 
+            category_id=category_id, payment_method="cash")
         journal_entries.append({
-            "account_code": "1-1100",
-            "account_name": "Kas",
+            "account_code": cash_account["code"],
+            "account_name": cash_account["name"],
             "debit": data.cash_amount,
             "credit": 0
         })
     
     if credit_amount > 0:
+        ar_account = await derive_account(db, "pembayaran_kredit",
+            branch_id=None, warehouse_id=data.warehouse_id,
+            category_id=category_id, payment_method="credit")
         journal_entries.append({
-            "account_code": "1-1300",
-            "account_name": "Piutang Usaha",
+            "account_code": ar_account["code"],
+            "account_name": ar_account["name"],
             "debit": credit_amount,
             "credit": 0
         })
     
     sales_net = grand_total - ppn_amount
+    sales_account = await derive_account(db, "pendapatan_jual",
+        branch_id=None, warehouse_id=data.warehouse_id, category_id=category_id)
     journal_entries.append({
-        "account_code": "4-1000",
-        "account_name": "Penjualan",
+        "account_code": sales_account["code"],
+        "account_name": sales_account["name"],
         "debit": 0,
         "credit": sales_net
     })
     
     if ppn_amount > 0:
+        ppn_account = await derive_account(db, "ppn_keluaran",
+            branch_id=None, warehouse_id=data.warehouse_id, category_id=category_id)
         journal_entries.append({
-            "account_code": "2-1400",
-            "account_name": "PPN Keluaran",
+            "account_code": ppn_account["code"],
+            "account_name": ppn_account["name"],
             "debit": 0,
             "credit": ppn_amount
         })
     
     if total_hpp > 0:
+        hpp_account = await derive_account(db, "hpp",
+            branch_id=None, warehouse_id=data.warehouse_id, category_id=category_id)
+        inventory_account = await derive_account(db, "persediaan_barang",
+            branch_id=None, warehouse_id=data.warehouse_id, category_id=category_id)
         journal_entries.append({
-            "account_code": "5-1000",
-            "account_name": "Harga Pokok Penjualan",
+            "account_code": hpp_account["code"],
+            "account_name": hpp_account["name"],
             "debit": total_hpp,
             "credit": 0
         })
         journal_entries.append({
-            "account_code": "1-1400",
-            "account_name": "Persediaan Barang",
+            "account_code": inventory_account["code"],
+            "account_name": inventory_account["name"],
             "debit": 0,
             "credit": total_hpp
         })

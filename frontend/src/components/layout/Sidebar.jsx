@@ -81,6 +81,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
         { divider: true, label: 'Sistem' },
         { name: 'Cabang', icon: Building, path: '/settings/branches' },
         { name: 'User', icon: UserCog, path: '/settings/users' },
+        { name: 'Setting Akun ERP', icon: Settings, path: '/master/setting-akun' },
       ]
     },
 
