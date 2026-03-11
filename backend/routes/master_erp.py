@@ -868,3 +868,77 @@ async def list_customer_points(search: str = "", user: dict = Depends(get_curren
         ]}})
     result = await customer_points.aggregate(pipeline).to_list(500)
     return result
+
+
+# ==================== ITEM TYPES (JENIS BARANG) ====================
+
+item_types = db["item_types"]
+
+class ItemTypeCreate(BaseModel):
+    code: str
+    name: str
+    description: str = ""
+
+@router.get("/item-types")
+async def list_item_types(search: str = "", user: dict = Depends(get_current_user)):
+    query = {}
+    if search:
+        query["$or"] = [
+            {"name": {"$regex": search, "$options": "i"}},
+            {"code": {"$regex": search, "$options": "i"}}
+        ]
+    result = await item_types.find(query, {"_id": 0}).sort("name", 1).to_list(500)
+    
+    # Return default types if empty
+    if not result:
+        default_types = [
+            {"id": "IT001", "code": "AKS", "name": "Aksesoris", "description": "Aksesoris HP dan gadget"},
+            {"id": "IT002", "code": "PLS", "name": "Pulsa", "description": "Pulsa dan voucher"},
+            {"id": "IT003", "code": "KOT", "name": "Kuota", "description": "Paket data internet"},
+            {"id": "IT004", "code": "HP", "name": "Handphone", "description": "Handphone dan smartphone"},
+            {"id": "IT005", "code": "TAB", "name": "Tablet", "description": "Tablet dan iPad"},
+            {"id": "IT006", "code": "LAP", "name": "Laptop", "description": "Laptop dan notebook"},
+        ]
+        return {"items": default_types, "total": len(default_types)}
+    
+    return {"items": result, "total": len(result)}
+
+@router.post("/item-types")
+async def create_item_type(data: ItemTypeCreate, user: dict = Depends(get_current_user)):
+    existing = await item_types.find_one({"code": data.code})
+    if existing:
+        raise HTTPException(status_code=400, detail="Kode jenis barang sudah ada")
+    
+    item_type = {
+        "id": str(uuid.uuid4()),
+        "code": data.code,
+        "name": data.name,
+        "description": data.description,
+        "is_active": True,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await item_types.insert_one(item_type)
+    item_type.pop("_id", None)
+    return item_type
+
+@router.put("/item-types/{item_type_id}")
+async def update_item_type(item_type_id: str, data: ItemTypeCreate, user: dict = Depends(get_current_user)):
+    result = await item_types.update_one(
+        {"id": item_type_id},
+        {"$set": {
+            "code": data.code,
+            "name": data.name,
+            "description": data.description,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Jenis barang tidak ditemukan")
+    return {"success": True}
+
+@router.delete("/item-types/{item_type_id}")
+async def delete_item_type(item_type_id: str, user: dict = Depends(get_current_user)):
+    result = await item_types.delete_one({"id": item_type_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Jenis barang tidak ditemukan")
+    return {"success": True}

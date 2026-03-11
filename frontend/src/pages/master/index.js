@@ -13,3 +13,8 @@ export { default as MasterEmoney } from './MasterEmoney';
 export { default as MasterShippingCosts } from './MasterShippingCosts';
 export { default as MasterDiscounts } from './MasterDiscounts';
 export { default as MasterPromotions } from './MasterPromotions';
+export { default as MasterItemTypes } from './MasterItemTypes';
+export { default as MasterCustomerPoints } from './MasterCustomerPoints';
+export { default as MasterBarcode } from './MasterBarcode';
+export { default as MasterStockCards } from './MasterStockCards';
+export { default as MasterDatasheet } from './MasterDatasheet';

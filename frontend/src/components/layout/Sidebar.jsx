@@ -11,7 +11,7 @@ import {
   Upload, Download, Layers, BarChart2, ShoppingBag, UserCheck, Star,
   Activity, Bot, MessageSquare, Target, Megaphone, Banknote, UserPlus,
   CalendarCheck, Briefcase, BadgeDollarSign, Bell, Eye, Fingerprint, FileBarChart,
-  Globe, Plus, List, ChevronsRight, Send
+  Globe, Plus, List, ChevronsRight, Send, Table, QrCode, Calendar, Award, Grid
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { usePermission } from '../../contexts/PermissionContext';
@@ -47,21 +47,39 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     },
 
     // ============================================================
-    // MASTER DATA - iPOS Style
+    // MASTER DATA - iPOS Style (LENGKAP)
     // ============================================================
     {
       name: 'Master Data',
       icon: Database,
       roles: ['owner', 'admin', 'supervisor', 'inventory'],
       submenu: [
-        { name: 'Data Barang', icon: Package, path: '/master/items' },
-        { name: 'Kategori Barang', icon: Tags, path: '/master/categories' },
-        { name: 'Merk Barang', icon: Star, path: '/master/brands' },
-        { name: 'Supplier', icon: Truck, path: '/master/suppliers' },
-        { name: 'Customer', icon: Users, path: '/master/customers' },
+        { name: 'Daftar Item', icon: Package, path: '/master/items' },
+        { name: 'Item Baru', icon: Plus, path: '/master/items?new=true' },
+        { name: 'Datasheet', icon: Table, path: '/master/datasheet' },
+        { name: 'Kartu Stok', icon: ClipboardList, path: '/master/stock-cards' },
+        { name: 'Barcode', icon: QrCode, path: '/master/barcode' },
+        { divider: true, label: 'Promosi & Diskon' },
+        { name: 'Diskon Periode', icon: Percent, path: '/master/discounts' },
+        { name: 'Periode Promosi', icon: Calendar, path: '/master/promotions' },
+        { divider: true, label: 'Partner' },
+        { name: 'Daftar Supplier', icon: Truck, path: '/master/suppliers' },
+        { name: 'Daftar Pelanggan', icon: Users, path: '/master/customers' },
+        { name: 'Daftar Sales', icon: UserCheck, path: '/master/sales-persons' },
+        { name: 'Grup Pelanggan', icon: UserCog, path: '/master/customer-groups' },
+        { name: 'Point Pelanggan', icon: Star, path: '/master/customer-points' },
+        { divider: true, label: 'Referensi' },
+        { name: 'Wilayah', icon: Globe, path: '/master/regions' },
         { name: 'Satuan', icon: Scale, path: '/master/units' },
-        { name: 'Gudang', icon: Warehouse, path: '/master/warehouses' },
-        { name: 'Cabang', icon: Building2, path: '/settings/branches' },
+        { name: 'Dept/Gudang', icon: Warehouse, path: '/master/warehouses' },
+        { name: 'E-Money', icon: CreditCard, path: '/master/emoney' },
+        { name: 'Jenis Barang', icon: Tags, path: '/master/item-types' },
+        { name: 'Merk', icon: Award, path: '/master/brands' },
+        { name: 'Kategori', icon: Grid, path: '/master/categories' },
+        { name: 'Bank', icon: Building2, path: '/master/banks' },
+        { name: 'Ongkir', icon: MapPin, path: '/master/shipping-costs' },
+        { divider: true, label: 'Sistem' },
+        { name: 'Cabang', icon: Building, path: '/settings/branches' },
         { name: 'User', icon: UserCog, path: '/settings/users' },
       ]
     },

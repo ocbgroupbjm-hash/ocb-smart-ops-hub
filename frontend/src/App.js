@@ -68,7 +68,8 @@ import {
   MasterItems, MasterCategories, MasterUnits, MasterBrands, 
   MasterWarehouses, MasterSuppliers, MasterCustomers, MasterSalesPersons,
   MasterCustomerGroups, MasterRegions, MasterBanks, MasterEmoney,
-  MasterShippingCosts, MasterDiscounts, MasterPromotions
+  MasterShippingCosts, MasterDiscounts, MasterPromotions,
+  MasterItemTypes, MasterCustomerPoints, MasterBarcode, MasterStockCards, MasterDatasheet
 } from './pages/master';
 
 // Purchase Pages
@@ -245,9 +246,13 @@ function App() {
             <Route path="master/emoney" element={<MasterEmoney />} />
             <Route path="master/banks" element={<MasterBanks />} />
             <Route path="master/shipping-costs" element={<MasterShippingCosts />} />
-            <Route path="master/stock-cards" element={<Inventory />} />
+            <Route path="master/stock-cards" element={<MasterStockCards />} />
             <Route path="master/discounts" element={<MasterDiscounts />} />
             <Route path="master/promotions" element={<MasterPromotions />} />
+            <Route path="master/item-types" element={<MasterItemTypes />} />
+            <Route path="master/customer-points" element={<MasterCustomerPoints />} />
+            <Route path="master/barcode" element={<MasterBarcode />} />
+            <Route path="master/datasheet" element={<MasterDatasheet />} />
             
             {/* Purchase Routes - iPOS Style */}
             <Route path="purchase" element={<PurchaseModule />} />
