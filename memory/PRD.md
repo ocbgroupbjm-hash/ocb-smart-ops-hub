@@ -115,7 +115,7 @@ OCB TITAN ERP adalah sistem ERP retail enterprise untuk bisnis multi-cabang deng
 |-------|------|--------|------------|
 | 1 | Core Transaction Engine | ✅ Complete | 100% |
 | 2 | Financial Control System | ✅ Complete | 100% |
-| 3 | Operational Control System | ⏳ In Progress | 15% |
+| 3 | Operational Control System | ⏳ In Progress | 30% |
 | 4 | Business Intelligence | ⏳ Pending | 0% |
 | 5 | KPI System | ✅ Partial | 60% |
 | 6 | AI Business Engine | ✅ Partial | 70% |
@@ -168,6 +168,7 @@ OCB TITAN ERP adalah sistem ERP retail enterprise untuk bisnis multi-cabang deng
 | 38 | ERP Hardening Phase 1 | 96% | 100% |
 | 39 | Financial Control Phase 2 | **100%** | **100%** |
 | 40 | Approval Workflow Engine (P3) | **100%** | **100%** |
+| 41 | Credit Control Engine (P3) | **100%** | **100%** |
 
 ---
 
@@ -224,6 +225,50 @@ OCB TITAN ERP adalah sistem ERP retail enterprise untuk bisnis multi-cabang deng
 
 ---
 
+# PHASE 3 - CUSTOMER CREDIT LIMIT CONTROL ✅ COMPLETE
+
+## Credit Policy Configuration
+| Segment | Default Limit | Max Overdue Days |
+|---------|--------------|------------------|
+| regular | Rp 0 | 0 |
+| member | Rp 5.000.000 | 14 |
+| vip | Rp 20.000.000 | 30 |
+| corporate | Rp 100.000.000 | 45 |
+| distributor | Rp 500.000.000 | 60 |
+
+## Credit Status Types
+| Status | Name | Can Transact |
+|--------|------|--------------|
+| active | Aktif | Yes |
+| warning | Peringatan | Yes |
+| hold | Ditahan | No |
+| blocked | Diblokir | No |
+| blacklist | Blacklist | No (cannot override) |
+
+## Hard Stop Rules
+1. **Credit Status Check:** Customer dalam status hold/blocked/blacklist tidak bisa transaksi kredit
+2. **Credit Limit Check:** Outstanding + Transaction Amount > Credit Limit → DITOLAK
+3. **Overdue Blocking:** Hari overdue > max segment + Amount > tolerance → DITOLAK
+
+## API Endpoints
+- `GET /api/credit-control/policy`
+- `GET /api/credit-control/customer/{id}`
+- `POST /api/credit-control/check` ← **HARD STOP ENDPOINT**
+- `PUT /api/credit-control/customer/{id}/limit`
+- `POST /api/credit-control/customer/{id}/hold`
+- `GET /api/credit-control/dashboard`
+- `GET /api/credit-control/at-risk`
+- `GET /api/credit-control/audit-log`
+- `POST /api/credit-control/override-request`
+- `GET /api/credit-control/override-status/{id}`
+
+## Integration Points
+- **Sales Module:** Hard stop check di `sales_module.py` line 477-500
+- **Approval Workflow:** Credit override request via `credit_override` approval type
+- **Audit Trail:** Semua perubahan credit dicatat di `audit_logs` collection
+
+---
+
 # NEXT PHASE: OPERATIONAL CONTROL SYSTEM
 
 ## P3 - Phase 3 Modules
@@ -233,8 +278,14 @@ OCB TITAN ERP adalah sistem ERP retail enterprise untuk bisnis multi-cabang deng
   - Role-based access control (Owner/Admin approve semua, Kasir tidak bisa approve)
   - Dashboard summary, Pending list, My Requests, Approval Rules
   - Audit trail untuk setiap action
-- [ ] Customer Credit Limit Control (P1 - NEXT)
-- [ ] Stock Reorder Engine (P2)
+- [x] **Customer Credit Limit Control** ✅ COMPLETE (March 11, 2026)
+  - Credit limit per customer dengan segment-based defaults
+  - Credit hold/block/blacklist status management
+  - Overdue blocking (max days per segment)
+  - HARD STOP di sales module - transaksi kredit ditolak jika melebihi limit
+  - Approval override integration via Approval Workflow
+  - Audit trail untuk semua perubahan credit
+- [ ] Stock Reorder Engine (P2 - NEXT)
 - [ ] Warehouse Control (P3)
 - [ ] Purchase Planning Engine (P4)
 - [ ] Sales Target System (P5)
@@ -254,7 +305,7 @@ OCB TITAN ERP adalah sistem ERP retail enterprise untuk bisnis multi-cabang deng
 
 ---
 
-**Version:** 25.0 (Phase 3 Approval Workflow Complete)
+**Version:** 26.0 (Phase 3 Credit Control Complete)
 **Last Updated:** March 11, 2026
 **Architecture:** SSOT, Non-Destructive, Additive
 **Governance:** OCB TITAN AI MASTER LAW
