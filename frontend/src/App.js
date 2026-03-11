@@ -72,6 +72,12 @@ import FinancialControl from './pages/FinancialControl';
 // Credit Control - Phase 3
 import CreditControl from './pages/CreditControl';
 
+// Stock Reorder - Phase 3
+import StockReorder from './pages/StockReorder';
+
+// Warehouse Control - Phase 3
+import WarehouseControl from './pages/WarehouseControl';
+
 // Master Data Pages
 import { 
   MasterItems, MasterCategories, MasterUnits, MasterBrands, 
@@ -365,6 +371,12 @@ function App() {
             
             {/* Credit Control Routes - Phase 3 */}
             <Route path="credit-control" element={<CreditControl />} />
+            
+            {/* Stock Reorder Routes - Phase 3 */}
+            <Route path="stock-reorder" element={<StockReorder />} />
+            
+            {/* Warehouse Control Routes - Phase 3 */}
+            <Route path="warehouse-control" element={<WarehouseControl />} />
             
             {/* Dashboard Routes */}
             <Route path="owner-dashboard" element={<OwnerDashboard />} />

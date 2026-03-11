@@ -11,7 +11,8 @@ import {
   Upload, Download, Layers, BarChart2, ShoppingBag, UserCheck, Star,
   Activity, Bot, MessageSquare, Target, Megaphone, Banknote, UserPlus,
   CalendarCheck, Briefcase, BadgeDollarSign, Bell, Eye, Fingerprint, FileBarChart,
-  Globe, Plus, List, ChevronsRight, Send, Table, QrCode, Calendar, Award, Grid
+  Globe, Plus, List, ChevronsRight, Send, Table, QrCode, Calendar, Award, Grid,
+  RefreshCcw
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { usePermission } from '../../contexts/PermissionContext';
@@ -281,6 +282,26 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       icon: CreditCard,
       path: '/credit-control',
       roles: ['owner', 'admin', 'finance']
+    },
+
+    // ============================================================
+    // STOCK REORDER - Phase 3
+    // ============================================================
+    {
+      name: 'Stock Reorder',
+      icon: RefreshCcw,
+      path: '/stock-reorder',
+      roles: ['owner', 'admin', 'purchasing', 'inventory']
+    },
+
+    // ============================================================
+    // WAREHOUSE CONTROL - Phase 3
+    // ============================================================
+    {
+      name: 'Warehouse Control',
+      icon: Warehouse,
+      path: '/warehouse-control',
+      roles: ['owner', 'admin', 'inventory']
     },
 
     // ============================================================

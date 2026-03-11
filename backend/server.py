@@ -219,6 +219,12 @@ app.include_router(approval_workflow_router)
 from routes.credit_control import router as credit_control_router
 app.include_router(credit_control_router)
 
+from routes.stock_reorder import router as stock_reorder_router
+app.include_router(stock_reorder_router)
+
+from routes.warehouse_control import router as warehouse_control_router
+app.include_router(warehouse_control_router)
+
 # Health check
 @app.get("/api/health")
 async def health_check():
