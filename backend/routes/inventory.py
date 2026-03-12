@@ -2,7 +2,7 @@
 # SECURITY: All operations require RBAC validation
 from fastapi import APIRouter, HTTPException, Depends, Request
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Optional, List, Dict
 from database import (
     products, product_stocks, stock_movements, stock_transfers, 
     stock_opnames, branches, get_next_sequence, get_db
@@ -13,6 +13,94 @@ from routes.rbac_middleware import require_permission, log_security_event
 from datetime import datetime, timezone
 
 router = APIRouter(prefix="/inventory", tags=["Inventory"])
+
+# ==================== SINGLE SOURCE INVENTORY HELPER ====================
+# Stock is calculated from stock_movements as the single source of truth
+
+async def calculate_stock_from_movements(product_id: str, branch_id: str) -> int:
+    """
+    Calculate current stock from stock_movements collection.
+    This is the SINGLE SOURCE OF TRUTH for inventory.
+    
+    Movement types that INCREASE stock:
+    - purchase_in (goods receipt from PO)
+    - assembly_in (output from assembly)
+    - transfer_in (received from transfer)
+    - adjustment (positive adjustment)
+    - initial (initial stock setup)
+    - stock_in (manual stock in)
+    
+    Movement types that DECREASE stock:
+    - sales_out (sold to customer)
+    - assembly_out (materials used in assembly)
+    - transfer_out (sent to another branch)
+    - adjustment (negative adjustment)
+    - stock_out (manual stock out)
+    """
+    pipeline = [
+        {"$match": {"product_id": product_id, "branch_id": branch_id}},
+        {
+            "$group": {
+                "_id": None,
+                "total": {"$sum": "$quantity"}  # quantity is +/- based on movement type
+            }
+        }
+    ]
+    
+    result = await stock_movements.aggregate(pipeline).to_list(1)
+    return result[0]["total"] if result else 0
+
+
+async def calculate_bulk_stock_from_movements(product_ids: List[str], branch_id: str) -> Dict[str, int]:
+    """Calculate stock for multiple products at once"""
+    if not product_ids:
+        return {}
+    
+    pipeline = [
+        {"$match": {"product_id": {"$in": product_ids}, "branch_id": branch_id}},
+        {
+            "$group": {
+                "_id": "$product_id",
+                "total": {"$sum": "$quantity"}
+            }
+        }
+    ]
+    
+    result = await stock_movements.aggregate(pipeline).to_list(len(product_ids))
+    return {item["_id"]: item["total"] for item in result}
+
+
+async def sync_product_stock_from_movements(product_id: str, branch_id: str) -> int:
+    """
+    Sync product_stocks collection with calculated stock from movements.
+    This ensures product_stocks stays in sync with the source of truth.
+    Returns the synced quantity.
+    """
+    calculated_qty = await calculate_stock_from_movements(product_id, branch_id)
+    
+    # Update product_stocks
+    existing = await product_stocks.find_one({"product_id": product_id, "branch_id": branch_id})
+    
+    if existing:
+        await product_stocks.update_one(
+            {"product_id": product_id, "branch_id": branch_id},
+            {"$set": {
+                "quantity": calculated_qty,
+                "available": calculated_qty - existing.get("reserved", 0),
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }}
+        )
+    else:
+        new_stock = ProductStock(
+            product_id=product_id,
+            branch_id=branch_id,
+            quantity=calculated_qty,
+            available=calculated_qty,
+            reserved=0
+        )
+        await product_stocks.insert_one(new_stock.model_dump())
+    
+    return calculated_qty
 
 class StockAdjustment(BaseModel):
     product_id: str
@@ -38,6 +126,104 @@ class CreateOpname(BaseModel):
     notes: str = ""
 
 # ==================== STOCK OVERVIEW ====================
+
+@router.get("/stock/calculated/{product_id}")
+async def get_calculated_stock(
+    product_id: str,
+    branch_id: str = "",
+    user: dict = Depends(require_permission("stock_card", "view"))
+):
+    """Get stock calculated from stock_movements (single source of truth)"""
+    branch = branch_id or user.get("branch_id")
+    if not branch:
+        raise HTTPException(status_code=400, detail="Branch ID required")
+    
+    qty = await calculate_stock_from_movements(product_id, branch)
+    
+    # Get product info
+    product = await products.find_one({"id": product_id}, {"_id": 0, "name": 1, "code": 1, "min_stock": 1})
+    
+    return {
+        "product_id": product_id,
+        "branch_id": branch,
+        "quantity": qty,
+        "product_name": product.get("name") if product else "Unknown",
+        "product_code": product.get("code") if product else "",
+        "min_stock": product.get("min_stock", 0) if product else 0,
+        "is_low_stock": qty <= product.get("min_stock", 0) if product else False,
+        "source": "stock_movements"
+    }
+
+
+@router.post("/stock/sync/{product_id}")
+async def sync_product_stock(
+    product_id: str,
+    branch_id: str = "",
+    user: dict = Depends(require_permission("stock_card", "edit"))
+):
+    """Sync product_stocks with calculated stock from movements"""
+    branch = branch_id or user.get("branch_id")
+    if not branch:
+        raise HTTPException(status_code=400, detail="Branch ID required")
+    
+    qty = await sync_product_stock_from_movements(product_id, branch)
+    
+    return {
+        "product_id": product_id,
+        "branch_id": branch,
+        "synced_quantity": qty,
+        "message": "Stock synced from movements"
+    }
+
+
+@router.post("/stock/sync-all")
+async def sync_all_stock(
+    branch_id: str = "",
+    user: dict = Depends(require_permission("stock_card", "edit"))
+):
+    """Sync all product_stocks with calculated stock from movements for a branch"""
+    branch = branch_id or user.get("branch_id")
+    if not branch:
+        raise HTTPException(status_code=400, detail="Branch ID required")
+    
+    # Get all products
+    all_products = await products.find({"is_active": True}, {"_id": 0, "id": 1}).to_list(10000)
+    product_ids = [p["id"] for p in all_products]
+    
+    # Calculate stock for all products
+    stock_map = await calculate_bulk_stock_from_movements(product_ids, branch)
+    
+    synced_count = 0
+    for pid, qty in stock_map.items():
+        existing = await product_stocks.find_one({"product_id": pid, "branch_id": branch})
+        
+        if existing:
+            await product_stocks.update_one(
+                {"product_id": pid, "branch_id": branch},
+                {"$set": {
+                    "quantity": qty,
+                    "available": qty - existing.get("reserved", 0),
+                    "updated_at": datetime.now(timezone.utc).isoformat()
+                }}
+            )
+        else:
+            new_stock = ProductStock(
+                product_id=pid,
+                branch_id=branch,
+                quantity=qty,
+                available=qty,
+                reserved=0
+            )
+            await product_stocks.insert_one(new_stock.model_dump())
+        
+        synced_count += 1
+    
+    return {
+        "branch_id": branch,
+        "synced_products": synced_count,
+        "message": f"Synced {synced_count} products from stock_movements"
+    }
+
 
 @router.get("/stock")
 async def get_branch_stock(

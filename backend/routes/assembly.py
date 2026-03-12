@@ -147,22 +147,22 @@ async def process_assembly(data: AssemblyTransaction, user: dict = Depends(get_c
     if not formula.get("is_active"):
         raise HTTPException(status_code=400, detail="Formula tidak aktif")
     
-    # Check component stock availability
+    # Check component stock availability using stock_movements (single source of truth)
     insufficient_stock = []
+    from routes.inventory import calculate_stock_from_movements
+    
     for comp in formula.get("components", []):
         required_qty = comp["quantity"] * data.quantity
-        product = await products_collection.find_one(
-            {"id": comp["product_id"]},
-            {"_id": 0, "stock": 1, "name": 1}
-        )
-        if product:
-            current_stock = product.get("stock", 0)
-            if current_stock < required_qty:
-                insufficient_stock.append({
-                    "product": comp["product_name"],
-                    "required": required_qty,
-                    "available": current_stock
-                })
+        
+        # Calculate current stock from movements
+        current_stock = await calculate_stock_from_movements(comp["product_id"], branch_id)
+        
+        if current_stock < required_qty:
+            insufficient_stock.append({
+                "product": comp.get("product_name", "Unknown"),
+                "required": required_qty,
+                "available": current_stock
+            })
     
     if insufficient_stock:
         raise HTTPException(
@@ -177,7 +177,7 @@ async def process_assembly(data: AssemblyTransaction, user: dict = Depends(get_c
     transaction_id = str(uuid.uuid4())
     assembly_number = f"ASM{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}"
     
-    # Deduct component stock
+    # Deduct component stock via stock_movements
     component_movements = []
     total_cost = 0
     for comp in formula.get("components", []):
@@ -188,53 +188,45 @@ async def process_assembly(data: AssemblyTransaction, user: dict = Depends(get_c
         unit_cost = product.get("cost_price", 0) if product else 0
         total_cost += unit_cost * qty_to_deduct
         
-        # Deduct stock
-        await products_collection.update_one(
-            {"id": comp["product_id"]},
-            {"$inc": {"stock": -qty_to_deduct}}
-        )
-        
-        # Record movement
+        # Record movement (negative quantity for stock out)
         movement = {
             "id": str(uuid.uuid4()),
             "product_id": comp["product_id"],
-            "product_name": comp["product_name"],
+            "product_name": comp.get("product_name"),
             "product_code": comp.get("product_code"),
-            "type": "assembly_out",
-            "quantity": -qty_to_deduct,
+            "movement_type": "assembly_out",
+            "quantity": -qty_to_deduct,  # Negative = stock out
             "reference_id": transaction_id,
             "reference_type": "assembly",
             "reference_number": assembly_number,
             "branch_id": branch_id,
             "notes": f"Komponen untuk rakitan {formula['name']}",
             "created_at": datetime.now(timezone.utc).isoformat(),
-            "created_by": user.get("name")
+            "created_by": user.get("name"),
+            "user_id": user.get("user_id", "")
         }
         component_movements.append(movement)
         await stock_movements_collection.insert_one(movement)
     
-    # Add result product stock
+    # Add result product stock via stock_movements
     result_qty = formula.get("result_quantity", 1) * data.quantity
-    await products_collection.update_one(
-        {"id": formula["result_product_id"]},
-        {"$inc": {"stock": result_qty}}
-    )
     
-    # Record result movement
+    # Record result movement (positive quantity for stock in)
     result_movement = {
         "id": str(uuid.uuid4()),
         "product_id": formula["result_product_id"],
         "product_name": formula.get("result_product_name"),
         "product_code": formula.get("result_product_code"),
-        "type": "assembly_in",
-        "quantity": result_qty,
+        "movement_type": "assembly_in",
+        "quantity": result_qty,  # Positive = stock in
         "reference_id": transaction_id,
         "reference_type": "assembly",
         "reference_number": assembly_number,
         "branch_id": branch_id,
         "notes": f"Hasil rakitan {formula['name']}",
         "created_at": datetime.now(timezone.utc).isoformat(),
-        "created_by": user.get("name")
+        "created_by": user.get("name"),
+        "user_id": user.get("user_id", "")
     }
     await stock_movements_collection.insert_one(result_movement)
     
@@ -276,36 +268,28 @@ async def process_disassembly(data: AssemblyTransaction, user: dict = Depends(ge
     if not formula:
         raise HTTPException(status_code=404, detail="Formula tidak ditemukan")
     
-    # Check result product stock
+    # Check result product stock using stock_movements (single source of truth)
     result_qty_needed = formula.get("result_quantity", 1) * data.quantity
-    product = await products_collection.find_one(
-        {"id": formula["result_product_id"]},
-        {"_id": 0, "stock": 1}
-    )
+    from routes.inventory import calculate_stock_from_movements
+    current_stock = await calculate_stock_from_movements(formula["result_product_id"], branch_id)
     
-    if not product or product.get("stock", 0) < result_qty_needed:
+    if current_stock < result_qty_needed:
         raise HTTPException(
             status_code=400,
-            detail=f"Stok {formula.get('result_product_name')} tidak mencukupi"
+            detail=f"Stok {formula.get('result_product_name')} tidak mencukupi (butuh: {result_qty_needed}, tersedia: {current_stock})"
         )
     
     # Process disassembly
     transaction_id = str(uuid.uuid4())
     disassembly_number = f"DSM{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}"
     
-    # Deduct result product stock
-    await products_collection.update_one(
-        {"id": formula["result_product_id"]},
-        {"$inc": {"stock": -result_qty_needed}}
-    )
-    
-    # Record result product movement
+    # Record result product movement (negative = stock out)
     await stock_movements_collection.insert_one({
         "id": str(uuid.uuid4()),
         "product_id": formula["result_product_id"],
         "product_name": formula.get("result_product_name"),
         "product_code": formula.get("result_product_code"),
-        "type": "disassembly_out",
+        "movement_type": "disassembly_out",
         "quantity": -result_qty_needed,
         "reference_id": transaction_id,
         "reference_type": "disassembly",
@@ -313,32 +297,29 @@ async def process_disassembly(data: AssemblyTransaction, user: dict = Depends(ge
         "branch_id": branch_id,
         "notes": f"Pembongkaran {formula['name']}",
         "created_at": datetime.now(timezone.utc).isoformat(),
-        "created_by": user.get("name")
+        "created_by": user.get("name"),
+        "user_id": user.get("user_id", "")
     })
     
-    # Add component stocks
+    # Add component stocks via movements (positive = stock in)
     for comp in formula.get("components", []):
         qty_to_add = comp["quantity"] * data.quantity
-        
-        await products_collection.update_one(
-            {"id": comp["product_id"]},
-            {"$inc": {"stock": qty_to_add}}
-        )
         
         await stock_movements_collection.insert_one({
             "id": str(uuid.uuid4()),
             "product_id": comp["product_id"],
-            "product_name": comp["product_name"],
+            "product_name": comp.get("product_name"),
             "product_code": comp.get("product_code"),
-            "type": "disassembly_in",
-            "quantity": qty_to_add,
+            "movement_type": "disassembly_in",
+            "quantity": qty_to_add,  # Positive = stock in
             "reference_id": transaction_id,
             "reference_type": "disassembly",
             "reference_number": disassembly_number,
             "branch_id": branch_id,
             "notes": f"Komponen dari pembongkaran {formula['name']}",
             "created_at": datetime.now(timezone.utc).isoformat(),
-            "created_by": user.get("name")
+            "created_by": user.get("name"),
+            "user_id": user.get("user_id", "")
         })
     
     # Record disassembly transaction

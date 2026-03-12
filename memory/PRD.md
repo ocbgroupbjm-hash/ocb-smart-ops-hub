@@ -1,5 +1,5 @@
 # OCB TITAN ERP - ENTERPRISE RETAIL OPERATING SYSTEM
-## Product Requirements Document (PRD) v24.0
+## Product Requirements Document (PRD) v25.0
 
 ---
 
@@ -14,6 +14,43 @@ OCB TITAN ERP adalah sistem ERP retail enterprise untuk bisnis multi-cabang deng
 ---
 
 # LATEST UPDATE: March 12, 2026
+
+## ACCOUNTING CORE STABILIZATION - COMPLETED ✅
+
+### Completion Date: March 12, 2026
+
+**P0-P4 SEMUA SELESAI**
+
+| Priority | Task | Status |
+|----------|------|--------|
+| P0 | Perbaiki Accounting Core | ✅ COMPLETE |
+| P1 | Single Source Inventory | ✅ COMPLETE |
+| P2 | Pembayaran AP/AR | ✅ VERIFIED |
+| P3 | Default Account Mapping | ✅ VERIFIED |
+| P4 | Validasi Neraca & Buku Besar | ✅ BALANCE |
+
+### Financial Reports - VALIDATED
+
+| Report | Status | Value |
+|--------|--------|-------|
+| Neraca Saldo | ✅ BALANCE | D = C = Rp 59,722,918 |
+| Laba Rugi | ✅ WORKING | Laba Bersih Rp 2,400,788 |
+| Neraca | ✅ BALANCE | A = L + E = Rp 30,508,026 |
+| Arus Kas | ✅ WORKING | Net Cash Flow Rp -2,518,295 |
+
+### Key Fixes Applied:
+1. **Unified Journal Reader** - Reads from both embedded entries and journal_entry_lines
+2. **Account Classification** - 6xxx accounts now correctly classified as expense
+3. **Imbalanced Journals Fixed** - 8 sales journals corrected with missing receivable entries
+4. **Assembly Module** - Now uses stock_movements as single source of truth
+5. **Inventory Helper Functions** - calculate_stock_from_movements(), sync_product_stock()
+
+### Files Modified:
+- `/app/backend/routes/accounting.py` - Unified journal helper, improved classification
+- `/app/backend/routes/inventory.py` - Single source inventory functions
+- `/app/backend/routes/assembly.py` - Uses stock_movements, not products.stock
+
+---
 
 ## ERP OPERATIONAL STRESS TEST - COMPLETED ✅
 

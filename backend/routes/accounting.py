@@ -2,7 +2,7 @@
 # SECURITY: All operations require RBAC validation
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from datetime import datetime, timezone
 from database import db, get_db
 from utils.auth import get_current_user
@@ -13,9 +13,50 @@ router = APIRouter(prefix="/api/accounting", tags=["Accounting"])
 
 # Collections
 accounts = db["accounts"]  # Chart of Accounts / Daftar Perkiraan
-journals = db["journals"]  # Journal Entries
+journals = db["journals"]  # Journal Entries (old)
 cash_transactions = db["cash_transactions"]  # Kas Masuk/Keluar/Transfer
 deposits = db["deposits"]  # Deposit Pelanggan/Supplier
+
+# ==================== UNIFIED JOURNAL HELPER ====================
+# Helper to get all journal entries with their entries (from both embedded and separate formats)
+
+async def get_all_journal_entries_with_lines(query: Dict[str, Any] = None) -> List[Dict[str, Any]]:
+    """
+    Get all journal entries with their line items.
+    Handles both formats:
+    1. Embedded entries in 'entries' array
+    2. Separate lines in 'journal_entry_lines' collection
+    """
+    if query is None:
+        query = {}
+    
+    journal_entries_col = db["journal_entries"]
+    journal_entry_lines_col = db["journal_entry_lines"]
+    
+    # Get all journal entries matching query
+    all_je = await journal_entries_col.find(query, {"_id": 0}).to_list(100000)
+    
+    # Process each journal entry
+    result = []
+    for je in all_je:
+        # Check if entries are embedded
+        if je.get("entries") and len(je.get("entries", [])) > 0:
+            result.append(je)
+        else:
+            # Load entries from journal_entry_lines
+            lines = await journal_entry_lines_col.find(
+                {"journal_id": je.get("id")},
+                {"_id": 0}
+            ).to_list(100)
+            
+            if lines:
+                je["entries"] = lines
+            else:
+                je["entries"] = []
+            
+            result.append(je)
+    
+    return result
 
 # ==================== DAFTAR PERKIRAAN (Chart of Accounts) ====================
 
@@ -349,22 +390,7 @@ async def create_cash_transaction(data: CashTransactionCreate, user: dict = Depe
     
     await cash_transactions.insert_one(transaction)
     
-    # Create journal entry
-    entries = []
-    if data.transaction_type == "cash_in":
-        entries = [
-            {"account_id": data.account_id, "debit": data.amount, "credit": 0},
-            {"account_id": data.account_id, "debit": 0, "credit": data.amount}  # Will be replaced with proper contra account
-        ]
-    elif data.transaction_type == "cash_out":
-        entries = [
-            {"account_id": data.account_id, "debit": 0, "credit": data.amount},
-        ]
-    elif data.transaction_type == "transfer":
-        entries = [
-            {"account_id": data.to_account_id, "debit": data.amount, "credit": 0},
-            {"account_id": data.account_id, "debit": 0, "credit": data.amount}
-        ]
+    # Journal entry creation handled by auto_journal_engine (no manual entries needed here)
     
     return {"id": transaction["id"], "transaction_number": trans_number, "message": "Transaksi kas berhasil"}
 
@@ -422,15 +448,17 @@ async def create_deposit(data: DepositCreate, user: dict = Depends(get_current_u
     await deposits.insert_one(deposit)
     return {"id": deposit["id"], "deposit_number": deposit_number, "message": "Deposit berhasil dicatat"}
 
-# ==================== BUKU BESAR (General Ledger) ====================
+# ==================== BUKU BESAR & NERACA SALDO (DEPRECATED - lihat /financial/*) ====================
+# Old endpoints kept for backward compatibility, now use /financial/general-ledger and /financial/trial-balance
 
 @router.get("/ledger")
-async def get_general_ledger(
+async def get_ledger_deprecated(
     account_id: str = "",
     date_from: str = "",
     date_to: str = "",
     user: dict = Depends(get_current_user)
 ):
+    """[DEPRECATED] Use /financial/general-ledger instead"""
     query = {}
     if date_from:
         query["date"] = {"$gte": date_from}
@@ -481,13 +509,13 @@ async def get_general_ledger(
     
     return {"items": list(ledger.values()), "total": len(ledger)}
 
-@router.get("/trial-balance")
-async def get_trial_balance(
+@router.get("/trial-balance-old")
+async def get_trial_balance_deprecated(
     date_from: str = "",
     date_to: str = "",
     user: dict = Depends(get_current_user)
 ):
-    """Neraca Saldo"""
+    """[DEPRECATED] Use /financial/trial-balance instead. Neraca Saldo from old journals collection"""
     all_accounts = await accounts.find({"is_active": True}, {"_id": 0}).sort("code", 1).to_list(500)
     
     query = {}
@@ -548,72 +576,125 @@ async def get_trial_balance(
     }
 
 # ==================== LAPORAN KEUANGAN ====================
+# UNIFIED: Now reads from journal_entries (the main journal collection used by all modules)
+
+# Reference: Account Classification for Balance Sheet & Income Statement
+# Assets: 1-xxxx (Debit normal)
+# Liabilities: 2-xxxx (Credit normal)
+# Equity: 3-xxxx (Credit normal)
+# Revenue: 4-xxxx (Credit normal)
+# Expenses: 5-xxxx (Debit normal)
+
+def classify_account(code: str) -> dict:
+    """Classify account based on code prefix"""
+    if not code:
+        return {"type": "unknown", "category": "unknown", "normal_balance": "debit"}
+    
+    prefix = code.split("-")[0] if "-" in code else code[:1]
+    
+    if prefix == "1":
+        return {"type": "asset", "category": "asset", "normal_balance": "debit"}
+    elif prefix == "2":
+        return {"type": "liability", "category": "liability", "normal_balance": "credit"}
+    elif prefix == "3":
+        return {"type": "equity", "category": "equity", "normal_balance": "credit"}
+    elif prefix == "4":
+        return {"type": "revenue", "category": "revenue", "normal_balance": "credit"}
+    elif prefix in ["5", "6", "7", "8"]:  # All expense-like accounts
+        return {"type": "expense", "category": "expense", "normal_balance": "debit"}
+    elif prefix == "9":  # Historical/adjustments
+        return {"type": "equity", "category": "equity", "normal_balance": "credit"}
+    else:
+        return {"type": "expense", "category": "expense", "normal_balance": "debit"}
+
+# Get journal_entries collection (unified journal storage)
+journal_entries = db["journal_entries"]
 
 @router.get("/financial/balance-sheet")
 async def get_balance_sheet(date: str = "", user: dict = Depends(get_current_user)):
-    """Neraca"""
+    """Neraca - reads from journal_entries collection (unified format)"""
     if not date:
         date = datetime.now().strftime("%Y-%m-%d")
     
-    all_accounts = await accounts.find({"is_active": True}, {"_id": 0}).to_list(500)
-    all_journals = await journals.find({"date": {"$lte": date}}, {"_id": 0}).to_list(1000)
+    # Get all posted journal entries up to the date using unified helper
+    all_je = await get_all_journal_entries_with_lines({
+        "status": "posted",
+        "$or": [
+            {"journal_date": {"$lte": date + "T23:59:59"}},
+            {"created_at": {"$lte": date + "T23:59:59"}}
+        ]
+    })
     
-    # Calculate balances
-    balances = {}
-    for journal in all_journals:
-        for entry in journal.get("entries", []):
-            acc_id = entry.get("account_id")
-            if acc_id not in balances:
-                balances[acc_id] = 0
-            if entry.get("debit", 0) > 0:
-                balances[acc_id] += entry.get("debit", 0)
-            if entry.get("credit", 0) > 0:
-                balances[acc_id] -= entry.get("credit", 0)
+    # Aggregate by account code
+    account_balances = {}
     
+    for je in all_je:
+        for entry in je.get("entries", []):
+            code = entry.get("account_code", "")
+            name = entry.get("account_name", "Unknown")
+            if not code:
+                continue
+            
+            if code not in account_balances:
+                account_balances[code] = {"name": name, "debit": 0, "credit": 0}
+            
+            account_balances[code]["debit"] += entry.get("debit", 0)
+            account_balances[code]["credit"] += entry.get("credit", 0)
+    
+    # Build balance sheet
     assets = []
     liabilities = []
     equity = []
+    revenues_for_net = []
+    expenses_for_net = []
     
     total_assets = 0
     total_liabilities = 0
     total_equity = 0
+    total_revenue = 0
+    total_expense = 0
     
-    # Calculate net income from revenue and expenses
-    net_income = 0
-    
-    for account in all_accounts:
-        acc_id = account.get("id")
-        balance = balances.get(acc_id, 0)
-        category = account.get("category")
+    for code, data in sorted(account_balances.items()):
+        classification = classify_account(code)
+        debit = data["debit"]
+        credit = data["credit"]
         
-        # For credit normal accounts, negate the balance
-        if account.get("normal_balance") == "credit":
-            balance = -balance
+        # Calculate balance based on normal balance
+        if classification["normal_balance"] == "debit":
+            balance = debit - credit
+        else:
+            balance = credit - debit
+        
+        if abs(balance) < 0.01:
+            continue  # Skip zero balances
         
         item = {
-            "account_code": account.get("code"),
-            "account_name": account.get("name"),
+            "account_code": code,
+            "account_name": data["name"],
             "balance": balance
         }
         
-        if category == "asset":
+        if classification["type"] == "asset":
             assets.append(item)
             total_assets += balance
-        elif category == "liability":
+        elif classification["type"] == "liability":
             liabilities.append(item)
             total_liabilities += balance
-        elif category == "equity":
+        elif classification["type"] == "equity":
             equity.append(item)
             total_equity += balance
-        elif category == "revenue":
-            # Revenue increases net income
-            net_income += balance
-        elif category == "expense":
-            # Expense decreases net income
-            net_income -= balance
+        elif classification["type"] == "revenue":
+            revenues_for_net.append(item)
+            total_revenue += balance
+        elif classification["type"] == "expense":
+            expenses_for_net.append(item)
+            total_expense += balance
     
-    # Add net income to equity
-    total_equity += net_income
+    # Net income = Revenue - Expense
+    net_income = total_revenue - total_expense
+    
+    # In balance sheet, Equity + Net Income = Liabilities must balance with Assets
+    total_equity_with_net = total_equity + net_income
     
     return {
         "date": date,
@@ -623,8 +704,9 @@ async def get_balance_sheet(date: str = "", user: dict = Depends(get_current_use
         "net_income": net_income,
         "total_assets": total_assets,
         "total_liabilities": total_liabilities,
-        "total_equity": total_equity,
-        "is_balanced": abs(total_assets - (total_liabilities + total_equity)) < 0.01
+        "total_equity": total_equity_with_net,
+        "is_balanced": abs(total_assets - (total_liabilities + total_equity_with_net)) < 0.01,
+        "journal_count": len(all_je)
     }
 
 @router.get("/financial/income-statement")
@@ -633,58 +715,94 @@ async def get_income_statement(
     date_to: str = "",
     user: dict = Depends(get_current_user)
 ):
-    """Laba Rugi"""
+    """Laba Rugi - reads from journal_entries collection (unified format)"""
     if not date_from:
         date_from = datetime.now().strftime("%Y-01-01")
     if not date_to:
         date_to = datetime.now().strftime("%Y-%m-%d")
     
-    all_accounts = await accounts.find({"is_active": True}, {"_id": 0}).to_list(500)
-    all_journals = await journals.find({
-        "date": {"$gte": date_from, "$lte": date_to}
-    }, {"_id": 0}).to_list(1000)
+    # Get all posted journal entries in period using unified helper
+    all_je = await get_all_journal_entries_with_lines({
+        "status": "posted",
+        "$or": [
+            {"journal_date": {"$gte": date_from, "$lte": date_to + "T23:59:59"}},
+            {"created_at": {"$gte": date_from, "$lte": date_to + "T23:59:59"}}
+        ]
+    })
     
-    # Calculate balances
-    balances = {}
-    for journal in all_journals:
-        for entry in journal.get("entries", []):
-            acc_id = entry.get("account_id")
-            if acc_id not in balances:
-                balances[acc_id] = 0
-            balances[acc_id] += entry.get("credit", 0) - entry.get("debit", 0)
+    # Aggregate by account code
+    account_totals = {}
+    
+    for je in all_je:
+        for entry in je.get("entries", []):
+            code = entry.get("account_code", "")
+            name = entry.get("account_name", "Unknown")
+            if not code:
+                continue
+            
+            if code not in account_totals:
+                account_totals[code] = {"name": name, "debit": 0, "credit": 0}
+            
+            account_totals[code]["debit"] += entry.get("debit", 0)
+            account_totals[code]["credit"] += entry.get("credit", 0)
     
     revenues = []
     expenses = []
+    cogs = []  # Cost of Goods Sold (HPP)
     total_revenue = 0
     total_expense = 0
+    total_cogs = 0
     
-    for account in all_accounts:
-        acc_id = account.get("id")
-        balance = balances.get(acc_id, 0)
+    for code, data in sorted(account_totals.items()):
+        classification = classify_account(code)
+        debit = data["debit"]
+        credit = data["credit"]
         
-        item = {
-            "account_code": account.get("code"),
-            "account_name": account.get("name"),
-            "amount": abs(balance)
-        }
+        if classification["type"] == "revenue":
+            # Revenue normal balance is credit
+            amount = credit - debit
+            if abs(amount) > 0.01:
+                revenues.append({
+                    "account_code": code,
+                    "account_name": data["name"],
+                    "amount": amount
+                })
+                total_revenue += amount
         
-        if account.get("category") == "revenue" and balance != 0:
-            revenues.append(item)
-            total_revenue += balance
-        elif account.get("category") == "expense" and balance != 0:
-            item["amount"] = -balance
-            expenses.append(item)
-            total_expense += -balance
+        elif classification["type"] == "expense":
+            # Expense normal balance is debit
+            amount = debit - credit
+            if abs(amount) > 0.01:
+                # Separate COGS (5-1xxx) from operating expenses
+                if code.startswith("5-1") or code == "5101" or "hpp" in data["name"].lower() or "pokok" in data["name"].lower():
+                    cogs.append({
+                        "account_code": code,
+                        "account_name": data["name"],
+                        "amount": amount
+                    })
+                    total_cogs += amount
+                else:
+                    expenses.append({
+                        "account_code": code,
+                        "account_name": data["name"],
+                        "amount": amount
+                    })
+                    total_expense += amount
     
-    net_income = total_revenue - total_expense
+    gross_profit = total_revenue - total_cogs
+    net_income = gross_profit - total_expense
     
     return {
         "period": {"from": date_from, "to": date_to},
         "revenues": revenues,
-        "expenses": expenses,
+        "cost_of_goods_sold": cogs,
+        "gross_profit": gross_profit,
+        "operating_expenses": expenses,
         "total_revenue": total_revenue,
+        "total_cogs": total_cogs,
         "total_expense": total_expense,
-        "net_income": net_income
+        "net_income": net_income,
+        "journal_count": len(all_je)
     }
 
 @router.get("/financial/cash-flow")
@@ -693,15 +811,23 @@ async def get_cash_flow(
     date_to: str = "",
     user: dict = Depends(get_current_user)
 ):
-    """Arus Kas"""
+    """Arus Kas - reads from journal_entries for cash account movements (unified format)"""
     if not date_from:
         date_from = datetime.now().strftime("%Y-01-01")
     if not date_to:
         date_to = datetime.now().strftime("%Y-%m-%d")
     
-    transactions = await cash_transactions.find({
-        "date": {"$gte": date_from, "$lte": date_to}
-    }, {"_id": 0}).sort("date", 1).to_list(1000)
+    # Cash accounts: 1-1100 (Kas), 1-1200 (Bank), 1-1110 (Kas Dalam Perjalanan), 1101, 1102, etc.
+    cash_codes = ["1-1100", "1-1200", "1-1110", "1101", "1102", "1103", "1104", "1105", "1106"]
+    
+    # Get all posted journal entries in period using unified helper
+    all_je = await get_all_journal_entries_with_lines({
+        "status": "posted",
+        "$or": [
+            {"journal_date": {"$gte": date_from, "$lte": date_to + "T23:59:59"}},
+            {"created_at": {"$gte": date_from, "$lte": date_to + "T23:59:59"}}
+        ]
+    })
     
     operating = []
     investing = []
@@ -711,20 +837,253 @@ async def get_cash_flow(
     total_investing = 0
     total_financing = 0
     
-    for trans in transactions:
-        item = {
-            "date": trans.get("date"),
-            "description": trans.get("description"),
-            "amount": trans.get("amount", 0) if trans.get("transaction_type") == "cash_in" else -trans.get("amount", 0)
-        }
-        # Categorize based on description or account type
-        operating.append(item)
-        total_operating += item["amount"]
+    for je in all_je:
+        ref_type = je.get("reference_type", "").lower() or je.get("source_type", "").lower()
+        desc = je.get("description", "")
+        
+        # Find cash entries in this journal
+        for entry in je.get("entries", []):
+            code = entry.get("account_code", "")
+            # Check if this is a cash account
+            is_cash = any(code.startswith(c) or code == c for c in cash_codes) or "kas" in entry.get("account_name", "").lower()
+            
+            if is_cash:
+                # Cash inflow = debit to cash account
+                # Cash outflow = credit from cash account
+                amount = entry.get("debit", 0) - entry.get("credit", 0)
+                
+                if abs(amount) < 0.01:
+                    continue
+                
+                item = {
+                    "date": je.get("journal_date", je.get("created_at", ""))[:10],
+                    "reference": je.get("reference_number", je.get("journal_number", "")),
+                    "description": desc or entry.get("description", ""),
+                    "amount": amount
+                }
+                
+                # Categorize based on reference type
+                if ref_type in ["sales", "sales_credit", "ar_payment", "sales_cash", "deposit"]:
+                    operating.append(item)
+                    total_operating += amount
+                elif ref_type in ["purchase", "purchase_credit", "ap_payment", "expense"]:
+                    operating.append(item)
+                    total_operating += amount
+                elif ref_type in ["asset_purchase", "investment"]:
+                    investing.append(item)
+                    total_investing += amount
+                elif ref_type in ["loan", "capital", "dividend"]:
+                    financing.append(item)
+                    total_financing += amount
+                else:
+                    # Default to operating
+                    operating.append(item)
+                    total_operating += amount
+                
+                break  # Only count once per journal
+    
+    # Also get cash movements from cash_movements collection as backup
+    cash_movs = await cash_transactions.find({
+        "$or": [
+            {"date": {"$gte": date_from, "$lte": date_to}},
+            {"created_at": {"$gte": date_from, "$lte": date_to + "T23:59:59"}}
+        ]
+    }, {"_id": 0}).sort("date", 1).to_list(1000)
+    
+    for mov in cash_movs:
+        amount = mov.get("amount", 0) if mov.get("transaction_type") == "cash_in" or mov.get("movement_type") == "cash_in" else -mov.get("amount", 0)
+        if abs(amount) > 0.01:
+            item = {
+                "date": mov.get("date", mov.get("created_at", ""))[:10],
+                "reference": mov.get("reference_id", ""),
+                "description": mov.get("description", ""),
+                "amount": amount
+            }
+            # Only add if not already in journals
+            if not any(o.get("reference") == item.get("reference") for o in operating):
+                operating.append(item)
+                total_operating += amount
     
     return {
         "period": {"from": date_from, "to": date_to},
-        "operating": {"items": operating, "total": total_operating},
+        "operating": {"items": operating[-50:], "total": total_operating},  # Limit items for response
         "investing": {"items": investing, "total": total_investing},
         "financing": {"items": financing, "total": total_financing},
-        "net_cash_flow": total_operating + total_investing + total_financing
+        "net_cash_flow": total_operating + total_investing + total_financing,
+        "journal_count": len(all_je)
+    }
+
+
+# ==================== GENERAL LEDGER (BUKU BESAR) ====================
+
+@router.get("/financial/general-ledger")
+async def get_general_ledger(
+    account_code: str = "",
+    date_from: str = "",
+    date_to: str = "",
+    user: dict = Depends(get_current_user)
+):
+    """Buku Besar - General Ledger untuk akun tertentu (unified format)"""
+    if not date_from:
+        date_from = datetime.now().strftime("%Y-01-01")
+    if not date_to:
+        date_to = datetime.now().strftime("%Y-%m-%d")
+    
+    # Get all posted journal entries using unified helper
+    query = {
+        "status": "posted",
+        "$or": [
+            {"journal_date": {"$gte": date_from, "$lte": date_to + "T23:59:59"}},
+            {"created_at": {"$gte": date_from, "$lte": date_to + "T23:59:59"}}
+        ]
+    }
+    
+    all_je = await get_all_journal_entries_with_lines(query)
+    
+    # Sort by date
+    all_je.sort(key=lambda x: x.get("journal_date", x.get("created_at", "")))
+    
+    # Build ledger entries
+    ledger_entries = []
+    running_balance = 0
+    
+    # Get account info for balance calculation
+    classification = classify_account(account_code) if account_code else None
+    
+    for je in all_je:
+        for entry in je.get("entries", []):
+            code = entry.get("account_code", "")
+            
+            # If filtering by account, only include that account
+            if account_code and code != account_code:
+                continue
+            
+            debit = entry.get("debit", 0)
+            credit = entry.get("credit", 0)
+            
+            # Calculate running balance based on normal balance
+            if classification:
+                if classification["normal_balance"] == "debit":
+                    running_balance += debit - credit
+                else:
+                    running_balance += credit - debit
+            else:
+                running_balance += debit - credit
+            
+            ledger_entries.append({
+                "date": je.get("journal_date", je.get("created_at", ""))[:10],
+                "journal_number": je.get("journal_number", je.get("journal_no", "")),
+                "reference": je.get("reference_number", je.get("reference_no", "")),
+                "description": entry.get("description") or je.get("description", ""),
+                "account_code": code,
+                "account_name": entry.get("account_name", ""),
+                "debit": debit,
+                "credit": credit,
+                "balance": running_balance
+            })
+    
+    # Calculate totals
+    total_debit = sum(e["debit"] for e in ledger_entries)
+    total_credit = sum(e["credit"] for e in ledger_entries)
+    
+    return {
+        "period": {"from": date_from, "to": date_to},
+        "account_code": account_code or "ALL",
+        "entries": ledger_entries,
+        "summary": {
+            "total_debit": total_debit,
+            "total_credit": total_credit,
+            "ending_balance": running_balance if account_code else total_debit - total_credit
+        },
+        "entry_count": len(ledger_entries)
+    }
+
+
+# ==================== TRIAL BALANCE (NERACA SALDO) ====================
+
+@router.get("/financial/trial-balance")
+async def get_trial_balance(
+    date: str = "",
+    user: dict = Depends(get_current_user)
+):
+    """Neraca Saldo - Trial Balance (unified format)"""
+    if not date:
+        date = datetime.now().strftime("%Y-%m-%d")
+    
+    # Get all posted journal entries up to the date using unified helper
+    all_je = await get_all_journal_entries_with_lines({
+        "status": "posted",
+        "$or": [
+            {"journal_date": {"$lte": date + "T23:59:59"}},
+            {"created_at": {"$lte": date + "T23:59:59"}}
+        ]
+    })
+    
+    # Aggregate by account code
+    account_balances = {}
+    
+    for je in all_je:
+        for entry in je.get("entries", []):
+            code = entry.get("account_code", "")
+            name = entry.get("account_name", "Unknown")
+            if not code:
+                continue
+            
+            if code not in account_balances:
+                account_balances[code] = {"name": name, "debit": 0, "credit": 0}
+            
+            account_balances[code]["debit"] += entry.get("debit", 0)
+            account_balances[code]["credit"] += entry.get("credit", 0)
+    
+    # Build trial balance
+    trial_balance = []
+    total_debit = 0
+    total_credit = 0
+    
+    for code, data in sorted(account_balances.items()):
+        classification = classify_account(code)
+        debit = data["debit"]
+        credit = data["credit"]
+        
+        # Calculate balance based on normal balance
+        if classification["normal_balance"] == "debit":
+            balance = debit - credit
+            if balance >= 0:
+                debit_balance = balance
+                credit_balance = 0
+            else:
+                debit_balance = 0
+                credit_balance = abs(balance)
+        else:
+            balance = credit - debit
+            if balance >= 0:
+                debit_balance = 0
+                credit_balance = balance
+            else:
+                debit_balance = abs(balance)
+                credit_balance = 0
+        
+        if abs(debit_balance) < 0.01 and abs(credit_balance) < 0.01:
+            continue  # Skip zero balances
+        
+        trial_balance.append({
+            "account_code": code,
+            "account_name": data["name"],
+            "account_type": classification["type"],
+            "debit": debit_balance,
+            "credit": credit_balance
+        })
+        
+        total_debit += debit_balance
+        total_credit += credit_balance
+    
+    return {
+        "as_of_date": date,
+        "accounts": trial_balance,
+        "totals": {
+            "debit": total_debit,
+            "credit": total_credit,
+            "is_balanced": abs(total_debit - total_credit) < 0.01
+        },
+        "journal_count": len(all_je)
     }
