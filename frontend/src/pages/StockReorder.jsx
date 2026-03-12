@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { SearchableEnumSelect, URGENCY_OPTIONS } from '../components/ui/searchable-enum-select';
+import { useToast } from '../hooks/use-toast';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -154,6 +155,7 @@ const StockSettingModal = ({ product, onClose, onSave, token }) => {
 
 const StockReorder = () => {
   const { token } = useAuth();
+  const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('suggestions');
   
@@ -212,32 +214,51 @@ const StockReorder = () => {
 
   const generatePODraft = async (saveToDb = false) => {
     try {
-      // Build query params instead of body
+      // Build query params
       const params = new URLSearchParams();
       if (urgencyFilter) params.append('urgency_filter', urgencyFilter);
-      params.append('save_to_db', saveToDb);
+      params.append('save_to_db', saveToDb.toString());
       
       const res = await fetch(`${API_URL}/api/stock-reorder/generate-po-draft?${params}`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
       });
       const data = await res.json();
       
+      if (!res.ok) {
+        throw new Error(data.detail || data.message || 'Gagal generate PO draft');
+      }
+      
       if (data.success) {
         if (saveToDb) {
-          toast.success(`Berhasil membuat ${data.saved_count} PO Draft di Purchase Module dengan ${data.total_items} item`);
+          toast({ 
+            title: 'Sukses', 
+            description: `Berhasil membuat ${data.saved_count} PO Draft dengan ${data.total_items} item`
+          });
           handleRefresh();
         } else {
-          toast.info(`Preview: ${data.total_drafts} draft PO dengan ${data.total_items} item. Klik "Save PO Draft" untuk menyimpan.`);
+          toast({ 
+            title: 'Preview PO', 
+            description: `${data.total_drafts} draft PO dengan ${data.total_items} item. Klik "Save PO Draft" untuk menyimpan.`
+          });
         }
       } else {
-        toast.error(data.message || 'Tidak ada item untuk di-reorder');
+        toast({ 
+          title: 'Info', 
+          description: data.message || 'Tidak ada item untuk di-reorder',
+          variant: 'destructive'
+        });
       }
     } catch (err) {
       console.error('Generate PO error:', err);
-      toast.error('Gagal generate PO draft');
+      toast({ 
+        title: 'Error', 
+        description: err.message || 'Gagal generate PO draft',
+        variant: 'destructive'
+      });
     }
   };
 
