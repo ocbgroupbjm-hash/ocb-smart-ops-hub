@@ -369,7 +369,6 @@ async def receive_purchase_order(po_id: str, data: ReceivePO, request: Request, 
     ap_id = None
     if all_received and po.get("is_credit", True):  # Default to credit
         from datetime import timedelta
-        import uuid
         
         po_total = po.get("total", 0)
         credit_due_days = po.get("credit_due_days", 30)
