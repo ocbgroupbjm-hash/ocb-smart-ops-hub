@@ -535,6 +535,8 @@ async def generate_purchase_order_draft(
     user: dict = Depends(require_permission("purchase", "create"))
 ):
     """Generate draft purchase orders from reorder suggestions"""
+    from services.price_resolver import get_complete_product_purchase_info
+    
     db = get_database()
     
     # Get suggestions
@@ -551,32 +553,70 @@ async def generate_purchase_order_draft(
     if not suggestions:
         return {"success": False, "message": "Tidak ada item yang perlu direorder"}
     
-    # Group by supplier
+    # Group by supplier - using price resolver
     by_supplier = {}
+    invalid_items = []
+    
     for s in suggestions:
-        supplier_id = s.get("supplier_id") or "unknown"
+        # Get complete purchase info
+        purchase_info = await get_complete_product_purchase_info(s["product_id"], s.get("supplier_id"))
+        
+        # Check if we have a valid supplier
+        supplier_id = purchase_info.get("supplier_id")
+        supplier_name = purchase_info.get("supplier_name", "")
+        
+        if not supplier_id:
+            invalid_items.append({
+                "product_id": s["product_id"],
+                "product_name": s["product_name"],
+                "reason": "Perlu pilih supplier"
+            })
+            continue
+        
+        # Get price
+        unit_cost = purchase_info.get("unit_cost", 0)
+        if unit_cost <= 0:
+            # Try product cost_price
+            product = await products.find_one({"id": s["product_id"]}, {"_id": 0})
+            if product:
+                unit_cost = product.get("cost_price", 0) or product.get("purchase_price", 0)
+        
         if supplier_id not in by_supplier:
-            # Get supplier details
-            supplier = await db.suppliers.find_one({"id": supplier_id}, {"_id": 0})
             by_supplier[supplier_id] = {
                 "supplier_id": supplier_id,
-                "supplier_name": supplier.get("name", "Unknown") if supplier else s.get("supplier_name", "Unknown"),
-                "supplier_code": supplier.get("code", "") if supplier else "",
-                "items": []
+                "supplier_name": supplier_name,
+                "supplier_code": purchase_info.get("supplier_code", ""),
+                "items": [],
+                "has_invalid_prices": False
             }
+        
+        subtotal = unit_cost * s["suggested_qty"]
+        
         by_supplier[supplier_id]["items"].append({
             "product_id": s["product_id"],
             "product_code": s["product_code"],
             "product_name": s["product_name"],
             "unit": s["unit"],
             "quantity": s["suggested_qty"],
-            "unit_cost": 0,  # Will be filled by user or from price history
-            "subtotal": 0,
+            "unit_cost": unit_cost,
+            "subtotal": subtotal,
             "urgency": s["urgency"],
             "current_stock": s["current_stock"],
             "minimum_stock": s["minimum_stock"],
-            "reorder_source_id": s.get("product_id")  # Link back to reorder suggestion
+            "price_source": purchase_info.get("price_source", ""),
+            "needs_price": unit_cost <= 0
         })
+        
+        if unit_cost <= 0:
+            by_supplier[supplier_id]["has_invalid_prices"] = True
+    
+    # If all items are invalid, return error
+    if not by_supplier and invalid_items:
+        return {
+            "success": False,
+            "message": "Semua item memerlukan supplier. Silahkan set supplier default untuk produk.",
+            "invalid_items": invalid_items
+        }
     
     drafts = []
     saved_count = 0
@@ -585,18 +625,25 @@ async def generate_purchase_order_draft(
         po_id = str(uuid.uuid4())
         po_no = f"PO-REORDER-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}-{len(drafts)+1}"
         
+        subtotal = sum(i["subtotal"] for i in data["items"])
+        
         draft = {
             "id": po_id,
             "po_number": po_no,
+            "po_no": po_no,
             "supplier_id": supplier_id,
             "supplier_name": data["supplier_name"],
+            "supplier_code": data.get("supplier_code", ""),
             "branch_id": branch_id or user.get("branch_id"),
             "items": data["items"],
             "total_items": len(data["items"]),
             "total_qty": sum(i["quantity"] for i in data["items"]),
-            "subtotal": 0,
-            "total": 0,
+            "subtotal": subtotal,
+            "discount_amount": 0,
+            "tax_amount": 0,
+            "total": subtotal,
             "status": "draft",
+            "needs_completion": data.get("has_invalid_prices", False),
             "source": "stock_reorder",
             "created_at": datetime.now(timezone.utc).isoformat(),
             "created_by": user.get("user_id"),
@@ -632,7 +679,10 @@ async def generate_purchase_order_draft(
         "total_items": sum(d["total_items"] for d in drafts),
         "saved_to_database": save_to_db,
         "saved_count": saved_count,
-        "message": f"Generated {len(drafts)} draft PO dari {len(suggestions)} item" + (f" - {saved_count} saved to database" if save_to_db else " (preview only)")
+        "invalid_items": invalid_items,
+        "message": f"Generated {len(drafts)} draft PO dari {len(suggestions)} item" + 
+                  (f" - {saved_count} saved to database" if save_to_db else " (preview only)") +
+                  (f". {len(invalid_items)} item dilewati (perlu supplier)" if invalid_items else "")
     }
 
 # ==================== DASHBOARD & REPORTS ====================

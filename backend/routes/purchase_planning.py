@@ -560,6 +560,8 @@ async def create_po_from_planning(
     user: dict = Depends(require_permission("purchase", "create"))
 ):
     """Create draft PO from approved planning items"""
+    from services.price_resolver import get_complete_product_purchase_info, resolve_purchase_price
+    
     db = get_database()
     
     # Get planning items
@@ -571,43 +573,108 @@ async def create_po_from_planning(
     if not items:
         raise HTTPException(status_code=400, detail="Tidak ada planning yang approved")
     
-    # Group by supplier
+    # Group by supplier with VALIDATION
     by_supplier = {}
+    invalid_items = []
+    
     for item in items:
-        supplier_id = data.supplier_id or item.get("supplier_id") or "unknown"
-        if supplier_id not in by_supplier:
-            supplier = await db.suppliers.find_one({"id": supplier_id}, {"_id": 0})
-            by_supplier[supplier_id] = {
-                "supplier_id": supplier_id,
-                "supplier_name": supplier.get("name", "Unknown") if supplier else "Unknown",
-                "items": []
+        # Get complete purchase info for this item
+        supplier_id = data.supplier_id or item.get("supplier_id")
+        purchase_info = await get_complete_product_purchase_info(item["product_id"], supplier_id)
+        
+        # Check if valid
+        if purchase_info["needs_supplier"]:
+            invalid_items.append({
+                "product_id": item["product_id"],
+                "product_name": item.get("product_name", ""),
+                "reason": "Perlu pilih supplier"
+            })
+            continue
+        
+        # Resolve price
+        resolved_price = purchase_info.get("unit_cost", 0)
+        if resolved_price <= 0:
+            # Try product cost_price as fallback
+            product = await products.find_one({"id": item["product_id"]}, {"_id": 0})
+            if product:
+                resolved_price = product.get("cost_price", 0) or product.get("purchase_price", 0)
+        
+        # Mark items with no price but allow them (user can edit later)
+        needs_price = resolved_price <= 0
+        
+        actual_supplier_id = purchase_info["supplier_id"]
+        actual_supplier_name = purchase_info["supplier_name"]
+        
+        if actual_supplier_id not in by_supplier:
+            by_supplier[actual_supplier_id] = {
+                "supplier_id": actual_supplier_id,
+                "supplier_name": actual_supplier_name,
+                "supplier_code": purchase_info.get("supplier_code", ""),
+                "items": [],
+                "has_invalid_items": False
             }
-        by_supplier[supplier_id]["items"].append({
+        
+        # Calculate subtotal
+        qty = item["recommended_qty"]
+        subtotal = qty * resolved_price
+        
+        by_supplier[actual_supplier_id]["items"].append({
             "product_id": item["product_id"],
-            "product_code": item["product_code"],
-            "product_name": item["product_name"],
-            "unit": item["unit"],
-            "quantity": item["recommended_qty"],
-            "planning_id": item["id"]
+            "product_code": item.get("product_code", ""),
+            "product_name": item.get("product_name", ""),
+            "unit": item.get("unit", "PCS"),
+            "quantity": qty,
+            "unit_cost": resolved_price,
+            "discount_percent": 0,
+            "subtotal": subtotal,
+            "planning_id": item["id"],
+            "price_source": purchase_info.get("price_source", ""),
+            "needs_price": needs_price
         })
+        
+        if needs_price:
+            by_supplier[actual_supplier_id]["has_invalid_items"] = True
+    
+    # If there are invalid items without suppliers, return error
+    if invalid_items and len(invalid_items) == len(items):
+        raise HTTPException(
+            status_code=400, 
+            detail={
+                "message": "Semua item memerlukan supplier",
+                "invalid_items": invalid_items
+            }
+        )
     
     # Create PO drafts
     created_pos = []
     for supplier_id, supplier_data in by_supplier.items():
         po_number = f"PO-PLAN-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}-{len(created_pos)+1}"
         
+        # Calculate totals
+        subtotal = sum(i["subtotal"] for i in supplier_data["items"])
+        total_qty = sum(i["quantity"] for i in supplier_data["items"])
+        
+        # Determine initial status
+        # If has items needing price, set to "draft" with warning
+        status = "draft"
+        needs_completion = supplier_data["has_invalid_items"]
+        
         po = {
             "id": str(uuid.uuid4()),
-            "po_number": po_number,  # Use po_number to match Purchase module
-            "po_no": po_number,  # Keep for backward compatibility
+            "po_number": po_number,
+            "po_no": po_number,
             "supplier_id": supplier_id,
             "supplier_name": supplier_data["supplier_name"],
+            "supplier_code": supplier_data.get("supplier_code", ""),
             "items": supplier_data["items"],
             "total_items": len(supplier_data["items"]),
-            "total_qty": sum(i["quantity"] for i in supplier_data["items"]),
-            "subtotal": 0,
-            "total": 0,
-            "status": "draft",
+            "total_qty": total_qty,
+            "subtotal": subtotal,
+            "discount_amount": 0,
+            "tax_amount": 0,
+            "total": subtotal,
+            "status": status,
+            "needs_completion": needs_completion,
             "source": "purchase_planning",
             "branch_id": user.get("branch_id"),
             "created_at": datetime.now(timezone.utc).isoformat(),
@@ -617,7 +684,6 @@ async def create_po_from_planning(
         }
         
         await db.purchase_orders.insert_one(po)
-        # Remove _id added by MongoDB to avoid ObjectId serialization error
         po.pop("_id", None)
         created_pos.append(po)
         
@@ -639,7 +705,8 @@ async def create_po_from_planning(
         "id": str(uuid.uuid4()),
         "action": "create_po_from_planning",
         "module": "purchase_planning",
-        "description": f"Created {len(created_pos)} PO drafts from {len(items)} planning items",
+        "description": f"Created {len(created_pos)} PO drafts from {len(items)} planning items" + 
+                      (f", {len(invalid_items)} invalid items skipped" if invalid_items else ""),
         "user_id": user.get("user_id"),
         "user_name": user.get("name"),
         "timestamp": datetime.now(timezone.utc).isoformat()
@@ -648,8 +715,17 @@ async def create_po_from_planning(
     return {
         "success": True,
         "created_pos": len(created_pos),
-        "po_list": [{"po_number": po["po_number"], "supplier": po["supplier_name"], "items": po["total_items"]} for po in created_pos],
-        "message": f"Created {len(created_pos)} PO drafts"
+        "po_list": [{
+            "id": po["id"],
+            "po_number": po["po_number"], 
+            "supplier": po["supplier_name"], 
+            "items": po["total_items"],
+            "total": po["total"],
+            "needs_completion": po.get("needs_completion", False)
+        } for po in created_pos],
+        "invalid_items": invalid_items,
+        "message": f"Created {len(created_pos)} PO drafts" + 
+                  (f". {len(invalid_items)} items skipped (perlu supplier)" if invalid_items else "")
     }
 
 @router.delete("/{planning_id}")

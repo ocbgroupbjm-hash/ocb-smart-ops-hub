@@ -1547,6 +1547,139 @@ const PurchaseModule = () => {
   const renderDetailModal = () => {
     if (!selectedItem) return null;
     
+    // Handle Print PO
+    const handlePrintPO = () => {
+      const printWindow = window.open('', '_blank');
+      if (!printWindow) {
+        toast.error('Popup blocker aktif. Izinkan popup untuk cetak.');
+        return;
+      }
+      
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Purchase Order - ${selectedItem.po_number}</title>
+          <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { font-family: Arial, sans-serif; font-size: 12px; padding: 20px; }
+            .header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 10px; }
+            .header h1 { font-size: 18px; margin-bottom: 5px; }
+            .header h2 { font-size: 14px; color: #666; }
+            .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+            .info-box h3 { font-size: 12px; color: #666; margin-bottom: 5px; border-bottom: 1px solid #ccc; padding-bottom: 3px; }
+            .info-box p { margin: 3px 0; }
+            table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+            th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+            th { background: #f5f5f5; font-weight: bold; }
+            .text-right { text-align: right; }
+            .text-center { text-align: center; }
+            .total-row { font-weight: bold; background: #f5f5f5; }
+            .footer { margin-top: 30px; display: grid; grid-template-columns: 1fr 1fr 1fr; text-align: center; }
+            .footer-box { padding: 10px; }
+            .footer-box .title { font-size: 11px; color: #666; }
+            .footer-box .sign-area { height: 60px; border-bottom: 1px solid #000; margin: 10px 30px; }
+            .notes { margin-top: 15px; padding: 10px; background: #f9f9f9; border: 1px solid #ddd; }
+            @media print { body { padding: 10px; } }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>PURCHASE ORDER</h1>
+            <h2>${selectedItem.po_number}</h2>
+          </div>
+          
+          <div class="info-grid">
+            <div class="info-box">
+              <h3>SUPPLIER</h3>
+              <p><strong>${selectedItem.supplier_name || '-'}</strong></p>
+            </div>
+            <div class="info-box">
+              <h3>INFO PO</h3>
+              <p>Tanggal: ${formatDateTime(selectedItem.created_at)}</p>
+              <p>Status: ${selectedItem.status?.toUpperCase()}</p>
+              <p>Tanggal Kirim: ${formatDate(selectedItem.expected_date)}</p>
+              <p>Kredit: ${selectedItem.is_credit ? 'Ya (' + selectedItem.credit_due_days + ' hari)' : 'Tunai'}</p>
+            </div>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th class="text-center" style="width:40px">No</th>
+                <th>Kode</th>
+                <th>Nama Barang</th>
+                <th class="text-right">Qty</th>
+                <th class="text-right">Harga</th>
+                <th class="text-right">Subtotal</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${selectedItem.items?.map((item, idx) => `
+                <tr>
+                  <td class="text-center">${idx + 1}</td>
+                  <td>${item.product_code || ''}</td>
+                  <td>${item.product_name || ''}</td>
+                  <td class="text-right">${item.quantity}</td>
+                  <td class="text-right">${formatRupiah(item.unit_cost)}</td>
+                  <td class="text-right">${formatRupiah(item.subtotal)}</td>
+                </tr>
+              `).join('') || ''}
+              <tr class="total-row">
+                <td colspan="5" class="text-right">Subtotal</td>
+                <td class="text-right">${formatRupiah(selectedItem.subtotal)}</td>
+              </tr>
+              ${selectedItem.discount_amount > 0 ? `
+                <tr>
+                  <td colspan="5" class="text-right">Diskon</td>
+                  <td class="text-right">-${formatRupiah(selectedItem.discount_amount)}</td>
+                </tr>
+              ` : ''}
+              ${selectedItem.ppn_amount > 0 ? `
+                <tr>
+                  <td colspan="5" class="text-right">PPN (${selectedItem.ppn_percent || 0}%)</td>
+                  <td class="text-right">${formatRupiah(selectedItem.ppn_amount)}</td>
+                </tr>
+              ` : ''}
+              <tr class="total-row">
+                <td colspan="5" class="text-right">TOTAL</td>
+                <td class="text-right">${formatRupiah(selectedItem.total)}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          ${selectedItem.notes ? `
+            <div class="notes">
+              <strong>Catatan:</strong><br/>
+              ${selectedItem.notes}
+            </div>
+          ` : ''}
+
+          <div class="footer">
+            <div class="footer-box">
+              <div class="title">Dibuat oleh</div>
+              <div class="sign-area"></div>
+              <div>${selectedItem.created_by_name || user?.name || '-'}</div>
+            </div>
+            <div class="footer-box">
+              <div class="title">Disetujui oleh</div>
+              <div class="sign-area"></div>
+              <div>________________</div>
+            </div>
+            <div class="footer-box">
+              <div class="title">Diterima oleh</div>
+              <div class="sign-area"></div>
+              <div>________________</div>
+            </div>
+          </div>
+        </body>
+        </html>
+      `);
+      
+      printWindow.document.close();
+      setTimeout(() => { printWindow.print(); }, 500);
+    };
+    
     return (
       <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
         <div className="bg-gray-900 rounded-xl w-full max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
@@ -1556,6 +1689,13 @@ const PurchaseModule = () => {
               <p className="text-sm text-gray-400">{selectedItem.supplier_name}</p>
             </div>
             <div className="flex items-center gap-3">
+              <button 
+                onClick={handlePrintPO}
+                className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 rounded-lg flex items-center gap-2 text-sm"
+                data-testid="print-po-btn"
+              >
+                <Printer className="h-4 w-4" /> Print
+              </button>
               <StatusBadge status={selectedItem.status} />
               <button onClick={() => setShowDetailModal(false)} className="p-1 hover:bg-gray-700 rounded">
                 <X className="h-5 w-5" />

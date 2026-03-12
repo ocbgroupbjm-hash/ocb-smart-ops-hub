@@ -108,6 +108,24 @@ class POItemInput(BaseModel):
     unit_cost: float
     discount_percent: float = 0
 
+class POItemUpdate(BaseModel):
+    product_id: str
+    product_code: str = ""
+    product_name: str = ""
+    unit: str = "PCS"
+    quantity: float
+    unit_cost: float
+    discount_percent: float = 0
+
+class UpdateDraftPO(BaseModel):
+    supplier_id: Optional[str] = None
+    branch_id: Optional[str] = None
+    expected_date: Optional[str] = None
+    notes: Optional[str] = None
+    items: Optional[List[POItemUpdate]] = None
+    discount_amount: Optional[float] = None
+    tax_percent: Optional[float] = None
+
 class CreatePO(BaseModel):
     supplier_id: str
     branch_id: Optional[str] = None
@@ -157,6 +175,168 @@ async def get_purchase_order(po_id: str, user: dict = Depends(require_permission
     if not po:
         raise HTTPException(status_code=404, detail="Purchase order not found")
     return po
+
+@router.put("/orders/{po_id}")
+async def update_draft_purchase_order(
+    po_id: str, 
+    data: UpdateDraftPO, 
+    request: Request, 
+    user: dict = Depends(require_permission("purchase", "edit"))
+):
+    """Update draft PO - allows editing supplier, items, prices"""
+    po = await purchase_orders.find_one({"id": po_id}, {"_id": 0})
+    if not po:
+        raise HTTPException(status_code=404, detail="Purchase order not found")
+    
+    if po.get("status") != "draft":
+        raise HTTPException(status_code=400, detail="Hanya PO draft yang dapat diedit")
+    
+    update_data = {"updated_at": datetime.now(timezone.utc).isoformat()}
+    
+    # Update supplier if provided
+    if data.supplier_id:
+        supplier = await suppliers.find_one({"id": data.supplier_id}, {"_id": 0})
+        if supplier:
+            update_data["supplier_id"] = data.supplier_id
+            update_data["supplier_name"] = supplier.get("name", "")
+            update_data["supplier_code"] = supplier.get("code", "")
+    
+    # Update other fields
+    if data.branch_id:
+        update_data["branch_id"] = data.branch_id
+    if data.expected_date:
+        update_data["expected_date"] = data.expected_date
+    if data.notes is not None:
+        update_data["notes"] = data.notes
+    
+    # Update items if provided
+    if data.items is not None:
+        po_items = []
+        subtotal = 0
+        
+        for item in data.items:
+            # Get product info if not provided
+            product = await products.find_one({"id": item.product_id}, {"_id": 0})
+            
+            item_subtotal = item.unit_cost * item.quantity
+            if item.discount_percent > 0:
+                item_subtotal -= item_subtotal * (item.discount_percent / 100)
+            
+            po_items.append({
+                "product_id": item.product_id,
+                "product_code": item.product_code or (product.get("code", "") if product else ""),
+                "product_name": item.product_name or (product.get("name", "") if product else ""),
+                "unit": item.unit or (product.get("unit", "PCS") if product else "PCS"),
+                "quantity": item.quantity,
+                "unit_cost": item.unit_cost,
+                "discount_percent": item.discount_percent,
+                "subtotal": item_subtotal,
+                "needs_price": item.unit_cost <= 0
+            })
+            subtotal += item_subtotal
+        
+        update_data["items"] = po_items
+        update_data["total_items"] = len(po_items)
+        update_data["total_qty"] = sum(i["quantity"] for i in po_items)
+        update_data["subtotal"] = subtotal
+        
+        # Calculate total with discount and tax
+        discount_amount = data.discount_amount if data.discount_amount is not None else po.get("discount_amount", 0)
+        tax_percent = data.tax_percent if data.tax_percent is not None else po.get("tax_percent", 0)
+        
+        after_discount = subtotal - discount_amount
+        tax_amount = after_discount * (tax_percent / 100) if tax_percent > 0 else 0
+        total = after_discount + tax_amount
+        
+        update_data["discount_amount"] = discount_amount
+        update_data["tax_percent"] = tax_percent
+        update_data["tax_amount"] = tax_amount
+        update_data["total"] = total
+        
+        # Check if still needs completion
+        needs_completion = any(i.get("needs_price", False) for i in po_items)
+        update_data["needs_completion"] = needs_completion
+    
+    await purchase_orders.update_one({"id": po_id}, {"$set": update_data})
+    
+    # Audit log
+    db = get_db()
+    await log_security_event(
+        db, user.get("user_id", ""), user.get("name", ""),
+        "edit", "purchase",
+        f"Update draft PO {po.get('po_number')}",
+        request.client.host if request.client else "",
+        document_no=po.get('po_number')
+    )
+    
+    # Get updated PO
+    updated_po = await purchase_orders.find_one({"id": po_id}, {"_id": 0})
+    
+    return {
+        "success": True,
+        "message": "PO draft berhasil diupdate",
+        "po": updated_po
+    }
+
+@router.get("/orders/{po_id}/print")
+async def get_po_print_data(po_id: str, user: dict = Depends(require_permission("purchase", "view"))):
+    """Get PO data formatted for printing"""
+    po = await purchase_orders.find_one({"id": po_id}, {"_id": 0})
+    if not po:
+        raise HTTPException(status_code=404, detail="Purchase order not found")
+    
+    # Get supplier details
+    supplier = None
+    if po.get("supplier_id"):
+        supplier = await suppliers.find_one({"id": po["supplier_id"]}, {"_id": 0})
+    
+    # Get branch details
+    branch = None
+    if po.get("branch_id"):
+        branch = await branches.find_one({"id": po["branch_id"]}, {"_id": 0})
+    
+    # Format items for print
+    print_items = []
+    for idx, item in enumerate(po.get("items", [])):
+        print_items.append({
+            "no": idx + 1,
+            "product_code": item.get("product_code", ""),
+            "product_name": item.get("product_name", ""),
+            "unit": item.get("unit", "PCS"),
+            "quantity": item.get("quantity", 0),
+            "unit_cost": item.get("unit_cost", 0),
+            "discount_percent": item.get("discount_percent", 0),
+            "subtotal": item.get("subtotal", 0)
+        })
+    
+    return {
+        "po_number": po.get("po_number") or po.get("po_no"),
+        "status": po.get("status"),
+        "created_at": po.get("created_at"),
+        "order_date": po.get("order_date"),
+        "expected_date": po.get("expected_date"),
+        "supplier": {
+            "id": po.get("supplier_id"),
+            "name": po.get("supplier_name") or (supplier.get("name") if supplier else ""),
+            "code": po.get("supplier_code") or (supplier.get("code") if supplier else ""),
+            "address": supplier.get("address", "") if supplier else "",
+            "phone": supplier.get("phone", "") if supplier else "",
+            "email": supplier.get("email", "") if supplier else ""
+        },
+        "branch": {
+            "id": po.get("branch_id"),
+            "name": branch.get("name", "") if branch else "",
+            "address": branch.get("address", "") if branch else ""
+        },
+        "items": print_items,
+        "subtotal": po.get("subtotal", 0),
+        "discount_amount": po.get("discount_amount", 0),
+        "tax_percent": po.get("tax_percent", 0),
+        "tax_amount": po.get("tax_amount", 0),
+        "total": po.get("total", 0),
+        "notes": po.get("notes", ""),
+        "created_by_name": po.get("created_by_name", "")
+    }
 
 @router.post("/orders")
 async def create_purchase_order(data: CreatePO, request: Request, user: dict = Depends(require_permission("purchase", "create"))):
@@ -231,6 +411,37 @@ async def submit_purchase_order(po_id: str, request: Request, user: dict = Depen
     
     if po.get("status") != "draft":
         raise HTTPException(status_code=400, detail="PO already submitted")
+    
+    # VALIDATION GATE - tidak boleh submit jika data tidak valid
+    validation_errors = []
+    
+    # Check supplier
+    if not po.get("supplier_id") or po.get("supplier_name") in ["Unknown", "", None, "(Perlu dipilih)"]:
+        validation_errors.append("Supplier tidak valid atau belum dipilih")
+    
+    # Check items
+    if not po.get("items") or len(po.get("items", [])) == 0:
+        validation_errors.append("Tidak ada item dalam PO")
+    
+    # Check items detail
+    for idx, item in enumerate(po.get("items", [])):
+        if item.get("quantity", 0) <= 0:
+            validation_errors.append(f"Item #{idx+1} ({item.get('product_name', 'Unknown')}): qty harus > 0")
+        if item.get("unit_cost", 0) <= 0:
+            validation_errors.append(f"Item #{idx+1} ({item.get('product_name', 'Unknown')}): harga harus > 0")
+    
+    # Check total
+    if po.get("total", 0) <= 0:
+        validation_errors.append("Total PO harus > 0")
+    
+    if validation_errors:
+        raise HTTPException(
+            status_code=400, 
+            detail={
+                "message": "PO tidak dapat di-submit karena data belum lengkap",
+                "errors": validation_errors
+            }
+        )
     
     await purchase_orders.update_one(
         {"id": po_id},
