@@ -639,8 +639,10 @@ async def record_ap_payment(
     if ap.get("status") == "paid":
         raise HTTPException(status_code=400, detail="Hutang sudah lunas")
     
-    if data.amount > ap.get("outstanding_amount", 0):
-        raise HTTPException(status_code=400, detail="Jumlah pembayaran melebihi sisa hutang")
+    # Check remaining amount - try multiple field names for compatibility
+    remaining = ap.get("outstanding_amount", ap.get("remaining_amount", ap.get("amount", 0) - ap.get("paid_amount", 0)))
+    if data.amount > remaining:
+        raise HTTPException(status_code=400, detail=f"Jumlah pembayaran melebihi sisa hutang (Rp {remaining:,.0f})")
     
     user_id = scope["user_id"]
     user_name = user.get("name", "")

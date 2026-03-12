@@ -12,6 +12,7 @@ from datetime import datetime, timezone, timedelta
 from bson import ObjectId
 import os
 from database import get_db as get_database
+from utils.auth import get_current_user
 
 router = APIRouter(prefix="/api/sales", tags=["Sales Module"])
 
@@ -44,6 +45,7 @@ class SalesOrderCreate(BaseModel):
     customer_id: str
     sales_person_id: Optional[str] = None
     warehouse_id: Optional[str] = None
+    branch_id: Optional[str] = None  # Branch/Cabang for stock
     delivery_date: Optional[str] = None
     ppn_type: str = "exclude"
     ppn_percent: float = 11
@@ -60,6 +62,7 @@ class SalesInvoiceCreate(BaseModel):
     customer_id: str
     sales_person_id: Optional[str] = None
     warehouse_id: Optional[str] = None
+    branch_id: Optional[str] = None  # Branch/Cabang for stock
     ppn_type: str = "exclude"
     ppn_percent: float = 11
     notes: Optional[str] = None
@@ -118,10 +121,26 @@ async def generate_number(prefix: str, db) -> str:
     
     return f"{prefix}-{date_str}-{str(seq).zfill(4)}"
 
-async def get_product_info(db, product_id: str) -> dict:
-    """Get product information"""
+async def get_product_info(db, product_id: str, branch_id: str = None) -> dict:
+    """Get product information with stock from stock_movements (single source of truth)"""
     product = await db.products.find_one({"id": product_id}, {"_id": 0})
-    return product or {}
+    if not product:
+        return {}
+    
+    # Get stock from stock_movements (SINGLE SOURCE OF TRUTH)
+    if branch_id:
+        pipeline = [
+            {"$match": {"product_id": product_id, "branch_id": branch_id}},
+            {"$group": {"_id": None, "total": {"$sum": "$quantity"}}}
+        ]
+        result = await db.stock_movements.aggregate(pipeline).to_list(1)
+        product["stock"] = result[0]["total"] if result else 0
+    else:
+        # Fallback to product_stocks if no branch specified
+        stock_record = await db.product_stocks.find_one({"product_id": product_id}, {"_id": 0, "quantity": 1})
+        product["stock"] = stock_record.get("quantity", 0) if stock_record else 0
+    
+    return product
 
 async def get_customer_info(db, customer_id: str) -> dict:
     """Get customer information"""
@@ -193,24 +212,29 @@ async def derive_account(db, account_key: str, branch_id: str = None, warehouse_
     # Final fallback
     return {"code": "9-9999", "name": f"Unknown Account ({account_key})"}
 
-async def update_stock(db, product_id: str, warehouse_id: str, qty_change: int, movement_type: str, reference: str, user_id: str = None):
-    """Update stock and create movement record"""
-    await db.products.update_one(
-        {"id": product_id},
-        {"$inc": {"stock": qty_change}}
-    )
+async def update_stock(db, product_id: str, branch_id: str, qty_change: int, movement_type: str, reference: str, user_id: str = None):
+    """Update stock via stock_movements (SINGLE SOURCE OF TRUTH)"""
+    # NOTE: Tidak lagi update products.stock - stock dihitung dari movements
     
+    # Create movement record
     movement = {
         "id": str(ObjectId()),
         "product_id": product_id,
-        "warehouse_id": warehouse_id,
+        "branch_id": branch_id,  # Use branch_id as primary location
+        "warehouse_id": branch_id,  # Backward compatibility
         "quantity": qty_change,
-        "type": movement_type,
-        "reference": reference,
+        "movement_type": movement_type,  # Correct field name
+        "reference_type": "sales",
+        "reference_number": reference,
         "user_id": user_id,
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     await db.stock_movements.insert_one(movement)
+    
+    # Sync product_stocks for quick lookup (optional, for UI speed)
+    from routes.inventory import sync_product_stock_from_movements
+    await sync_product_stock_from_movements(product_id, branch_id)
+    
     return movement
 
 async def create_journal_entry(db, entries: List[dict], reference: str, description: str, user_id: str = None):
@@ -314,7 +338,7 @@ async def create_sales_order(data: SalesOrderCreate):
     items_data = []
     
     for item in data.items:
-        product = await get_product_info(db, item.product_id)
+        product = await get_product_info(db, item.product_id, data.branch_id)
         if not product:
             raise HTTPException(status_code=404, detail=f"Produk {item.product_id} tidak ditemukan")
         
@@ -414,9 +438,10 @@ async def get_sales_invoices(
     return {"items": invoices, "total": len(invoices)}
 
 @router.post("/invoices")
-async def create_sales_invoice(data: SalesInvoiceCreate):
+async def create_sales_invoice(data: SalesInvoiceCreate, current_user: dict = Depends(get_current_user)):
     """Create sales invoice - Tambah Penjualan with full integration"""
     db = get_database()
+    user = current_user  # For use in the function
     
     # =============== FISCAL PERIOD VALIDATION ===============
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
@@ -431,7 +456,7 @@ async def create_sales_invoice(data: SalesInvoiceCreate):
     items_data = []
     
     for item in data.items:
-        product = await get_product_info(db, item.product_id)
+        product = await get_product_info(db, item.product_id, data.branch_id)
         if not product:
             raise HTTPException(status_code=404, detail=f"Produk {item.product_id} tidak ditemukan")
         
@@ -538,14 +563,16 @@ async def create_sales_invoice(data: SalesInvoiceCreate):
     await db.sales_invoices.insert_one(invoice)
     
     # ===== INTEGRATION: Update Stock =====
+    branch_id = data.branch_id or user.get("branch_id") or "0acd2ffd-c2d9-4324-b860-a4626840e80e"  # Default HQ
     for item in items_data:
         await update_stock(
             db,
             item["product_id"],
-            data.warehouse_id or "main",
+            branch_id,  # Use branch_id instead of warehouse_id
             -item["quantity"],
             "sales_out",
-            invoice_number
+            invoice_number,
+            user.get("id")
         )
     
     # ===== INTEGRATION: Create Receivable if credit =====
@@ -557,7 +584,7 @@ async def create_sales_invoice(data: SalesInvoiceCreate):
     
     # Get product category for account derivation (use first item's category)
     first_item = items_data[0] if items_data else {}
-    product = await get_product_info(db, first_item.get("product_id", ""))
+    product = await get_product_info(db, first_item.get("product_id", ""), data.branch_id)
     category_id = product.get("category_id")
     
     if data.cash_amount > 0:
@@ -581,6 +608,9 @@ async def create_sales_invoice(data: SalesInvoiceCreate):
             "debit": credit_amount,
             "credit": 0
         })
+        
+        # ===== INTEGRATION: Create AR Entry for Credit Sales =====
+        await create_receivable(db, data.customer_id, invoice_number, credit_amount, due_days=30)
     
     sales_net = grand_total - ppn_amount
     sales_account = await derive_account(db, "pendapatan_jual",
@@ -670,7 +700,7 @@ async def create_sales_return(data: SalesReturnCreate):
     total_hpp_return = 0
     
     for item in data.items:
-        product = await get_product_info(db, item.get("product_id"))
+        product = await get_product_info(db, item.get("product_id"), data.branch_id if hasattr(data, 'branch_id') else None)
         qty = item.get("quantity", 0)
         price = item.get("unit_price", 0)
         item_total = qty * price
