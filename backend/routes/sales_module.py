@@ -238,7 +238,17 @@ async def update_stock(db, product_id: str, branch_id: str, qty_change: int, mov
     return movement
 
 async def create_journal_entry(db, entries: List[dict], reference: str, description: str, user_id: str = None):
-    """Create journal entry with multiple lines"""
+    """Create journal entry with multiple lines - ALWAYS BALANCED"""
+    # Validasi balance SEBELUM simpan
+    total_debit = sum(e.get('debit', 0) for e in entries)
+    total_credit = sum(e.get('credit', 0) for e in entries)
+    
+    if total_debit != total_credit:
+        raise HTTPException(
+            status_code=500, 
+            detail=f"JOURNAL ENTRY NOT BALANCED: Debit={total_debit:,.0f} Credit={total_credit:,.0f} Diff={total_debit-total_credit:,.0f}"
+        )
+    
     journal_number = await generate_number("JV", db)
     
     journal = {
@@ -246,8 +256,13 @@ async def create_journal_entry(db, entries: List[dict], reference: str, descript
         "journal_number": journal_number,
         "date": datetime.now(timezone.utc).isoformat(),
         "reference": reference,
+        "reference_type": "sales" if reference.startswith("INV") else "general",
+        "reference_id": reference,
         "description": description,
-        "entries": entries,
+        "lines": entries,  # Use 'lines' as standard field name
+        "entries": entries,  # Keep for backward compatibility
+        "total_debit": total_debit,
+        "total_credit": total_credit,
         "status": "posted",
         "created_by": user_id,
         "created_at": datetime.now(timezone.utc).isoformat()
@@ -258,6 +273,7 @@ async def create_journal_entry(db, entries: List[dict], reference: str, descript
         ledger_entry = {
             "id": str(ObjectId()),
             "journal_id": journal["id"],
+            "journal_number": journal_number,
             "account_code": entry.get("account_code"),
             "account_name": entry.get("account_name"),
             "debit": entry.get("debit", 0),
@@ -580,6 +596,25 @@ async def create_sales_invoice(data: SalesInvoiceCreate, current_user: dict = De
         await create_receivable(db, data.customer_id, invoice_number, credit_amount)
     
     # ===== INTEGRATION: Create Journal Entries using Account Derivation Engine =====
+    # 
+    # PENJUALAN TUNAI:
+    #   Debit  Kas/Bank              xxx
+    #   Credit Penjualan             xxx
+    #   Credit PPN Keluaran          xxx (jika ada)
+    #
+    # PENJUALAN KREDIT:
+    #   Debit  Piutang Usaha         xxx
+    #   Credit Penjualan             xxx
+    #   Credit PPN Keluaran          xxx (jika ada)
+    #
+    # HPP:
+    #   Debit  HPP                   xxx
+    #   Credit Persediaan            xxx
+    #
+    # DP/DEPOSIT DIGUNAKAN:
+    #   Debit  Uang Muka Pelanggan   xxx
+    #   Debit  Deposit Pelanggan     xxx
+    #
     journal_entries = []
     
     # Get product category for account derivation (use first item's category)
@@ -587,6 +622,8 @@ async def create_sales_invoice(data: SalesInvoiceCreate, current_user: dict = De
     product = await get_product_info(db, first_item.get("product_id", ""), data.branch_id)
     category_id = product.get("category_id")
     
+    # ===== DEBIT SIDE: Sumber pembayaran =====
+    # 1. Kas (jika ada pembayaran tunai)
     if data.cash_amount > 0:
         cash_account = await derive_account(db, "pembayaran_tunai", 
             branch_id=None, warehouse_id=data.warehouse_id, 
@@ -598,6 +635,7 @@ async def create_sales_invoice(data: SalesInvoiceCreate, current_user: dict = De
             "credit": 0
         })
     
+    # 2. Piutang Usaha (jika ada kredit)
     if credit_amount > 0:
         ar_account = await derive_account(db, "pembayaran_kredit",
             branch_id=None, warehouse_id=data.warehouse_id,
@@ -608,10 +646,28 @@ async def create_sales_invoice(data: SalesInvoiceCreate, current_user: dict = De
             "debit": credit_amount,
             "credit": 0
         })
-        
-        # ===== INTEGRATION: Create AR Entry for Credit Sales =====
-        await create_receivable(db, data.customer_id, invoice_number, credit_amount, due_days=30)
+        # NOTE: create_receivable sudah dipanggil di atas, tidak perlu duplikat
     
+    # 3. Uang Muka Pelanggan (jika DP digunakan)
+    if data.dp_used > 0:
+        journal_entries.append({
+            "account_code": "2-1600",
+            "account_name": "Uang Muka Pelanggan",
+            "debit": data.dp_used,
+            "credit": 0
+        })
+    
+    # 4. Deposit Pelanggan (jika deposit digunakan)
+    if data.deposit_used > 0:
+        journal_entries.append({
+            "account_code": "2-1700",
+            "account_name": "Deposit Pelanggan",
+            "debit": data.deposit_used,
+            "credit": 0
+        })
+    
+    # ===== CREDIT SIDE: Pendapatan dan Pajak =====
+    # 1. Pendapatan Penjualan (DPP = total - ppn)
     sales_net = grand_total - ppn_amount
     sales_account = await derive_account(db, "pendapatan_jual",
         branch_id=None, warehouse_id=data.warehouse_id, category_id=category_id)
@@ -622,6 +678,7 @@ async def create_sales_invoice(data: SalesInvoiceCreate, current_user: dict = De
         "credit": sales_net
     })
     
+    # 2. PPN Keluaran (jika ada pajak)
     if ppn_amount > 0:
         ppn_account = await derive_account(db, "ppn_keluaran",
             branch_id=None, warehouse_id=data.warehouse_id, category_id=category_id)
@@ -632,25 +689,56 @@ async def create_sales_invoice(data: SalesInvoiceCreate, current_user: dict = De
             "credit": ppn_amount
         })
     
+    # ===== VALIDASI BALANCE SEBELUM SIMPAN =====
+    total_debit_sales = sum(e.get('debit', 0) for e in journal_entries)
+    total_credit_sales = sum(e.get('credit', 0) for e in journal_entries)
+    
+    if total_debit_sales != total_credit_sales:
+        # Log untuk debugging
+        print(f"⚠️ JOURNAL IMBALANCE DETECTED for {invoice_number}")
+        print(f"   Debit: {total_debit_sales:,.0f}, Credit: {total_credit_sales:,.0f}")
+        print(f"   cash_amount={data.cash_amount}, credit_amount={credit_amount}")
+        print(f"   dp_used={data.dp_used}, deposit_used={data.deposit_used}")
+        print(f"   grand_total={grand_total}, ppn_amount={ppn_amount}")
+        # Force balance dengan menambahkan selisih ke kas atau piutang
+        diff = total_credit_sales - total_debit_sales
+        if diff > 0:
+            # Kurang debit, tambahkan ke Kas
+            cash_account = await derive_account(db, "pembayaran_tunai", 
+                branch_id=None, warehouse_id=data.warehouse_id, 
+                category_id=category_id, payment_method="cash")
+            journal_entries.append({
+                "account_code": cash_account["code"],
+                "account_name": cash_account["name"],
+                "debit": diff,
+                "credit": 0
+            })
+        else:
+            # Kurang credit, ini seharusnya tidak terjadi
+            raise HTTPException(status_code=500, detail=f"Journal calculation error: Debit > Credit by {abs(diff)}")
+    
+    await create_journal_entry(db, journal_entries, invoice_number, f"Penjualan {invoice_number}")
+    
+    # ===== JURNAL HPP (TERPISAH - SELALU BALANCE) =====
     if total_hpp > 0:
+        hpp_entries = []
         hpp_account = await derive_account(db, "hpp",
             branch_id=None, warehouse_id=data.warehouse_id, category_id=category_id)
         inventory_account = await derive_account(db, "persediaan_barang",
             branch_id=None, warehouse_id=data.warehouse_id, category_id=category_id)
-        journal_entries.append({
+        hpp_entries.append({
             "account_code": hpp_account["code"],
             "account_name": hpp_account["name"],
             "debit": total_hpp,
             "credit": 0
         })
-        journal_entries.append({
+        hpp_entries.append({
             "account_code": inventory_account["code"],
             "account_name": inventory_account["name"],
             "debit": 0,
             "credit": total_hpp
         })
-    
-    await create_journal_entry(db, journal_entries, invoice_number, f"Penjualan {invoice_number}")
+        await create_journal_entry(db, hpp_entries, invoice_number, f"HPP {invoice_number}")
     
     # ===== INTEGRATION: Record Price History =====
     for item in items_data:

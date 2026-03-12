@@ -186,9 +186,9 @@ export default function ItemFormModal({
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Validation
-    if (!formData.code.trim()) {
-      toast.error('Kode Item wajib diisi');
+    // Validation - skip code check if AUTO
+    if (!formData.code.trim() || (formData.code !== 'AUTO' && !formData.code.trim())) {
+      toast.error('Kode Item wajib diisi atau pilih AUTO');
       return;
     }
     if (!formData.name.trim()) {
@@ -230,6 +230,28 @@ export default function ItemFormModal({
 
     setSaving(true);
     try {
+      // If AUTO code, generate from number settings engine
+      let finalCode = formData.code;
+      if (formData.code === 'AUTO') {
+        try {
+          const genRes = await fetch(`${API_URL}/api/number-settings/generate/master?entity_type=item`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          if (genRes.ok) {
+            const genData = await genRes.json();
+            finalCode = genData.code;
+            toast.info(`Kode otomatis: ${finalCode}`);
+          } else {
+            throw new Error('Gagal generate kode otomatis');
+          }
+        } catch (err) {
+          toast.error('Gagal generate kode otomatis: ' + err.message);
+          setSaving(false);
+          return;
+        }
+      }
+      
       // Step 1: Save item data (without branch_id!)
       const url = editingItem 
         ? `${API_URL}/api/master/items/${editingItem.id}`
@@ -238,7 +260,7 @@ export default function ItemFormModal({
       
       // Prepare item payload - NO branch_id
       const itemPayload = {
-        code: formData.code,
+        code: finalCode,
         barcode: formData.barcode,
         name: formData.name,
         category_id: formData.category_id,
@@ -404,17 +426,39 @@ export default function ItemFormModal({
                   </p>
                 </div>
 
-                {/* Row 1: Code, Barcode */}
-                <div className="grid grid-cols-2 gap-4">
+                {/* Row 1: Code Mode, Code, Barcode */}
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-xs text-gray-400 mb-1">Mode Kode</label>
+                    <select
+                      value={formData.code === 'AUTO' || formData.code_mode === 'auto' ? 'auto' : 'manual'}
+                      onChange={async (e) => {
+                        if (e.target.value === 'auto') {
+                          setFormData({ ...formData, code: 'AUTO', code_mode: 'auto' });
+                        } else {
+                          setFormData({ ...formData, code: '', code_mode: 'manual' });
+                        }
+                      }}
+                      className="w-full px-3 py-2 bg-[#0a0a0a] border border-[#333] rounded-lg text-white text-sm"
+                      data-testid="code-mode-select"
+                    >
+                      <option value="auto">AUTO</option>
+                      <option value="manual">MANUAL</option>
+                    </select>
+                  </div>
                   <div>
                     <label className="block text-xs text-gray-400 mb-1">Kode Item <span className="text-red-400">*</span></label>
                     <input
                       type="text"
                       value={formData.code}
-                      onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
-                      className="w-full px-3 py-2 bg-[#0a0a0a] border border-[#333] rounded-lg text-white text-sm"
-                      placeholder="AUTO / Manual"
+                      onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase(), code_mode: 'manual' })}
+                      className={`w-full px-3 py-2 bg-[#0a0a0a] border border-[#333] rounded-lg text-sm ${
+                        formData.code === 'AUTO' ? 'text-amber-400 font-semibold' : 'text-white'
+                      }`}
+                      placeholder={formData.code === 'AUTO' ? 'Akan di-generate otomatis' : 'Input kode manual'}
+                      disabled={formData.code === 'AUTO'}
                       required
+                      data-testid="item-code-input"
                     />
                   </div>
                   <div>
@@ -425,6 +469,7 @@ export default function ItemFormModal({
                       onChange={(e) => setFormData({ ...formData, barcode: e.target.value })}
                       className="w-full px-3 py-2 bg-[#0a0a0a] border border-[#333] rounded-lg text-white text-sm"
                       placeholder="Scan atau input manual"
+                      data-testid="item-barcode-input"
                     />
                   </div>
                 </div>

@@ -136,6 +136,7 @@ import ProductAssembly from './pages/inventory/ProductAssembly';
 
 // Settings Pages
 import { PrinterSettings, RBACManagement } from './pages/settings';
+import NumberSettings from './pages/settings/NumberSettings';
 
 // Accounting Pages
 import ChartOfAccounts from './pages/accounting/ChartOfAccounts';
@@ -445,7 +446,8 @@ function App() {
             <Route path="settings/general" element={<Settings />} />
             <Route path="settings/branches" element={<Branches />} />
             <Route path="settings/periods" element={<Settings />} />
-            <Route path="settings/numbering" element={<Settings />} />
+            <Route path="settings/numbering" element={<NumberSettings />} />
+            <Route path="settings/number-settings" element={<NumberSettings />} />
             <Route path="settings/printer" element={<PrinterSettings />} />
             <Route path="settings/theme" element={<Settings />} />
             <Route path="settings/import" element={<Settings />} />

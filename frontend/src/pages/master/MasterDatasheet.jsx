@@ -55,27 +55,38 @@ const MasterDatasheet = () => {
     setEditValue(value || '');
   };
 
-  const handleSaveCell = async () => {
-    if (!editingCell) return;
-    
+  const handleSaveCellWithId = async (productId, field, newValue) => {
     try {
       const token = localStorage.getItem('token');
-      const { productId, field } = editingCell;
       
       let updateData = {};
       if (field === 'cost_price' || field === 'selling_price' || field === 'min_stock') {
-        updateData[field] = parseFloat(editValue) || 0;
+        updateData[field] = parseFloat(newValue) || 0;
       } else {
-        updateData[field] = editValue;
+        updateData[field] = newValue;
       }
       
       await axios.put(`${API_URL}/api/products/${productId}`, updateData, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
-      // Update local state
+      // Update local state with name lookup for category/brand/unit
+      let updatedProduct = { ...updateData };
+      if (field === 'category_id') {
+        const cat = categories.find(c => c.id === newValue);
+        updatedProduct.category_name = cat?.name || '';
+      }
+      if (field === 'brand_id') {
+        const brand = brands.find(b => b.id === newValue);
+        updatedProduct.brand_name = brand?.name || '';
+      }
+      if (field === 'unit_id') {
+        const unit = units.find(u => u.id === newValue);
+        updatedProduct.unit_name = unit?.name || '';
+      }
+      
       setProducts(products.map(p => 
-        p.id === productId ? { ...p, ...updateData } : p
+        p.id === productId ? { ...p, ...updatedProduct } : p
       ));
       
       toast.success('Data berhasil diupdate');
@@ -83,6 +94,11 @@ const MasterDatasheet = () => {
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Gagal update');
     }
+  };
+
+  const handleSaveCell = async () => {
+    if (!editingCell) return;
+    await handleSaveCellWithId(editingCell.productId, editingCell.field, editValue);
   };
 
   const handleCancelEdit = () => {
@@ -185,6 +201,48 @@ const MasterDatasheet = () => {
     );
   };
 
+  // Editable Select Cell for Category, Brand, Unit
+  const EditableSelectCell = ({ productId, field, currentValue, currentName, options }) => {
+    const isEditing = editingCell?.productId === productId && editingCell?.field === field;
+    
+    if (isEditing) {
+      return (
+        <div className="flex items-center gap-1">
+          <Select 
+            value={editValue || 'none'} 
+            onValueChange={async (val) => {
+              setEditValue(val === 'none' ? '' : val);
+              await handleSaveCellWithId(productId, field, val === 'none' ? '' : val);
+            }}
+          >
+            <SelectTrigger className="h-7 text-xs bg-gray-900 border-gray-600 w-full">
+              <SelectValue placeholder="Pilih..." />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">-- Tidak ada --</SelectItem>
+              {options.map(opt => (
+                <SelectItem key={opt.id} value={opt.id}>{opt.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button size="sm" variant="ghost" onClick={handleCancelEdit} className="h-6 w-6 p-0">
+            <X className="w-3 h-3 text-red-400" />
+          </Button>
+        </div>
+      );
+    }
+    
+    return (
+      <span 
+        className="cursor-pointer hover:bg-gray-700 px-2 py-1 rounded block text-gray-400 hover:text-white"
+        onClick={() => handleCellClick(productId, field, currentValue)}
+        data-testid={`cell-${field}-${productId}`}
+      >
+        {currentName || '-'}
+      </span>
+    );
+  };
+
   return (
     <div className="p-6" data-testid="master-datasheet">
       <div className="flex justify-between items-center mb-6">
@@ -243,7 +301,9 @@ const MasterDatasheet = () => {
       {/* Info Banner */}
       <div className="bg-blue-900/30 border border-blue-700 rounded-lg p-3 mb-4">
         <p className="text-blue-300 text-sm">
-          <strong>Tips:</strong> Klik pada sel untuk edit langsung. Tekan Enter untuk simpan, Escape untuk batal.
+          <strong>Tips:</strong> Klik pada sel untuk edit langsung. 
+          <span className="text-green-300 ml-2">• Kategori, Merk, Satuan</span> bisa diedit dengan dropdown.
+          <span className="text-yellow-300 ml-2">• Tekan Enter untuk simpan, Escape untuk batal.</span>
         </p>
       </div>
 
@@ -293,9 +353,33 @@ const MasterDatasheet = () => {
                   <td className="px-2 py-2">
                     <EditableCell productId={item.id} field="name" value={item.name} />
                   </td>
-                  <td className="px-2 py-2 text-gray-400">{item.category_name || '-'}</td>
-                  <td className="px-2 py-2 text-gray-400">{item.brand_name || '-'}</td>
-                  <td className="px-2 py-2 text-gray-400">{item.unit_name || '-'}</td>
+                  <td className="px-2 py-2">
+                    <EditableSelectCell 
+                      productId={item.id} 
+                      field="category_id" 
+                      currentValue={item.category_id} 
+                      currentName={item.category_name}
+                      options={categories}
+                    />
+                  </td>
+                  <td className="px-2 py-2">
+                    <EditableSelectCell 
+                      productId={item.id} 
+                      field="brand_id" 
+                      currentValue={item.brand_id} 
+                      currentName={item.brand_name}
+                      options={brands}
+                    />
+                  </td>
+                  <td className="px-2 py-2">
+                    <EditableSelectCell 
+                      productId={item.id} 
+                      field="unit_id" 
+                      currentValue={item.unit_id} 
+                      currentName={item.unit_name}
+                      options={units}
+                    />
+                  </td>
                   <td className="px-2 py-2 text-right">
                     <EditableCell productId={item.id} field="cost_price" value={item.cost_price} type="number" />
                   </td>
