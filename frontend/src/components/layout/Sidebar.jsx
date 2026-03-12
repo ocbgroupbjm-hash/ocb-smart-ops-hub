@@ -259,14 +259,15 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     },
 
     // ============================================================
-    // APPROVAL CENTER - Phase 3
+    // APPROVAL CENTER - Phase 3 (HIDDEN - only show if workflow enabled)
     // ============================================================
-    {
-      name: 'Approval Center',
-      icon: FileCheck,
-      path: '/approval-center',
-      roles: ['owner', 'admin', 'supervisor', 'finance']
-    },
+    // HIDDEN: Modul ini digunakan hanya jika workflow bisnis memerlukan
+    // {
+    //   name: 'Approval Center',
+    //   icon: FileCheck,
+    //   path: '/approval-center',
+    //   roles: ['owner', 'admin', 'supervisor', 'finance']
+    // },
 
     // ============================================================
     // CREDIT CONTROL - Phase 3
@@ -289,10 +290,11 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     },
 
     // ============================================================
-    // WAREHOUSE CONTROL - Phase 3
+    // BRANCH INVENTORY CONTROL - (Renamed from Warehouse Control)
+    // Karena sistem menggunakan konsep: Gudang = Cabang
     // ============================================================
     {
-      name: 'Warehouse Control',
+      name: 'Branch Inventory Control',
       icon: Warehouse,
       path: '/warehouse-control',
       roles: ['owner', 'admin', 'inventory']
@@ -309,24 +311,26 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     },
 
     // ============================================================
-    // SALES TARGET - Phase 3
+    // SALES TARGET - Phase 3 (HIDDEN - only show if needed)
     // ============================================================
-    {
-      name: 'Sales Target',
-      icon: Target,
-      path: '/sales-target',
-      roles: ['owner', 'admin', 'sales_manager']
-    },
+    // HIDDEN: Modul ini digunakan hanya jika workflow bisnis memerlukan
+    // {
+    //   name: 'Sales Target',
+    //   icon: Target,
+    //   path: '/sales-target',
+    //   roles: ['owner', 'admin', 'sales_manager']
+    // },
 
     // ============================================================
-    // COMMISSION ENGINE - Phase 3
+    // COMMISSION ENGINE - Phase 3 (HIDDEN - only show if needed)
     // ============================================================
-    {
-      name: 'Komisi',
-      icon: Wallet,
-      path: '/commission',
-      roles: ['owner', 'admin', 'finance_manager']
-    },
+    // HIDDEN: Modul ini digunakan hanya jika workflow bisnis memerlukan
+    // {
+    //   name: 'Komisi',
+    //   icon: Wallet,
+    //   path: '/commission',
+    //   roles: ['owner', 'admin', 'finance_manager']
+    // },
 
     // ============================================================
     // CASH CONTROL - Phase 3

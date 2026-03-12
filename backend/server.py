@@ -116,6 +116,9 @@ from routes.sales_module import router as sales_module_router
 # Import Number Settings Module - Central Engine for Auto Numbering
 from routes.number_settings import router as number_settings_router
 
+# Import Owner Control Module - Owner Edit Control with Audit Trail
+from routes.owner_control import router as owner_control_router
+
 # Mount all routers under /api - Core ERP
 app.include_router(auth_router, prefix="/api")
 app.include_router(products_router, prefix="/api")
@@ -200,6 +203,9 @@ app.include_router(sales_module_router)
 
 # Mount Number Settings Module
 app.include_router(number_settings_router)
+
+# Mount Owner Control Module - Owner Edit Control with Audit Trail
+app.include_router(owner_control_router, prefix="/api")
 
 # Mount Account Settings Module - iPOS Style
 app.include_router(account_settings_router)
