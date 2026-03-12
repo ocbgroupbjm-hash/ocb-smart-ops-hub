@@ -142,9 +142,30 @@ async def create_transaction(
     user: dict = Depends(require_permission("sales", "create"))
 ):
     """Create a new POS transaction - Requires sales.create permission"""
+    db = get_db()
     branch_id = user.get("branch_id")
     if not branch_id:
         raise HTTPException(status_code=400, detail="User not assigned to a branch")
+    
+    # =============== KASIR SHIFT VALIDATION ===============
+    # Kasir WAJIB memiliki shift aktif untuk transaksi
+    user_role = user.get("role", "").lower()
+    if user_role in ["kasir", "cashier"]:
+        user_id = user.get("user_id") or user.get("id")
+        active_shift = await db.cashier_shifts.find_one({
+            "cashier_id": user_id,
+            "status": "open"
+        }, {"_id": 0})
+        
+        if not active_shift:
+            raise HTTPException(
+                status_code=403,
+                detail={
+                    "error": "SHIFT_REQUIRED",
+                    "message": "Anda harus membuka shift kasir terlebih dahulu sebelum transaksi",
+                    "action_required": "open_shift"
+                }
+            )
     
     # =============== FISCAL PERIOD VALIDATION ===============
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")

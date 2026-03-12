@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, ShoppingCart, Package, Boxes, Users, Building2, 
@@ -12,20 +12,67 @@ import {
   Activity, Bot, MessageSquare, Target, Megaphone, Banknote, UserPlus,
   CalendarCheck, Briefcase, BadgeDollarSign, Bell, Eye, Fingerprint, FileBarChart,
   Globe, Plus, List, ChevronsRight, Send, Table, QrCode, Calendar, Award, Grid,
-  RefreshCcw, BanknoteIcon
+  RefreshCcw, BanknoteIcon, AlertTriangle
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { usePermission } from '../../contexts/PermissionContext';
+import { 
+  canAccessModule, 
+  shouldShowMenu, 
+  requiresShiftForTransaction,
+  ROLE_PERMISSIONS,
+  getKasirAllowedMenus 
+} from '../../utils/rbacHelper';
+import axios from 'axios';
+
+const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 const Sidebar = ({ isOpen, setIsOpen }) => {
   const { user, logout } = useAuth();
   const { hasPermission, canSeeMenu, permissions } = usePermission();
   const navigate = useNavigate();
   const [expandedMenus, setExpandedMenus] = useState({});
+  const [shiftStatus, setShiftStatus] = useState({ hasActiveShift: false, shift: null });
+  const [showShiftWarning, setShowShiftWarning] = useState(false);
 
-  const handleLogout = () => {
+  // Check shift status for kasir
+  useEffect(() => {
+    const checkKasirShift = async () => {
+      const userRole = user?.role?.toLowerCase();
+      if (userRole === 'kasir' || userRole === 'cashier') {
+        try {
+          const token = localStorage.getItem('token');
+          const response = await axios.get(`${API_URL}/api/cash-control/shift/check`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          setShiftStatus({
+            hasActiveShift: response.data.has_active_shift,
+            shift: response.data.shift
+          });
+        } catch (error) {
+          console.error('Shift check error:', error);
+        }
+      }
+    };
+    checkKasirShift();
+  }, [user]);
+
+  const handleLogout = async () => {
+    const userRole = user?.role?.toLowerCase();
+    
+    // GUARD: Kasir tidak boleh logout jika shift masih aktif
+    if ((userRole === 'kasir' || userRole === 'cashier') && shiftStatus.hasActiveShift) {
+      setShowShiftWarning(true);
+      return;
+    }
+    
     logout();
     navigate('/login');
+  };
+
+  const handleCloseShiftAndLogout = () => {
+    setShowShiftWarning(false);
+    navigate('/cash-control');
   };
 
   const toggleMenu = (menuName) => {
@@ -407,12 +454,35 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     },
   ];
 
-  // Filter menus based on RBAC permissions
+  // Filter menus based on RBAC permissions - SYNCHRONIZED WITH DATABASE
   const filteredMenus = menuStructure.filter(item => {
-    if (permissions?.all_permissions) return true;
-    const roleAllowed = item.roles?.includes(user?.role || 'cashier');
+    const userRole = user?.role?.toLowerCase();
+    
+    // Super admin / owner = full access
+    if (permissions?.all_permissions || 
+        userRole === 'owner' || 
+        userRole === 'pemilik' || 
+        userRole === 'super_admin' ||
+        userRole === 'admin') {
+      return true;
+    }
+    
+    // KASIR - STRICTLY LIMITED ACCESS
+    if (userRole === 'kasir' || userRole === 'cashier') {
+      const kasirAllowed = getKasirAllowedMenus();
+      return kasirAllowed.includes(item.name);
+    }
+    
+    // Check using RBAC helper
+    if (!shouldShowMenu(userRole, item.name)) {
+      return false;
+    }
+    
+    // Legacy role check
+    const roleAllowed = item.roles?.includes(userRole);
     if (!roleAllowed) return false;
     
+    // Module-based check
     if (item.name.includes('Master Data')) return canSeeMenu('master');
     if (item.name.includes('Pembelian')) return canSeeMenu('purchase');
     if (item.name.includes('Penjualan')) return canSeeMenu('sales');
@@ -498,6 +568,41 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
 
   return (
     <>
+      {/* SHIFT WARNING MODAL - Kasir tidak boleh logout sebelum tutup shift */}
+      {showShiftWarning && (
+        <div className="fixed inset-0 bg-black/70 z-[100] flex items-center justify-center p-4">
+          <div className="bg-[#1a1012] border border-red-700/50 rounded-xl p-6 max-w-md w-full shadow-2xl">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="h-12 w-12 rounded-full bg-red-900/30 flex items-center justify-center">
+                <AlertTriangle className="h-6 w-6 text-red-400" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-red-200">Shift Masih Aktif</h3>
+                <p className="text-sm text-gray-400">Anda tidak dapat logout</p>
+              </div>
+            </div>
+            <p className="text-gray-300 mb-6">
+              Anda harus menutup shift kasir terlebih dahulu sebelum logout. 
+              Silakan ke halaman <strong className="text-amber-300">Kontrol Kas</strong> untuk menutup shift.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowShiftWarning(false)}
+                className="flex-1 px-4 py-2 bg-gray-800 text-gray-300 rounded-lg hover:bg-gray-700 transition-colors"
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleCloseShiftAndLogout}
+                className="flex-1 px-4 py-2 bg-red-700 text-white rounded-lg hover:bg-red-600 transition-colors"
+              >
+                Tutup Shift
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {isOpen && (
         <div 
           className="fixed inset-0 bg-black/50 z-40 lg:hidden"

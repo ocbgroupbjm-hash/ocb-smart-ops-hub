@@ -458,6 +458,26 @@ async def create_sales_invoice(data: SalesInvoiceCreate, current_user: dict = De
     db = get_database()
     user = current_user  # For use in the function
     
+    # =============== KASIR SHIFT VALIDATION ===============
+    # Kasir WAJIB memiliki shift aktif untuk transaksi
+    user_role = user.get("role", "").lower()
+    if user_role in ["kasir", "cashier"]:
+        user_id = user.get("user_id") or user.get("id")
+        active_shift = await db.cashier_shifts.find_one({
+            "cashier_id": user_id,
+            "status": "open"
+        }, {"_id": 0})
+        
+        if not active_shift:
+            raise HTTPException(
+                status_code=403,
+                detail={
+                    "error": "SHIFT_REQUIRED",
+                    "message": "Anda harus membuka shift kasir terlebih dahulu sebelum transaksi",
+                    "action_required": "open_shift"
+                }
+            )
+    
     # =============== FISCAL PERIOD VALIDATION ===============
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     await enforce_fiscal_period(today, "create")
