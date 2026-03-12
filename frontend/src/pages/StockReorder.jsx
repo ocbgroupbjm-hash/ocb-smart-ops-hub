@@ -212,30 +212,32 @@ const StockReorder = () => {
 
   const generatePODraft = async (saveToDb = false) => {
     try {
-      const res = await fetch(`${API_URL}/api/stock-reorder/generate-po-draft`, {
+      // Build query params instead of body
+      const params = new URLSearchParams();
+      if (urgencyFilter) params.append('urgency_filter', urgencyFilter);
+      params.append('save_to_db', saveToDb);
+      
+      const res = await fetch(`${API_URL}/api/stock-reorder/generate-po-draft?${params}`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ 
-          urgency_filter: urgencyFilter || null,
-          save_to_db: saveToDb 
-        })
+          'Authorization': `Bearer ${token}`
+        }
       });
       const data = await res.json();
       
       if (data.success) {
         if (saveToDb) {
-          alert(`Berhasil membuat ${data.saved_count} PO Draft di Purchase Module dengan ${data.total_items} item`);
+          toast.success(`Berhasil membuat ${data.saved_count} PO Draft di Purchase Module dengan ${data.total_items} item`);
+          handleRefresh();
         } else {
-          alert(`Preview: ${data.total_drafts} draft PO dengan ${data.total_items} item\n\nKlik "Save PO Draft" untuk menyimpan ke database`);
+          toast.info(`Preview: ${data.total_drafts} draft PO dengan ${data.total_items} item. Klik "Save PO Draft" untuk menyimpan.`);
         }
       } else {
-        alert(data.message || 'Tidak ada item untuk di-reorder');
+        toast.error(data.message || 'Tidak ada item untuk di-reorder');
       }
     } catch (err) {
-      alert('Gagal generate PO draft');
+      console.error('Generate PO error:', err);
+      toast.error('Gagal generate PO draft');
     }
   };
 
