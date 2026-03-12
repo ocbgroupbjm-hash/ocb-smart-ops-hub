@@ -93,6 +93,9 @@ import CashControl from './pages/CashControl';
 // Report Center - Phase 4
 import ReportCenter from './pages/ReportCenter';
 
+// KPI Dashboard - Phase 5
+import KPIDashboard from './pages/KPIDashboard';
+
 // Master Data Pages
 import { 
   MasterItems, MasterCategories, MasterUnits, MasterBrands, 
@@ -407,6 +410,9 @@ function App() {
             
             {/* Report Center Routes - Phase 4 */}
             <Route path="report-center" element={<ReportCenter />} />
+            
+            {/* KPI Dashboard - Phase 5 */}
+            <Route path="kpi-dashboard" element={<KPIDashboard />} />
             
             {/* Dashboard Routes */}
             <Route path="owner-dashboard" element={<OwnerDashboard />} />

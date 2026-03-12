@@ -243,6 +243,10 @@ app.include_router(cash_control_router)
 from routes.report_center import router as report_center_router
 app.include_router(report_center_router)
 
+# Phase 5: KPI System
+from routes.kpi_system import router as kpi_system_router
+app.include_router(kpi_system_router)
+
 # Health check
 @app.get("/api/health")
 async def health_check():
