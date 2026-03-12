@@ -58,7 +58,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
         { name: 'Daftar Item', icon: Package, path: '/master/items' },
         { name: 'Item Baru', icon: Plus, path: '/master/items?new=true' },
         { name: 'Datasheet', icon: Table, path: '/master/datasheet' },
-        { name: 'Kartu Stok', icon: ClipboardList, path: '/master/stock-cards' },
+        // Kartu Stok dipindahkan ke menu Inventory (menghindari duplicate)
         { name: 'Barcode', icon: QrCode, path: '/master/barcode' },
         { divider: true, label: 'Promosi & Diskon' },
         { name: 'Diskon Periode', icon: Percent, path: '/master/discounts' },
@@ -115,9 +115,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
         { divider: true },
         { name: 'Point Transaksi', icon: Star, path: '/sales/points' },
         { divider: true },
-        { name: 'Daftar Pembayaran Komisi Sales', icon: BadgeDollarSign, path: '/sales/commission-payments' },
-        { name: 'Tambah Pembayaran Komisi Sales', icon: Plus, path: '/sales/commission-payments/add' },
-        { divider: true },
+        // Pembayaran Piutang dipindahkan ke menu Piutang (menghindari duplicate)
         { name: 'Daftar Pengiriman', icon: Send, path: '/sales/deliveries' },
         { divider: true },
         { name: 'Laporan CSV/XML Faktur Pajak', icon: FileSpreadsheet, path: '/sales/tax-export' },
@@ -140,9 +138,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
         { divider: true },
         { name: 'History Harga Beli', icon: History, path: '/purchase/price-history' },
         { divider: true },
-        { name: 'Daftar Pembayaran Hutang', icon: Wallet, path: '/purchase/ap-payments' },
-        { name: 'Tambah Pembayaran Hutang', icon: Plus, path: '/purchase/ap-payments/add' },
-        { divider: true },
+        // Pembayaran Hutang dipindahkan ke menu Hutang (menghindari duplicate)
         { name: 'Daftar Retur Pembelian', icon: RotateCcw, path: '/purchase/returns' },
         { name: 'Tambah Retur Pembelian', icon: Plus, path: '/purchase/returns/add' },
       ]
@@ -186,7 +182,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     },
 
     // ============================================================
-    // HUTANG (AP) - iPOS Style
+    // HUTANG (AP) - iPOS Style - PRIMARY MENU untuk Hutang
     // ============================================================
     {
       name: 'Hutang',
@@ -194,13 +190,14 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       roles: ['owner', 'admin', 'finance'],
       submenu: [
         { name: 'Daftar Hutang', icon: List, path: '/hutang/list' },
-        { name: 'Pembayaran Hutang', icon: CreditCard, path: '/hutang/payments' },
+        { name: 'Pembayaran Hutang', icon: CreditCard, path: '/purchase/ap-payments' },
+        { name: 'Tambah Pembayaran Hutang', icon: Plus, path: '/purchase/ap-payments/add' },
         { name: 'Umur Hutang', icon: Clock, path: '/hutang/aging' },
       ]
     },
 
     // ============================================================
-    // PIUTANG (AR) - iPOS Style
+    // PIUTANG (AR) - iPOS Style - PRIMARY MENU untuk Piutang
     // ============================================================
     {
       name: 'Piutang',
@@ -208,7 +205,8 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       roles: ['owner', 'admin', 'finance'],
       submenu: [
         { name: 'Daftar Piutang', icon: List, path: '/piutang/list' },
-        { name: 'Pembayaran Piutang', icon: Wallet, path: '/piutang/payments' },
+        { name: 'Pembayaran Piutang', icon: Wallet, path: '/sales/ar-payments' },
+        { name: 'Tambah Pembayaran Piutang', icon: Plus, path: '/sales/ar-payments/add' },
         { name: 'Umur Piutang', icon: Clock, path: '/piutang/aging' },
       ]
     },
@@ -228,20 +226,18 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     },
 
     // ============================================================
-    // LAPORAN - iPOS Style
+    // LAPORAN - Menggunakan Report Center sebagai primary
     // ============================================================
     {
       name: 'Laporan',
       icon: BarChart3,
       roles: ['owner', 'admin', 'supervisor', 'finance'],
       submenu: [
+        { name: 'Report Center', icon: FileBarChart, path: '/report-center' },
+        { divider: true, label: 'Quick Reports' },
         { name: 'Laporan Penjualan', icon: TrendingUp, path: '/reports/sales' },
         { name: 'Laporan Pembelian', icon: Truck, path: '/reports/purchase' },
         { name: 'Laporan Stok', icon: Boxes, path: '/reports/inventory' },
-        { name: 'Laporan Hutang', icon: Wallet, path: '/reports/payables' },
-        { name: 'Laporan Piutang', icon: CreditCard, path: '/reports/receivables' },
-        { name: 'Laporan Laba Rugi', icon: BarChart2, path: '/reports/profit-loss' },
-        { name: 'Laporan Neraca', icon: BookOpen, path: '/reports/balance-sheet' },
         { name: 'Laporan Kartu Stok', icon: ClipboardList, path: '/reports/stock-card' },
       ]
     },

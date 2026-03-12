@@ -15,6 +15,31 @@ OCB TITAN ERP adalah sistem ERP retail enterprise untuk bisnis multi-cabang deng
 
 # LATEST UPDATE: March 12, 2026
 
+## STABILIZATION PHASE - COMPLETED ✅
+
+### Payment Flow Fixes (March 12, 2026)
+All payment flows (Hutang & Piutang) have been fixed and verified.
+
+**Bugs Fixed:**
+1. **AP Payment (Hutang)** - Fixed source data (was PO, now AP), fixed POST endpoint
+2. **AR Payment (Piutang)** - Fixed source data, fixed POST endpoint, added outstanding filter
+3. **Search UX** - All master data fields now use searchable dropdowns (no auto-select)
+
+**Menu Duplicate Cleanup:**
+- ✅ Removed: Master Data → Kartu Stok (keep Inventory → Kartu Stok)
+- ✅ Removed: Pembelian → Pembayaran Hutang (keep Hutang → Pembayaran Hutang)
+- ✅ Removed: Penjualan → Pembayaran Piutang (keep Piutang → Pembayaran Piutang)
+- ✅ Removed: Penjualan → Pembayaran Komisi (keep Commission Engine)
+- ✅ Streamlined: Laporan menu now uses Report Center as primary
+
+**Reusable Components Created:**
+- SearchableSelect - For all master data fields
+- DatePickerWithDefault - With today as default
+- SearchableEnumSelect - For status, urgency, payment method
+- useMasterData hooks - For loading master data in forms
+
+---
+
 ## PHASE 5 - KPI SYSTEM - COMPLETED ✅
 
 ### KPI System Implementation (March 12, 2026)

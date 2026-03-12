@@ -1,24 +1,50 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { Plus, Search, Eye, Check, Loader2, Calendar, Wallet, X } from 'lucide-react';
+import { Plus, Search, Loader2, X, Building2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { SearchableSelect } from '../../components/ui/searchable-select';
+import { SearchableEnumSelect } from '../../components/ui/searchable-enum-select';
+import { DatePickerWithDefault } from '../../components/ui/date-picker-default';
+import { useSuppliers } from '../../hooks/useMasterData';
+
+const API_URL = process.env.REACT_APP_BACKEND_URL;
+const formatRupiah = (num) => `Rp ${(num || 0).toLocaleString('id-ID')}`;
+
+// Payment method options
+const paymentMethodOptions = [
+  { value: 'transfer', label: 'Transfer Bank' },
+  { value: 'cash', label: 'Tunai' },
+  { value: 'check', label: 'Cek/Giro' },
+];
 
 const PurchasePayments = () => {
-  const { api } = useAuth();
+  const { api, token } = useAuth();
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
-  const [purchases, setPurchases] = useState([]);
+  
+  // Use custom hook for suppliers
+  const { data: supplierOptions, loading: suppliersLoading } = useSuppliers(token);
+  const [payables, setPayables] = useState([]);
+  const [loadingPayables, setLoadingPayables] = useState(false);
   const [banks, setBanks] = useState([]);
+  const [selectedSupplier, setSelectedSupplier] = useState('');
+  
   const [formData, setFormData] = useState({
-    po_id: '', amount: 0, payment_method: 'transfer', bank_id: '', reference: '', notes: ''
+    ap_id: '',
+    amount: 0,
+    payment_method: 'transfer',
+    bank_account_id: '',
+    reference_no: '',
+    notes: ''
   });
 
   const loadPayments = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await api(`/api/purchase/payments?search=${searchTerm}`);
+      // Load AP payments history from ap_payments collection
+      const res = await api(`/api/ap/payments?search=${searchTerm}`);
       if (res.ok) {
         const data = await res.json();
         setPayments(data.items || data || []);
@@ -30,47 +56,124 @@ const PurchasePayments = () => {
     }
   }, [api, searchTerm]);
 
-  const loadMasterData = useCallback(async () => {
+  const loadBanks = useCallback(async () => {
     try {
-      const [poRes, bankRes] = await Promise.all([
-        api('/api/purchase/orders?status=submitted,partial'),
-        api('/api/master/banks')
-      ]);
-      if (poRes.ok) {
-        const data = await poRes.json();
-        setPurchases(data.items || data || []);
+      const bankRes = await api('/api/accounting/coa?type=kas');
+      if (bankRes.ok) {
+        const data = await bankRes.json();
+        const accs = data.accounts || data.items || data || [];
+        setBanks(accs.map(a => ({
+          value: a.id || a.code,
+          label: `${a.code} - ${a.name}`,
+        })));
       }
-      if (bankRes.ok) setBanks(await bankRes.json());
     } catch (err) {
-      console.error('Error loading master data');
+      console.error('Error loading banks');
     }
   }, [api]);
+  
+  const loadPayables = async (supplierId) => {
+    if (!supplierId) {
+      setPayables([]);
+      return;
+    }
+    setLoadingPayables(true);
+    try {
+      // Get AP with outstanding > 0 for this supplier
+      const res = await api(`/api/ap/supplier/${supplierId}?include_paid=no`);
+      if (res.ok) {
+        const data = await res.json();
+        // Filter to only show items with outstanding_amount > 0
+        const outstandingItems = (data.items || []).filter(ap => 
+          (ap.outstanding_amount || 0) > 0 &&
+          ['open', 'partial', 'overdue'].includes(ap.status)
+        );
+        setPayables(outstandingItems);
+      } else {
+        // Fallback: try the list endpoint
+        const res2 = await api(`/api/ap?supplier_id=${supplierId}`);
+        if (res2.ok) {
+          const data2 = await res2.json();
+          const outstandingItems = (data2.items || []).filter(ap => 
+            (ap.outstanding_amount || 0) > 0 &&
+            ['open', 'partial', 'overdue'].includes(ap.status)
+          );
+          setPayables(outstandingItems);
+        }
+      }
+    } catch (err) {
+      console.error('Error loading payables:', err);
+      setPayables([]);
+    } finally {
+      setLoadingPayables(false);
+    }
+  };
 
   useEffect(() => {
     loadPayments();
-    loadMasterData();
-  }, [loadPayments, loadMasterData]);
+    loadBanks();
+  }, [loadPayments, loadBanks]);
+  
+  const handleSupplierChange = (supplierId) => {
+    setSelectedSupplier(supplierId);
+    setFormData(prev => ({ ...prev, ap_id: '', amount: 0 }));
+    loadPayables(supplierId);
+  };
+  
+  const handleAPSelect = (ap) => {
+    setFormData(prev => ({
+      ...prev,
+      ap_id: ap.id,
+      amount: ap.outstanding_amount || 0,
+    }));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!formData.ap_id) {
+      toast.error('Pilih hutang yang akan dibayar');
+      return;
+    }
+    if (formData.amount <= 0) {
+      toast.error('Masukkan jumlah pembayaran');
+      return;
+    }
+    
     try {
-      const res = await api('/api/purchase/payments', {
+      // Call the correct endpoint: POST /api/ap/{ap_id}/payment
+      const payload = {
+        amount: formData.amount,
+        payment_method: formData.payment_method,
+        bank_account_id: formData.bank_account_id,
+        reference_no: formData.reference_no,
+        notes: formData.notes,
+      };
+      
+      const res = await api(`/api/ap/${formData.ap_id}/payment`, {
         method: 'POST',
-        body: JSON.stringify(formData)
+        body: JSON.stringify(payload)
       });
+      
       if (res.ok) {
-        toast.success('Pembayaran berhasil dicatat');
+        const result = await res.json();
+        toast.success(`Pembayaran berhasil dicatat. No: ${result.payment_no || ''}`);
         setShowModal(false);
         resetForm();
         loadPayments();
+      } else {
+        const err = await res.json();
+        toast.error(err.detail || 'Gagal menyimpan pembayaran');
       }
     } catch (err) {
+      console.error(err);
       toast.error('Gagal menyimpan pembayaran');
     }
   };
 
   const resetForm = () => {
-    setFormData({ po_id: '', amount: 0, payment_method: 'transfer', bank_id: '', reference: '', notes: '' });
+    setFormData({ ap_id: '', amount: 0, payment_method: 'transfer', bank_account_id: '', reference_no: '', notes: '' });
+    setSelectedSupplier('');
+    setPayables([]);
   };
 
   return (
@@ -156,62 +259,98 @@ const PurchasePayments = () => {
         <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
           <div className="bg-[#1a1214] border border-red-900/30 rounded-xl w-full max-w-lg">
             <div className="p-4 border-b border-red-900/30 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-amber-100">Catat Pembayaran</h2>
+              <h2 className="text-lg font-semibold text-amber-100">Catat Pembayaran Hutang</h2>
               <button onClick={() => setShowModal(false)} className="p-1 hover:bg-red-900/20 rounded"><X className="h-5 w-5" /></button>
             </div>
             <form onSubmit={handleSubmit} className="p-4 space-y-4">
               <div>
-                <label className="block text-sm text-gray-400 mb-1">Purchase Order *</label>
-                <select value={formData.po_id} onChange={(e) => setFormData({ ...formData, po_id: e.target.value })}
-                  className="w-full px-3 py-2 bg-[#0a0608] border border-red-900/30 rounded-lg" required>
-                  <option value="">Pilih PO</option>
-                  {purchases.map(po => (
-                    <option key={po.id} value={po.id}>{po.po_number} - {po.supplier_name}</option>
-                  ))}
-                </select>
+                <label className="block text-sm text-gray-400 mb-1">Supplier *</label>
+                <SearchableSelect
+                  options={supplierOptions}
+                  value={selectedSupplier}
+                  onValueChange={handleSupplierChange}
+                  placeholder="Ketik nama supplier..."
+                  searchPlaceholder="Cari supplier..."
+                  data-testid="supplier-select"
+                />
               </div>
+              
+              {/* Outstanding Payables */}
+              {selectedSupplier && (
+                <div className="bg-gray-800/50 rounded-lg border border-gray-700 p-3">
+                  <p className="text-sm text-gray-400 mb-2 flex items-center gap-2">
+                    <Building2 className="h-4 w-4" />
+                    Hutang Belum Lunas:
+                    {loadingPayables && <Loader2 className="h-4 w-4 animate-spin" />}
+                  </p>
+                  {payables.length === 0 ? (
+                    <p className="text-xs text-gray-500">Tidak ada hutang outstanding untuk supplier ini</p>
+                  ) : (
+                    <div className="flex flex-wrap gap-2">
+                      {payables.map(ap => (
+                        <button
+                          type="button"
+                          key={ap.id}
+                          onClick={() => handleAPSelect(ap)}
+                          className={`px-3 py-1 text-xs rounded transition-colors ${
+                            formData.ap_id === ap.id
+                              ? 'bg-green-700/50 text-green-300 ring-1 ring-green-500'
+                              : 'bg-gray-700 hover:bg-gray-600 text-amber-100'
+                          }`}
+                          data-testid={`select-ap-${ap.id}`}
+                        >
+                          {ap.ap_no} - {formatRupiah(ap.outstanding_amount)}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+              
               <div>
                 <label className="block text-sm text-gray-400 mb-1">Jumlah Pembayaran (Rp) *</label>
                 <input type="number" min="0" value={formData.amount} 
                   onChange={(e) => setFormData({ ...formData, amount: Number(e.target.value) })}
-                  className="w-full px-3 py-2 bg-[#0a0608] border border-red-900/30 rounded-lg" required />
+                  className="w-full px-3 py-2 bg-[#0a0608] border border-red-900/30 rounded-lg text-amber-100" required />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm text-gray-400 mb-1">Metode Pembayaran</label>
-                  <select value={formData.payment_method} onChange={(e) => setFormData({ ...formData, payment_method: e.target.value })}
-                    className="w-full px-3 py-2 bg-[#0a0608] border border-red-900/30 rounded-lg">
-                    <option value="transfer">Transfer Bank</option>
-                    <option value="cash">Tunai</option>
-                    <option value="check">Cek/Giro</option>
-                  </select>
+                  <SearchableEnumSelect
+                    options={paymentMethodOptions}
+                    value={formData.payment_method}
+                    onValueChange={(val) => setFormData({ ...formData, payment_method: val })}
+                    placeholder="Pilih metode..."
+                    data-testid="payment-method-select"
+                  />
                 </div>
                 <div>
-                  <label className="block text-sm text-gray-400 mb-1">Bank</label>
-                  <select value={formData.bank_id} onChange={(e) => setFormData({ ...formData, bank_id: e.target.value })}
-                    className="w-full px-3 py-2 bg-[#0a0608] border border-red-900/30 rounded-lg">
-                    <option value="">Pilih Bank</option>
-                    {banks.map(bank => (
-                      <option key={bank.id} value={bank.id}>{bank.name}</option>
-                    ))}
-                  </select>
+                  <label className="block text-sm text-gray-400 mb-1">Bank/Kas</label>
+                  <SearchableSelect
+                    options={banks}
+                    value={formData.bank_account_id}
+                    onValueChange={(val) => setFormData({ ...formData, bank_account_id: val })}
+                    placeholder="Pilih akun..."
+                    searchPlaceholder="Cari akun..."
+                    data-testid="bank-select"
+                  />
                 </div>
               </div>
               <div>
                 <label className="block text-sm text-gray-400 mb-1">Referensi/No. Bukti</label>
-                <input type="text" value={formData.reference} 
-                  onChange={(e) => setFormData({ ...formData, reference: e.target.value })}
+                <input type="text" value={formData.reference_no} 
+                  onChange={(e) => setFormData({ ...formData, reference_no: e.target.value })}
                   placeholder="No. transfer, no. cek, dll"
-                  className="w-full px-3 py-2 bg-[#0a0608] border border-red-900/30 rounded-lg" />
+                  className="w-full px-3 py-2 bg-[#0a0608] border border-red-900/30 rounded-lg text-amber-100" />
               </div>
               <div>
                 <label className="block text-sm text-gray-400 mb-1">Catatan</label>
                 <textarea value={formData.notes} onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                  className="w-full px-3 py-2 bg-[#0a0608] border border-red-900/30 rounded-lg" rows={2} />
+                  className="w-full px-3 py-2 bg-[#0a0608] border border-red-900/30 rounded-lg text-amber-100" rows={2} />
               </div>
               <div className="flex justify-end gap-3 pt-4 border-t border-red-900/30">
-                <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 border border-red-900/30 rounded-lg">Batal</button>
-                <button type="submit" className="px-4 py-2 bg-gradient-to-r from-red-600 to-amber-600 text-white rounded-lg">Simpan</button>
+                <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 border border-red-900/30 rounded-lg text-amber-100">Batal</button>
+                <button type="submit" className="px-4 py-2 bg-gradient-to-r from-red-600 to-amber-600 text-white rounded-lg" data-testid="submit-payment">Simpan</button>
               </div>
             </form>
           </div>

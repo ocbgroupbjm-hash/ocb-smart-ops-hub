@@ -2,26 +2,40 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { 
-  Save, X, Loader2, Wallet, Trash2, Plus
+  Save, X, Loader2, Wallet, Trash2, Search, Users
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { SearchableSelect } from '../../components/ui/searchable-select';
+import { SearchableEnumSelect } from '../../components/ui/searchable-enum-select';
+import { DatePickerWithDefault } from '../../components/ui/date-picker-default';
+import { useCustomers } from '../../hooks/useMasterData';
 
+const API_URL = process.env.REACT_APP_BACKEND_URL;
 const formatRupiah = (num) => `Rp ${(num || 0).toLocaleString('id-ID')}`;
 const formatDate = (date) => date ? new Date(date).toLocaleDateString('id-ID') : '-';
 
+// Payment method options
+const paymentMethodOptions = [
+  { value: 'cash', label: 'Tunai' },
+  { value: 'transfer', label: 'Transfer Bank' },
+  { value: 'giro', label: 'Giro/Cek' },
+];
+
 const ARPaymentAdd = () => {
-  const { api, user } = useAuth();
+  const { api, user, token } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  const [customers, setCustomers] = useState([]);
+  // Use custom hook for customers
+  const { data: customerOptions, loading: customersLoading } = useCustomers(token);
   const [accounts, setAccounts] = useState([]);
   const [receivables, setReceivables] = useState([]);
+  const [loadingReceivables, setLoadingReceivables] = useState(false);
 
   const [form, setForm] = useState({
     payment_number: '',
-    date: new Date().toISOString().split('T')[0],
+    date: new Date(),
     customer_id: '',
     account_id: '',
     payment_method: 'cash',
@@ -35,13 +49,17 @@ const ARPaymentAdd = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [custRes, accRes] = await Promise.all([
-          api('/api/customers'),
-          api('/api/accounting/coa?type=kas')
-        ]);
-        
-        if (custRes.ok) setCustomers((await custRes.json()).items || []);
-        if (accRes.ok) setAccounts((await accRes.json()).accounts || []);
+        const accRes = await api('/api/accounting/coa?type=kas');
+        if (accRes.ok) {
+          const data = await accRes.json();
+          const accs = data.accounts || data.items || data || [];
+          setAccounts(accs.map(a => ({
+            value: a.id || a.code,
+            label: `${a.code} - ${a.name}`,
+            code: a.code,
+            name: a.name,
+          })));
+        }
         
         const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
         const seq = String(Math.floor(Math.random() * 9999) + 1).padStart(4, '0');
@@ -60,14 +78,35 @@ const ARPaymentAdd = () => {
       setReceivables([]);
       return;
     }
+    setLoadingReceivables(true);
     try {
-      const res = await api(`/api/ar?customer_id=${customerId}&status=open`);
+      // Get AR with outstanding > 0 for this customer
+      const res = await api(`/api/ar/customer/${customerId}?include_paid=no`);
       if (res.ok) {
         const data = await res.json();
-        setReceivables(data.items || []);
+        // Filter to only show items with outstanding_amount > 0
+        const outstandingItems = (data.items || []).filter(ar => 
+          (ar.outstanding_amount || ar.remaining_amount || 0) > 0 &&
+          ['open', 'partial', 'overdue'].includes(ar.status)
+        );
+        setReceivables(outstandingItems);
+      } else {
+        // Fallback: try the list endpoint
+        const res2 = await api(`/api/ar?customer_id=${customerId}`);
+        if (res2.ok) {
+          const data2 = await res2.json();
+          const outstandingItems = (data2.items || []).filter(ar => 
+            (ar.outstanding_amount || ar.remaining_amount || 0) > 0 &&
+            ['open', 'partial', 'overdue'].includes(ar.status)
+          );
+          setReceivables(outstandingItems);
+        }
       }
     } catch (err) {
-      console.error(err);
+      console.error('Error loading receivables:', err);
+      setReceivables([]);
+    } finally {
+      setLoadingReceivables(false);
     }
   };
 
@@ -82,14 +121,17 @@ const ARPaymentAdd = () => {
       return;
     }
     
+    const outstanding = ar.outstanding_amount || ar.remaining_amount || ar.amount || 0;
     const newItem = {
       ar_id: ar.id,
-      invoice_number: ar.invoice_number || ar.ar_number,
-      date: ar.created_at,
+      ar_no: ar.ar_no,
+      invoice_number: ar.invoice_number || ar.ar_no || ar.source_no,
+      date: ar.ar_date || ar.created_at,
       due_date: ar.due_date,
-      remaining: ar.remaining_amount || ar.amount,
+      original_amount: ar.original_amount || ar.amount || 0,
+      remaining: outstanding,
       discount: 0,
-      payment: ar.remaining_amount || ar.amount,
+      payment: outstanding,
     };
     
     setForm(prev => ({
@@ -131,32 +173,41 @@ const ARPaymentAdd = () => {
     
     setSaving(true);
     try {
-      const payload = {
-        customer_id: form.customer_id,
-        account_id: form.account_id,
-        payment_method: form.payment_method,
-        reference_no: form.reference_no,
-        notes: form.notes,
-        items: form.items.map(i => ({
-          ar_id: i.ar_id,
-          discount_amount: i.discount,
-          payment_amount: i.payment,
-        })),
-        total_discount: form.total_discount,
-        total_amount: form.total_payment,
-      };
+      // Process each AR payment individually
+      let successCount = 0;
+      let errorCount = 0;
       
-      const res = await api('/api/ar/payments', {
-        method: 'POST',
-        body: JSON.stringify(payload)
-      });
+      for (const item of form.items) {
+        const payload = {
+          amount: item.payment,
+          payment_method: form.payment_method,
+          bank_account_id: form.account_id,
+          reference_no: form.reference_no,
+          notes: form.notes,
+          discount_amount: item.discount,
+        };
+        
+        // Call the correct endpoint: POST /api/ar/{ar_id}/payment
+        const res = await api(`/api/ar/${item.ar_id}/payment`, {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        });
+        
+        if (res.ok) {
+          successCount++;
+        } else {
+          errorCount++;
+          const err = await res.json();
+          console.error(`Payment failed for ${item.ar_no}:`, err.detail);
+        }
+      }
       
-      if (res.ok) {
-        toast.success('Pembayaran piutang berhasil disimpan');
+      if (successCount > 0) {
+        toast.success(`${successCount} pembayaran piutang berhasil disimpan`);
         navigate('/sales/ar-payments');
-      } else {
-        const err = await res.json();
-        toast.error(err.detail || 'Gagal menyimpan');
+      }
+      if (errorCount > 0) {
+        toast.error(`${errorCount} pembayaran gagal`);
       }
     } catch (err) {
       console.error(err);
@@ -191,31 +242,46 @@ const ARPaymentAdd = () => {
           </div>
           <div>
             <label className="block text-xs text-gray-400 mb-1">Pelanggan <span className="text-red-400">*</span></label>
-            <select value={form.customer_id} onChange={e => handleCustomerChange(e.target.value)} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white text-sm">
-              <option value="">Pilih Pelanggan</option>
-              {customers.map(c => <option key={c.id} value={c.id}>{c.code} - {c.name}</option>)}
-            </select>
+            <SearchableSelect
+              options={customerOptions}
+              value={form.customer_id}
+              onValueChange={handleCustomerChange}
+              placeholder="Ketik nama pelanggan..."
+              searchPlaceholder="Cari pelanggan..."
+              data-testid="customer-select"
+            />
           </div>
           <div>
             <label className="block text-xs text-gray-400 mb-1">Kode Akun</label>
-            <select value={form.account_id} onChange={e => setForm(p => ({...p, account_id: e.target.value}))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white text-sm">
-              <option value="">Pilih Akun Kas/Bank</option>
-              {accounts.map(a => <option key={a.id} value={a.id}>{a.code} - {a.name}</option>)}
-            </select>
+            <SearchableSelect
+              options={accounts}
+              value={form.account_id}
+              onValueChange={(val) => setForm(p => ({...p, account_id: val}))}
+              placeholder="Pilih Akun Kas/Bank..."
+              searchPlaceholder="Cari akun..."
+              data-testid="account-select"
+            />
           </div>
           <div>
             <label className="block text-xs text-gray-400 mb-1">Cara Bayar</label>
-            <select value={form.payment_method} onChange={e => setForm(p => ({...p, payment_method: e.target.value}))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white text-sm">
-              <option value="cash">Tunai</option>
-              <option value="transfer">Transfer</option>
-              <option value="giro">Giro</option>
-            </select>
+            <SearchableEnumSelect
+              options={paymentMethodOptions}
+              value={form.payment_method}
+              onValueChange={(val) => setForm(p => ({...p, payment_method: val}))}
+              placeholder="Pilih metode..."
+              data-testid="payment-method-select"
+            />
           </div>
         </div>
         <div className="grid grid-cols-3 gap-4 mt-4">
           <div>
             <label className="block text-xs text-gray-400 mb-1">Tanggal</label>
-            <input type="date" value={form.date} onChange={e => setForm(p => ({...p, date: e.target.value}))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white text-sm" />
+            <DatePickerWithDefault
+              value={form.date}
+              onValueChange={(val) => setForm(p => ({...p, date: val}))}
+              defaultToday={true}
+              data-testid="payment-date"
+            />
           </div>
           <div>
             <label className="block text-xs text-gray-400 mb-1">No Referensi</label>
@@ -229,20 +295,34 @@ const ARPaymentAdd = () => {
       </div>
 
       {/* Outstanding Receivables */}
-      {form.customer_id && receivables.length > 0 && (
+      {form.customer_id && (
         <div className="bg-gray-800/50 rounded-lg border border-gray-700 p-3">
-          <p className="text-sm text-gray-400 mb-2">Invoice Belum Lunas:</p>
-          <div className="flex flex-wrap gap-2">
-            {receivables.map(ar => (
-              <button
-                key={ar.id}
-                onClick={() => addReceivable(ar)}
-                className="px-3 py-1 text-xs bg-gray-700 hover:bg-gray-600 rounded"
-              >
-                {ar.invoice_number || ar.ar_number} - {formatRupiah(ar.remaining_amount || ar.amount)}
-              </button>
-            ))}
-          </div>
+          <p className="text-sm text-gray-400 mb-2 flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            Invoice Belum Lunas:
+            {loadingReceivables && <Loader2 className="h-4 w-4 animate-spin" />}
+          </p>
+          {receivables.length === 0 ? (
+            <p className="text-xs text-gray-500">Tidak ada piutang outstanding untuk pelanggan ini</p>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {receivables.map(ar => (
+                <button
+                  key={ar.id}
+                  onClick={() => addReceivable(ar)}
+                  disabled={form.items.find(i => i.ar_id === ar.id)}
+                  className={`px-3 py-1 text-xs rounded transition-colors ${
+                    form.items.find(i => i.ar_id === ar.id)
+                      ? 'bg-green-700/30 text-green-400 cursor-not-allowed'
+                      : 'bg-gray-700 hover:bg-gray-600 text-amber-100'
+                  }`}
+                  data-testid={`add-ar-${ar.id}`}
+                >
+                  {ar.ar_no || ar.invoice_number} - {formatRupiah(ar.outstanding_amount || ar.remaining_amount)}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
