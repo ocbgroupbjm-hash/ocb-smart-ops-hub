@@ -115,7 +115,7 @@ OCB TITAN ERP adalah sistem ERP retail enterprise untuk bisnis multi-cabang deng
 |-------|------|--------|------------|
 | 1 | Core Transaction Engine | ✅ Complete | 100% |
 | 2 | Financial Control System | ✅ Complete | 100% |
-| 3 | Operational Control System | ⏳ In Progress | 85% |
+| 3 | Operational Control System | ✅ Complete | 100% |
 | 4 | Business Intelligence | ⏳ Pending | 0% |
 | 5 | KPI System | ✅ Partial | 60% |
 | 6 | AI Business Engine | ✅ Partial | 70% |
@@ -171,6 +171,7 @@ OCB TITAN ERP adalah sistem ERP retail enterprise untuk bisnis multi-cabang deng
 | 41 | Credit Control Engine (P3) | **100%** | **100%** |
 | 42 | Stock Reorder & Warehouse (P3) | **100%** | **100%** |
 | 43 | Purchase Planning & Sales Target (P3) | **95%** | **100%** |
+| 44 | Commission Engine & Cash Control (P3) | **91%** | **100%** |
 
 ---
 
@@ -317,8 +318,99 @@ OCB TITAN ERP adalah sistem ERP retail enterprise untuk bisnis multi-cabang deng
   - Status: on_track, behind, at_risk, achieved, exceeded, failed
   - Leaderboard dengan ranking per achievement
   - Dashboard summary dengan overall achievement
-- [ ] Commission Engine Enhancement (P6 - NEXT)
-- [ ] Deposit & Cash Control Enhancement (P7)
+- [x] **Commission Engine** ✅ COMPLETE (March 12, 2026)
+  - Komisi berdasarkan achievement target dan sales value
+  - Bonus tambahan jika achievement >110% (Super Bonus)
+  - Perhitungan per salesman, branch, period
+  - Commission formula: Base (2%) + Achievement Bonus + Super Bonus
+  - Integrasi accounting journal saat pembayaran
+  - Status workflow: calculated → approved → paid
+- [x] **Deposit & Cash Control Enhancement** ✅ COMPLETE (March 12, 2026)
+  - Monitoring setoran kasir dengan shift management
+  - Compare sales vs deposit (expected vs actual cash)
+  - Deteksi selisih kas (shortage/overage) dengan tolerance Rp 1.000
+  - Shift workflow: open → closing → closed/discrepancy → reviewed
+  - Discrepancy resolution (explained/written_off/recovered)
+  - Audit trail lengkap
+
+---
+
+# PHASE 3 COMPLETE ✅
+
+Phase 3 - Operational Control System telah selesai 100%. Semua 6 modul berikut telah diimplementasikan dan ditest:
+1. Approval Workflow Engine
+2. Customer Credit Limit Control
+3. Stock Reorder Engine
+4. Warehouse Control
+5. Purchase Planning Engine
+6. Sales Target System
+7. Commission Engine
+8. Deposit & Cash Control Enhancement
+
+---
+
+# PHASE 3 - COMMISSION ENGINE ✅ COMPLETE
+
+## Commission Formula
+| Component | Calculation |
+|-----------|-------------|
+| Base Commission | Sales Value × Base Rate (2%) |
+| Achievement Bonus | Base × (Achievement% - 100%) × Multiplier (if >100%) |
+| Super Bonus | Sales × Super Rate (1%) (if achievement ≥110%) |
+| Total | Base + Achievement Bonus + Super Bonus |
+
+## Commission Status
+| Status | Description |
+|--------|-------------|
+| calculated | Commission telah dihitung |
+| approved | Disetujui untuk pembayaran |
+| paid | Sudah dibayar (journal created) |
+| cancelled | Dibatalkan |
+
+## API Endpoints
+- `GET /api/commission/policy` - Get commission policy
+- `PUT /api/commission/policy` - Update policy
+- `POST /api/commission/simulate` - Simulate calculation
+- `POST /api/commission/calculate` - Calculate for period
+- `GET /api/commission/list` - List commissions
+- `GET /api/commission/dashboard/summary` - Dashboard
+- `POST /api/commission/approve` - Approve commissions
+- `POST /api/commission/pay` - Pay with journal creation
+
+---
+
+# PHASE 3 - DEPOSIT & CASH CONTROL ✅ COMPLETE
+
+## Shift Workflow
+| Status | Description |
+|--------|-------------|
+| open | Shift aktif |
+| closing | Sedang tutup |
+| closed | Sudah ditutup tanpa masalah |
+| discrepancy | Ada selisih kas |
+| reviewed | Sudah direview supervisor |
+
+## Discrepancy Types
+| Type | Description |
+|------|-------------|
+| none | Kas sesuai (within tolerance) |
+| shortage | Kas kurang dari seharusnya |
+| overage | Kas lebih dari seharusnya |
+
+## Expected Cash Calculation
+```
+Expected Cash = Initial Cash + Cash Sales + Cash In - Cash Out
+```
+
+## API Endpoints
+- `POST /api/cash-control/shift/open` - Open shift
+- `GET /api/cash-control/shift/current` - Get current shift
+- `POST /api/cash-control/shift/{id}/close` - Close shift
+- `GET /api/cash-control/shifts` - List shifts
+- `GET /api/cash-control/dashboard/summary` - Dashboard
+- `GET /api/cash-control/discrepancies` - List discrepancies
+- `POST /api/cash-control/discrepancy/{id}/resolve` - Resolve
+- `POST /api/cash-control/deposit` - Record deposit
 
 ---
 
@@ -393,7 +485,7 @@ OCB TITAN ERP adalah sistem ERP retail enterprise untuk bisnis multi-cabang deng
 
 ---
 
-**Version:** 28.0 (Phase 3 Purchase Planning & Sales Target Complete)
-**Last Updated:** March 11, 2026
+**Version:** 29.0 (Phase 3 COMPLETE - Commission Engine & Cash Control)
+**Last Updated:** March 12, 2026
 **Architecture:** SSOT, Non-Destructive, Additive
 **Governance:** OCB TITAN AI MASTER LAW
