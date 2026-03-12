@@ -15,6 +15,41 @@ OCB TITAN ERP adalah sistem ERP retail enterprise untuk bisnis multi-cabang deng
 
 # LATEST UPDATE: March 12, 2026
 
+## STOCK OPNAME FINALIZATION - COMPLETED ✅
+
+### Completion Date: March 12, 2026
+
+**Architecture Decisions:**
+1. **Branch = Warehouse** - Disederhanakan menjadi 1 konteks operasional
+2. **Single Source of Truth** - Stok dihitung dari `stock_movements`
+3. **Automatic Journal Entry** - Setiap opname menghasilkan jurnal otomatis
+
+**Flow Stock Opname:**
+```
+Pilih Cabang → Ambil Stok dari stock_movements → Input Stok Fisik 
+→ Hitung Selisih → Buat Stock Movement → Buat Journal Entry → Approve
+```
+
+**Perlakuan Selisih:**
+| Kondisi | Selisih | Movement | Jurnal |
+|---------|---------|----------|--------|
+| Fisik < Sistem | Minus | opname_out | D: Beban Selisih, C: Persediaan |
+| Fisik > Sistem | Plus | opname_in | D: Persediaan, C: Koreksi Persediaan |
+
+**Default Accounts:**
+- `1-1400` Persediaan Barang
+- `5-9100` Beban Selisih Persediaan (kerugian)
+- `4-9100` Koreksi Persediaan (keuntungan)
+
+**Test Results - VERIFIED:**
+- Contoh 1 (Selisih Minus): 1147 → 1145, Journal D:200,000 ke Beban
+- Contoh 2 (Selisih Plus): 379 → 383, Journal C:60,000 ke Koreksi
+- Neraca Saldo: ✅ BALANCE
+- Neraca: ✅ BALANCE
+- Laba Rugi: Beban Selisih tercatat
+
+---
+
 ## ACCOUNTING CORE STABILIZATION - COMPLETED ✅
 
 ### Completion Date: March 12, 2026

@@ -732,13 +732,63 @@ async def receive_transfer(transfer_id: str, request: Request, user: dict = Depe
     return {"message": "Transfer received"}
 
 # ==================== STOCK OPNAME ====================
+# FINALIZED: Branch = Warehouse untuk operasional
+# Flow: Pilih Cabang → Ambil stok dari stock_movements → Input fisik → Hitung selisih → Adjustment → Journal Entry
+
+# Default Accounts untuk Stock Opname
+OPNAME_ACCOUNTS = {
+    "inventory": {"code": "1-1400", "name": "Persediaan Barang"},
+    "adjustment_expense": {"code": "5-9100", "name": "Beban Selisih Persediaan"},  # Untuk selisih minus
+    "adjustment_gain": {"code": "4-9100", "name": "Koreksi Persediaan"},  # Untuk selisih plus
+}
+
+
+@router.get("/opname/products")
+async def get_products_for_opname(
+    branch_id: str = "",
+    search: str = "",
+    user: dict = Depends(require_permission("stock_opname", "view"))
+):
+    """Get products with system stock for opname - stock calculated from stock_movements"""
+    branch = branch_id or user.get("branch_id")
+    if not branch:
+        raise HTTPException(status_code=400, detail="Branch ID required")
+    
+    # Get all active products
+    query = {"is_active": True}
+    if search:
+        query["$or"] = [
+            {"name": {"$regex": search, "$options": "i"}},
+            {"code": {"$regex": search, "$options": "i"}}
+        ]
+    
+    all_products = await products.find(query, {"_id": 0}).to_list(1000)
+    
+    # Calculate stock from stock_movements (single source of truth)
+    product_ids = [p["id"] for p in all_products]
+    stock_map = await calculate_bulk_stock_from_movements(product_ids, branch)
+    
+    result = []
+    for p in all_products:
+        system_qty = stock_map.get(p["id"], 0)
+        result.append({
+            "product_id": p["id"],
+            "product_code": p.get("code", ""),
+            "product_name": p.get("name", ""),
+            "unit": p.get("unit", "pcs"),
+            "system_qty": system_qty,
+            "cost_price": p.get("cost_price", 0)
+        })
+    
+    return {"items": result, "branch_id": branch}
+
 
 @router.post("/opname")
 async def create_opname(data: CreateOpname, request: Request, user: dict = Depends(require_permission("stock_opname", "create"))):
-    """Create stock opname (physical count) - Requires stock_opname.create permission"""
+    """Create stock opname (physical count) - stock from stock_movements"""
     branch_id = user.get("branch_id")
     if not branch_id:
-        raise HTTPException(status_code=400, detail="User not assigned to a branch")
+        raise HTTPException(status_code=400, detail="User tidak terhubung ke cabang")
     
     opname_items = []
     
@@ -747,16 +797,15 @@ async def create_opname(data: CreateOpname, request: Request, user: dict = Depen
         if not product:
             continue
         
-        stock = await product_stocks.find_one(
-            {"product_id": item.product_id, "branch_id": branch_id},
-            {"_id": 0}
-        )
-        system_qty = stock.get("quantity", 0) if stock else 0
+        # Get system stock from stock_movements (SINGLE SOURCE)
+        system_qty = await calculate_stock_from_movements(item.product_id, branch_id)
         
         opname_items.append({
             "product_id": item.product_id,
             "product_code": product.get("code", ""),
             "product_name": product.get("name", ""),
+            "unit": product.get("unit", "pcs"),
+            "cost_price": product.get("cost_price", 0),
             "system_qty": system_qty,
             "actual_qty": item.actual_qty,
             "difference": item.actual_qty - system_qty
@@ -776,50 +825,171 @@ async def create_opname(data: CreateOpname, request: Request, user: dict = Depen
     
     return {"id": opname.id, "opname_number": opname_number}
 
+
 @router.post("/opname/{opname_id}/approve")
 async def approve_opname(opname_id: str, request: Request, user: dict = Depends(require_permission("stock_opname", "approve"))):
-    """Approve and apply stock opname adjustments - Requires stock_opname.approve permission"""
+    """
+    Approve and apply stock opname adjustments
+    - Creates stock_movement for each adjustment
+    - Creates journal entry for accounting
+    - Updates product_stocks (sync)
+    """
+    import uuid
+    
     opname = await stock_opnames.find_one({"id": opname_id}, {"_id": 0})
     if not opname:
-        raise HTTPException(status_code=404, detail="Opname not found")
+        raise HTTPException(status_code=404, detail="Opname tidak ditemukan")
     
     if opname.get("status") not in ["draft", "in_progress"]:
-        raise HTTPException(status_code=400, detail="Opname already processed")
+        raise HTTPException(status_code=400, detail="Opname sudah diproses")
+    
+    branch_id = opname["branch_id"]
+    branch = await branches.find_one({"id": branch_id}, {"_id": 0})
+    branch_name = branch.get("name", "Unknown") if branch else "Unknown"
+    
+    # Prepare totals for journal
+    total_adjustment_expense = 0  # Selisih minus (stok hilang)
+    total_adjustment_gain = 0     # Selisih plus (stok lebih)
+    total_inventory_debit = 0
+    total_inventory_credit = 0
     
     # Apply adjustments
     for item in opname.get("items", []):
-        if item["difference"] != 0:
-            await product_stocks.update_one(
-                {"product_id": item["product_id"], "branch_id": opname["branch_id"]},
-                {"$set": {
-                    "quantity": item["actual_qty"],
-                    "available": item["actual_qty"],
-                    "updated_at": datetime.now(timezone.utc).isoformat()
-                }}
-            )
-            
-            movement = StockMovement(
-                product_id=item["product_id"],
-                branch_id=opname["branch_id"],
-                movement_type=StockMovementType.OPNAME,
-                quantity=item["difference"],
-                reference_id=opname_id,
-                reference_type="opname",
-                notes=f"Stock opname adjustment: {opname.get('opname_number')}",
-                user_id=user.get("user_id", "")
-            )
-            await stock_movements.insert_one(movement.model_dump())
+        diff = item.get("difference", 0)
+        if diff == 0:
+            continue
+        
+        cost_price = item.get("cost_price", 0)
+        value = abs(diff) * cost_price
+        
+        # Create stock movement
+        if diff < 0:
+            # SELISIH MINUS: Stok fisik < Stok sistem
+            # Movement: Adjustment keluar (negative)
+            movement_type = "opname_out"
+            total_adjustment_expense += value
+            total_inventory_credit += value
+        else:
+            # SELISIH PLUS: Stok fisik > Stok sistem
+            # Movement: Adjustment masuk (positive)
+            movement_type = "opname_in"
+            total_adjustment_gain += value
+            total_inventory_debit += value
+        
+        # Record movement (diff is already +/- based on actual - system)
+        movement = {
+            "id": str(uuid.uuid4()),
+            "product_id": item["product_id"],
+            "product_code": item.get("product_code", ""),
+            "product_name": item.get("product_name", ""),
+            "branch_id": branch_id,
+            "movement_type": movement_type,
+            "quantity": diff,  # Already +/- from actual - system
+            "reference_id": opname_id,
+            "reference_type": "stock_opname",
+            "reference_number": opname.get("opname_number"),
+            "cost_price": cost_price,
+            "notes": f"Stock opname {opname.get('opname_number')}: {item.get('product_name')} ({item.get('system_qty')} → {item.get('actual_qty')})",
+            "user_id": user.get("user_id", ""),
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await stock_movements.insert_one(movement)
+        
+        # Sync product_stocks
+        await sync_product_stock_from_movements(item["product_id"], branch_id)
     
+    # Create journal entry if there are adjustments
+    if total_adjustment_expense > 0 or total_adjustment_gain > 0:
+        db = get_db()
+        journal_id = str(uuid.uuid4())
+        today = datetime.now(timezone.utc).strftime("%Y%m%d")
+        journal_number = f"JV-OPN-{today}-{uuid.uuid4().hex[:6].upper()}"
+        
+        entries = []
+        
+        # If there are losses (selisih minus)
+        if total_adjustment_expense > 0:
+            # Debit: Beban Selisih Persediaan
+            entries.append({
+                "account_code": OPNAME_ACCOUNTS["adjustment_expense"]["code"],
+                "account_name": OPNAME_ACCOUNTS["adjustment_expense"]["name"],
+                "debit": total_adjustment_expense,
+                "credit": 0,
+                "description": f"Selisih kurang persediaan - {opname.get('opname_number')}"
+            })
+            # Credit: Persediaan
+            entries.append({
+                "account_code": OPNAME_ACCOUNTS["inventory"]["code"],
+                "account_name": OPNAME_ACCOUNTS["inventory"]["name"],
+                "debit": 0,
+                "credit": total_inventory_credit,
+                "description": f"Penyesuaian persediaan kurang - {opname.get('opname_number')}"
+            })
+        
+        # If there are gains (selisih plus)
+        if total_adjustment_gain > 0:
+            # Debit: Persediaan
+            entries.append({
+                "account_code": OPNAME_ACCOUNTS["inventory"]["code"],
+                "account_name": OPNAME_ACCOUNTS["inventory"]["name"],
+                "debit": total_inventory_debit,
+                "credit": 0,
+                "description": f"Penyesuaian persediaan lebih - {opname.get('opname_number')}"
+            })
+            # Credit: Koreksi Persediaan
+            entries.append({
+                "account_code": OPNAME_ACCOUNTS["adjustment_gain"]["code"],
+                "account_name": OPNAME_ACCOUNTS["adjustment_gain"]["name"],
+                "debit": 0,
+                "credit": total_adjustment_gain,
+                "description": f"Selisih lebih persediaan - {opname.get('opname_number')}"
+            })
+        
+        total_debit = sum(e["debit"] for e in entries)
+        total_credit = sum(e["credit"] for e in entries)
+        
+        journal = {
+            "id": journal_id,
+            "journal_number": journal_number,
+            "journal_date": datetime.now(timezone.utc).isoformat(),
+            "reference_type": "stock_opname",
+            "reference_id": opname_id,
+            "reference_number": opname.get("opname_number"),
+            "description": f"Penyesuaian Stock Opname {opname.get('opname_number')} - {branch_name}",
+            "branch_id": branch_id,
+            "entries": entries,
+            "total_debit": total_debit,
+            "total_credit": total_credit,
+            "is_balanced": abs(total_debit - total_credit) < 0.01,
+            "status": "posted",
+            "created_by": user.get("user_id", ""),
+            "created_by_name": user.get("name", ""),
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        
+        await db["journal_entries"].insert_one(journal)
+    
+    # Update opname status
     await stock_opnames.update_one(
         {"id": opname_id},
         {"$set": {
             "status": "approved",
             "approved_by": user.get("user_id", ""),
-            "completed_date": datetime.now(timezone.utc).isoformat()
+            "approved_by_name": user.get("name", ""),
+            "completed_date": datetime.now(timezone.utc).isoformat(),
+            "journal_number": journal_number if (total_adjustment_expense > 0 or total_adjustment_gain > 0) else None,
+            "total_adjustment_expense": total_adjustment_expense,
+            "total_adjustment_gain": total_adjustment_gain
         }}
     )
     
-    return {"message": "Opname approved and stock adjusted"}
+    return {
+        "message": "Stock opname disetujui dan stok disesuaikan",
+        "opname_number": opname.get("opname_number"),
+        "journal_number": journal_number if (total_adjustment_expense > 0 or total_adjustment_gain > 0) else None,
+        "adjustment_expense": total_adjustment_expense,
+        "adjustment_gain": total_adjustment_gain
+    }
 
 @router.get("/opnames")
 async def list_opnames(
@@ -859,14 +1029,21 @@ class CreateOpnameV2(BaseModel):
 
 @router.post("/opnames")
 async def create_opname_v2(data: CreateOpnameV2, request: Request, user: dict = Depends(require_permission("stock_opname", "create"))):
-    """Create stock opname with branch_id from frontend - Requires stock_opname.create permission"""
+    """
+    Create and auto-approve stock opname with journal entry
+    Flow: Pilih Cabang → Stok dari stock_movements → Input fisik → Hitung selisih → Adjustment → Journal
+    """
+    import uuid
+    
     branch_id = data.branch_id
     if not branch_id:
         raise HTTPException(status_code=400, detail="Branch ID required")
     
     branch = await branches.find_one({"id": branch_id}, {"_id": 0, "name": 1})
     if not branch:
-        raise HTTPException(status_code=404, detail="Branch not found")
+        raise HTTPException(status_code=404, detail="Branch tidak ditemukan")
+    
+    branch_name = branch.get("name", "Unknown")
     
     opname_items = []
     
@@ -875,13 +1052,16 @@ async def create_opname_v2(data: CreateOpnameV2, request: Request, user: dict = 
         if not product:
             continue
         
-        system_qty = item.get("system_qty", 0)
+        # Recalculate system_qty from stock_movements (SINGLE SOURCE)
+        system_qty = await calculate_stock_from_movements(item.get("product_id"), branch_id)
         actual_qty = item.get("actual_qty", 0)
         
         opname_items.append({
             "product_id": item.get("product_id"),
             "product_code": product.get("code", ""),
             "product_name": product.get("name", ""),
+            "unit": product.get("unit", "pcs"),
+            "cost_price": product.get("cost_price", 0),
             "system_qty": system_qty,
             "actual_qty": actual_qty,
             "difference": actual_qty - system_qty
@@ -899,58 +1079,141 @@ async def create_opname_v2(data: CreateOpnameV2, request: Request, user: dict = 
     
     await stock_opnames.insert_one(opname.model_dump())
     
-    # Auto-approve for now (can be changed to require approval)
-    # Apply stock adjustments immediately
-    for item in opname_items:
-        if item["difference"] != 0:
-            # Update stock
-            stock = await product_stocks.find_one({"product_id": item["product_id"], "branch_id": branch_id})
-            if stock:
-                await product_stocks.update_one(
-                    {"product_id": item["product_id"], "branch_id": branch_id},
-                    {"$set": {
-                        "quantity": item["actual_qty"],
-                        "available": item["actual_qty"],
-                        "updated_at": datetime.now(timezone.utc).isoformat()
-                    }}
-                )
-            else:
-                new_stock = ProductStock(
-                    product_id=item["product_id"],
-                    branch_id=branch_id,
-                    quantity=item["actual_qty"],
-                    available=item["actual_qty"]
-                )
-                await product_stocks.insert_one(new_stock.model_dump())
-            
-            # Record stock movement
-            movement = StockMovement(
-                product_id=item["product_id"],
-                branch_id=branch_id,
-                movement_type=StockMovementType.OPNAME,
-                quantity=item["difference"],
-                quantity_after=item["actual_qty"],
-                reference_id=opname.id,
-                reference_type="opname",
-                notes=f"Stock opname: {opname_number}",
-                user_id=user.get("user_id", "")
-            )
-            await stock_movements.insert_one(movement.model_dump())
+    # Auto-approve with journal entry
+    total_adjustment_expense = 0
+    total_adjustment_gain = 0
+    total_inventory_debit = 0
+    total_inventory_credit = 0
     
-    # Update opname status to approved
+    for item in opname_items:
+        diff = item["difference"]
+        if diff == 0:
+            continue
+        
+        cost_price = item.get("cost_price", 0)
+        value = abs(diff) * cost_price
+        
+        # Create stock movement
+        if diff < 0:
+            movement_type = "opname_out"
+            total_adjustment_expense += value
+            total_inventory_credit += value
+        else:
+            movement_type = "opname_in"
+            total_adjustment_gain += value
+            total_inventory_debit += value
+        
+        # Record stock movement
+        movement = {
+            "id": str(uuid.uuid4()),
+            "product_id": item["product_id"],
+            "product_code": item.get("product_code", ""),
+            "product_name": item.get("product_name", ""),
+            "branch_id": branch_id,
+            "movement_type": movement_type,
+            "quantity": diff,
+            "reference_id": opname.id,
+            "reference_type": "stock_opname",
+            "reference_number": opname_number,
+            "cost_price": cost_price,
+            "notes": f"Stock opname {opname_number}: {item.get('product_name')} ({item.get('system_qty')} → {item.get('actual_qty')})",
+            "user_id": user.get("user_id", ""),
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await stock_movements.insert_one(movement)
+        
+        # Sync product_stocks
+        await sync_product_stock_from_movements(item["product_id"], branch_id)
+    
+    # Create journal entry
+    journal_number = None
+    if total_adjustment_expense > 0 or total_adjustment_gain > 0:
+        db = get_db()
+        journal_id = str(uuid.uuid4())
+        today = datetime.now(timezone.utc).strftime("%Y%m%d")
+        journal_number = f"JV-OPN-{today}-{uuid.uuid4().hex[:6].upper()}"
+        
+        entries = []
+        
+        # Selisih minus (stok hilang)
+        if total_adjustment_expense > 0:
+            entries.append({
+                "account_code": OPNAME_ACCOUNTS["adjustment_expense"]["code"],
+                "account_name": OPNAME_ACCOUNTS["adjustment_expense"]["name"],
+                "debit": total_adjustment_expense,
+                "credit": 0,
+                "description": f"Selisih kurang persediaan - {opname_number}"
+            })
+            entries.append({
+                "account_code": OPNAME_ACCOUNTS["inventory"]["code"],
+                "account_name": OPNAME_ACCOUNTS["inventory"]["name"],
+                "debit": 0,
+                "credit": total_inventory_credit,
+                "description": f"Penyesuaian persediaan kurang - {opname_number}"
+            })
+        
+        # Selisih plus (stok lebih)
+        if total_adjustment_gain > 0:
+            entries.append({
+                "account_code": OPNAME_ACCOUNTS["inventory"]["code"],
+                "account_name": OPNAME_ACCOUNTS["inventory"]["name"],
+                "debit": total_inventory_debit,
+                "credit": 0,
+                "description": f"Penyesuaian persediaan lebih - {opname_number}"
+            })
+            entries.append({
+                "account_code": OPNAME_ACCOUNTS["adjustment_gain"]["code"],
+                "account_name": OPNAME_ACCOUNTS["adjustment_gain"]["name"],
+                "debit": 0,
+                "credit": total_adjustment_gain,
+                "description": f"Selisih lebih persediaan - {opname_number}"
+            })
+        
+        total_debit = sum(e["debit"] for e in entries)
+        total_credit = sum(e["credit"] for e in entries)
+        
+        journal = {
+            "id": journal_id,
+            "journal_number": journal_number,
+            "journal_date": datetime.now(timezone.utc).isoformat(),
+            "reference_type": "stock_opname",
+            "reference_id": opname.id,
+            "reference_number": opname_number,
+            "description": f"Penyesuaian Stock Opname {opname_number} - {branch_name}",
+            "branch_id": branch_id,
+            "entries": entries,
+            "total_debit": total_debit,
+            "total_credit": total_credit,
+            "is_balanced": abs(total_debit - total_credit) < 0.01,
+            "status": "posted",
+            "created_by": user.get("user_id", ""),
+            "created_by_name": user.get("name", ""),
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        
+        await db["journal_entries"].insert_one(journal)
+    
+    # Update opname status
     await stock_opnames.update_one(
         {"id": opname.id},
         {"$set": {
             "status": "approved",
             "approved_by": user.get("user_id", ""),
-            "completed_date": datetime.now(timezone.utc).isoformat()
+            "approved_by_name": user.get("name", ""),
+            "completed_date": datetime.now(timezone.utc).isoformat(),
+            "journal_number": journal_number,
+            "total_adjustment_expense": total_adjustment_expense,
+            "total_adjustment_gain": total_adjustment_gain
         }}
     )
     
     return {
         "id": opname.id, 
         "opname_number": opname_number,
-        "message": "Stok opname berhasil disimpan dan adjustment diterapkan",
+        "journal_number": journal_number,
+        "message": "Stock opname berhasil disimpan dan adjustment diterapkan",
         "total_items": len(opname_items),
-        "total_difference": sum(i["difference"] for i in opname_items)
+        "total_difference": sum(i["difference"] for i in opname_items),
+        "adjustment_expense": total_adjustment_expense,
+        "adjustment_gain": total_adjustment_gain
     }
