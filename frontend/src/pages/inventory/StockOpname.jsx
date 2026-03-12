@@ -55,19 +55,41 @@ const StockOpname = () => {
   const handleStartOpname = async (branchId) => {
     setSelectedBranch(branchId);
     try {
-      const res = await api(`/api/inventory/stocks?branch_id=${branchId}`);
+      // Use correct endpoint: /api/inventory/stock (without 's')
+      const res = await api(`/api/inventory/stock?branch_id=${branchId}&limit=500`);
       if (res.ok) {
         const data = await res.json();
-        const stocks = data.items || data || [];
-        setOpnameItems(stocks.map(s => ({
-          product_id: s.product_id,
-          product_name: s.product_name,
-          system_qty: s.quantity || 0,
-          actual_qty: s.quantity || 0,
-          difference: 0
-        })));
+        const stocks = data.items || [];
+        if (stocks.length === 0) {
+          // Fallback: get all products and set system_qty to 0
+          const prodRes = await api('/api/products?limit=500');
+          if (prodRes.ok) {
+            const prodData = await prodRes.json();
+            const prods = prodData.items || [];
+            setOpnameItems(prods.map(p => ({
+              product_id: p.id,
+              product_name: p.name,
+              product_code: p.code,
+              system_qty: 0,
+              actual_qty: 0,
+              difference: 0
+            })));
+          }
+        } else {
+          setOpnameItems(stocks.map(s => ({
+            product_id: s.product_id,
+            product_name: s.product_name,
+            product_code: s.product_code,
+            system_qty: s.quantity || 0,
+            actual_qty: s.quantity || 0,
+            difference: 0
+          })));
+        }
       }
-    } catch (err) { toast.error('Gagal memuat stok'); }
+    } catch (err) { 
+      console.error('Error loading stock:', err);
+      toast.error('Gagal memuat stok'); 
+    }
     setShowModal(true);
   };
 

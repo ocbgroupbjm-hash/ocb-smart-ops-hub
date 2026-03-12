@@ -15,7 +15,64 @@ OCB TITAN ERP adalah sistem ERP retail enterprise untuk bisnis multi-cabang deng
 
 # LATEST UPDATE: March 12, 2026
 
-## STABILIZATION DIRECTIVE #435 - COMPLETED ✅
+## STABILIZATION DIRECTIVE #435 - REVISION 2 - COMPLETED ✅
+
+### Additional Fixes (March 12, 2026 - Session 2)
+
+#### A. Stock Opname Fix
+**Issue:** Modal opname menampilkan "Belum ada produk"
+**Root Cause:** Frontend memanggil endpoint yang salah (`/api/inventory/stocks` vs `/api/inventory/stock`)
+**Fix Applied:**
+1. `/app/frontend/src/pages/inventory/StockOpname.jsx` - Ubah endpoint ke `/api/inventory/stock`
+2. `/app/backend/routes/inventory.py` - Tambah endpoint POST `/opnames` dengan auto-approval
+
+**Verified Flow:**
+- Pilih Gudang → Produk dimuat dengan stok sistem
+- Input stok fisik → Selisih otomatis terhitung
+- Simpan → Stock adjustment diterapkan
+- Stock movement "opname" tercatat ✅
+- Opname muncul di list dengan status "Disetujui" ✅
+
+**Contoh Transaksi:**
+```
+OPN000001 | Headquarters | 2 items | Selisih +28 | Status: Disetujui
+```
+
+#### B. Purchase Planning Fix
+**Issue:** "Tidak ada item approved untuk dibuat PO"
+**Root Cause:** Flow status terlalu ketat (draft → reviewed → approved)
+**Fix Applied:**
+1. `/app/backend/routes/purchase_planning.py` - Izinkan draft → approved langsung
+2. `/app/frontend/src/pages/PurchasePlanning.jsx` - Tambah tombol "Approve Selected"
+
+**Verified Flow:**
+- Generate Planning → Select items → Approve Selected
+- Items berubah ke status "Approved"
+- Create Draft PO → PO-PLAN-xxx created
+- PO visible di Purchase Module ✅
+
+**Contoh Transaksi:**
+```
+Draft: dd16d402... → Approved → PO-PLAN-20260312131610-1 ✅
+```
+
+#### C. Sales Target Verification
+**Status:** ALREADY WORKING - No fix needed
+**Features Verified:**
+- Target per Branch/Salesman/Category ✅
+- Period types: Daily/Weekly/Monthly/Quarterly/Yearly ✅
+- Realisasi otomatis dari sales_invoices & pos_transactions ✅
+- Progress percentage & Gap calculation ✅
+- Status auto-calculation (On Track/Behind/At Risk/Achieved) ✅
+
+**Contoh:**
+```
+Cabang Utama | Target: Rp 100.000.000 | Actual: Rp 0 | Achievement: 0% | Status: At Risk
+```
+
+### Full Audit Report: `/app/memory/SYSTEM_AUDIT_REPORT_V2.md`
+
+---
 
 ### P0: Stock Reorder "Save PO Draft" Fix (March 12, 2026)
 **Issue:** Tombol "Save PO Draft" menghasilkan error "Gagal generate PO draft"

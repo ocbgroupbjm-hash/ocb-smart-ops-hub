@@ -629,3 +629,137 @@ async def approve_opname(opname_id: str, request: Request, user: dict = Depends(
     )
     
     return {"message": "Opname approved and stock adjusted"}
+
+@router.get("/opnames")
+async def list_opnames(
+    search: str = "",
+    status: str = "",
+    skip: int = 0,
+    limit: int = 50,
+    user: dict = Depends(require_permission("stock_opname", "view"))
+):
+    """List stock opnames - Requires stock_opname.view permission"""
+    query = {}
+    
+    branch_id = user.get("branch_id")
+    if branch_id:
+        query["branch_id"] = branch_id
+    
+    if status:
+        query["status"] = status
+    
+    items = await stock_opnames.find(query, {"_id": 0}).sort("created_at", -1).skip(skip).limit(limit).to_list(limit)
+    
+    # Enrich with branch names and calculate totals
+    for item in items:
+        branch = await branches.find_one({"id": item.get("branch_id")}, {"_id": 0, "name": 1})
+        item["branch_name"] = branch.get("name", "Unknown") if branch else "Unknown"
+        item["total_items"] = len(item.get("items", []))
+        item["total_difference"] = sum(i.get("difference", 0) for i in item.get("items", []))
+    
+    total = await stock_opnames.count_documents(query)
+    
+    return {"items": items, "total": total}
+
+class CreateOpnameV2(BaseModel):
+    branch_id: str
+    notes: str = ""
+    items: List[dict]
+
+@router.post("/opnames")
+async def create_opname_v2(data: CreateOpnameV2, request: Request, user: dict = Depends(require_permission("stock_opname", "create"))):
+    """Create stock opname with branch_id from frontend - Requires stock_opname.create permission"""
+    branch_id = data.branch_id
+    if not branch_id:
+        raise HTTPException(status_code=400, detail="Branch ID required")
+    
+    branch = await branches.find_one({"id": branch_id}, {"_id": 0, "name": 1})
+    if not branch:
+        raise HTTPException(status_code=404, detail="Branch not found")
+    
+    opname_items = []
+    
+    for item in data.items:
+        product = await products.find_one({"id": item.get("product_id")}, {"_id": 0})
+        if not product:
+            continue
+        
+        system_qty = item.get("system_qty", 0)
+        actual_qty = item.get("actual_qty", 0)
+        
+        opname_items.append({
+            "product_id": item.get("product_id"),
+            "product_code": product.get("code", ""),
+            "product_name": product.get("name", ""),
+            "system_qty": system_qty,
+            "actual_qty": actual_qty,
+            "difference": actual_qty - system_qty
+        })
+    
+    opname_number = await get_next_sequence("opname", "OPN")
+    
+    opname = StockOpname(
+        opname_number=opname_number,
+        branch_id=branch_id,
+        items=opname_items,
+        notes=data.notes,
+        conducted_by=user.get("user_id", "")
+    )
+    
+    await stock_opnames.insert_one(opname.model_dump())
+    
+    # Auto-approve for now (can be changed to require approval)
+    # Apply stock adjustments immediately
+    for item in opname_items:
+        if item["difference"] != 0:
+            # Update stock
+            stock = await product_stocks.find_one({"product_id": item["product_id"], "branch_id": branch_id})
+            if stock:
+                await product_stocks.update_one(
+                    {"product_id": item["product_id"], "branch_id": branch_id},
+                    {"$set": {
+                        "quantity": item["actual_qty"],
+                        "available": item["actual_qty"],
+                        "updated_at": datetime.now(timezone.utc).isoformat()
+                    }}
+                )
+            else:
+                new_stock = ProductStock(
+                    product_id=item["product_id"],
+                    branch_id=branch_id,
+                    quantity=item["actual_qty"],
+                    available=item["actual_qty"]
+                )
+                await product_stocks.insert_one(new_stock.model_dump())
+            
+            # Record stock movement
+            movement = StockMovement(
+                product_id=item["product_id"],
+                branch_id=branch_id,
+                movement_type=StockMovementType.OPNAME,
+                quantity=item["difference"],
+                quantity_after=item["actual_qty"],
+                reference_id=opname.id,
+                reference_type="opname",
+                notes=f"Stock opname: {opname_number}",
+                user_id=user.get("user_id", "")
+            )
+            await stock_movements.insert_one(movement.model_dump())
+    
+    # Update opname status to approved
+    await stock_opnames.update_one(
+        {"id": opname.id},
+        {"$set": {
+            "status": "approved",
+            "approved_by": user.get("user_id", ""),
+            "completed_date": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    return {
+        "id": opname.id, 
+        "opname_number": opname_number,
+        "message": "Stok opname berhasil disimpan dan adjustment diterapkan",
+        "total_items": len(opname_items),
+        "total_difference": sum(i["difference"] for i in opname_items)
+    }

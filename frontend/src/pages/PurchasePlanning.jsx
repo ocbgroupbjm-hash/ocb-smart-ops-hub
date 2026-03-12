@@ -177,7 +177,7 @@ const PurchasePlanning = () => {
       : plannings.filter(p => p.status === 'approved').map(p => p.id);
     
     if (approvedItems.length === 0) {
-      alert('Tidak ada item approved untuk dibuat PO');
+      alert('Tidak ada item approved untuk dibuat PO. Approve item terlebih dahulu dengan mengklik tombol "Approve Selected" atau mengubah status per item.');
       return;
     }
     
@@ -203,6 +203,45 @@ const PurchasePlanning = () => {
       alert('Gagal membuat PO');
     } finally {
       setCreatingPO(false);
+    }
+  };
+
+  const handleBulkApprove = async () => {
+    // Get items to approve (selected or all draft/reviewed items)
+    const itemsToApprove = selectedItems.length > 0 
+      ? selectedItems.filter(id => {
+          const item = plannings.find(p => p.id === id);
+          return item && ['draft', 'reviewed'].includes(item.status);
+        })
+      : plannings.filter(p => ['draft', 'reviewed'].includes(p.status)).map(p => p.id);
+    
+    if (itemsToApprove.length === 0) {
+      alert('Tidak ada item draft/reviewed untuk di-approve');
+      return;
+    }
+    
+    if (!window.confirm(`Approve ${itemsToApprove.length} item?`)) {
+      return;
+    }
+    
+    try {
+      // Approve each item
+      for (const id of itemsToApprove) {
+        await fetch(`${API_URL}/api/purchase-planning/${id}/status`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ status: 'approved', notes: 'Bulk approval' })
+        });
+      }
+      
+      alert(`${itemsToApprove.length} item berhasil di-approve`);
+      setSelectedItems([]);
+      fetchData();
+    } catch (err) {
+      alert('Gagal approve item');
     }
   };
 
@@ -244,6 +283,14 @@ const PurchasePlanning = () => {
           >
             <Plus className={`h-4 w-4 ${generating ? 'animate-spin' : ''}`} />
             {generating ? 'Generating...' : 'Generate Planning'}
+          </button>
+          <button
+            onClick={handleBulkApprove}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg"
+            data-testid="approve-btn"
+          >
+            <CheckCircle2 className="h-4 w-4" />
+            Approve Selected
           </button>
           <button
             onClick={handleCreatePO}

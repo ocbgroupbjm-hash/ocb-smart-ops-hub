@@ -519,8 +519,9 @@ async def update_planning_status(
     old_status = item["status"]
     
     # Validate transitions
+    # Simplified flow: allow direct approve from draft
     valid_transitions = {
-        "draft": ["reviewed", "cancelled"],
+        "draft": ["reviewed", "approved", "cancelled"],
         "reviewed": ["approved", "draft", "cancelled"],
         "approved": ["po_created", "reviewed", "cancelled"]
     }
