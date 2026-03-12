@@ -80,8 +80,6 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
         { name: 'Bank', icon: Building2, path: '/master/banks' },
         { name: 'Ongkir', icon: MapPin, path: '/master/shipping-costs' },
         { divider: true, label: 'Sistem' },
-        { name: 'Cabang', icon: Building, path: '/settings/branches' },
-        { name: 'User', icon: UserCog, path: '/settings/users' },
         { name: 'Setting Akun ERP', icon: Settings, path: '/master/setting-akun' },
         { name: 'ERP Hardening', icon: Shield, path: '/master/erp-hardening' },
       ]

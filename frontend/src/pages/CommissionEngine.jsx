@@ -497,38 +497,55 @@ const CommissionEngine = () => {
         </div>
       )}
 
-      {/* Policy Card */}
+      {/* Policy Card - Enhanced */}
       {policy && (
         <div className="bg-[#1a1214] border border-red-900/30 rounded-xl p-4">
           <div className="flex items-center gap-2 mb-3">
             <Settings className="h-5 w-5 text-gray-400" />
             <span className="text-amber-100 font-medium">Commission Policy</span>
+            {policy.branch_pool_enabled && (
+              <span className="px-2 py-0.5 bg-green-500/20 text-green-300 text-xs rounded">Branch Pool Active</span>
+            )}
           </div>
-          <div className="grid grid-cols-5 gap-4 text-sm">
+          <div className="grid grid-cols-6 gap-4 text-sm">
+            <div>
+              <span className="text-gray-500">Type</span>
+              <p className="text-amber-100 capitalize">{policy.commission_type || 'sales_value'}</p>
+            </div>
             <div>
               <span className="text-gray-500">Base Rate</span>
-              <p className="text-amber-100">{(policy.base_rate * 100)}%</p>
+              <p className="text-amber-100">{((policy.base_rate || 0.02) * 100)}%</p>
             </div>
             <div>
               <span className="text-gray-500">Min Achievement</span>
-              <p className="text-amber-100">{policy.min_achievement_for_commission}%</p>
+              <p className="text-amber-100">{policy.min_achievement_for_commission || 80}%</p>
             </div>
             <div>
-              <span className="text-gray-500">Achievement Multiplier</span>
-              <p className="text-amber-100">{policy.achievement_multiplier}x</p>
+              <span className="text-gray-500">Super Threshold</span>
+              <p className="text-amber-100">{policy.super_bonus_threshold || 110}%</p>
             </div>
             <div>
-              <span className="text-gray-500">Super Bonus Threshold</span>
-              <p className="text-amber-100">{policy.super_bonus_threshold}%</p>
+              <span className="text-gray-500">Super Bonus</span>
+              <p className="text-amber-100">{((policy.super_bonus_rate || 0.01) * 100)}%</p>
             </div>
             <div>
-              <span className="text-gray-500">Super Bonus Rate</span>
-              <p className="text-amber-100">{(policy.super_bonus_rate * 100)}%</p>
+              <span className="text-gray-500">Branch Pool Rate</span>
+              <p className="text-amber-100">{((policy.branch_pool_rate || 0.005) * 100)}%</p>
+            </div>
+          </div>
+          
+          {/* Achievement Tiers Info */}
+          <div className="mt-3 pt-3 border-t border-red-900/30">
+            <p className="text-xs text-gray-500 mb-2">Achievement Tiers:</p>
+            <div className="flex gap-2 flex-wrap">
+              <span className="px-2 py-1 bg-red-500/10 text-red-300 text-xs rounded">{'<'}80% = No Commission</span>
+              <span className="px-2 py-1 bg-amber-500/10 text-amber-300 text-xs rounded">80-99% = Base</span>
+              <span className="px-2 py-1 bg-blue-500/10 text-blue-300 text-xs rounded">100-109% = +Bonus</span>
+              <span className="px-2 py-1 bg-purple-500/10 text-purple-300 text-xs rounded">{'≥'}110% = +Super</span>
             </div>
           </div>
         </div>
       )}
-
       {/* Filters & Actions */}
       <div className="flex flex-wrap gap-4 items-center">
         <select
