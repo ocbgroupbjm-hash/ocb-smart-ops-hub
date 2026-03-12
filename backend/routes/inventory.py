@@ -216,9 +216,14 @@ async def get_stock_movements(
     
     # Enrich with product names
     for item in items:
-        product = await products.find_one({"id": item["product_id"]}, {"_id": 0, "name": 1, "code": 1})
-        item["product_name"] = product.get("name", "") if product else "Unknown"
-        item["product_code"] = product.get("code", "") if product else ""
+        prod_id = item.get("product_id", "")
+        if prod_id:
+            product = await products.find_one({"id": prod_id}, {"_id": 0, "name": 1, "code": 1})
+            item["product_name"] = product.get("name", "") if product else "Unknown"
+            item["product_code"] = product.get("code", "") if product else ""
+        else:
+            item["product_name"] = "Unknown"
+            item["product_code"] = ""
     
     total = await stock_movements.count_documents(query)
     
