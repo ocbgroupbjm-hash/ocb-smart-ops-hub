@@ -127,7 +127,7 @@ const MasterItems = () => {
         api('/api/master/brands'),
         api('/api/master/warehouses'),
         api('/api/global-map/branches'),
-        api('/api/master/suppliers')
+        api('/api/suppliers')
       ]);
       if (catRes.ok) setCategories(await catRes.json());
       if (unitRes.ok) setUnits(await unitRes.json());
@@ -139,7 +139,8 @@ const MasterItems = () => {
       }
       if (suppRes.ok) {
         const data = await suppRes.json();
-        setSuppliers(data.suppliers || data || []);
+        // Handle both response formats: {items: []} or {suppliers: []}
+        setSuppliers(data.items || data.suppliers || []);
       }
     } catch (err) {
       console.error('Error loading master data:', err);

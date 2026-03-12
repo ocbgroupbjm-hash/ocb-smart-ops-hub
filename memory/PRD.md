@@ -15,6 +15,60 @@ OCB TITAN ERP adalah sistem ERP retail enterprise untuk bisnis multi-cabang deng
 
 # LATEST UPDATE: March 12, 2026
 
+## AUDIT RONDE 3 - P0 FIXES COMPLETED ✅
+
+### Completion Date: March 12, 2026
+
+---
+
+### P0-1: STOCK MOVEMENT MISMATCH - FIXED ✅
+
+**Root Cause:**
+8 stock movements dengan type `adjustment_out` memiliki quantity positif (seharusnya negatif)
+
+**Fix Applied:**
+- Fixed 8 `adjustment_out` movements: quantity diubah ke negatif
+- Sync ulang semua product_stocks dari stock_movements
+- Sync ulang semua products.stock field
+
+**Verification:**
+```
+✅ 56 products - stock_movements = product_stocks = products.stock
+✅ 0 mismatch items
+```
+
+---
+
+### P0-2: SUPPLIER PICKER BUG - FIXED ✅
+
+**Root Cause:**
+1. Frontend memanggil `/api/master/suppliers` (tidak ada) → seharusnya `/api/suppliers`
+2. Backend `ItemCreate` model tidak memiliki field `supplier_id` dan `supplier_name`
+
+**Files Fixed:**
+- `/app/frontend/src/pages/master/MasterItems.jsx` - Fixed endpoint URL
+- `/app/backend/routes/master_erp.py` - Added supplier_id, supplier_name fields dan auto-lookup
+
+**Verification:**
+```
+✅ Item TEST-KABEL-002 created with supplier CV Sentosa Mandiri
+✅ Edit item - supplier tetap tersimpan
+✅ Cross-module: Item → PO → Receive → Stock = 50
+```
+
+---
+
+### FINANCIAL CONSISTENCY CHECKER - ALL PASS ✅
+
+| Check | Status |
+|-------|--------|
+| Stock Movement | ✅ 56 products match |
+| Journal Balance | ✅ 47 journals balanced |
+| Trial Balance | ✅ D=C=69,086,856 |
+| AP/AR Integrity | ✅ PASS |
+
+---
+
 ## STOCK OPNAME FINALIZATION - COMPLETED ✅
 
 ### Completion Date: March 12, 2026

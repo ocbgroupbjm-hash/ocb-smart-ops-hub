@@ -47,6 +47,8 @@ class ItemCreate(BaseModel):
     is_active: bool = True
     track_stock: bool = True
     discontinued: bool = False
+    supplier_id: str = ""  # Default supplier
+    supplier_name: str = ""
 
 @router.get("/items")
 async def list_items(
@@ -143,9 +145,17 @@ async def create_item(data: ItemCreate, user: dict = Depends(get_current_user)):
     if existing:
         raise HTTPException(status_code=400, detail="Kode item sudah ada")
     
+    # Get supplier name if supplier_id provided
+    supplier_name = data.supplier_name
+    if data.supplier_id and not supplier_name:
+        supplier = await db["suppliers"].find_one({"id": data.supplier_id}, {"_id": 0, "name": 1})
+        if supplier:
+            supplier_name = supplier.get("name", "")
+    
     item = {
         "id": str(uuid.uuid4()),
         **data.model_dump(),
+        "supplier_name": supplier_name,  # Ensure supplier_name is saved
         # NOTE: stock tidak disimpan di item - dihitung dari stock_movements (SSOT)
         "created_at": datetime.now(timezone.utc).isoformat(),
         "created_by": user.get("id")
@@ -175,6 +185,13 @@ async def create_item(data: ItemCreate, user: dict = Depends(get_current_user)):
 @router.put("/items/{item_id}")
 async def update_item(item_id: str, data: ItemCreate, user: dict = Depends(get_current_user)):
     update_data = data.model_dump()
+    
+    # Get supplier name if supplier_id provided and supplier_name not given
+    if data.supplier_id and not data.supplier_name:
+        supplier = await db["suppliers"].find_one({"id": data.supplier_id}, {"_id": 0, "name": 1})
+        if supplier:
+            update_data["supplier_name"] = supplier.get("name", "")
+    
     update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
     result = await items.update_one({"id": item_id}, {"$set": update_data})
     if result.matched_count == 0:
