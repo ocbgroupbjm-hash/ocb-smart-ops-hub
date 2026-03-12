@@ -253,6 +253,10 @@ app.include_router(report_center_router)
 from routes.kpi_system import router as kpi_system_router
 app.include_router(kpi_system_router)
 
+# Phase 5: Master Advanced (Customer, Discount, Promotion, Barcode)
+from routes.master_advanced import router as master_advanced_router
+app.include_router(master_advanced_router)
+
 # Health check
 @app.get("/api/health")
 async def health_check():

@@ -1,688 +1,906 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
+import { Badge } from '../../components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { Switch } from '../../components/ui/switch';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../components/ui/dialog';
-import { Badge } from '../../components/ui/badge';
-import { Plus, Search, Edit2, Trash2, Loader2, Gift, Calendar, Package, Tag, RefreshCw, X, Percent, ShoppingCart } from 'lucide-react';
+import { Textarea } from '../../components/ui/textarea';
 import { toast } from 'sonner';
+import { 
+  Plus, Search, Edit, Trash2, Save, X, Gift, Tag, 
+  Calendar, Clock, DollarSign, RefreshCw, ChevronLeft,
+  Package, Users, Building2, ShoppingCart, Sparkles
+} from 'lucide-react';
 
-const API = process.env.REACT_APP_BACKEND_URL;
+const API_URL = process.env.REACT_APP_BACKEND_URL;
+
+const PROMO_TYPES = [
+  { value: 'product', label: 'Promo Produk' },
+  { value: 'category', label: 'Promo Kategori' },
+  { value: 'brand', label: 'Promo Brand' },
+  { value: 'bundle', label: 'Bundle' },
+  { value: 'buy_x_get_y', label: 'Beli X Gratis Y' },
+  { value: 'special_price', label: 'Harga Khusus' },
+  { value: 'period', label: 'Promo Periode' },
+  { value: 'branch', label: 'Promo Cabang' },
+  { value: 'customer_group', label: 'Promo Grup Customer' },
+  { value: 'quota', label: 'Promo dengan Kuota' },
+];
+
+const BENEFIT_TYPES = [
+  { value: 'discount', label: 'Diskon' },
+  { value: 'free_item', label: 'Item Gratis' },
+  { value: 'bundle_price', label: 'Harga Bundle' },
+  { value: 'special_price', label: 'Harga Spesial' },
+];
 
 const MasterPromotionsAdvanced = () => {
-  const { api } = useAuth();
-  const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [promotions, setPromotions] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [showModal, setShowModal] = useState(false);
-  const [editingItem, setEditingItem] = useState(null);
-  const [saving, setSaving] = useState(false);
+  const [filterType, setFilterType] = useState('');
+  const [filterActive, setFilterActive] = useState('');
   
-  // Reference data
+  // Master data
+  const [branches, setBranches] = useState([]);
+  const [customerGroups, setCustomerGroups] = useState([]);
   const [categories, setCategories] = useState([]);
   const [brands, setBrands] = useState([]);
-  const [products, setProducts] = useState([]);
-  const [customerGroups, setCustomerGroups] = useState([]);
-  const [branches, setBranches] = useState([]);
+  const [items, setItems] = useState([]);
   
-  // Promo detail items
-  const [promoItems, setPromoItems] = useState([]);
+  // Form state
+  const [showForm, setShowForm] = useState(false);
+  const [editingPromo, setEditingPromo] = useState(null);
   
   const [formData, setFormData] = useState({
-    // Header
-    code: 'AUTO',
-    code_mode: 'auto',
+    code: '',
     name: '',
+    promo_type: 'product',
     description: '',
-    
-    // Type
-    promo_type: 'discount', // discount, buy_x_get_y, bundle, special_price, free_item
-    
-    // Target Type
-    target_type: 'all', // all, category, brand, product, bundle
-    
-    // Conditions
-    min_qty: 0,
-    min_subtotal: 0,
-    quota: 0, // 0 = unlimited
-    
-    // Benefit
-    benefit_type: 'percent', // percent, nominal, free_item, special_price
-    benefit_value: 0,
-    free_product_id: '',
-    free_qty: 0,
-    bundle_price: 0,
-    
-    // Period
     start_date: '',
     end_date: '',
-    start_time: '',
-    end_time: '',
-    
-    // Rules
-    priority: 1,
-    stackable: false,
+    start_time: '00:00',
+    end_time: '23:59',
     is_active: true,
-    
-    // Target branches/customer groups
-    target_branches: [],
-    target_customer_groups: []
+    priority: 0,
+    stackable: false,
+    branches: [],
+    customer_groups: [],
+    quota: 0,
+    rules: [],
+    targets: [],
+    notes: ''
+  });
+  
+  // Rule form
+  const [currentRule, setCurrentRule] = useState({
+    target_type: 'all',
+    condition_qty: 0,
+    condition_subtotal: 0,
+    trigger_items: [],
+    benefit_type: 'discount',
+    benefit_discount_type: 'percentage',
+    benefit_discount_value: 0,
+    benefit_free_item_id: '',
+    benefit_free_item_qty: 0,
+    benefit_special_price: 0
+  });
+  
+  // Target form
+  const [currentTarget, setCurrentTarget] = useState({
+    item_id: '',
+    item_code: '',
+    item_name: '',
+    category_id: '',
+    brand_id: '',
+    trigger_qty: 0,
+    reward_qty: 0,
+    discount_value: 0,
+    special_price: 0,
+    is_free: false
   });
 
-  const loadData = useCallback(async () => {
+  const fetchPromotions = useCallback(async () => {
     setLoading(true);
     try {
-      const [res, catRes, brandRes, prodRes, groupRes, branchRes] = await Promise.all([
-        api(`/api/master/promotions?search=${searchTerm}`),
-        api('/api/master/categories'),
-        api('/api/master/brands'),
-        api('/api/products?limit=200'),
-        api('/api/master/customer-groups'),
-        api('/api/master/branches')
+      const token = localStorage.getItem('token');
+      const params = new URLSearchParams();
+      if (searchTerm) params.append('search', searchTerm);
+      if (filterType && filterType !== 'all') params.append('promo_type', filterType);
+      if (filterActive && filterActive !== 'all') params.append('is_active', filterActive);
+      
+      const res = await fetch(`${API_URL}/api/master-advanced/promotions?${params}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      setPromotions(data.items || []);
+    } catch (err) {
+      console.error('Error fetching promotions:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [searchTerm, filterType, filterActive]);
+
+  const fetchMasterData = async () => {
+    const token = localStorage.getItem('token');
+    try {
+      const [branchRes, groupRes, catRes, brandRes, itemRes] = await Promise.all([
+        fetch(`${API_URL}/api/branches`, { headers: { 'Authorization': `Bearer ${token}` } }),
+        fetch(`${API_URL}/api/master-advanced/customer-groups`, { headers: { 'Authorization': `Bearer ${token}` } }),
+        fetch(`${API_URL}/api/master-erp/categories`, { headers: { 'Authorization': `Bearer ${token}` } }),
+        fetch(`${API_URL}/api/master-erp/brands`, { headers: { 'Authorization': `Bearer ${token}` } }),
+        fetch(`${API_URL}/api/master-erp/items?limit=100`, { headers: { 'Authorization': `Bearer ${token}` } })
       ]);
       
-      if (res.ok) setItems(await res.json());
-      if (catRes.ok) setCategories(await catRes.json());
-      if (brandRes.ok) setBrands(await brandRes.json());
-      if (prodRes.ok) {
-        const prodData = await prodRes.json();
-        setProducts(prodData.items || prodData || []);
-      }
-      if (groupRes.ok) setCustomerGroups(await groupRes.json());
-      if (branchRes.ok) setBranches(await branchRes.json());
-    } catch (err) { 
-      console.error(err);
-      toast.error('Gagal memuat data'); 
+      const branchData = await branchRes.json();
+      const groupData = await groupRes.json();
+      const catData = await catRes.json();
+      const brandData = await brandRes.json();
+      const itemData = await itemRes.json();
+      
+      setBranches(Array.isArray(branchData) ? branchData : branchData.items || []);
+      setCustomerGroups(groupData.items || []);
+      setCategories(catData.items || []);
+      setBrands(brandData.items || []);
+      setItems(itemData.items || []);
+    } catch (err) {
+      console.error('Error fetching master data:', err);
     }
-    finally { setLoading(false); }
-  }, [api, searchTerm]);
+  };
 
-  useEffect(() => { loadData(); }, [loadData]);
+  useEffect(() => {
+    fetchPromotions();
+    fetchMasterData();
+  }, [fetchPromotions]);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleInputChange = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleMultiSelect = (field, value, checked) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: checked 
+        ? [...prev[field], value]
+        : prev[field].filter(v => v !== value)
+    }));
+  };
+
+  const addRule = () => {
+    setFormData(prev => ({
+      ...prev,
+      rules: [...prev.rules, { ...currentRule }]
+    }));
+    setCurrentRule({
+      target_type: 'all',
+      condition_qty: 0,
+      condition_subtotal: 0,
+      trigger_items: [],
+      benefit_type: 'discount',
+      benefit_discount_type: 'percentage',
+      benefit_discount_value: 0,
+      benefit_free_item_id: '',
+      benefit_free_item_qty: 0,
+      benefit_special_price: 0
+    });
+  };
+
+  const removeRule = (index) => {
+    setFormData(prev => ({
+      ...prev,
+      rules: prev.rules.filter((_, i) => i !== index)
+    }));
+  };
+
+  const addTarget = () => {
+    if (!currentTarget.item_id && !currentTarget.category_id && !currentTarget.brand_id) {
+      toast.error('Pilih item, kategori, atau brand');
+      return;
+    }
+    
+    // Get item details if item_id selected
+    const item = items.find(i => i.id === currentTarget.item_id);
+    
+    setFormData(prev => ({
+      ...prev,
+      targets: [...prev.targets, {
+        ...currentTarget,
+        item_code: item?.code || '',
+        item_name: item?.name || ''
+      }]
+    }));
+    
+    setCurrentTarget({
+      item_id: '',
+      item_code: '',
+      item_name: '',
+      category_id: '',
+      brand_id: '',
+      trigger_qty: 0,
+      reward_qty: 0,
+      discount_value: 0,
+      special_price: 0,
+      is_free: false
+    });
+  };
+
+  const removeTarget = (index) => {
+    setFormData(prev => ({
+      ...prev,
+      targets: prev.targets.filter((_, i) => i !== index)
+    }));
+  };
+
+  const resetForm = () => {
+    setFormData({
+      code: '',
+      name: '',
+      promo_type: 'product',
+      description: '',
+      start_date: '',
+      end_date: '',
+      start_time: '00:00',
+      end_time: '23:59',
+      is_active: true,
+      priority: 0,
+      stackable: false,
+      branches: [],
+      customer_groups: [],
+      quota: 0,
+      rules: [],
+      targets: [],
+      notes: ''
+    });
+    setEditingPromo(null);
+  };
+
+  const openNewForm = () => {
+    resetForm();
+    setShowForm(true);
+  };
+
+  const openEditForm = async (promo) => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${API_URL}/api/master-advanced/promotions/${promo.id}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      
+      setFormData({
+        code: data.code || '',
+        name: data.name || '',
+        promo_type: data.promo_type || 'product',
+        description: data.description || '',
+        start_date: data.start_date || '',
+        end_date: data.end_date || '',
+        start_time: data.start_time || '00:00',
+        end_time: data.end_time || '23:59',
+        is_active: data.is_active !== false,
+        priority: data.priority || 0,
+        stackable: data.stackable || false,
+        branches: data.branches || [],
+        customer_groups: data.customer_groups || [],
+        quota: data.quota || 0,
+        rules: data.rules || [],
+        targets: data.targets || [],
+        notes: data.notes || ''
+      });
+      setEditingPromo(data);
+      setShowForm(true);
+    } catch (err) {
+      toast.error('Gagal memuat data promosi');
+    }
+  };
+
+  const handleSubmit = async () => {
     if (!formData.name.trim()) {
       toast.error('Nama promosi wajib diisi');
       return;
     }
-    
-    setSaving(true);
+
     try {
-      // Generate auto code if needed
-      let finalCode = formData.code;
-      if (formData.code === 'AUTO') {
-        const genRes = await fetch(`${API}/api/number-settings/generate/transaction`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ module_code: 'PRM' })
-        });
-        if (genRes.ok) {
-          const genData = await genRes.json();
-          finalCode = genData.number;
-        } else {
-          finalCode = `PRM-${Date.now()}`;
-        }
-      }
+      const token = localStorage.getItem('token');
+      const url = editingPromo 
+        ? `${API_URL}/api/master-advanced/promotions/${editingPromo.id}`
+        : `${API_URL}/api/master-advanced/promotions`;
       
-      const payload = { 
-        ...formData, 
-        code: finalCode,
-        items: promoItems
-      };
+      const res = await fetch(url, {
+        method: editingPromo ? 'PUT' : 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(formData)
+      });
+
+      const data = await res.json();
       
-      const url = editingItem ? `/api/master/promotions/${editingItem.id}` : '/api/master/promotions';
-      const res = await api(url, { method: editingItem ? 'PUT' : 'POST', body: JSON.stringify(payload) });
-      
-      if (res.ok) { 
-        toast.success(`Promosi ${finalCode} berhasil disimpan`); 
-        setShowModal(false); 
-        loadData(); 
+      if (res.ok && data.success) {
+        toast.success(editingPromo ? 'Promosi berhasil diupdate' : 'Promosi berhasil dibuat');
+        setShowForm(false);
+        resetForm();
+        fetchPromotions();
       } else {
-        const err = await res.json();
-        toast.error(err.detail || 'Gagal menyimpan');
+        toast.error(data.detail || 'Gagal menyimpan promosi');
       }
-    } catch (err) { 
-      toast.error('Gagal menyimpan: ' + err.message); 
-    } finally {
-      setSaving(false);
+    } catch (err) {
+      toast.error('Terjadi kesalahan');
     }
   };
 
-  const handleEdit = (item) => { 
-    setEditingItem(item); 
-    setFormData({
-      code: item.code || '',
-      code_mode: 'manual',
-      name: item.name || '',
-      description: item.description || '',
-      promo_type: item.promo_type || 'discount',
-      target_type: item.target_type || 'all',
-      min_qty: item.min_qty || 0,
-      min_subtotal: item.min_subtotal || 0,
-      quota: item.quota || 0,
-      benefit_type: item.benefit_type || 'percent',
-      benefit_value: item.benefit_value || 0,
-      free_product_id: item.free_product_id || '',
-      free_qty: item.free_qty || 0,
-      bundle_price: item.bundle_price || 0,
-      start_date: item.start_date ? item.start_date.split('T')[0] : '',
-      end_date: item.end_date ? item.end_date.split('T')[0] : '',
-      start_time: item.start_time || '',
-      end_time: item.end_time || '',
-      priority: item.priority || 1,
-      stackable: item.stackable || false,
-      is_active: item.is_active !== false,
-      target_branches: item.target_branches || [],
-      target_customer_groups: item.target_customer_groups || []
-    });
-    setPromoItems(item.items || []);
-    setShowModal(true); 
-  };
-
-  const handleDelete = async (item) => { 
-    if (!window.confirm(`Hapus promosi "${item.name}"?`)) return; 
-    try { 
-      await api(`/api/master/promotions/${item.id}`, { method: 'DELETE' }); 
-      toast.success('Berhasil dihapus'); 
-      loadData(); 
-    } catch { 
-      toast.error('Gagal menghapus'); 
-    } 
-  };
-
-  const resetForm = () => {
-    setEditingItem(null);
-    setPromoItems([]);
-    setFormData({
-      code: 'AUTO', code_mode: 'auto', name: '', description: '',
-      promo_type: 'discount', target_type: 'all',
-      min_qty: 0, min_subtotal: 0, quota: 0,
-      benefit_type: 'percent', benefit_value: 0,
-      free_product_id: '', free_qty: 0, bundle_price: 0,
-      start_date: '', end_date: '', start_time: '', end_time: '',
-      priority: 1, stackable: false, is_active: true,
-      target_branches: [], target_customer_groups: []
-    });
+  const handleDelete = async (promo) => {
+    if (!window.confirm(`Hapus promosi "${promo.name}"?`)) return;
+    
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${API_URL}/api/master-advanced/promotions/${promo.id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (res.ok) {
+        toast.success('Promosi berhasil dihapus');
+        fetchPromotions();
+      }
+    } catch (err) {
+      toast.error('Gagal menghapus promosi');
+    }
   };
 
   const formatCurrency = (value) => {
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value || 0);
   };
 
-  const formatDate = (dateStr) => {
-    if (!dateStr) return '-';
-    return new Date(dateStr).toLocaleDateString('id-ID');
-  };
+  // Render Form
+  if (showForm) {
+    return (
+      <div className="p-4 space-y-4" data-testid="promo-advanced-form">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="sm" onClick={() => { setShowForm(false); resetForm(); }}>
+            <ChevronLeft className="h-4 w-4 mr-1" />
+            Kembali
+          </Button>
+          <h1 className="text-xl font-bold">
+            {editingPromo ? 'Edit Promosi' : 'Tambah Promosi Baru'}
+          </h1>
+        </div>
 
-  const getPromoTypeLabel = (type) => {
-    switch(type) {
-      case 'discount': return 'Diskon';
-      case 'buy_x_get_y': return 'Beli X Gratis Y';
-      case 'bundle': return 'Bundle';
-      case 'special_price': return 'Harga Khusus';
-      case 'free_item': return 'Gratis Item';
-      default: return type;
-    }
-  };
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* Left Column - Basic Info */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Gift className="h-5 w-5" />
+                Informasi Dasar
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Kode Promo</Label>
+                  <Input
+                    value={formData.code}
+                    onChange={(e) => handleInputChange('code', e.target.value)}
+                    placeholder="Auto jika kosong"
+                    data-testid="promo-code-input"
+                  />
+                </div>
+                <div>
+                  <Label>Prioritas</Label>
+                  <Input
+                    type="number"
+                    value={formData.priority}
+                    onChange={(e) => handleInputChange('priority', parseInt(e.target.value) || 0)}
+                    placeholder="0"
+                  />
+                </div>
+              </div>
 
-  const getPromoTypeIcon = (type) => {
-    switch(type) {
-      case 'discount': return <Percent className="h-4 w-4" />;
-      case 'buy_x_get_y': return <Gift className="h-4 w-4" />;
-      case 'bundle': return <Package className="h-4 w-4" />;
-      case 'special_price': return <Tag className="h-4 w-4" />;
-      case 'free_item': return <ShoppingCart className="h-4 w-4" />;
-      default: return <Tag className="h-4 w-4" />;
-    }
-  };
+              <div>
+                <Label>Nama Promosi *</Label>
+                <Input
+                  value={formData.name}
+                  onChange={(e) => handleInputChange('name', e.target.value)}
+                  placeholder="Nama promosi"
+                  data-testid="promo-name-input"
+                />
+              </div>
 
-  // Add product to promo items
-  const addPromoItem = (productId) => {
-    const product = products.find(p => p.id === productId);
-    if (product && !promoItems.find(pi => pi.product_id === productId)) {
-      setPromoItems([...promoItems, {
-        product_id: productId,
-        product_code: product.code,
-        product_name: product.name,
-        qty_trigger: 1,
-        qty_reward: 0,
-        discount_value: 0,
-        special_price: 0,
-        is_free_item: false
-      }]);
-    }
-  };
+              <div>
+                <Label>Jenis Promosi</Label>
+                <Select value={formData.promo_type} onValueChange={(v) => handleInputChange('promo_type', v)}>
+                  <SelectTrigger data-testid="promo-type-select">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PROMO_TYPES.map(t => (
+                      <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-  const updatePromoItem = (index, field, value) => {
-    const updated = [...promoItems];
-    updated[index][field] = value;
-    setPromoItems(updated);
-  };
+              <div>
+                <Label>Deskripsi</Label>
+                <Textarea
+                  value={formData.description}
+                  onChange={(e) => handleInputChange('description', e.target.value)}
+                  placeholder="Deskripsi promosi"
+                  rows={2}
+                />
+              </div>
 
-  const removePromoItem = (index) => {
-    setPromoItems(promoItems.filter((_, i) => i !== index));
-  };
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Kuota</Label>
+                  <Input
+                    type="number"
+                    value={formData.quota}
+                    onChange={(e) => handleInputChange('quota', parseInt(e.target.value) || 0)}
+                    placeholder="0 = unlimited"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">0 = tanpa batas</p>
+                </div>
+              </div>
 
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <Switch
+                    checked={formData.is_active}
+                    onCheckedChange={(v) => handleInputChange('is_active', v)}
+                    data-testid="promo-active-switch"
+                  />
+                  <Label>Aktif</Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Switch
+                    checked={formData.stackable}
+                    onCheckedChange={(v) => handleInputChange('stackable', v)}
+                  />
+                  <Label>Stackable</Label>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Right Column - Period & Scope */}
+          <div className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Calendar className="h-5 w-5" />
+                  Periode Berlaku
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Tanggal Mulai</Label>
+                    <Input
+                      type="date"
+                      value={formData.start_date}
+                      onChange={(e) => handleInputChange('start_date', e.target.value)}
+                      data-testid="promo-start-date"
+                    />
+                  </div>
+                  <div>
+                    <Label>Tanggal Selesai</Label>
+                    <Input
+                      type="date"
+                      value={formData.end_date}
+                      onChange={(e) => handleInputChange('end_date', e.target.value)}
+                      data-testid="promo-end-date"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Jam Mulai</Label>
+                    <Input
+                      type="time"
+                      value={formData.start_time}
+                      onChange={(e) => handleInputChange('start_time', e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label>Jam Selesai</Label>
+                    <Input
+                      type="time"
+                      value={formData.end_time}
+                      onChange={(e) => handleInputChange('end_time', e.target.value)}
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">Target Cabang & Customer</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label className="text-xs">Cabang (kosong = semua)</Label>
+                  <div className="max-h-24 overflow-y-auto space-y-1 mt-1">
+                    {branches.map(branch => (
+                      <label key={branch.id} className="flex items-center gap-2 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={formData.branches.includes(branch.id)}
+                          onChange={(e) => handleMultiSelect('branches', branch.id, e.target.checked)}
+                          className="rounded"
+                        />
+                        {branch.name}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-xs">Grup Customer (kosong = semua)</Label>
+                  <div className="max-h-24 overflow-y-auto space-y-1 mt-1">
+                    {customerGroups.map(group => (
+                      <label key={group.id} className="flex items-center gap-2 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={formData.customer_groups.includes(group.id || group.code)}
+                          onChange={(e) => handleMultiSelect('customer_groups', group.id || group.code, e.target.checked)}
+                          className="rounded"
+                        />
+                        {group.name}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        {/* Rules Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Sparkles className="h-5 w-5" />
+              Aturan Promosi (Rules)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-gray-50 rounded-lg">
+              <div>
+                <Label className="text-xs">Target Type</Label>
+                <Select value={currentRule.target_type} onValueChange={(v) => setCurrentRule(prev => ({ ...prev, target_type: v }))}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Semua</SelectItem>
+                    <SelectItem value="category">Kategori</SelectItem>
+                    <SelectItem value="brand">Brand</SelectItem>
+                    <SelectItem value="item">Item Spesifik</SelectItem>
+                    <SelectItem value="bundle">Bundle</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-xs">Syarat Qty</Label>
+                <Input
+                  type="number"
+                  value={currentRule.condition_qty}
+                  onChange={(e) => setCurrentRule(prev => ({ ...prev, condition_qty: parseInt(e.target.value) || 0 }))}
+                  placeholder="0"
+                />
+              </div>
+              <div>
+                <Label className="text-xs">Benefit Type</Label>
+                <Select value={currentRule.benefit_type} onValueChange={(v) => setCurrentRule(prev => ({ ...prev, benefit_type: v }))}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {BENEFIT_TYPES.map(b => (
+                      <SelectItem key={b.value} value={b.value}>{b.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-xs">Nilai Benefit</Label>
+                <div className="flex gap-2">
+                  <Input
+                    type="number"
+                    value={currentRule.benefit_discount_value}
+                    onChange={(e) => setCurrentRule(prev => ({ ...prev, benefit_discount_value: parseFloat(e.target.value) || 0 }))}
+                    placeholder="0"
+                  />
+                  <Button size="sm" onClick={addRule}>
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+            
+            {formData.rules.length > 0 && (
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold">Daftar Rules:</Label>
+                {formData.rules.map((rule, index) => (
+                  <div key={index} className="flex items-center justify-between p-2 bg-white border rounded">
+                    <div className="text-sm">
+                      <span className="font-medium">{rule.target_type}</span>
+                      {rule.condition_qty > 0 && <span className="ml-2">Qty: {rule.condition_qty}</span>}
+                      <span className="ml-2">→ {rule.benefit_type}: {rule.benefit_discount_value}</span>
+                    </div>
+                    <Button size="sm" variant="ghost" onClick={() => removeRule(index)}>
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Targets Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Package className="h-5 w-5" />
+              Target Produk
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4 p-4 bg-gray-50 rounded-lg">
+              <div>
+                <Label className="text-xs">Item</Label>
+                <Select value={currentTarget.item_id} onValueChange={(v) => setCurrentTarget(prev => ({ ...prev, item_id: v }))}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Pilih item" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">-- Pilih --</SelectItem>
+                    {items.slice(0, 50).map(item => (
+                      <SelectItem key={item.id} value={item.id}>{item.code} - {item.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-xs">Trigger Qty</Label>
+                <Input
+                  type="number"
+                  value={currentTarget.trigger_qty}
+                  onChange={(e) => setCurrentTarget(prev => ({ ...prev, trigger_qty: parseInt(e.target.value) || 0 }))}
+                  placeholder="0"
+                />
+              </div>
+              <div>
+                <Label className="text-xs">Harga Spesial</Label>
+                <Input
+                  type="number"
+                  value={currentTarget.special_price}
+                  onChange={(e) => setCurrentTarget(prev => ({ ...prev, special_price: parseFloat(e.target.value) || 0 }))}
+                  placeholder="0"
+                />
+              </div>
+              <div className="flex items-end gap-2">
+                <div className="flex items-center gap-2">
+                  <Switch
+                    checked={currentTarget.is_free}
+                    onCheckedChange={(v) => setCurrentTarget(prev => ({ ...prev, is_free: v }))}
+                  />
+                  <Label className="text-xs">Gratis</Label>
+                </div>
+              </div>
+              <div className="flex items-end">
+                <Button size="sm" onClick={addTarget}>
+                  <Plus className="h-4 w-4 mr-1" />
+                  Tambah
+                </Button>
+              </div>
+            </div>
+            
+            {formData.targets.length > 0 && (
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold">Daftar Target:</Label>
+                {formData.targets.map((target, index) => (
+                  <div key={index} className="flex items-center justify-between p-2 bg-white border rounded">
+                    <div className="text-sm">
+                      <span className="font-medium">{target.item_code || 'Item'} - {target.item_name}</span>
+                      {target.trigger_qty > 0 && <span className="ml-2">Qty: {target.trigger_qty}</span>}
+                      {target.special_price > 0 && <span className="ml-2 text-green-600">Harga: {formatCurrency(target.special_price)}</span>}
+                      {target.is_free && <Badge className="ml-2 bg-yellow-100 text-yellow-800">GRATIS</Badge>}
+                    </div>
+                    <Button size="sm" variant="ghost" onClick={() => removeTarget(index)}>
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <Label>Catatan</Label>
+            <Textarea
+              value={formData.notes}
+              onChange={(e) => handleInputChange('notes', e.target.value)}
+              placeholder="Catatan tambahan"
+              rows={2}
+            />
+          </CardContent>
+        </Card>
+
+        <div className="flex justify-end gap-2">
+          <Button variant="outline" onClick={() => { setShowForm(false); resetForm(); }}>
+            <X className="h-4 w-4 mr-1" />
+            Batal
+          </Button>
+          <Button onClick={handleSubmit} data-testid="save-promo-btn">
+            <Save className="h-4 w-4 mr-1" />
+            {editingPromo ? 'Update' : 'Simpan'}
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Render List
   return (
-    <div className="space-y-4" data-testid="promotions-advanced-page">
+    <div className="p-4 space-y-4" data-testid="promo-advanced-list">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-amber-100">Manajemen Promosi</h1>
-          <p className="text-gray-400 text-sm">Kelola promosi produk, bundle, buy X get Y, dan harga khusus</p>
+          <h1 className="text-2xl font-bold flex items-center gap-2">
+            <Gift className="h-6 w-6" />
+            Master Promosi Advanced
+          </h1>
+          <p className="text-gray-500">Kelola promosi dengan berbagai jenis dan aturan</p>
         </div>
-        <Button onClick={() => { resetForm(); setShowModal(true); }} 
-          className="bg-gradient-to-r from-red-600 to-amber-600" data-testid="add-promo-btn">
-          <Plus className="h-4 w-4 mr-2" /> Tambah Promosi
+        <Button onClick={openNewForm} data-testid="add-promo-btn">
+          <Plus className="h-4 w-4 mr-1" />
+          Tambah Promosi
         </Button>
       </div>
 
-      <Card className="bg-[#1a1214] border-red-900/30">
-        <CardContent className="pt-4">
-          <div className="flex gap-4">
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input type="text" placeholder="Cari promosi..." value={searchTerm} 
-                onChange={(e) => setSearchTerm(e.target.value)} 
-                className="pl-10 bg-[#0a0608] border-red-900/30" />
+      {/* Filters */}
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex flex-wrap gap-4">
+            <div className="flex-1 min-w-[200px]">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="Cari nama atau kode promo..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                  data-testid="search-promo-input"
+                />
+              </div>
             </div>
-            <Button variant="outline" onClick={loadData}><RefreshCw className="h-4 w-4" /></Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card className="bg-[#1a1214] border-red-900/30">
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-red-900/20">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-amber-200">KODE</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-amber-200">NAMA PROMOSI</th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-amber-200">JENIS</th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-amber-200">BENEFIT</th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-amber-200">KUOTA</th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-amber-200">PERIODE</th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-amber-200">STATUS</th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-amber-200">AKSI</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-red-900/20">
-                {loading ? (
-                  <tr><td colSpan={8} className="px-4 py-8 text-center"><Loader2 className="h-8 w-8 animate-spin mx-auto text-amber-400" /></td></tr>
-                ) : items.length === 0 ? (
-                  <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400">Belum ada promosi</td></tr>
-                ) : items.map(item => (
-                  <tr key={item.id} className="hover:bg-red-900/10">
-                    <td className="px-4 py-3 text-sm font-mono text-amber-300">{item.code}</td>
-                    <td className="px-4 py-3">
-                      <div className="font-medium text-gray-200">{item.name}</div>
-                      {item.description && <div className="text-xs text-gray-500">{item.description}</div>}
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      <Badge variant="outline" className="flex items-center gap-1 justify-center">
-                        {getPromoTypeIcon(item.promo_type)}
-                        {getPromoTypeLabel(item.promo_type)}
-                      </Badge>
-                    </td>
-                    <td className="px-4 py-3 text-center text-amber-300 font-semibold">
-                      {item.benefit_type === 'percent' ? `${item.benefit_value}%` : 
-                       item.benefit_type === 'free_item' ? `${item.free_qty} gratis` :
-                       formatCurrency(item.benefit_value || item.bundle_price)}
-                    </td>
-                    <td className="px-4 py-3 text-center text-sm text-gray-400">
-                      {item.quota > 0 ? item.quota : 'Unlimited'}
-                    </td>
-                    <td className="px-4 py-3 text-center text-sm text-gray-400">
-                      {item.start_date && item.end_date ? (
-                        <div className="text-xs">
-                          {formatDate(item.start_date)} - {formatDate(item.end_date)}
-                        </div>
-                      ) : 'Tidak terbatas'}
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      <Badge variant={item.is_active ? "default" : "destructive"} className={item.is_active ? "bg-green-600" : ""}>
-                        {item.is_active ? 'Aktif' : 'Nonaktif'}
-                      </Badge>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center justify-center gap-1">
-                        <Button size="sm" variant="ghost" onClick={() => handleEdit(item)} className="text-blue-400">
-                          <Edit2 className="h-4 w-4" />
-                        </Button>
-                        <Button size="sm" variant="ghost" onClick={() => handleDelete(item)} className="text-red-400">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
+            <Select value={filterType} onValueChange={setFilterType}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Semua Jenis" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Semua Jenis</SelectItem>
+                {PROMO_TYPES.map(t => (
+                  <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
                 ))}
-              </tbody>
-            </table>
+              </SelectContent>
+            </Select>
+            <Select value={filterActive} onValueChange={setFilterActive}>
+              <SelectTrigger className="w-[140px]">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Semua</SelectItem>
+                <SelectItem value="true">Aktif</SelectItem>
+                <SelectItem value="false">Nonaktif</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button variant="outline" onClick={fetchPromotions}>
+              <RefreshCw className="h-4 w-4" />
+            </Button>
           </div>
         </CardContent>
       </Card>
 
-      {/* Promotion Form Modal */}
-      <Dialog open={showModal} onOpenChange={(open) => !open && setShowModal(false)}>
-        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto bg-[#1a1214] border-red-900/30">
-          <DialogHeader>
-            <DialogTitle className="text-amber-100 flex items-center gap-2">
-              <Gift className="h-5 w-5" />
-              {editingItem ? 'Edit' : 'Tambah'} Promosi
-            </DialogTitle>
-          </DialogHeader>
-          
-          <form onSubmit={handleSubmit}>
-            <Tabs defaultValue="general" className="w-full">
-              <TabsList className="grid w-full grid-cols-4 bg-[#0a0608]">
-                <TabsTrigger value="general" className="data-[state=active]:bg-red-900/50">Umum</TabsTrigger>
-                <TabsTrigger value="rule" className="data-[state=active]:bg-red-900/50">Rule & Benefit</TabsTrigger>
-                <TabsTrigger value="products" className="data-[state=active]:bg-red-900/50">Produk</TabsTrigger>
-                <TabsTrigger value="period" className="data-[state=active]:bg-red-900/50">Periode</TabsTrigger>
-              </TabsList>
-
-              {/* Tab: Umum */}
-              <TabsContent value="general" className="space-y-4 mt-4">
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <Label className="text-gray-300">Mode Kode</Label>
-                    <Select value={formData.code === 'AUTO' ? 'auto' : 'manual'}
-                      onValueChange={(v) => setFormData({...formData, code: v === 'auto' ? 'AUTO' : '', code_mode: v})}>
-                      <SelectTrigger className="bg-[#0a0608] border-red-900/30"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="auto">AUTO</SelectItem>
-                        <SelectItem value="manual">MANUAL</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label className="text-gray-300">Kode Promosi</Label>
-                    <Input value={formData.code} 
-                      onChange={(e) => setFormData({...formData, code: e.target.value.toUpperCase(), code_mode: 'manual'})}
-                      disabled={formData.code === 'AUTO'}
-                      className={`bg-[#0a0608] border-red-900/30 ${formData.code === 'AUTO' ? 'text-amber-400' : ''}`} />
-                  </div>
-                  <div>
-                    <Label className="text-gray-300">Prioritas</Label>
-                    <Input type="number" value={formData.priority} 
-                      onChange={(e) => setFormData({...formData, priority: parseInt(e.target.value) || 1})}
-                      className="bg-[#0a0608] border-red-900/30" min="1" />
-                  </div>
-                </div>
-                
-                <div>
-                  <Label className="text-gray-300">Nama Promosi <span className="text-red-400">*</span></Label>
-                  <Input value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})}
-                    className="bg-[#0a0608] border-red-900/30" placeholder="Contoh: Promo Akhir Tahun - Beli 2 Gratis 1" required />
-                </div>
-                
-                <div>
-                  <Label className="text-gray-300">Deskripsi</Label>
-                  <Input value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})}
-                    className="bg-[#0a0608] border-red-900/30" placeholder="Keterangan promosi" />
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-gray-300">Jenis Promosi <span className="text-red-400">*</span></Label>
-                    <Select value={formData.promo_type} onValueChange={(v) => setFormData({...formData, promo_type: v})}>
-                      <SelectTrigger className="bg-[#0a0608] border-red-900/30"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="discount">Diskon</SelectItem>
-                        <SelectItem value="buy_x_get_y">Beli X Gratis Y</SelectItem>
-                        <SelectItem value="bundle">Bundle / Paket</SelectItem>
-                        <SelectItem value="special_price">Harga Khusus</SelectItem>
-                        <SelectItem value="free_item">Gratis Item</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label className="text-gray-300">Target</Label>
-                    <Select value={formData.target_type} onValueChange={(v) => setFormData({...formData, target_type: v})}>
-                      <SelectTrigger className="bg-[#0a0608] border-red-900/30"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Semua Produk</SelectItem>
-                        <SelectItem value="category">Kategori Tertentu</SelectItem>
-                        <SelectItem value="brand">Brand Tertentu</SelectItem>
-                        <SelectItem value="product">Produk Tertentu</SelectItem>
-                        <SelectItem value="bundle">Bundle Produk</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                
-                <div className="flex items-center gap-4 pt-2">
-                  <div className="flex items-center gap-2">
-                    <Switch checked={formData.stackable} onCheckedChange={(c) => setFormData({...formData, stackable: c})} />
-                    <Label className="text-gray-300">Bisa Digabung</Label>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Switch checked={formData.is_active} onCheckedChange={(c) => setFormData({...formData, is_active: c})} />
-                    <Label className="text-gray-300">Aktif</Label>
-                  </div>
-                </div>
-              </TabsContent>
-
-              {/* Tab: Rule & Benefit */}
-              <TabsContent value="rule" className="space-y-4 mt-4">
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <Label className="text-gray-300">Minimum Qty</Label>
-                    <Input type="number" value={formData.min_qty} 
-                      onChange={(e) => setFormData({...formData, min_qty: parseInt(e.target.value) || 0})}
-                      className="bg-[#0a0608] border-red-900/30" min="0" />
-                  </div>
-                  <div>
-                    <Label className="text-gray-300">Minimum Subtotal (Rp)</Label>
-                    <Input type="number" value={formData.min_subtotal} 
-                      onChange={(e) => setFormData({...formData, min_subtotal: parseFloat(e.target.value) || 0})}
-                      className="bg-[#0a0608] border-red-900/30" min="0" />
-                  </div>
-                  <div>
-                    <Label className="text-gray-300">Kuota Promo</Label>
-                    <Input type="number" value={formData.quota} 
-                      onChange={(e) => setFormData({...formData, quota: parseInt(e.target.value) || 0})}
-                      className="bg-[#0a0608] border-red-900/30" min="0" />
-                    <p className="text-xs text-gray-500 mt-1">0 = unlimited</p>
-                  </div>
-                </div>
-                
-                <div className="p-4 bg-green-900/20 border border-green-700/30 rounded-lg space-y-4">
-                  <h3 className="text-green-300 font-semibold">Benefit Promosi</h3>
-                  
-                  <div>
-                    <Label className="text-gray-300">Jenis Benefit</Label>
-                    <Select value={formData.benefit_type} onValueChange={(v) => setFormData({...formData, benefit_type: v})}>
-                      <SelectTrigger className="bg-[#0a0608] border-red-900/30 max-w-xs"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="percent">Diskon Persentase</SelectItem>
-                        <SelectItem value="nominal">Diskon Nominal</SelectItem>
-                        <SelectItem value="free_item">Gratis Item</SelectItem>
-                        <SelectItem value="special_price">Harga Khusus</SelectItem>
-                        <SelectItem value="bundle_price">Harga Bundle</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  {(formData.benefit_type === 'percent' || formData.benefit_type === 'nominal') && (
-                    <div>
-                      <Label className="text-gray-300">Nilai Diskon</Label>
-                      <Input type="number" value={formData.benefit_value} 
-                        onChange={(e) => setFormData({...formData, benefit_value: parseFloat(e.target.value) || 0})}
-                        className="bg-[#0a0608] border-red-900/30 max-w-xs" min="0" />
-                      <p className="text-xs text-gray-500 mt-1">
-                        {formData.benefit_type === 'percent' ? 'Dalam persen (%)' : 'Dalam Rupiah'}
-                      </p>
-                    </div>
-                  )}
-                  
-                  {formData.benefit_type === 'free_item' && (
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label className="text-gray-300">Produk Gratis</Label>
-                        <Select value={formData.free_product_id || 'none'} 
-                          onValueChange={(v) => setFormData({...formData, free_product_id: v === 'none' ? '' : v})}>
-                          <SelectTrigger className="bg-[#0a0608] border-red-900/30"><SelectValue placeholder="Pilih produk gratis" /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="none">-- Pilih --</SelectItem>
-                            {products.map(p => <SelectItem key={p.id} value={p.id}>{p.code} - {p.name}</SelectItem>)}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label className="text-gray-300">Qty Gratis</Label>
-                        <Input type="number" value={formData.free_qty} 
-                          onChange={(e) => setFormData({...formData, free_qty: parseInt(e.target.value) || 0})}
-                          className="bg-[#0a0608] border-red-900/30" min="0" />
-                      </div>
-                    </div>
-                  )}
-                  
-                  {formData.benefit_type === 'bundle_price' && (
-                    <div>
-                      <Label className="text-gray-300">Harga Bundle</Label>
-                      <Input type="number" value={formData.bundle_price} 
-                        onChange={(e) => setFormData({...formData, bundle_price: parseFloat(e.target.value) || 0})}
-                        className="bg-[#0a0608] border-red-900/30 max-w-xs" min="0" />
-                    </div>
-                  )}
-                  
-                  {formData.benefit_type === 'special_price' && (
-                    <div>
-                      <Label className="text-gray-300">Harga Khusus</Label>
-                      <Input type="number" value={formData.benefit_value} 
-                        onChange={(e) => setFormData({...formData, benefit_value: parseFloat(e.target.value) || 0})}
-                        className="bg-[#0a0608] border-red-900/30 max-w-xs" min="0" />
-                    </div>
-                  )}
-                </div>
-              </TabsContent>
-
-              {/* Tab: Produk */}
-              <TabsContent value="products" className="space-y-4 mt-4">
-                <div className="p-4 bg-blue-900/20 border border-blue-700/30 rounded-lg">
-                  <p className="text-blue-300 text-sm">Tambah produk yang termasuk dalam promosi ini</p>
-                </div>
-                
-                <div>
-                  <Label className="text-gray-300">Tambah Produk</Label>
-                  <Select onValueChange={(v) => v !== 'none' && addPromoItem(v)}>
-                    <SelectTrigger className="bg-[#0a0608] border-red-900/30"><SelectValue placeholder="Pilih produk..." /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">-- Pilih Produk --</SelectItem>
-                      {products.filter(p => !promoItems.find(pi => pi.product_id === p.id)).map(p => (
-                        <SelectItem key={p.id} value={p.id}>{p.code} - {p.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                {promoItems.length > 0 && (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead className="bg-red-900/20">
-                        <tr>
-                          <th className="px-3 py-2 text-left text-amber-200">Produk</th>
-                          <th className="px-3 py-2 text-center text-amber-200">Qty Trigger</th>
-                          <th className="px-3 py-2 text-center text-amber-200">Qty Reward</th>
-                          <th className="px-3 py-2 text-center text-amber-200">Diskon</th>
-                          <th className="px-3 py-2 text-center text-amber-200">Harga Khusus</th>
-                          <th className="px-3 py-2 text-center text-amber-200">Gratis?</th>
-                          <th className="px-3 py-2 text-center text-amber-200">Aksi</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-red-900/20">
-                        {promoItems.map((item, index) => (
-                          <tr key={index}>
-                            <td className="px-3 py-2 text-gray-200">{item.product_code} - {item.product_name}</td>
-                            <td className="px-3 py-2">
-                              <Input type="number" value={item.qty_trigger} 
-                                onChange={(e) => updatePromoItem(index, 'qty_trigger', parseInt(e.target.value) || 0)}
-                                className="bg-[#0a0608] border-red-900/30 w-20 h-8 text-center" min="0" />
-                            </td>
-                            <td className="px-3 py-2">
-                              <Input type="number" value={item.qty_reward} 
-                                onChange={(e) => updatePromoItem(index, 'qty_reward', parseInt(e.target.value) || 0)}
-                                className="bg-[#0a0608] border-red-900/30 w-20 h-8 text-center" min="0" />
-                            </td>
-                            <td className="px-3 py-2">
-                              <Input type="number" value={item.discount_value} 
-                                onChange={(e) => updatePromoItem(index, 'discount_value', parseFloat(e.target.value) || 0)}
-                                className="bg-[#0a0608] border-red-900/30 w-24 h-8 text-center" min="0" />
-                            </td>
-                            <td className="px-3 py-2">
-                              <Input type="number" value={item.special_price} 
-                                onChange={(e) => updatePromoItem(index, 'special_price', parseFloat(e.target.value) || 0)}
-                                className="bg-[#0a0608] border-red-900/30 w-28 h-8 text-center" min="0" />
-                            </td>
-                            <td className="px-3 py-2 text-center">
-                              <Switch checked={item.is_free_item} 
-                                onCheckedChange={(c) => updatePromoItem(index, 'is_free_item', c)} />
-                            </td>
-                            <td className="px-3 py-2 text-center">
-                              <Button type="button" size="sm" variant="ghost" onClick={() => removePromoItem(index)} className="text-red-400">
-                                <X className="h-4 w-4" />
-                              </Button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </TabsContent>
-
-              {/* Tab: Periode */}
-              <TabsContent value="period" className="space-y-4 mt-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-gray-300">Tanggal Mulai</Label>
-                    <Input type="date" value={formData.start_date} 
-                      onChange={(e) => setFormData({...formData, start_date: e.target.value})}
-                      className="bg-[#0a0608] border-red-900/30" />
-                  </div>
-                  <div>
-                    <Label className="text-gray-300">Tanggal Selesai</Label>
-                    <Input type="date" value={formData.end_date} 
-                      onChange={(e) => setFormData({...formData, end_date: e.target.value})}
-                      className="bg-[#0a0608] border-red-900/30" />
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-gray-300">Jam Mulai</Label>
-                    <Input type="time" value={formData.start_time} 
-                      onChange={(e) => setFormData({...formData, start_time: e.target.value})}
-                      className="bg-[#0a0608] border-red-900/30" />
-                  </div>
-                  <div>
-                    <Label className="text-gray-300">Jam Selesai</Label>
-                    <Input type="time" value={formData.end_time} 
-                      onChange={(e) => setFormData({...formData, end_time: e.target.value})}
-                      className="bg-[#0a0608] border-red-900/30" />
-                  </div>
-                </div>
-                
-                <p className="text-sm text-gray-500">Kosongkan jika promosi berlaku tanpa batas waktu</p>
-              </TabsContent>
-            </Tabs>
-
-            <DialogFooter className="mt-6">
-              <Button type="button" variant="outline" onClick={() => setShowModal(false)} disabled={saving}>Batal</Button>
-              <Button type="submit" className="bg-gradient-to-r from-red-600 to-amber-600" disabled={saving} data-testid="save-promo-btn">
-                {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                Simpan
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      {/* Promotion List */}
+      <Card>
+        <CardContent className="p-0">
+          {loading ? (
+            <div className="p-8 text-center text-gray-500">Loading...</div>
+          ) : promotions.length === 0 ? (
+            <div className="p-8 text-center text-gray-500">
+              Belum ada data promosi
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Kode</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nama</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Jenis</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Periode</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Kuota</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {promotions.map((promo) => (
+                    <tr key={promo.id} className="hover:bg-gray-50" data-testid={`promo-row-${promo.id}`}>
+                      <td className="px-4 py-3 text-sm font-medium">{promo.code}</td>
+                      <td className="px-4 py-3">
+                        <div>
+                          <div className="font-medium">{promo.name}</div>
+                          {promo.description && (
+                            <div className="text-xs text-gray-500 truncate max-w-xs">{promo.description}</div>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <Badge variant="outline">
+                          {PROMO_TYPES.find(t => t.value === promo.promo_type)?.label || promo.promo_type}
+                        </Badge>
+                      </td>
+                      <td className="px-4 py-3 text-sm">
+                        {promo.start_date || promo.end_date ? (
+                          <div className="text-xs">
+                            {promo.start_date && <div>Dari: {promo.start_date}</div>}
+                            {promo.end_date && <div>Sampai: {promo.end_date}</div>}
+                          </div>
+                        ) : (
+                          <span className="text-gray-400">Tanpa batas</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-sm">
+                        {promo.quota > 0 ? (
+                          <span>{promo.used_count || 0} / {promo.quota}</span>
+                        ) : (
+                          <span className="text-gray-400">Unlimited</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        {promo.is_active !== false ? (
+                          <Badge className="bg-green-100 text-green-800">Aktif</Badge>
+                        ) : (
+                          <Badge variant="destructive">Nonaktif</Badge>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <div className="flex items-center justify-center gap-1">
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            onClick={() => openEditForm(promo)}
+                            data-testid={`edit-promo-${promo.id}`}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="ghost"
+                            className="text-red-500 hover:text-red-700"
+                            onClick={() => handleDelete(promo)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };

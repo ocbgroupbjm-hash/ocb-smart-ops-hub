@@ -292,15 +292,17 @@ const SettingAkunERP = () => {
   const tabs = [
     { id: 'data_item', label: 'Data Item', icon: Package },
     { id: 'pembelian', label: 'Pembelian', icon: ShoppingCart },
-    { id: 'penjualan_1', label: 'Penjualan 1', icon: Receipt },
+    { id: 'penjualan_1', label: 'Penjualan', icon: Receipt },
     { id: 'penjualan_2', label: 'Penjualan 2', icon: RotateCcw },
+    { id: 'kas_bank', label: 'Kas/Bank', icon: Wallet },
+    { id: 'hutang_piutang', label: 'Hutang Piutang', icon: CreditCard },
+    { id: 'operasional', label: 'Operasional', icon: MoreHorizontal },
     { id: 'konsinyasi', label: 'Konsinyasi', icon: Handshake },
-    { id: 'hutang_piutang', label: 'Hutang Piutang', icon: Wallet },
     { id: 'lain_lain', label: 'Lain-lain', icon: MoreHorizontal },
     { id: 'cabang', label: 'Cabang', icon: Building2 },
     { id: 'gudang', label: 'Gudang', icon: Warehouse },
     { id: 'kategori', label: 'Kategori', icon: Tags },
-    { id: 'payment', label: 'Payment Method', icon: CreditCard },
+    { id: 'payment', label: 'Payment', icon: CreditCard },
     { id: 'pajak', label: 'Pajak', icon: Percent },
   ];
 

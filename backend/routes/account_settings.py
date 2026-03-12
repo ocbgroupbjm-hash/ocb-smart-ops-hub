@@ -39,38 +39,53 @@ class FiscalPeriodCreate(BaseModel):
     status: str = "open"
 
 # ==================== DEFAULT ACCOUNT SETTINGS ====================
+# COMPLETE DEFAULT ACCOUNTS sesuai requirement ERP - SEMUA AREA WAJIB TERISI
 
 DEFAULT_ACCOUNT_SETTINGS = {
     "data_item": [
-        {"account_key": "hpp", "account_code": "5-1000", "account_name": "Harga Pokok Penjualan", "description": "Akun HPP untuk item baru"},
-        {"account_key": "pendapatan_jual", "account_code": "4-1000", "account_name": "Pendapatan Penjualan", "description": "Akun pendapatan penjualan"},
-        {"account_key": "pendapatan_jasa", "account_code": "4-1100", "account_name": "Pendapatan Jasa", "description": "Akun pendapatan jasa"},
+        # A. DATA ITEM / INVENTORY
+        {"account_key": "persediaan_barang", "account_code": "1-1400", "account_name": "Persediaan Barang Dagang", "description": "Akun persediaan barang dagang"},
+        {"account_key": "hpp", "account_code": "5-1000", "account_name": "Harga Pokok Penjualan", "description": "Akun HPP"},
+        {"account_key": "pendapatan_jual", "account_code": "4-1000", "account_name": "Penjualan Barang", "description": "Akun penjualan barang"},
+        {"account_key": "retur_penjualan", "account_code": "4-2100", "account_name": "Retur Penjualan", "description": "Akun retur penjualan"},
+        {"account_key": "diskon_penjualan", "account_code": "4-2000", "account_name": "Diskon Penjualan", "description": "Akun diskon penjualan"},
+        {"account_key": "penyesuaian_stok_plus", "account_code": "4-9100", "account_name": "Pendapatan Penyesuaian Stok", "description": "Akun penyesuaian persediaan plus"},
+        {"account_key": "penyesuaian_stok_minus", "account_code": "5-9100", "account_name": "Beban Penyesuaian Stok", "description": "Akun penyesuaian persediaan minus"},
+        {"account_key": "persediaan_dalam_proses", "account_code": "1-1410", "account_name": "Barang Dalam Proses (WIP)", "description": "Akun WIP jika assembly dipakai"},
         {"account_key": "biaya_non_inventory", "account_code": "5-2000", "account_name": "Biaya Non Inventory", "description": "Akun biaya non-inventory"},
-        {"account_key": "persediaan_barang", "account_code": "1-1400", "account_name": "Persediaan Barang", "description": "Akun persediaan barang dagang"},
-        {"account_key": "persediaan_dalam_proses", "account_code": "1-1410", "account_name": "Persediaan Dalam Proses", "description": "Akun WIP"},
-        {"account_key": "biaya_tenaga_kerja", "account_code": "5-2100", "account_name": "Biaya Tenaga Kerja", "description": "Akun biaya TK langsung"},
-        {"account_key": "biaya_overhead", "account_code": "5-2200", "account_name": "Biaya Overhead", "description": "Akun overhead pabrik"},
-        {"account_key": "item_masuk", "account_code": "1-1400", "account_name": "Persediaan Barang", "description": "Akun item masuk"},
-        {"account_key": "item_keluar", "account_code": "1-1400", "account_name": "Persediaan Barang", "description": "Akun item keluar"},
-        {"account_key": "item_opname", "account_code": "5-9100", "account_name": "Selisih Persediaan", "description": "Akun selisih opname"},
+        {"account_key": "pendapatan_jasa", "account_code": "4-1100", "account_name": "Pendapatan Jasa", "description": "Akun pendapatan jasa jika item jasa dipakai"},
+        {"account_key": "item_masuk", "account_code": "1-1400", "account_name": "Persediaan Barang Dagang", "description": "Akun item masuk"},
+        {"account_key": "item_keluar", "account_code": "1-1400", "account_name": "Persediaan Barang Dagang", "description": "Akun item keluar"},
+        {"account_key": "item_opname", "account_code": "5-9100", "account_name": "Beban Penyesuaian Stok", "description": "Akun selisih opname"},
         {"account_key": "saldo_awal_item", "account_code": "3-9000", "account_name": "Historical Balancing", "description": "Akun saldo awal persediaan"},
     ],
     "pembelian": [
-        {"account_key": "potongan_pembelian", "account_code": "5-1100", "account_name": "Potongan Pembelian", "description": "Diskon dari supplier"},
-        {"account_key": "ppn_masukan", "account_code": "1-1500", "account_name": "PPN Masukan", "description": "Pajak pembelian"},
-        {"account_key": "biaya_lain_pembelian", "account_code": "5-1200", "account_name": "Biaya Lain Pembelian", "description": "Ongkir, handling"},
+        # B. PEMBELIAN
+        {"account_key": "hutang_usaha", "account_code": "2-1100", "account_name": "Hutang Usaha", "description": "Akun hutang usaha/dagang"},
+        {"account_key": "persediaan_pembelian", "account_code": "1-1400", "account_name": "Persediaan Barang Dagang", "description": "Akun persediaan pembelian"},
+        {"account_key": "retur_pembelian", "account_code": "5-1100", "account_name": "Retur Pembelian", "description": "Akun retur pembelian"},
+        {"account_key": "diskon_pembelian", "account_code": "5-1200", "account_name": "Diskon Pembelian", "description": "Akun diskon pembelian"},
+        {"account_key": "uang_muka_pembelian", "account_code": "1-1600", "account_name": "Uang Muka Pembelian", "description": "Akun DP pembelian"},
+        {"account_key": "ppn_masukan", "account_code": "1-1500", "account_name": "PPN Masukan", "description": "Akun pajak masukan"},
+        {"account_key": "potongan_pembelian", "account_code": "5-1200", "account_name": "Diskon Pembelian", "description": "Diskon dari supplier"},
+        {"account_key": "biaya_lain_pembelian", "account_code": "5-1300", "account_name": "Biaya Lain Pembelian", "description": "Ongkir, handling pembelian"},
         {"account_key": "pembayaran_tunai_pembelian", "account_code": "1-1100", "account_name": "Kas", "description": "Kas untuk pembelian tunai"},
-        {"account_key": "pembayaran_kredit_pembelian", "account_code": "2-1100", "account_name": "Hutang Dagang", "description": "Hutang pembelian kredit"},
+        {"account_key": "pembayaran_kredit_pembelian", "account_code": "2-1100", "account_name": "Hutang Usaha", "description": "Hutang pembelian kredit"},
         {"account_key": "uang_muka_po", "account_code": "1-1600", "account_name": "Uang Muka Pembelian", "description": "DP pembelian"},
-        {"account_key": "deposit_supplier", "account_code": "2-1200", "account_name": "Deposit Supplier", "description": "Dana titipan ke supplier"},
-        {"account_key": "retur_potongan_pembelian", "account_code": "5-1100", "account_name": "Potongan Pembelian", "description": "Diskon retur"},
+        {"account_key": "deposit_supplier", "account_code": "1-1610", "account_name": "Deposit Supplier", "description": "Dana titipan ke supplier"},
+        {"account_key": "retur_potongan_pembelian", "account_code": "5-1200", "account_name": "Diskon Pembelian", "description": "Diskon retur"},
         {"account_key": "retur_ppn_pembelian", "account_code": "1-1500", "account_name": "PPN Masukan", "description": "PPN retur"},
-        {"account_key": "titip_uang_muka_po", "account_code": "2-1300", "account_name": "Titipan Uang Muka PO", "description": "Uang muka PO diterima"},
-        {"account_key": "kas_uang_muka_po", "account_code": "1-1100", "account_name": "Kas", "description": "Kas uang muka PO"},
     ],
     "penjualan_1": [
-        {"account_key": "potongan_penjualan", "account_code": "4-2000", "account_name": "Potongan Penjualan", "description": "Diskon ke customer"},
-        {"account_key": "ppn_keluaran", "account_code": "2-1400", "account_name": "PPN Keluaran", "description": "Pajak penjualan"},
+        # C. PENJUALAN
+        {"account_key": "piutang_usaha", "account_code": "1-1300", "account_name": "Piutang Usaha", "description": "Akun piutang usaha"},
+        {"account_key": "pendapatan_penjualan", "account_code": "4-1000", "account_name": "Penjualan Barang", "description": "Akun pendapatan penjualan"},
+        {"account_key": "hpp_penjualan", "account_code": "5-1000", "account_name": "Harga Pokok Penjualan", "description": "Akun HPP penjualan"},
+        {"account_key": "retur_penjualan_akun", "account_code": "4-2100", "account_name": "Retur Penjualan", "description": "Akun retur penjualan"},
+        {"account_key": "diskon_penjualan_akun", "account_code": "4-2000", "account_name": "Diskon Penjualan", "description": "Akun diskon penjualan"},
+        {"account_key": "uang_muka_penjualan", "account_code": "2-1600", "account_name": "Uang Muka Penjualan", "description": "Akun DP penjualan / Deposit Customer"},
+        {"account_key": "ppn_keluaran", "account_code": "2-1400", "account_name": "PPN Keluaran", "description": "Akun pajak keluaran"},
+        {"account_key": "potongan_penjualan", "account_code": "4-2000", "account_name": "Diskon Penjualan", "description": "Diskon ke customer"},
         {"account_key": "biaya_lain_penjualan", "account_code": "5-3000", "account_name": "Biaya Lain Penjualan", "description": "Biaya penjualan lainnya"},
         {"account_key": "pembayaran_tunai", "account_code": "1-1100", "account_name": "Kas", "description": "Kas penjualan tunai"},
         {"account_key": "pembayaran_debit", "account_code": "1-1200", "account_name": "Bank", "description": "Bank penjualan debit"},
@@ -78,27 +93,53 @@ DEFAULT_ACCOUNT_SETTINGS = {
         {"account_key": "pembayaran_emoney", "account_code": "1-1220", "account_name": "Piutang E-Money", "description": "Piutang e-money"},
         {"account_key": "pembayaran_kredit", "account_code": "1-1300", "account_name": "Piutang Usaha", "description": "Piutang penjualan kredit"},
         {"account_key": "komisi_sales", "account_code": "5-4000", "account_name": "Beban Komisi Sales", "description": "Biaya komisi"},
-        {"account_key": "hutang_ongkir", "account_code": "2-1500", "account_name": "Hutang Ongkir Titipan", "description": "Ongkir titipan"},
-        {"account_key": "uang_muka_so", "account_code": "2-1600", "account_name": "Uang Muka Penjualan", "description": "DP penjualan"},
         {"account_key": "deposit_pelanggan", "account_code": "2-1700", "account_name": "Deposit Pelanggan", "description": "Deposit customer"},
-        {"account_key": "hutang_komisi_sales", "account_code": "2-1800", "account_name": "Hutang Komisi Sales", "description": "Hutang komisi"},
-        {"account_key": "pembulatan", "account_code": "4-9000", "account_name": "Pendapatan Pembulatan", "description": "Pembulatan"},
-        {"account_key": "ppnbm", "account_code": "2-1410", "account_name": "PPnBM", "description": "PPnBM keluaran"},
-        {"account_key": "pph23", "account_code": "1-1510", "account_name": "PPh 23 Dibayar Dimuka", "description": "PPh 23"},
-        {"account_key": "titip_uang_muka_so", "account_code": "2-1600", "account_name": "Titipan Uang Muka SO", "description": "DP SO diterima"},
-        {"account_key": "kas_uang_muka_so", "account_code": "1-1100", "account_name": "Kas", "description": "Kas DP SO"},
+        {"account_key": "uang_muka_so", "account_code": "2-1600", "account_name": "Uang Muka Penjualan", "description": "DP penjualan"},
     ],
     "penjualan_2": [
-        {"account_key": "retur_potongan_penjualan", "account_code": "4-2000", "account_name": "Potongan Penjualan", "description": "Diskon retur"},
+        {"account_key": "retur_potongan_penjualan", "account_code": "4-2000", "account_name": "Diskon Penjualan", "description": "Diskon retur"},
         {"account_key": "retur_ppn_penjualan", "account_code": "2-1400", "account_name": "PPN Keluaran", "description": "PPN retur"},
         {"account_key": "retur_biaya_lain", "account_code": "5-3000", "account_name": "Biaya Lain Penjualan", "description": "Biaya retur"},
         {"account_key": "retur_pembayaran_tunai", "account_code": "1-1100", "account_name": "Kas", "description": "Kas retur tunai"},
         {"account_key": "retur_pembayaran_kredit", "account_code": "1-1300", "account_name": "Piutang Usaha", "description": "Piutang retur"},
         {"account_key": "retur_komisi_sales", "account_code": "5-4000", "account_name": "Beban Komisi Sales", "description": "Reverse komisi"},
         {"account_key": "retur_deposit_pelanggan", "account_code": "2-1700", "account_name": "Deposit Pelanggan", "description": "Deposit retur"},
+        {"account_key": "hutang_komisi_sales", "account_code": "2-1800", "account_name": "Hutang Komisi Sales", "description": "Hutang komisi"},
         {"account_key": "retur_hutang_komisi", "account_code": "2-1800", "account_name": "Hutang Komisi Sales", "description": "Hutang komisi retur"},
-        {"account_key": "retur_ppnbm", "account_code": "2-1410", "account_name": "PPnBM", "description": "PPnBM retur"},
+        {"account_key": "ppnbm", "account_code": "2-1410", "account_name": "PPnBM", "description": "PPnBM keluaran"},
+        {"account_key": "pph23", "account_code": "1-1510", "account_name": "PPh 23 Dibayar Dimuka", "description": "PPh 23"},
+        {"account_key": "pembulatan", "account_code": "4-9000", "account_name": "Pendapatan Pembulatan", "description": "Pembulatan"},
         {"account_key": "donasi", "account_code": "5-5000", "account_name": "Beban Donasi", "description": "Akun donasi"},
+    ],
+    "kas_bank": [
+        # D. KAS / BANK / KASIR
+        {"account_key": "kas_kecil", "account_code": "1-1100", "account_name": "Kas Kecil", "description": "Akun kas kecil / petty cash"},
+        {"account_key": "kas_besar", "account_code": "1-1101", "account_name": "Kas Besar", "description": "Akun kas besar"},
+        {"account_key": "bank_utama", "account_code": "1-1200", "account_name": "Bank Utama", "description": "Akun bank utama"},
+        {"account_key": "selisih_kasir", "account_code": "5-9200", "account_name": "Selisih Kasir", "description": "Akun selisih/minus kasir"},
+        {"account_key": "setoran_dalam_proses", "account_code": "1-1150", "account_name": "Setoran Dalam Proses", "description": "Akun setoran dalam proses"},
+        {"account_key": "kas_modal_awal", "account_code": "1-1100", "account_name": "Kas Kecil", "description": "Akun modal awal shift kasir"},
+    ],
+    "hutang_piutang": [
+        # E. HUTANG PIUTANG
+        {"account_key": "hutang_usaha_ap", "account_code": "2-1100", "account_name": "Hutang Usaha", "description": "Akun hutang usaha"},
+        {"account_key": "piutang_usaha_ar", "account_code": "1-1300", "account_name": "Piutang Usaha", "description": "Akun piutang usaha"},
+        {"account_key": "denda_keterlambatan", "account_code": "4-5000", "account_name": "Pendapatan Denda", "description": "Akun denda keterlambatan"},
+        {"account_key": "pembulatan_ap_ar", "account_code": "4-9000", "account_name": "Pendapatan Pembulatan", "description": "Akun pembulatan"},
+        {"account_key": "potongan_hutang", "account_code": "4-3000", "account_name": "Potongan Hutang", "description": "Diskon pelunasan hutang"},
+        {"account_key": "potongan_piutang", "account_code": "5-6000", "account_name": "Potongan Piutang", "description": "Diskon pelunasan piutang"},
+        {"account_key": "laba_selisih_kurs", "account_code": "4-4000", "account_name": "Laba Selisih Kurs", "description": "Keuntungan kurs"},
+        {"account_key": "rugi_selisih_kurs", "account_code": "5-7000", "account_name": "Rugi Selisih Kurs", "description": "Kerugian kurs"},
+    ],
+    "operasional": [
+        # F. OPERASIONAL / EXPENSE
+        {"account_key": "biaya_operasional", "account_code": "5-8000", "account_name": "Biaya Operasional", "description": "Akun biaya operasional umum"},
+        {"account_key": "biaya_ongkir", "account_code": "5-8100", "account_name": "Biaya Ongkir", "description": "Akun ongkir pengiriman"},
+        {"account_key": "biaya_komisi", "account_code": "5-4000", "account_name": "Beban Komisi Sales", "description": "Akun komisi"},
+        {"account_key": "biaya_administrasi", "account_code": "5-8200", "account_name": "Biaya Administrasi", "description": "Akun biaya administrasi"},
+        {"account_key": "beban_selisih_stok", "account_code": "5-9100", "account_name": "Beban Penyesuaian Stok", "description": "Akun beban selisih stok"},
+        {"account_key": "biaya_tenaga_kerja", "account_code": "5-2100", "account_name": "Biaya Tenaga Kerja", "description": "Akun biaya TK langsung"},
+        {"account_key": "biaya_overhead", "account_code": "5-2200", "account_name": "Biaya Overhead", "description": "Akun overhead pabrik"},
     ],
     "konsinyasi": [
         {"account_key": "konsinyasi_masuk_pajak", "account_code": "1-1500", "account_name": "PPN Masukan", "description": "PPN konsinyasi masuk"},
@@ -110,18 +151,13 @@ DEFAULT_ACCOUNT_SETTINGS = {
         {"account_key": "piutang_pajak_konsinyasi", "account_code": "1-1320", "account_name": "Piutang Pajak Konsinyasi", "description": "Piutang pajak"},
         {"account_key": "barang_konsinyasi_keluar", "account_code": "1-1430", "account_name": "Barang Konsinyasi Keluar", "description": "Konsinyasi keluar"},
     ],
-    "hutang_piutang": [
-        {"account_key": "potongan_hutang", "account_code": "4-3000", "account_name": "Potongan Hutang", "description": "Diskon pelunasan hutang"},
-        {"account_key": "potongan_piutang", "account_code": "5-6000", "account_name": "Potongan Piutang", "description": "Diskon pelunasan piutang"},
-        {"account_key": "laba_selisih_kurs", "account_code": "4-4000", "account_name": "Laba Selisih Kurs", "description": "Keuntungan kurs"},
-        {"account_key": "rugi_selisih_kurs", "account_code": "5-7000", "account_name": "Rugi Selisih Kurs", "description": "Kerugian kurs"},
-    ],
     "lain_lain": [
         {"account_key": "prive", "account_code": "3-2000", "account_name": "Prive", "description": "Pengambilan pemilik"},
         {"account_key": "laba_ditahan", "account_code": "3-3000", "account_name": "Laba Ditahan", "description": "Retained earnings"},
         {"account_key": "laba_tahun_berjalan", "account_code": "3-4000", "account_name": "Laba Tahun Berjalan", "description": "Current year profit"},
         {"account_key": "historical_balancing", "account_code": "3-9000", "account_name": "Historical Balancing", "description": "Saldo penyeimbang"},
         {"account_key": "biaya_lain_diambil_dari", "account_code": "5-9000", "account_name": "Biaya Lain-lain", "description": "Biaya umum"},
+        {"account_key": "hutang_ongkir", "account_code": "2-1500", "account_name": "Hutang Ongkir Titipan", "description": "Ongkir titipan"},
     ],
 }
 
@@ -542,31 +578,146 @@ async def get_chart_of_accounts(user: dict = Depends(get_current_user)):
     
     accounts = await db.chart_of_accounts.find({}, {"_id": 0}).sort("code", 1).to_list(500)
     
-    # If no COA, return default structure
+    # If no COA, return default structure - COMPLETE COA
     if not accounts:
         accounts = [
-            {"code": "1-1100", "name": "Kas", "type": "asset"},
-            {"code": "1-1200", "name": "Bank", "type": "asset"},
-            {"code": "1-1210", "name": "Piutang Kartu Kredit", "type": "asset"},
-            {"code": "1-1220", "name": "Piutang E-Money", "type": "asset"},
-            {"code": "1-1300", "name": "Piutang Usaha", "type": "asset"},
-            {"code": "1-1400", "name": "Persediaan Barang", "type": "asset"},
-            {"code": "1-1500", "name": "PPN Masukan", "type": "asset"},
-            {"code": "1-1510", "name": "PPh 23 Dibayar Dimuka", "type": "asset"},
-            {"code": "1-1600", "name": "Uang Muka Pembelian", "type": "asset"},
-            {"code": "2-1100", "name": "Hutang Dagang", "type": "liability"},
-            {"code": "2-1400", "name": "PPN Keluaran", "type": "liability"},
-            {"code": "2-1700", "name": "Deposit Pelanggan", "type": "liability"},
-            {"code": "2-1800", "name": "Hutang Komisi Sales", "type": "liability"},
-            {"code": "3-1000", "name": "Modal", "type": "equity"},
-            {"code": "3-3000", "name": "Laba Ditahan", "type": "equity"},
-            {"code": "3-9000", "name": "Historical Balancing", "type": "equity"},
-            {"code": "4-1000", "name": "Pendapatan Penjualan", "type": "revenue"},
-            {"code": "4-1100", "name": "Pendapatan Jasa", "type": "revenue"},
-            {"code": "4-2000", "name": "Potongan Penjualan", "type": "contra_revenue"},
-            {"code": "5-1000", "name": "Harga Pokok Penjualan", "type": "expense"},
-            {"code": "5-2000", "name": "Biaya Non Inventory", "type": "expense"},
-            {"code": "5-4000", "name": "Beban Komisi Sales", "type": "expense"},
+            # ASSET - Kas & Bank
+            {"code": "1-1100", "name": "Kas Kecil", "type": "asset", "category": "asset"},
+            {"code": "1-1101", "name": "Kas Besar", "type": "asset", "category": "asset"},
+            {"code": "1-1150", "name": "Setoran Dalam Proses", "type": "asset", "category": "asset"},
+            {"code": "1-1200", "name": "Bank Utama", "type": "asset", "category": "asset"},
+            {"code": "1-1210", "name": "Piutang Kartu Kredit", "type": "asset", "category": "asset"},
+            {"code": "1-1220", "name": "Piutang E-Money", "type": "asset", "category": "asset"},
+            # ASSET - Piutang
+            {"code": "1-1300", "name": "Piutang Usaha", "type": "asset", "category": "asset"},
+            {"code": "1-1310", "name": "Piutang Konsinyasi", "type": "asset", "category": "asset"},
+            {"code": "1-1320", "name": "Piutang Pajak Konsinyasi", "type": "asset", "category": "asset"},
+            # ASSET - Persediaan
+            {"code": "1-1400", "name": "Persediaan Barang Dagang", "type": "asset", "category": "asset"},
+            {"code": "1-1410", "name": "Barang Dalam Proses (WIP)", "type": "asset", "category": "asset"},
+            {"code": "1-1420", "name": "Barang Konsinyasi Masuk", "type": "asset", "category": "asset"},
+            {"code": "1-1430", "name": "Barang Konsinyasi Keluar", "type": "asset", "category": "asset"},
+            # ASSET - Pajak & Uang Muka
+            {"code": "1-1500", "name": "PPN Masukan", "type": "asset", "category": "asset"},
+            {"code": "1-1510", "name": "PPh 23 Dibayar Dimuka", "type": "asset", "category": "asset"},
+            {"code": "1-1600", "name": "Uang Muka Pembelian", "type": "asset", "category": "asset"},
+            {"code": "1-1610", "name": "Deposit Supplier", "type": "asset", "category": "asset"},
+            # LIABILITY - Hutang
+            {"code": "2-1100", "name": "Hutang Usaha", "type": "liability", "category": "liability"},
+            {"code": "2-1400", "name": "PPN Keluaran", "type": "liability", "category": "liability"},
+            {"code": "2-1410", "name": "PPnBM", "type": "liability", "category": "liability"},
+            {"code": "2-1500", "name": "Hutang Ongkir Titipan", "type": "liability", "category": "liability"},
+            {"code": "2-1600", "name": "Uang Muka Penjualan", "type": "liability", "category": "liability"},
+            {"code": "2-1700", "name": "Deposit Pelanggan", "type": "liability", "category": "liability"},
+            {"code": "2-1800", "name": "Hutang Komisi Sales", "type": "liability", "category": "liability"},
+            {"code": "2-2000", "name": "Hutang Konsinyasi", "type": "liability", "category": "liability"},
+            # EQUITY
+            {"code": "3-1000", "name": "Modal", "type": "equity", "category": "equity"},
+            {"code": "3-2000", "name": "Prive", "type": "equity", "category": "equity"},
+            {"code": "3-3000", "name": "Laba Ditahan", "type": "equity", "category": "equity"},
+            {"code": "3-4000", "name": "Laba Tahun Berjalan", "type": "equity", "category": "equity"},
+            {"code": "3-9000", "name": "Historical Balancing", "type": "equity", "category": "equity"},
+            # REVENUE
+            {"code": "4-1000", "name": "Penjualan Barang", "type": "revenue", "category": "revenue"},
+            {"code": "4-1100", "name": "Pendapatan Jasa", "type": "revenue", "category": "revenue"},
+            {"code": "4-2000", "name": "Diskon Penjualan", "type": "contra_revenue", "category": "revenue"},
+            {"code": "4-2100", "name": "Retur Penjualan", "type": "contra_revenue", "category": "revenue"},
+            {"code": "4-3000", "name": "Potongan Hutang", "type": "revenue", "category": "revenue"},
+            {"code": "4-4000", "name": "Laba Selisih Kurs", "type": "revenue", "category": "revenue"},
+            {"code": "4-5000", "name": "Pendapatan Denda", "type": "revenue", "category": "revenue"},
+            {"code": "4-9000", "name": "Pendapatan Pembulatan", "type": "revenue", "category": "revenue"},
+            {"code": "4-9100", "name": "Pendapatan Penyesuaian Stok", "type": "revenue", "category": "revenue"},
+            # EXPENSE - HPP
+            {"code": "5-1000", "name": "Harga Pokok Penjualan", "type": "expense", "category": "expense"},
+            {"code": "5-1100", "name": "Retur Pembelian", "type": "expense", "category": "expense"},
+            {"code": "5-1200", "name": "Diskon Pembelian", "type": "expense", "category": "expense"},
+            {"code": "5-1300", "name": "Biaya Lain Pembelian", "type": "expense", "category": "expense"},
+            # EXPENSE - Operasional
+            {"code": "5-2000", "name": "Biaya Non Inventory", "type": "expense", "category": "expense"},
+            {"code": "5-2100", "name": "Biaya Tenaga Kerja", "type": "expense", "category": "expense"},
+            {"code": "5-2200", "name": "Biaya Overhead", "type": "expense", "category": "expense"},
+            {"code": "5-3000", "name": "Biaya Lain Penjualan", "type": "expense", "category": "expense"},
+            {"code": "5-3100", "name": "Biaya Konsinyasi", "type": "expense", "category": "expense"},
+            {"code": "5-4000", "name": "Beban Komisi Sales", "type": "expense", "category": "expense"},
+            {"code": "5-5000", "name": "Beban Donasi", "type": "expense", "category": "expense"},
+            {"code": "5-6000", "name": "Potongan Piutang", "type": "expense", "category": "expense"},
+            {"code": "5-7000", "name": "Rugi Selisih Kurs", "type": "expense", "category": "expense"},
+            {"code": "5-8000", "name": "Biaya Operasional", "type": "expense", "category": "expense"},
+            {"code": "5-8100", "name": "Biaya Ongkir", "type": "expense", "category": "expense"},
+            {"code": "5-8200", "name": "Biaya Administrasi", "type": "expense", "category": "expense"},
+            {"code": "5-9000", "name": "Biaya Lain-lain", "type": "expense", "category": "expense"},
+            {"code": "5-9100", "name": "Beban Penyesuaian Stok", "type": "expense", "category": "expense"},
+            {"code": "5-9200", "name": "Selisih Kasir", "type": "expense", "category": "expense"},
         ]
     
     return {"items": accounts}
+
+
+
+@router.post("/init-defaults")
+async def initialize_default_accounts(user: dict = Depends(get_current_user)):
+    """
+    Initialize all default account settings from DEFAULT_ACCOUNT_SETTINGS
+    Called once to populate database with standard account mappings
+    """
+    db = get_database()
+    
+    count = 0
+    for category, accounts in DEFAULT_ACCOUNT_SETTINGS.items():
+        for acc in accounts:
+            # Check if already exists
+            existing = await db.account_settings.find_one({
+                "category": category,
+                "account_key": acc["account_key"]
+            })
+            
+            if not existing:
+                setting = {
+                    "id": str(uuid.uuid4()),
+                    "category": category,
+                    "account_key": acc["account_key"],
+                    "account_code": acc["account_code"],
+                    "account_name": acc["account_name"],
+                    "description": acc.get("description", ""),
+                    "is_default": True,
+                    "created_at": datetime.now(timezone.utc).isoformat()
+                }
+                await db.account_settings.insert_one(setting)
+                count += 1
+    
+    # Also ensure COA exists
+    coa_count = await db.chart_of_accounts.count_documents({})
+    if coa_count == 0:
+        # Insert default COA
+        default_coa = [
+            {"code": "1-1100", "name": "Kas Kecil", "type": "asset", "category": "asset"},
+            {"code": "1-1101", "name": "Kas Besar", "type": "asset", "category": "asset"},
+            {"code": "1-1150", "name": "Setoran Dalam Proses", "type": "asset", "category": "asset"},
+            {"code": "1-1200", "name": "Bank Utama", "type": "asset", "category": "asset"},
+            {"code": "1-1300", "name": "Piutang Usaha", "type": "asset", "category": "asset"},
+            {"code": "1-1400", "name": "Persediaan Barang Dagang", "type": "asset", "category": "asset"},
+            {"code": "1-1500", "name": "PPN Masukan", "type": "asset", "category": "asset"},
+            {"code": "1-1600", "name": "Uang Muka Pembelian", "type": "asset", "category": "asset"},
+            {"code": "2-1100", "name": "Hutang Usaha", "type": "liability", "category": "liability"},
+            {"code": "2-1400", "name": "PPN Keluaran", "type": "liability", "category": "liability"},
+            {"code": "2-1600", "name": "Uang Muka Penjualan", "type": "liability", "category": "liability"},
+            {"code": "2-1700", "name": "Deposit Pelanggan", "type": "liability", "category": "liability"},
+            {"code": "3-1000", "name": "Modal", "type": "equity", "category": "equity"},
+            {"code": "3-9000", "name": "Historical Balancing", "type": "equity", "category": "equity"},
+            {"code": "4-1000", "name": "Penjualan Barang", "type": "revenue", "category": "revenue"},
+            {"code": "4-2000", "name": "Diskon Penjualan", "type": "contra_revenue", "category": "revenue"},
+            {"code": "5-1000", "name": "Harga Pokok Penjualan", "type": "expense", "category": "expense"},
+            {"code": "5-8000", "name": "Biaya Operasional", "type": "expense", "category": "expense"},
+            {"code": "5-9100", "name": "Beban Penyesuaian Stok", "type": "expense", "category": "expense"},
+            {"code": "5-9200", "name": "Selisih Kasir", "type": "expense", "category": "expense"},
+        ]
+        for coa in default_coa:
+            coa["id"] = str(uuid.uuid4())
+            coa["created_at"] = datetime.now(timezone.utc).isoformat()
+            await db.chart_of_accounts.insert_one(coa)
+    
+    return {
+        "success": True,
+        "settings_created": count,
+        "message": f"Berhasil inisialisasi {count} default account settings"
+    }

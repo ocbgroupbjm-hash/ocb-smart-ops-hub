@@ -256,6 +256,36 @@ async def get_current_shift(user: dict = Depends(get_current_user)):
     
     return {"has_open_shift": True, "shift": shift}
 
+@router.get("/shift/check")
+async def check_shift_status_inline(user: dict = Depends(get_current_user)):
+    """
+    Check if current user has active shift - untuk validasi sebelum transaksi
+    Returns status dan info shift jika ada
+    """
+    db = get_database()
+    
+    # Support both user_id and id key
+    user_id = user.get("user_id") or user.get("id")
+    
+    shift = await db.cashier_shifts.find_one(
+        {"cashier_id": user_id, "status": "open"},
+        {"_id": 0}
+    )
+    
+    if shift:
+        return {
+            "has_active_shift": True,
+            "shift": shift,
+            "can_transact": True
+        }
+    
+    return {
+        "has_active_shift": False,
+        "shift": None,
+        "can_transact": False,
+        "message": "Silakan buka shift terlebih dahulu"
+    }
+
 @router.post("/shift/{shift_id}/close")
 async def close_shift(
     shift_id: str,
@@ -732,3 +762,254 @@ async def record_cash_out(
     movement.pop("_id", None)
     
     return {"success": True, "movement": movement}
+
+
+
+# ==================== SHIFT VALIDATION HELPER ====================
+
+async def validate_cashier_shift(db, user_id: str, branch_id: str = None) -> Dict[str, Any]:
+    """
+    WAJIB: Validate bahwa user memiliki shift aktif sebelum transaksi kasir
+    Returns: shift data atau raise HTTPException jika tidak ada shift aktif
+    """
+    query = {"cashier_id": user_id, "status": "open"}
+    if branch_id:
+        query["branch_id"] = branch_id
+    
+    shift = await db.cashier_shifts.find_one(query, {"_id": 0})
+    
+    if not shift:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "error": "SHIFT_REQUIRED",
+                "message": "Tidak ada shift kasir yang aktif. Silakan buka shift terlebih dahulu.",
+                "action_required": "open_shift"
+            }
+        )
+    
+    return shift
+
+async def get_active_shift_for_branch(db, branch_id: str) -> Dict[str, Any]:
+    """Get any active shift for a branch (for supervisor view)"""
+    shifts = await db.cashier_shifts.find(
+        {"branch_id": branch_id, "status": "open"},
+        {"_id": 0}
+    ).to_list(100)
+    return {"items": shifts, "count": len(shifts)}
+
+# ==================== SHIFT JOURNAL CREATION ====================
+
+async def create_shift_journal(db, shift: Dict, journal_type: str, amount: float, description: str, user_id: str = None):
+    """Create journal entry for shift events (open/close/discrepancy)"""
+    from utils.number_generator import generate_transaction_number
+    
+    journal_number = await generate_transaction_number(db, "JV")
+    
+    entries = []
+    
+    if journal_type == "open_shift":
+        # Modal awal masuk ke kas kecil
+        entries = [
+            {"account_code": "1-1100", "account_name": "Kas Kecil", "debit": amount, "credit": 0},
+            {"account_code": "1-1101", "account_name": "Kas Besar", "debit": 0, "credit": amount}
+        ]
+    elif journal_type == "close_shift_shortage":
+        # Selisih kurang - beban ke kasir
+        entries = [
+            {"account_code": "5-9200", "account_name": "Selisih Kasir", "debit": abs(amount), "credit": 0},
+            {"account_code": "1-1100", "account_name": "Kas Kecil", "debit": 0, "credit": abs(amount)}
+        ]
+    elif journal_type == "close_shift_overage":
+        # Selisih lebih - pendapatan
+        entries = [
+            {"account_code": "1-1100", "account_name": "Kas Kecil", "debit": abs(amount), "credit": 0},
+            {"account_code": "4-9000", "account_name": "Pendapatan Pembulatan", "debit": 0, "credit": abs(amount)}
+        ]
+    elif journal_type == "deposit":
+        # Setoran ke bank
+        entries = [
+            {"account_code": "1-1200", "account_name": "Bank Utama", "debit": amount, "credit": 0},
+            {"account_code": "1-1100", "account_name": "Kas Kecil", "debit": 0, "credit": amount}
+        ]
+    
+    if entries:
+        journal = {
+            "id": str(uuid.uuid4()),
+            "journal_number": journal_number,
+            "date": datetime.now(timezone.utc).isoformat(),
+            "reference": shift.get("shift_no", ""),
+            "reference_type": "cash_control",
+            "reference_id": shift.get("id", ""),
+            "description": description,
+            "entries": entries,
+            "lines": entries,
+            "total_debit": sum(e["debit"] for e in entries),
+            "total_credit": sum(e["credit"] for e in entries),
+            "status": "posted",
+            "created_by": user_id,
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.journal_entries.insert_one(journal)
+        return journal
+    
+    return None
+
+# ==================== ENDPOINT: CHECK SHIFT STATUS ====================
+
+@router.get("/shift/check")
+async def check_shift_status(user: dict = Depends(get_current_user)):
+    """
+    Check if current user has active shift - untuk validasi sebelum transaksi
+    Returns status dan info shift jika ada
+    """
+    db = get_database()
+    
+    # Support both user_id and id key
+    user_id = user.get("user_id") or user.get("id")
+    
+    shift = await db.cashier_shifts.find_one(
+        {"cashier_id": user_id, "status": "open"},
+        {"_id": 0}
+    )
+    
+    if shift:
+        return {
+            "has_active_shift": True,
+            "shift": shift,
+            "can_transact": True
+        }
+    
+    return {
+        "has_active_shift": False,
+        "shift": None,
+        "can_transact": False,
+        "message": "Silakan buka shift terlebih dahulu"
+    }
+
+# ==================== ENDPOINT: EXPENSES (Pengeluaran Kas Kecil) ====================
+
+class ExpenseRequest(BaseModel):
+    amount: float = Field(gt=0)
+    description: str
+    category: str = "operasional"
+    reference: Optional[str] = ""
+
+@router.post("/expense")
+async def create_petty_cash_expense(
+    data: ExpenseRequest,
+    user: dict = Depends(require_permission("cash_control", "create"))
+):
+    """
+    Create petty cash expense - WAJIB terikat ke shift aktif
+    """
+    db = get_database()
+    
+    # VALIDASI: Wajib ada shift aktif
+    shift = await validate_cashier_shift(db, user.get("user_id"))
+    
+    from utils.number_generator import generate_transaction_number
+    expense_no = await generate_transaction_number(db, "EXP")
+    
+    expense = {
+        "id": str(uuid.uuid4()),
+        "expense_no": expense_no,
+        "shift_id": shift["id"],
+        "shift_no": shift["shift_no"],
+        "branch_id": shift["branch_id"],
+        "amount": data.amount,
+        "description": data.description,
+        "category": data.category,
+        "reference": data.reference,
+        "created_by": user.get("user_id"),
+        "created_by_name": user.get("name"),
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.cash_expenses.insert_one(expense)
+    expense.pop("_id", None)
+    
+    # Record as cash movement (for shift calculation)
+    movement = {
+        "id": str(uuid.uuid4()),
+        "shift_id": shift["id"],
+        "type": "cash_out",
+        "amount": data.amount,
+        "description": f"Pengeluaran: {data.description}",
+        "reference": expense_no,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_by": user.get("user_id"),
+        "created_by_name": user.get("name")
+    }
+    await db.cash_movements.insert_one(movement)
+    
+    # Create journal entry
+    journal_number = await generate_transaction_number(db, "JV")
+    
+    # Map category to expense account
+    expense_accounts = {
+        "operasional": {"code": "5-8000", "name": "Biaya Operasional"},
+        "ongkir": {"code": "5-8100", "name": "Biaya Ongkir"},
+        "administrasi": {"code": "5-8200", "name": "Biaya Administrasi"},
+        "lain_lain": {"code": "5-9000", "name": "Biaya Lain-lain"}
+    }
+    
+    exp_acc = expense_accounts.get(data.category, expense_accounts["lain_lain"])
+    
+    entries = [
+        {"account_code": exp_acc["code"], "account_name": exp_acc["name"], "debit": data.amount, "credit": 0},
+        {"account_code": "1-1100", "account_name": "Kas Kecil", "debit": 0, "credit": data.amount}
+    ]
+    
+    journal = {
+        "id": str(uuid.uuid4()),
+        "journal_number": journal_number,
+        "date": datetime.now(timezone.utc).isoformat(),
+        "reference": expense_no,
+        "reference_type": "expense",
+        "reference_id": expense["id"],
+        "description": f"Pengeluaran Kas: {data.description}",
+        "entries": entries,
+        "lines": entries,
+        "total_debit": data.amount,
+        "total_credit": data.amount,
+        "status": "posted",
+        "created_by": user.get("user_id"),
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.journal_entries.insert_one(journal)
+    
+    return {
+        "success": True,
+        "expense": expense,
+        "journal_number": journal_number,
+        "message": f"Pengeluaran {expense_no} berhasil dicatat"
+    }
+
+@router.get("/expenses")
+async def list_expenses(
+    shift_id: Optional[str] = None,
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+    limit: int = 100,
+    user: dict = Depends(get_current_user)
+):
+    """List petty cash expenses"""
+    db = get_database()
+    
+    query = {}
+    if shift_id:
+        query["shift_id"] = shift_id
+    if date_from:
+        query["created_at"] = {"$gte": date_from}
+    if date_to:
+        if "created_at" in query:
+            query["created_at"]["$lte"] = date_to + "T23:59:59"
+        else:
+            query["created_at"] = {"$lte": date_to + "T23:59:59"}
+    
+    expenses = await db.cash_expenses.find(query, {"_id": 0}).sort("created_at", -1).limit(limit).to_list(limit)
+    
+    total = sum(e.get("amount", 0) for e in expenses)
+    
+    return {"items": expenses, "total": len(expenses), "total_amount": total}

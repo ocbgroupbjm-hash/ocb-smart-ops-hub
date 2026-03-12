@@ -539,6 +539,43 @@ async def create_sales_invoice(data: SalesInvoiceCreate, current_user: dict = De
                     }
                 )
     
+    # =============== SHIFT KASIR VALIDATION - TRANSAKSI TUNAI ===============
+    shift_id = None
+    user_id = user.get("user_id") or user.get("id")  # Support both keys
+    
+    if data.payment_type == "cash" and data.cash_amount > 0:
+        # Cek shift aktif untuk user
+        active_shift = await db.cashier_shifts.find_one({
+            "cashier_id": user_id,
+            "status": "open"
+        })
+        
+        if active_shift:
+            shift_id = active_shift.get("id")
+            # Record cash movement ke shift
+            await db.cash_movements.insert_one({
+                "id": str(ObjectId()),
+                "shift_id": shift_id,
+                "type": "cash_in",
+                "amount": data.cash_amount,
+                "description": f"Penjualan tunai",
+                "reference": "",  # Will update after invoice created
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "created_by": user_id,
+                "created_by_name": user.get("name", "")
+            })
+    
+    # =============== ADVANCED CUSTOMER CREDIT INFO ===============
+    if is_credit and credit_amount > 0:
+        # Get advanced customer info for due date calculation
+        advanced_customer = await db.customers_advanced.find_one({"id": data.customer_id}, {"_id": 0})
+        if advanced_customer and advanced_customer.get("credit_info", {}).get("default_due_days"):
+            due_days = advanced_customer["credit_info"]["default_due_days"]
+        else:
+            due_days = 30
+    else:
+        due_days = 0
+    
     invoice_number = await generate_number("INV", db)
     
     invoice = {
@@ -571,11 +608,20 @@ async def create_sales_invoice(data: SalesInvoiceCreate, current_user: dict = De
         "deposit_used": data.deposit_used,
         "paid_amount": data.cash_amount + data.dp_used + data.deposit_used,
         "is_credit": is_credit,
+        "shift_id": shift_id,  # Link to cashier shift
         "status": "completed",
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     
     await db.sales_invoices.insert_one(invoice)
+    
+    # Update cash movement reference if shift active
+    if shift_id and data.cash_amount > 0:
+        await db.cash_movements.find_one_and_update(
+            {"shift_id": shift_id, "reference": "", "type": "cash_in"},
+            {"$set": {"reference": invoice_number}},
+            sort=[("created_at", -1)]
+        )
     
     # ===== INTEGRATION: Update Stock =====
     branch_id = data.branch_id or user.get("branch_id") or "0acd2ffd-c2d9-4324-b860-a4626840e80e"  # Default HQ
