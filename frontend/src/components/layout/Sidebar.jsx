@@ -12,7 +12,7 @@ import {
   Activity, Bot, MessageSquare, Target, Megaphone, Banknote, UserPlus,
   CalendarCheck, Briefcase, BadgeDollarSign, Bell, Eye, Fingerprint, FileBarChart,
   Globe, Plus, List, ChevronsRight, Send, Table, QrCode, Calendar, Award, Grid,
-  RefreshCcw
+  RefreshCcw, BanknoteIcon
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { usePermission } from '../../contexts/PermissionContext';
@@ -322,6 +322,26 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       icon: Target,
       path: '/sales-target',
       roles: ['owner', 'admin', 'sales_manager']
+    },
+
+    // ============================================================
+    // COMMISSION ENGINE - Phase 3
+    // ============================================================
+    {
+      name: 'Komisi',
+      icon: Wallet,
+      path: '/commission',
+      roles: ['owner', 'admin', 'finance_manager']
+    },
+
+    // ============================================================
+    // CASH CONTROL - Phase 3
+    // ============================================================
+    {
+      name: 'Kontrol Kas',
+      icon: BanknoteIcon,
+      path: '/cash-control',
+      roles: ['owner', 'admin', 'kasir', 'supervisor', 'finance_manager']
     },
 
     // ============================================================

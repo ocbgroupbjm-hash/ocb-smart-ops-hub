@@ -231,6 +231,14 @@ app.include_router(purchase_planning_router)
 from routes.sales_target import router as sales_target_router
 app.include_router(sales_target_router)
 
+# Phase 3 Module 6: Commission Engine
+from routes.commission_engine import router as commission_router
+app.include_router(commission_router)
+
+# Phase 3 Module 7: Deposit & Cash Control Enhancement
+from routes.cash_control import router as cash_control_router
+app.include_router(cash_control_router)
+
 # Health check
 @app.get("/api/health")
 async def health_check():

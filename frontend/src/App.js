@@ -84,6 +84,12 @@ import PurchasePlanning from './pages/PurchasePlanning';
 // Sales Target - Phase 3
 import SalesTargetSystem from './pages/SalesTargetSystem';
 
+// Commission Engine - Phase 3
+import CommissionEngine from './pages/CommissionEngine';
+
+// Cash Control - Phase 3
+import CashControl from './pages/CashControl';
+
 // Master Data Pages
 import { 
   MasterItems, MasterCategories, MasterUnits, MasterBrands, 
@@ -389,6 +395,12 @@ function App() {
             
             {/* Sales Target Routes - Phase 3 */}
             <Route path="sales-target" element={<SalesTargetSystem />} />
+            
+            {/* Commission Engine Routes - Phase 3 */}
+            <Route path="commission" element={<CommissionEngine />} />
+            
+            {/* Cash Control Routes - Phase 3 */}
+            <Route path="cash-control" element={<CashControl />} />
             
             {/* Dashboard Routes */}
             <Route path="owner-dashboard" element={<OwnerDashboard />} />
