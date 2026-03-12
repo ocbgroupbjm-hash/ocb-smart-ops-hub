@@ -90,6 +90,9 @@ import CommissionEngine from './pages/CommissionEngine';
 // Cash Control - Phase 3
 import CashControl from './pages/CashControl';
 
+// Report Center - Phase 4
+import ReportCenter from './pages/ReportCenter';
+
 // Master Data Pages
 import { 
   MasterItems, MasterCategories, MasterUnits, MasterBrands, 
@@ -401,6 +404,9 @@ function App() {
             
             {/* Cash Control Routes - Phase 3 */}
             <Route path="cash-control" element={<CashControl />} />
+            
+            {/* Report Center Routes - Phase 4 */}
+            <Route path="report-center" element={<ReportCenter />} />
             
             {/* Dashboard Routes */}
             <Route path="owner-dashboard" element={<OwnerDashboard />} />

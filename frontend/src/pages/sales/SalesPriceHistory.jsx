@@ -30,7 +30,7 @@ const SalesPriceHistory = () => {
       const [histRes, custRes, salesRes] = await Promise.all([
         api(`/api/sales/price-history?${params}`),
         api('/api/customers'),
-        api('/api/sales-persons')
+        api('/api/master/sales-persons')
       ]);
       
       if (histRes.ok) setHistory((await histRes.json()).items || []);

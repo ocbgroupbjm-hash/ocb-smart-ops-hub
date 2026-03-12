@@ -43,7 +43,7 @@ const SalesReturnAdd = () => {
       try {
         const [custRes, salesRes, whRes] = await Promise.all([
           api('/api/customers'),
-          api('/api/sales-persons'),
+          api('/api/master/sales-persons'),
           api('/api/master/warehouses')
         ]);
         

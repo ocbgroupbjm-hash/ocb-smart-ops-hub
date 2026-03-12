@@ -239,6 +239,10 @@ app.include_router(commission_router)
 from routes.cash_control import router as cash_control_router
 app.include_router(cash_control_router)
 
+# Phase 4: Report Center
+from routes.report_center import router as report_center_router
+app.include_router(report_center_router)
+
 # Health check
 @app.get("/api/health")
 async def health_check():

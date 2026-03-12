@@ -62,7 +62,7 @@ const SalesAdd = () => {
       try {
         const [custRes, salesRes, prodRes, whRes, soRes] = await Promise.all([
           api('/api/customers'),
-          api('/api/sales-persons'),
+          api('/api/master/sales-persons'),
           api('/api/products?limit=2000'),
           api('/api/master/warehouses'),
           api('/api/sales/orders?status=confirmed')
