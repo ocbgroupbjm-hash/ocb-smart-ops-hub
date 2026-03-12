@@ -36,12 +36,22 @@ class ProductUpdate(BaseModel):
     description: Optional[str] = None
     category_id: Optional[str] = None
     brand: Optional[str] = None
+    brand_id: Optional[str] = None
+    unit: Optional[str] = None
+    unit_id: Optional[str] = None
+    supplier_id: Optional[str] = None
+    item_type: Optional[str] = None
     cost_price: Optional[float] = None
     selling_price: Optional[float] = None
     wholesale_price: Optional[float] = None
     member_price: Optional[float] = None
     reseller_price: Optional[float] = None
     min_stock: Optional[int] = None
+    max_stock: Optional[int] = None
+    minimum_stock: Optional[int] = None
+    maximum_stock: Optional[int] = None
+    rack: Optional[str] = None
+    sku_internal: Optional[str] = None
     is_active: Optional[bool] = None
 
 class CategoryCreate(BaseModel):

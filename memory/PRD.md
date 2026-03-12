@@ -15,6 +15,38 @@ OCB TITAN ERP adalah sistem ERP retail enterprise untuk bisnis multi-cabang deng
 
 # LATEST UPDATE: March 12, 2026
 
+## SEARCH/PICKER & CATEGORY EDIT FIX - COMPLETED ✅
+
+### Search/Picker UI Fix (March 12, 2026)
+All searchable fields now show candidate list when clicked.
+
+**Components Updated:**
+1. **ItemFormModal.jsx** - Category, Unit, Brand, Supplier now use SearchableSelect
+2. **SalesAdd.jsx** - Customer, Sales, Warehouse, SO, Item now use SearchableSelect
+3. **Unit Price selector** - Now uses SearchableSelect
+
+**Behavior:**
+- User klik field → Dropdown terbuka dengan candidate list
+- User ketik keyword → Filter otomatis
+- User pilih dari list → Value masuk
+- Tidak ada auto-select tanpa preview
+
+### Category Set / Master Data Edit Fix (March 12, 2026)
+Product edit now supports updating unit, brand, category.
+
+**Backend Fix:**
+- `ProductUpdate` model extended dengan: unit_id, brand_id, supplier_id, item_type, max_stock, rack, sku_internal
+
+**Verified Flow:**
+1. Buka item ACC001
+2. Ubah Unit: UNIT-AUDIT-001 → UNIT-AUDIT-002 ✅
+3. Ubah Brand: BRD-AUDIT-005 → BRD-AUDIT-001 ✅
+4. Ubah Category: CAT-AUDIT-002 → CAT-AUDIT-005 ✅
+5. Simpan → Data tersimpan di database ✅
+6. Refresh → Perubahan tampil dengan benar ✅
+
+---
+
 ## FINAL STABILIZATION - COMPLETED ✅
 
 ### Purchase Planning Final Fix (March 12, 2026)

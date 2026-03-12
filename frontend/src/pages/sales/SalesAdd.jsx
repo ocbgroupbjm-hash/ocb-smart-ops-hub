@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { 
@@ -7,6 +7,9 @@ import {
   Banknote, DollarSign
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { SearchableSelect } from '../../components/ui/searchable-select';
+import { SearchableEnumSelect } from '../../components/ui/searchable-enum-select';
+import { DatePickerWithDefault } from '../../components/ui/date-picker-default';
 
 const formatRupiah = (num) => `Rp ${(num || 0).toLocaleString('id-ID')}`;
 
@@ -24,6 +27,45 @@ const SalesAdd = () => {
   const [products, setProducts] = useState([]);
   const [warehouses, setWarehouses] = useState([]);
   const [salesOrders, setSalesOrders] = useState([]);
+  
+  // Convert master data to options format for SearchableSelect
+  const customerOptions = useMemo(() => 
+    customers.map(c => ({ value: c.id, label: c.name, sublabel: c.code })),
+    [customers]
+  );
+  
+  const salesPersonOptions = useMemo(() => 
+    salesPersons.map(s => ({ value: s.id, label: s.name, sublabel: s.code })),
+    [salesPersons]
+  );
+  
+  const warehouseOptions = useMemo(() => 
+    warehouses.map(w => ({ value: w.id, label: w.name, sublabel: w.code })),
+    [warehouses]
+  );
+  
+  const productOptions = useMemo(() => 
+    products.map(p => ({ 
+      value: p.id, 
+      label: p.name, 
+      sublabel: `${p.code || ''} | Stok: ${p.stock || 0} | Rp ${(p.sell_price || 0).toLocaleString()}`,
+      code: p.code,
+      barcode: p.barcode,
+      product: p
+    })),
+    [products]
+  );
+  
+  const salesOrderOptions = useMemo(() => 
+    salesOrders.map(so => ({ value: so.id, label: `${so.order_number} - ${so.customer_name}` })),
+    [salesOrders]
+  );
+  
+  // PPN options
+  const ppnTypeOptions = [
+    { value: 'exclude', label: 'Exclude PPN' },
+    { value: 'include', label: 'Include PPN' },
+  ];
 
   // Form state
   const [form, setForm] = useState({
@@ -307,45 +349,69 @@ const SalesAdd = () => {
           </div>
           <div>
             <label className="block text-xs text-gray-400 mb-1">Tanggal</label>
-            <input type="date" value={form.date} onChange={e => setForm(p => ({...p, date: e.target.value}))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white text-sm" />
+            <DatePickerWithDefault
+              value={form.date}
+              onValueChange={(val) => setForm(p => ({...p, date: val}))}
+              defaultToday={true}
+              data-testid="sales-date"
+            />
           </div>
           <div>
             <label className="block text-xs text-gray-400 mb-1">Pesanan (SO)</label>
-            <select value={form.sales_order_id} onChange={e => { setForm(p => ({...p, sales_order_id: e.target.value})); loadSalesOrder(e.target.value); }} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white text-sm">
-              <option value="">Tanpa SO</option>
-              {salesOrders.map(so => <option key={so.id} value={so.id}>{so.order_number} - {so.customer_name}</option>)}
-            </select>
+            <SearchableSelect
+              options={salesOrderOptions}
+              value={form.sales_order_id}
+              onValueChange={(val) => { setForm(p => ({...p, sales_order_id: val})); if(val) loadSalesOrder(val); }}
+              placeholder="Tanpa SO"
+              searchPlaceholder="Cari SO..."
+              data-testid="so-select"
+            />
           </div>
           <div>
             <label className="block text-xs text-gray-400 mb-1">Keluar Dari Gudang</label>
-            <select value={form.warehouse_id} onChange={e => setForm(p => ({...p, warehouse_id: e.target.value}))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white text-sm">
-              <option value="">Pilih Gudang</option>
-              {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
-            </select>
+            <SearchableSelect
+              options={warehouseOptions}
+              value={form.warehouse_id}
+              onValueChange={(val) => setForm(p => ({...p, warehouse_id: val}))}
+              placeholder="Pilih Gudang"
+              searchPlaceholder="Cari gudang..."
+              data-testid="warehouse-select"
+            />
           </div>
           <div>
             <label className="block text-xs text-gray-400 mb-1">Pelanggan <span className="text-red-400">*</span></label>
-            <select value={form.customer_id} onChange={e => setForm(p => ({...p, customer_id: e.target.value}))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white text-sm">
-              <option value="">Pilih Pelanggan</option>
-              {customers.map(c => <option key={c.id} value={c.id}>{c.code} - {c.name}</option>)}
-            </select>
+            <SearchableSelect
+              options={customerOptions}
+              value={form.customer_id}
+              onValueChange={(val) => setForm(p => ({...p, customer_id: val}))}
+              placeholder="Pilih Pelanggan"
+              searchPlaceholder="Ketik nama pelanggan..."
+              data-testid="customer-select"
+            />
           </div>
           <div>
             <label className="block text-xs text-gray-400 mb-1">Sales</label>
-            <select value={form.sales_person_id} onChange={e => setForm(p => ({...p, sales_person_id: e.target.value}))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white text-sm">
-              <option value="">Pilih Sales</option>
-              {salesPersons.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-            </select>
+            <SearchableSelect
+              options={salesPersonOptions}
+              value={form.sales_person_id}
+              onValueChange={(val) => setForm(p => ({...p, sales_person_id: val}))}
+              placeholder="Pilih Sales"
+              searchPlaceholder="Ketik nama sales..."
+              data-testid="salesperson-select"
+            />
           </div>
         </div>
         
         <div className="grid grid-cols-4 gap-4 mt-4">
           <div>
             <label className="block text-xs text-gray-400 mb-1">PPN</label>
-            <select value={form.ppn_type} onChange={e => setForm(p => ({...p, ppn_type: e.target.value}))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white text-sm">
-              <option value="exclude">Exclude PPN</option>
-              <option value="include">Include PPN</option>
-            </select>
+            <SearchableEnumSelect
+              options={ppnTypeOptions}
+              value={form.ppn_type}
+              onValueChange={(val) => setForm(p => ({...p, ppn_type: val}))}
+              placeholder="Pilih PPN"
+              data-testid="ppn-type-select"
+            />
           </div>
           <div>
             <label className="block text-xs text-gray-400 mb-1">Voucher</label>
@@ -358,31 +424,26 @@ const SalesAdd = () => {
         </div>
       </div>
 
-      {/* Item Input */}
+      {/* Item Input - Searchable Product Select */}
       <div className="bg-gray-800/50 rounded-lg border border-gray-700 p-3">
         <div className="flex items-center gap-3">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <input
-              ref={itemInputRef}
-              type="text"
-              placeholder="Scan barcode atau ketik kode/nama item lalu Enter..."
-              className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded text-white"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  const found = products.find(p => 
-                    p.code?.toLowerCase() === e.target.value.toLowerCase() ||
-                    p.barcode?.toLowerCase() === e.target.value.toLowerCase() ||
-                    p.name?.toLowerCase().includes(e.target.value.toLowerCase())
-                  );
+          <div className="flex-1">
+            <SearchableSelect
+              options={productOptions}
+              value=""
+              onValueChange={(val) => {
+                if (val) {
+                  const found = products.find(p => p.id === val);
                   if (found) {
                     addItem(found);
-                    e.target.value = '';
-                  } else {
-                    toast.error('Item tidak ditemukan');
                   }
                 }
               }}
+              placeholder="Klik untuk pilih item, atau ketik nama/kode item..."
+              searchPlaceholder="Ketik nama atau kode item..."
+              emptyText="Item tidak ditemukan"
+              allowClear={false}
+              data-testid="item-search"
             />
           </div>
         </div>

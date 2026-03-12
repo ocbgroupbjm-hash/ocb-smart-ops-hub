@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { toast } from 'sonner';
 import { 
   X, Save, Package, DollarSign, Warehouse, Calculator, 
   Plus, Trash2, Check, Tag, Users, Layers, Info, AlertCircle
 } from 'lucide-react';
+import { SearchableSelect } from '../ui/searchable-select';
+import { SearchableEnumSelect } from '../ui/searchable-enum-select';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -31,6 +33,36 @@ export default function ItemFormModal({
 }) {
   const [activeTab, setActiveTab] = useState('data');
   const [saving, setSaving] = useState(false);
+  
+  // Convert master data to options format for SearchableSelect
+  const categoryOptions = useMemo(() => 
+    categories.map(c => ({ value: c.id, label: c.name, sublabel: c.code })), 
+    [categories]
+  );
+  
+  const unitOptions = useMemo(() => 
+    units.map(u => ({ value: u.id, label: u.name, sublabel: u.code })), 
+    [units]
+  );
+  
+  const brandOptions = useMemo(() => 
+    brands.map(b => ({ value: b.id, label: b.name, sublabel: b.code })), 
+    [brands]
+  );
+  
+  const supplierOptions = useMemo(() => 
+    suppliers.map(s => ({ value: s.id, label: s.name, sublabel: s.code })), 
+    [suppliers]
+  );
+  
+  // Item type options for searchable enum
+  const itemTypeOptions = [
+    { value: 'barang', label: 'Barang' },
+    { value: 'jasa', label: 'Jasa' },
+    { value: 'rakitan', label: 'Rakitan' },
+    { value: 'non-inventory', label: 'Non-Inventory' },
+    { value: 'biaya', label: 'Biaya' },
+  ];
   
   // Form data - TAB 1: Data Umum
   const [formData, setFormData] = useState({
@@ -414,44 +446,35 @@ export default function ItemFormModal({
                 <div className="grid grid-cols-3 gap-4">
                   <div>
                     <label className="block text-xs text-gray-400 mb-1">Tipe Item</label>
-                    <select
+                    <SearchableEnumSelect
+                      options={itemTypeOptions}
                       value={formData.item_type}
-                      onChange={(e) => setFormData({ ...formData, item_type: e.target.value })}
-                      className="w-full px-3 py-2 bg-[#0a0a0a] border border-[#333] rounded-lg text-white text-sm"
-                    >
-                      <option value="barang">Barang</option>
-                      <option value="jasa">Jasa</option>
-                      <option value="rakitan">Rakitan</option>
-                      <option value="non-inventory">Non-Inventory</option>
-                      <option value="biaya">Biaya</option>
-                    </select>
+                      onValueChange={(val) => setFormData({ ...formData, item_type: val })}
+                      placeholder="Pilih Tipe"
+                      data-testid="item-type-select"
+                    />
                   </div>
                   <div>
                     <label className="block text-xs text-gray-400 mb-1">Kategori</label>
-                    <select
+                    <SearchableSelect
+                      options={categoryOptions}
                       value={formData.category_id}
-                      onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
-                      className="w-full px-3 py-2 bg-[#0a0a0a] border border-[#333] rounded-lg text-white text-sm"
-                    >
-                      <option value="">Pilih Kategori</option>
-                      {categories.map(c => (
-                        <option key={c.id} value={c.id}>{c.name}</option>
-                      ))}
-                    </select>
+                      onValueChange={(val) => setFormData({ ...formData, category_id: val })}
+                      placeholder="Pilih Kategori"
+                      searchPlaceholder="Ketik kategori..."
+                      data-testid="category-select"
+                    />
                   </div>
                   <div>
                     <label className="block text-xs text-gray-400 mb-1">Satuan <span className="text-red-400">*</span></label>
-                    <select
+                    <SearchableSelect
+                      options={unitOptions}
                       value={formData.unit_id}
-                      onChange={(e) => setFormData({ ...formData, unit_id: e.target.value })}
-                      className="w-full px-3 py-2 bg-[#0a0a0a] border border-[#333] rounded-lg text-white text-sm"
-                      required
-                    >
-                      <option value="">Pilih Satuan</option>
-                      {units.map(u => (
-                        <option key={u.id} value={u.id}>{u.name}</option>
-                      ))}
-                    </select>
+                      onValueChange={(val) => setFormData({ ...formData, unit_id: val })}
+                      placeholder="Pilih Satuan"
+                      searchPlaceholder="Ketik satuan..."
+                      data-testid="unit-select"
+                    />
                   </div>
                 </div>
 
@@ -459,16 +482,14 @@ export default function ItemFormModal({
                 <div className="grid grid-cols-3 gap-4">
                   <div>
                     <label className="block text-xs text-gray-400 mb-1">Merek</label>
-                    <select
+                    <SearchableSelect
+                      options={brandOptions}
                       value={formData.brand_id}
-                      onChange={(e) => setFormData({ ...formData, brand_id: e.target.value })}
-                      className="w-full px-3 py-2 bg-[#0a0a0a] border border-[#333] rounded-lg text-white text-sm"
-                    >
-                      <option value="">Pilih Merek</option>
-                      {brands.map(b => (
-                        <option key={b.id} value={b.id}>{b.name}</option>
-                      ))}
-                    </select>
+                      onValueChange={(val) => setFormData({ ...formData, brand_id: val })}
+                      placeholder="Pilih Merek"
+                      searchPlaceholder="Ketik merek..."
+                      data-testid="brand-select"
+                    />
                   </div>
                   <div>
                     <label className="block text-xs text-gray-400 mb-1">Rak Default</label>
@@ -551,16 +572,14 @@ export default function ItemFormModal({
                   </div>
                   <div>
                     <label className="block text-xs text-gray-400 mb-1">Supplier Default</label>
-                    <select
+                    <SearchableSelect
+                      options={supplierOptions}
                       value={formData.supplier_id}
-                      onChange={(e) => setFormData({ ...formData, supplier_id: e.target.value })}
-                      className="w-full px-3 py-2 bg-[#0a0a0a] border border-[#333] rounded-lg text-white text-sm"
-                    >
-                      <option value="">Pilih Supplier</option>
-                      {suppliers.map(s => (
-                        <option key={s.id} value={s.id}>{s.name}</option>
-                      ))}
-                    </select>
+                      onValueChange={(val) => setFormData({ ...formData, supplier_id: val })}
+                      placeholder="Pilih Supplier"
+                      searchPlaceholder="Ketik nama supplier..."
+                      data-testid="supplier-select"
+                    />
                   </div>
                 </div>
 
@@ -831,16 +850,15 @@ export default function ItemFormModal({
                         </div>
                         {unitPrices.map((up, index) => (
                           <div key={index} className="grid grid-cols-4 gap-2 items-center">
-                            <select
+                            <SearchableSelect
+                              options={unitOptions}
                               value={up.unit_id}
-                              onChange={(e) => updateUnitPrice(index, 'unit_id', e.target.value)}
-                              className="px-2 py-2 bg-[#0a0a0a] border border-[#333] rounded-lg text-white text-sm"
-                            >
-                              <option value="">Pilih</option>
-                              {units.map(u => (
-                                <option key={u.id} value={u.id}>{u.name}</option>
-                              ))}
-                            </select>
+                              onValueChange={(val) => updateUnitPrice(index, 'unit_id', val)}
+                              placeholder="Pilih"
+                              searchPlaceholder="Ketik satuan..."
+                              data-testid={`unit-price-${index}`}
+                              className="text-sm"
+                            />
                             <input
                               type="number"
                               value={up.conversion}
