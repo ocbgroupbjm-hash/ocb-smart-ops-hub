@@ -253,9 +253,13 @@ app.include_router(report_center_router)
 from routes.kpi_system import router as kpi_system_router
 app.include_router(kpi_system_router)
 
-# Phase 5: Master Advanced (Customer, Discount, Promotion, Barcode)
-from routes.master_advanced import router as master_advanced_router
-app.include_router(master_advanced_router)
+# Barcode Engine
+from routes.barcode_engine import router as barcode_engine_router
+app.include_router(barcode_engine_router, prefix="/api")
+
+# Loyalty Points System
+from routes.loyalty_points import router as loyalty_points_router
+app.include_router(loyalty_points_router, prefix="/api")
 
 # Health check
 @app.get("/api/health")

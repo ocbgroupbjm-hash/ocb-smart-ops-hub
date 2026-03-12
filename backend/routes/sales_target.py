@@ -46,13 +46,20 @@ class SalesTargetCreate(BaseModel):
     period_type: str = "monthly"  # daily, weekly, monthly, quarterly, yearly
     period_start: str  # YYYY-MM-DD
     period_end: str  # YYYY-MM-DD
-    target_value: float = Field(gt=0)
+    target_value: float = Field(gt=0)  # Target amount (Rp)
     target_qty: Optional[float] = None  # Optional qty target
+    # Bonus settings
+    bonus_type: Optional[str] = "percentage"  # percentage, nominal
+    bonus_value: Optional[float] = 0  # Bonus jika target tercapai
+    bonus_min_achievement: Optional[float] = 100  # Min achievement % untuk bonus
     notes: Optional[str] = ""
 
 class SalesTargetUpdate(BaseModel):
     target_value: Optional[float] = None
     target_qty: Optional[float] = None
+    bonus_type: Optional[str] = None
+    bonus_value: Optional[float] = None
+    bonus_min_achievement: Optional[float] = None
     notes: Optional[str] = None
 
 class SalesTargetFilter(BaseModel):

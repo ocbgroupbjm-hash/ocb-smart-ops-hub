@@ -103,8 +103,7 @@ import {
   MasterCustomerGroups, MasterRegions, MasterBanks, MasterEmoney,
   MasterShippingCosts, MasterDiscounts, MasterPromotions,
   MasterItemTypes, MasterCustomerPoints, MasterBarcode, MasterStockCards, MasterDatasheet,
-  SettingAkunERP,
-  MasterCustomersAdvanced, MasterDiscountsAdvanced, MasterPromotionsAdvanced, MasterBarcodeAdvanced
+  SettingAkunERP
 } from './pages/master';
 
 // Purchase Pages
@@ -277,7 +276,6 @@ function App() {
             <Route path="master/customers" element={<MasterCustomers />} />
             <Route path="master/sales-persons" element={<MasterSalesPersons />} />
             <Route path="master/customer-groups" element={<MasterCustomerGroups />} />
-            <Route path="master/customer-points" element={<MasterCustomerGroups />} />
             <Route path="master/regions" element={<MasterRegions />} />
             <Route path="master/emoney" element={<MasterEmoney />} />
             <Route path="master/banks" element={<MasterBanks />} />
@@ -290,12 +288,6 @@ function App() {
             <Route path="master/barcode" element={<MasterBarcode />} />
             <Route path="master/datasheet" element={<MasterDatasheet />} />
             <Route path="master/setting-akun" element={<SettingAkunERP />} />
-            
-            {/* Advanced Master Modules */}
-            <Route path="master/customers-advanced" element={<MasterCustomersAdvanced />} />
-            <Route path="master/discounts-advanced" element={<MasterDiscountsAdvanced />} />
-            <Route path="master/promotions-advanced" element={<MasterPromotionsAdvanced />} />
-            <Route path="master/barcode-advanced" element={<MasterBarcodeAdvanced />} />
             
             {/* ERP Hardening - Fiscal Period & Multi-Currency */}
             <Route path="erp-hardening" element={<ERPHardening />} />

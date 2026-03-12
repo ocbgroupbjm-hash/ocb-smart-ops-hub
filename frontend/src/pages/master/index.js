@@ -19,9 +19,3 @@ export { default as MasterBarcode } from './MasterBarcode';
 export { default as MasterStockCards } from './MasterStockCards';
 export { default as MasterDatasheet } from './MasterDatasheet';
 export { default as SettingAkunERP } from './SettingAkunERP';
-
-// Advanced Modules
-export { default as MasterCustomersAdvanced } from './MasterCustomersAdvanced';
-export { default as MasterDiscountsAdvanced } from './MasterDiscountsAdvanced';
-export { default as MasterPromotionsAdvanced } from './MasterPromotionsAdvanced';
-export { default as MasterBarcodeAdvanced } from './MasterBarcodeAdvanced';

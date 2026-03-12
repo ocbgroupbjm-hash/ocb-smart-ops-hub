@@ -41,6 +41,12 @@ class ItemCreate(BaseModel):
     item_type: str = "barang"
     cost_price: float = 0
     selling_price: float = 0
+    # Price Levels untuk retail
+    price_level_1: float = 0  # Harga umum/normal
+    price_level_2: float = 0  # Harga member
+    price_level_3: float = 0  # Harga grosir
+    price_level_4: float = 0  # Harga reseller
+    price_level_5: float = 0  # Harga VIP
     min_stock: int = 0
     max_stock: int = 0
     description: str = ""
@@ -222,6 +228,74 @@ async def delete_item(
     )
     
     return {"message": "Item berhasil dihapus"}
+
+
+# ==================== PRICE LEVEL SYSTEM ====================
+
+@router.get("/items/{item_id}/price-for-customer/{customer_id}")
+async def get_item_price_for_customer(item_id: str, customer_id: str, user: dict = Depends(get_current_user)):
+    """
+    Get the correct price for an item based on customer's group price level.
+    Used by POS and Sales Invoice to auto-apply correct price.
+    """
+    # Get item
+    item = await items.find_one({"id": item_id}, {"_id": 0})
+    if not item:
+        raise HTTPException(status_code=404, detail="Item tidak ditemukan")
+    
+    # Get customer
+    customer = await db["customers"].find_one({"id": customer_id}, {"_id": 0})
+    if not customer:
+        # Return default price if customer not found
+        return {
+            "item_id": item_id,
+            "customer_id": customer_id,
+            "price_level": 1,
+            "price": item.get("selling_price", 0)
+        }
+    
+    # Get customer group
+    group_id = customer.get("group_id")
+    price_level = 1  # Default
+    
+    if group_id:
+        group = await customer_groups.find_one({"id": group_id}, {"_id": 0})
+        if group:
+            price_level = group.get("price_level", 1)
+    
+    # Get price based on level
+    price_field = f"price_level_{price_level}"
+    price = item.get(price_field, 0)
+    
+    # If price level is 0 or not set, fallback to selling_price
+    if not price:
+        price = item.get("selling_price", 0)
+    
+    return {
+        "item_id": item_id,
+        "item_code": item.get("code"),
+        "item_name": item.get("name"),
+        "customer_id": customer_id,
+        "customer_name": customer.get("name"),
+        "group_id": group_id,
+        "price_level": price_level,
+        "price": price,
+        "original_price": item.get("selling_price", 0)
+    }
+
+@router.get("/price-levels")
+async def get_price_level_info(user: dict = Depends(get_current_user)):
+    """Get price level definitions"""
+    return {
+        "levels": [
+            {"level": 1, "name": "Harga Umum", "description": "Harga normal untuk pelanggan umum"},
+            {"level": 2, "name": "Harga Member", "description": "Harga untuk pelanggan member"},
+            {"level": 3, "name": "Harga Grosir", "description": "Harga untuk pembelian grosir"},
+            {"level": 4, "name": "Harga Reseller", "description": "Harga untuk reseller"},
+            {"level": 5, "name": "Harga VIP", "description": "Harga khusus VIP"}
+        ]
+    }
+
 
 # ==================== CATEGORIES ====================
 
@@ -518,12 +592,40 @@ async def delete_sales_person(sp_id: str, request: Request, user: dict = Depends
     await log_activity(db, user.get("user_id"), user.get("name", ""), "delete", "master_sales_person", f"Menghapus sales: {sp_id}", request.client.host if request.client else "")
     return {"message": "Sales berhasil dihapus"}
 
+@router.get("/salesmen")
+async def list_salesmen(search: str = "", user: dict = Depends(get_current_user)):
+    """
+    Get all active salesmen from users table.
+    Query: SELECT * FROM users WHERE role = 'sales' AND status = 'active'
+    Also includes kasir role as they can also make sales.
+    """
+    query = {
+        "role": {"$in": ["sales", "kasir"]},
+        "$or": [
+            {"is_active": True},
+            {"is_active": {"$exists": False}},  # Treat missing field as active
+            {"status": "active"}
+        ]
+    }
+    
+    if search:
+        query["$and"] = [
+            {"$or": [
+                {"name": {"$regex": search, "$options": "i"}},
+                {"email": {"$regex": search, "$options": "i"}}
+            ]}
+        ]
+    
+    result = await db["users"].find(query, {"_id": 0, "password": 0}).sort("name", 1).to_list(500)
+    return result
+
 # ==================== CUSTOMER GROUPS ====================
 
 class CustomerGroupCreate(BaseModel):
     code: str
     name: str
     discount_percent: float = 0
+    price_level: int = 1  # 1-5 untuk mapping ke harga item
     description: str = ""
 
 @router.get("/customer-groups")
@@ -613,27 +715,47 @@ async def delete_bank(bank_id: str, request: Request, user: dict = Depends(requi
 class DiscountCreate(BaseModel):
     code: str
     name: str
-    discount_type: str = "percent"  # percent or amount
+    discount_type: str = "percentage"  # percentage, nominal, per_pcs, per_item, per_transaction, tiered
     discount_value: float = 0
+    target_type: str = "all"  # all, item, category, brand, customer_group, branch
+    target_ids: List[str] = []
     min_purchase: float = 0
+    min_qty: int = 0
     start_date: str = ""
     end_date: str = ""
+    start_time: str = ""
+    end_time: str = ""
+    priority: int = 1
+    stackable: bool = False
+    max_usage: int = 0
+    max_usage_per_customer: int = 0
+    tiers: List[dict] = []  # [{min_qty, min_amount, discount_value}]
     is_active: bool = True
+    description: str = ""
 
 @router.get("/discounts")
 async def list_discounts(search: str = "", user: dict = Depends(get_current_user)):
     query = {}
     if search:
-        query["name"] = {"$regex": search, "$options": "i"}
-    result = await discounts.find(query, {"_id": 0}).sort("name", 1).to_list(500)
+        query["$or"] = [
+            {"name": {"$regex": search, "$options": "i"}},
+            {"code": {"$regex": search, "$options": "i"}}
+        ]
+    result = await discounts.find(query, {"_id": 0}).sort("priority", 1).to_list(500)
     return result
 
 @router.post("/discounts")
 async def create_discount(data: DiscountCreate, user: dict = Depends(get_current_user)):
+    existing = await discounts.find_one({"code": data.code})
+    if existing:
+        raise HTTPException(status_code=400, detail="Kode diskon sudah ada")
+    
     discount = {
         "id": str(uuid.uuid4()),
         **data.model_dump(),
-        "created_at": datetime.now(timezone.utc).isoformat()
+        "usage_count": 0,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_by": user.get("id")
     }
     await discounts.insert_one(discount)
     return {"id": discount["id"], "message": "Diskon berhasil ditambahkan"}
@@ -661,26 +783,66 @@ async def delete_discount(discount_id: str, request: Request, user: dict = Depen
 class PromotionCreate(BaseModel):
     code: str
     name: str
-    promo_type: str = "buy_get"  # buy_get, bundle, discount
+    promo_type: str = "product"  # product, category, brand, bundle, buy_x_get_y, special_price, quota
     description: str = ""
+    
+    # Trigger
+    trigger_type: str = "item"  # item, qty, subtotal
+    trigger_item_ids: List[str] = []
+    trigger_category_ids: List[str] = []
+    trigger_brand_ids: List[str] = []
+    trigger_min_qty: int = 0
+    trigger_min_subtotal: float = 0
+    
+    # Benefit
+    benefit_type: str = "discount"  # discount, free_item, bundle_price, special_price
+    benefit_discount_type: str = "percentage"
+    benefit_discount_value: float = 0
+    benefit_free_item_ids: List[str] = []
+    benefit_free_qty: int = 0
+    benefit_bundle_price: float = 0
+    benefit_special_price: float = 0
+    
+    # Quota
+    quota_limit: int = 0
+    quota_used: int = 0
+    
+    # Period
     start_date: str = ""
     end_date: str = ""
+    start_time: str = ""
+    end_time: str = ""
+    
+    # Advanced
+    priority: int = 1
+    stackable: bool = False
+    max_usage: int = 0
+    
     is_active: bool = True
 
 @router.get("/promotions")
 async def list_promotions(search: str = "", user: dict = Depends(get_current_user)):
     query = {}
     if search:
-        query["name"] = {"$regex": search, "$options": "i"}
-    result = await promotions.find(query, {"_id": 0}).sort("name", 1).to_list(500)
+        query["$or"] = [
+            {"name": {"$regex": search, "$options": "i"}},
+            {"code": {"$regex": search, "$options": "i"}}
+        ]
+    result = await promotions.find(query, {"_id": 0}).sort("priority", 1).to_list(500)
     return result
 
 @router.post("/promotions")
 async def create_promotion(data: PromotionCreate, user: dict = Depends(get_current_user)):
+    existing = await promotions.find_one({"code": data.code})
+    if existing:
+        raise HTTPException(status_code=400, detail="Kode promosi sudah ada")
+    
     promo = {
         "id": str(uuid.uuid4()),
         **data.model_dump(),
-        "created_at": datetime.now(timezone.utc).isoformat()
+        "usage_count": 0,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_by": user.get("id")
     }
     await promotions.insert_one(promo)
     return {"id": promo["id"], "message": "Promosi berhasil ditambahkan"}
