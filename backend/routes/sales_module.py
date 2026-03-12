@@ -106,20 +106,12 @@ class ARPaymentCreate(BaseModel):
 
 # ==================== ASYNC HELPER FUNCTIONS ====================
 
+# Import central number generator
+from utils.number_generator import generate_transaction_number, generate_master_code
+
 async def generate_number(prefix: str, db) -> str:
-    """Generate auto number like iPOS: PREFIX-YYYYMMDD-XXXX"""
-    date_str = datetime.now().strftime("%Y%m%d")
-    
-    last = await db.counters.find_one({"prefix": prefix, "date": date_str})
-    
-    if last:
-        seq = last.get("seq", 0) + 1
-        await db.counters.update_one({"prefix": prefix, "date": date_str}, {"$set": {"seq": seq}})
-    else:
-        seq = 1
-        await db.counters.insert_one({"prefix": prefix, "date": date_str, "seq": seq})
-    
-    return f"{prefix}-{date_str}-{str(seq).zfill(4)}"
+    """Generate auto number using CENTRAL ENGINE"""
+    return await generate_transaction_number(db, prefix)
 
 async def get_product_info(db, product_id: str, branch_id: str = None) -> dict:
     """Get product information with stock from stock_movements (single source of truth)"""
@@ -287,7 +279,14 @@ async def create_journal_entry(db, entries: List[dict], reference: str, descript
     return journal
 
 async def create_receivable(db, customer_id: str, invoice_number: str, amount: float, due_days: int = 30):
-    """Create accounts receivable entry"""
+    """Create accounts receivable entry - WAJIB punya invoice_number"""
+    # VALIDASI: invoice_number tidak boleh kosong
+    if not invoice_number or not invoice_number.strip():
+        raise HTTPException(
+            status_code=400, 
+            detail="AR tidak boleh dibuat tanpa invoice_number. Pastikan invoice sudah tersimpan."
+        )
+    
     customer = await get_customer_info(db, customer_id)
     due_date = datetime.now(timezone.utc) + timedelta(days=due_days)
     ar_number = await generate_number("AR", db)
@@ -296,7 +295,7 @@ async def create_receivable(db, customer_id: str, invoice_number: str, amount: f
         "id": str(ObjectId()),
         "ar_no": ar_number,  # Use ar_no to match existing schema/index
         "ar_number": ar_number,
-        "invoice_number": invoice_number,
+        "invoice_number": invoice_number,  # WAJIB - tidak boleh null
         "customer_id": customer_id,
         "customer_name": customer.get("name", ""),
         "customer_code": customer.get("code", ""),

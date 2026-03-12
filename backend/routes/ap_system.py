@@ -177,47 +177,15 @@ async def get_user_ap_scope(user: dict) -> Dict[str, Any]:
 
 
 async def generate_ap_number(branch_code: str = "HQ") -> str:
-    """Generate unique AP number"""
-    today = datetime.now(timezone.utc).strftime("%Y%m%d")
-    prefix = f"AP-{branch_code}-{today}"
-    
-    last = await ap_collection.find_one(
-        {"ap_no": {"$regex": f"^{prefix}"}},
-        {"_id": 0, "ap_no": 1},
-        sort=[("ap_no", -1)]
-    )
-    
-    if last:
-        try:
-            seq = int(last["ap_no"].split("-")[-1]) + 1
-        except:
-            seq = 1
-    else:
-        seq = 1
-    
-    return f"{prefix}-{seq:04d}"
+    """Generate unique AP number using CENTRAL ENGINE"""
+    from utils.number_generator import generate_transaction_number
+    return await generate_transaction_number(db, "AP")
 
 
 async def generate_payment_number() -> str:
-    """Generate unique payment number"""
-    today = datetime.now(timezone.utc).strftime("%Y%m%d")
-    prefix = f"APP-{today}"
-    
-    last = await ap_payments.find_one(
-        {"payment_no": {"$regex": f"^{prefix}"}},
-        {"_id": 0, "payment_no": 1},
-        sort=[("payment_no", -1)]
-    )
-    
-    if last:
-        try:
-            seq = int(last["payment_no"].split("-")[-1]) + 1
-        except:
-            seq = 1
-    else:
-        seq = 1
-    
-    return f"{prefix}-{seq:04d}"
+    """Generate unique payment number using CENTRAL ENGINE"""
+    from utils.number_generator import generate_transaction_number
+    return await generate_transaction_number(db, "PAY")
 
 
 async def create_ap_payment_journal(
@@ -233,7 +201,10 @@ async def create_ap_payment_journal(
     payment_method = payment.get("payment_method", "cash")
     
     today = datetime.now(timezone.utc).strftime("%Y%m%d")
-    journal_number = f"JV-APP-{today}-{uuid.uuid4().hex[:6].upper()}"
+    
+    # Use central number generator for journal
+    from utils.number_generator import generate_transaction_number
+    journal_number = await generate_transaction_number(db, "JV")
     
     # Derive accounts using Account Derivation Engine
     debit_account = await derive_ap_account("pembayaran_kredit_pembelian", branch_id=branch_id)

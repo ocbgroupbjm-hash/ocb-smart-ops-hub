@@ -903,7 +903,10 @@ async def approve_opname(opname_id: str, request: Request, user: dict = Depends(
         db = get_db()
         journal_id = str(uuid.uuid4())
         today = datetime.now(timezone.utc).strftime("%Y%m%d")
-        journal_number = f"JV-OPN-{today}-{uuid.uuid4().hex[:6].upper()}"
+        
+        # Use central number generator for journal
+        from utils.number_generator import generate_transaction_number
+        journal_number = await generate_transaction_number(db, "JV")
         
         entries = []
         
@@ -1131,7 +1134,10 @@ async def create_opname_v2(data: CreateOpnameV2, request: Request, user: dict = 
         db = get_db()
         journal_id = str(uuid.uuid4())
         today = datetime.now(timezone.utc).strftime("%Y%m%d")
-        journal_number = f"JV-OPN-{today}-{uuid.uuid4().hex[:6].upper()}"
+        
+        # Use central number generator for journal
+        from utils.number_generator import generate_transaction_number
+        journal_number = await generate_transaction_number(db, "JV")
         
         entries = []
         

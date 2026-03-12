@@ -194,47 +194,15 @@ async def get_user_ar_scope(user: dict) -> Dict[str, Any]:
 
 
 async def generate_ar_number(branch_code: str = "HQ") -> str:
-    """Generate unique AR number"""
-    today = datetime.now(timezone.utc).strftime("%Y%m%d")
-    prefix = f"AR-{branch_code}-{today}"
-    
-    last = await ar_collection.find_one(
-        {"ar_no": {"$regex": f"^{prefix}"}},
-        {"_id": 0, "ar_no": 1},
-        sort=[("ar_no", -1)]
-    )
-    
-    if last:
-        try:
-            seq = int(last["ar_no"].split("-")[-1]) + 1
-        except:
-            seq = 1
-    else:
-        seq = 1
-    
-    return f"{prefix}-{seq:04d}"
+    """Generate unique AR number using CENTRAL ENGINE"""
+    from utils.number_generator import generate_transaction_number
+    return await generate_transaction_number(db, "AR")
 
 
 async def generate_payment_number() -> str:
-    """Generate unique payment number"""
-    today = datetime.now(timezone.utc).strftime("%Y%m%d")
-    prefix = f"ARP-{today}"
-    
-    last = await ar_payments.find_one(
-        {"payment_no": {"$regex": f"^{prefix}"}},
-        {"_id": 0, "payment_no": 1},
-        sort=[("payment_no", -1)]
-    )
-    
-    if last:
-        try:
-            seq = int(last["payment_no"].split("-")[-1]) + 1
-        except:
-            seq = 1
-    else:
-        seq = 1
-    
-    return f"{prefix}-{seq:04d}"
+    """Generate unique AR payment number using CENTRAL ENGINE"""
+    from utils.number_generator import generate_transaction_number
+    return await generate_transaction_number(db, "RECV")
 
 
 async def create_ar_payment_journal(
@@ -250,7 +218,10 @@ async def create_ar_payment_journal(
     payment_method = payment.get("payment_method", "cash")
     
     today = datetime.now(timezone.utc).strftime("%Y%m%d")
-    journal_number = f"JV-ARP-{today}-{uuid.uuid4().hex[:6].upper()}"
+    
+    # Use central number generator for journal
+    from utils.number_generator import generate_transaction_number
+    journal_number = await generate_transaction_number(db, "JV")
     
     # Derive accounts using Account Derivation Engine
     # Debit account based on payment method
