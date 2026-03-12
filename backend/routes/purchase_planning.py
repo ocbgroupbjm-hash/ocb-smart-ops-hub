@@ -163,7 +163,19 @@ async def calculate_planning_recommendation(db, product_id: str, branch_id: str 
     min_stock = (settings or {}).get("minimum_stock", product.get("minimum_stock", 0))
     max_stock = (settings or {}).get("maximum_stock", product.get("maximum_stock", 0))
     lead_time = (settings or {}).get("lead_time_days", DEFAULT_LEAD_TIME_DAYS)
-    supplier_id = (settings or {}).get("preferred_supplier_id", product.get("supplier_id"))
+    
+    # Get supplier - priority: stock_settings.preferred_supplier_id > product.supplier_id > last_po_supplier
+    supplier_id = (settings or {}).get("preferred_supplier_id") or product.get("supplier_id")
+    
+    # Fallback: get supplier from last purchase order for this product
+    if not supplier_id:
+        last_po = await db.purchase_orders.find_one(
+            {"items.product_id": product_id, "status": {"$in": ["completed", "partial", "approved"]}},
+            {"_id": 0, "supplier_id": 1, "supplier_name": 1},
+            sort=[("created_at", -1)]
+        )
+        if last_po and last_po.get("supplier_id"):
+            supplier_id = last_po["supplier_id"]
     
     # Get supplier info
     supplier = await get_supplier_info(db, supplier_id) if supplier_id else None
@@ -197,10 +209,19 @@ async def calculate_planning_recommendation(db, product_id: str, branch_id: str 
         recommended_qty = (min_stock * 2) - effective_stock
         needs_planning = True
     
-    # Calculate suggested order date
-    days_until_stockout = (current_stock / velocity) if velocity > 0 else 999
-    days_to_order = max(0, days_until_stockout - lead_time)
-    suggested_order_date = (datetime.now(timezone.utc) + timedelta(days=days_to_order)).strftime("%Y-%m-%d")
+    # Calculate suggested order date - more realistic calculation
+    if velocity > 0:
+        days_until_stockout = current_stock / velocity
+        # Order date should be: stockout date - lead_time, but at least today
+        days_to_order = max(0, days_until_stockout - lead_time)
+        # Cap at 30 days max in the future
+        days_to_order = min(days_to_order, 30)
+    else:
+        # No velocity = no urgency, suggest order in 7 days
+        days_until_stockout = 999
+        days_to_order = 7
+    
+    suggested_order_date = (datetime.now(timezone.utc) + timedelta(days=int(days_to_order))).strftime("%Y-%m-%d")
     
     # Determine urgency
     urgency = "none"
@@ -234,7 +255,7 @@ async def calculate_planning_recommendation(db, product_id: str, branch_id: str 
         "suggested_order_date": suggested_order_date,
         "days_until_stockout": round(days_until_stockout, 1),
         "supplier_id": supplier_id,
-        "supplier_name": supplier.get("name", "") if supplier else "",
+        "supplier_name": supplier.get("name", "") if supplier else "(Perlu dipilih)",
         "supplier_code": supplier.get("code", "") if supplier else "",
         "urgency": urgency,
         "needs_planning": needs_planning
@@ -279,10 +300,13 @@ async def generate_purchase_planning(
             skipped += 1
             continue
         
-        # Check if planning already exists for this product
+        # Check if planning already exists for this product (prevent duplicate)
+        # Include po_created to prevent re-generating for items already planned
         existing = await db.purchase_planning.find_one({
             "product_id": product["id"],
-            "status": {"$in": ["draft", "reviewed", "approved"]}
+            "status": {"$in": ["draft", "reviewed", "approved"]},
+            # Only check recent (last 7 days) to allow re-planning old items
+            "created_at": {"$gte": (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()}
         })
         
         if existing:
@@ -321,6 +345,81 @@ async def generate_purchase_planning(
         "skipped": skipped,
         "items": planning_items[:20],  # Return first 20 for preview
         "message": f"Generated {len(planning_items)} planning recommendations"
+    }
+
+
+class ManualPlanningCreate(BaseModel):
+    product_id: str
+    recommended_qty: float
+    supplier_id: Optional[str] = None
+    suggested_order_date: Optional[str] = None
+    notes: Optional[str] = ""
+    branch_id: Optional[str] = None
+    warehouse_id: Optional[str] = None
+
+@router.post("/manual")
+async def create_manual_planning(
+    data: ManualPlanningCreate,
+    user: dict = Depends(require_permission("purchase_planning", "create"))
+):
+    """Create manual planning item"""
+    db = get_database()
+    
+    # Get product info
+    product = await products.find_one({"id": data.product_id}, {"_id": 0})
+    if not product:
+        raise HTTPException(status_code=404, detail="Product tidak ditemukan")
+    
+    # Get supplier info
+    supplier = None
+    if data.supplier_id:
+        supplier = await db.suppliers.find_one({"id": data.supplier_id}, {"_id": 0})
+    
+    # Get current stock
+    current_stock = await get_current_stock(db, data.product_id, data.branch_id, data.warehouse_id)
+    
+    # Create planning item
+    planning_item = {
+        "id": str(uuid.uuid4()),
+        "product_id": data.product_id,
+        "product_code": product.get("code", ""),
+        "product_name": product.get("name", ""),
+        "category": product.get("category", ""),
+        "unit": product.get("unit", "pcs"),
+        "branch_id": data.branch_id,
+        "warehouse_id": data.warehouse_id,
+        "current_stock": current_stock,
+        "minimum_stock": product.get("minimum_stock", 0),
+        "maximum_stock": product.get("maximum_stock", 0),
+        "reorder_point": 0,
+        "safety_stock": 0,
+        "sales_velocity": 0,
+        "lead_time_days": supplier.get("lead_time_days", 7) if supplier else 7,
+        "open_po_qty": 0,
+        "effective_stock": current_stock,
+        "recommended_qty": data.recommended_qty,
+        "suggested_order_date": data.suggested_order_date or (datetime.now(timezone.utc) + timedelta(days=7)).strftime("%Y-%m-%d"),
+        "days_until_stockout": 999,
+        "supplier_id": data.supplier_id,
+        "supplier_name": supplier.get("name", "") if supplier else "(Perlu dipilih)",
+        "supplier_code": supplier.get("code", "") if supplier else "",
+        "urgency": "medium",
+        "needs_planning": True,
+        "notes": data.notes,
+        "status": "draft",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_by": user.get("user_id"),
+        "created_by_name": user.get("name"),
+        "manual_entry": True
+    }
+    
+    await db.purchase_planning.insert_one(planning_item)
+    planning_item.pop("_id", None)
+    
+    return {
+        "success": True,
+        "planning": planning_item,
+        "message": "Manual planning created"
     }
 
 @router.get("/list")

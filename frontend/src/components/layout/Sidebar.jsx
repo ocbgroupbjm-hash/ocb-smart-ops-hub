@@ -339,16 +339,6 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     },
 
     // ============================================================
-    // REPORT CENTER - Phase 4
-    // ============================================================
-    {
-      name: 'Report Center',
-      icon: BarChart3,
-      path: '/report-center',
-      roles: ['owner', 'admin', 'finance_manager', 'sales_manager']
-    },
-
-    // ============================================================
     // KPI DASHBOARD - Phase 5
     // ============================================================
     {
