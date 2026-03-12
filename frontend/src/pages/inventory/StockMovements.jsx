@@ -2,26 +2,42 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Plus, Search, Loader2, ArrowUpRight, ArrowDownLeft, X, Package } from 'lucide-react';
 import { toast } from 'sonner';
+import { SearchableSelect } from '../../components/ui/searchable-select';
+import { SearchableEnumSelect, STOCK_MOVEMENT_TYPES } from '../../components/ui/searchable-enum-select';
+import { DatePickerWithDefault } from '../../components/ui/date-picker-default';
+import { useProducts, useBranches } from '../../hooks/useMasterData';
 
 const StockMovements = () => {
-  const { api } = useAuth();
+  const { api, token } = useAuth();
   const [movements, setMovements] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
+  const [dateFilter, setDateFilter] = useState(null);
   const [showModal, setShowModal] = useState(false);
-  const [products, setProducts] = useState([]);
-  const [branches, setBranches] = useState([]);
+  
+  // Use custom hooks for master data
+  const { data: productOptions, loading: productsLoading } = useProducts(token);
+  const { data: branchOptions, loading: branchesLoading } = useBranches(token);
+  
   const [formData, setFormData] = useState({
     product_id: '', branch_id: '', movement_type: 'stock_in', quantity: 0, notes: ''
   });
+
+  // Movement type options for filter
+  const filterMovementTypes = [
+    { value: 'stock_in', label: 'Stok Masuk', color: 'green' },
+    { value: 'stock_out', label: 'Stok Keluar', color: 'red' },
+    { value: 'adjustment', label: 'Penyesuaian', color: 'yellow' },
+  ];
 
   const loadMovements = useCallback(async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams({
         ...(searchTerm && { search: searchTerm }),
-        ...(typeFilter && { movement_type: typeFilter })
+        ...(typeFilter && { movement_type: typeFilter }),
+        ...(dateFilter && { date: dateFilter.toISOString().split('T')[0] })
       });
       const res = await api(`/api/inventory/movements?${params}`);
       if (res.ok) {
@@ -33,29 +49,11 @@ const StockMovements = () => {
     } finally {
       setLoading(false);
     }
-  }, [api, searchTerm, typeFilter]);
-
-  const loadMasterData = useCallback(async () => {
-    try {
-      const [prodRes, branchRes] = await Promise.all([
-        api('/api/products'),
-        api('/api/branches')
-      ]);
-      if (prodRes.ok) {
-        const data = await prodRes.json();
-        setProducts(data.items || data || []);
-      }
-      if (branchRes.ok) {
-        const data = await branchRes.json();
-        setBranches(data.items || data || []);
-      }
-    } catch (err) { console.error('Error loading master data'); }
-  }, [api]);
+  }, [api, searchTerm, typeFilter, dateFilter]);
 
   useEffect(() => {
     loadMovements();
-    loadMasterData();
-  }, [loadMovements, loadMasterData]);
+  }, [loadMovements]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -95,7 +93,7 @@ const StockMovements = () => {
 
       {/* Filters */}
       <div className="bg-[#1a1214] border border-red-900/30 rounded-xl p-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <input
@@ -104,18 +102,34 @@ const StockMovements = () => {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 bg-[#0a0608] border border-red-900/30 rounded-lg text-gray-200"
+              data-testid="search-product-input"
             />
           </div>
-          <select
+          <SearchableEnumSelect
+            options={filterMovementTypes}
             value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value)}
-            className="px-4 py-2 bg-[#0a0608] border border-red-900/30 rounded-lg text-gray-200"
-          >
-            <option value="">Semua Tipe</option>
-            <option value="stock_in">Stok Masuk</option>
-            <option value="stock_out">Stok Keluar</option>
-            <option value="adjustment">Penyesuaian</option>
-          </select>
+            onValueChange={setTypeFilter}
+            placeholder="Semua Tipe"
+            showAllOption={true}
+            allOptionLabel="Semua Tipe"
+            data-testid="filter-movement-type"
+          />
+          <DatePickerWithDefault
+            value={dateFilter}
+            onValueChange={setDateFilter}
+            placeholder="Filter tanggal"
+            defaultToday={false}
+            allowClear={true}
+            data-testid="filter-date"
+          />
+          <SearchableSelect
+            options={branchOptions}
+            value=""
+            onValueChange={(val) => setSearchTerm(val ? branchOptions.find(b => b.value === val)?.label : '')}
+            placeholder="Filter Cabang"
+            searchPlaceholder="Ketik nama cabang..."
+            data-testid="filter-branch"
+          />
         </div>
       </div>
 
@@ -178,50 +192,54 @@ const StockMovements = () => {
             <form onSubmit={handleSubmit} className="p-4 space-y-4">
               <div>
                 <label className="block text-sm text-gray-400 mb-1">Produk *</label>
-                <select value={formData.product_id} onChange={(e) => setFormData({ ...formData, product_id: e.target.value })}
-                  className="w-full px-3 py-2 bg-[#0a0608] border border-red-900/30 rounded-lg" required>
-                  <option value="">Pilih produk</option>
-                  {products.map(p => (
-                    <option key={p.id} value={p.id}>{p.name}</option>
-                  ))}
-                </select>
+                <SearchableSelect
+                  options={productOptions}
+                  value={formData.product_id}
+                  onValueChange={(val) => setFormData({ ...formData, product_id: val })}
+                  placeholder="Ketik nama/kode produk..."
+                  searchPlaceholder="Cari produk..."
+                  data-testid="form-product-select"
+                />
               </div>
               <div>
                 <label className="block text-sm text-gray-400 mb-1">Cabang</label>
-                <select value={formData.branch_id} onChange={(e) => setFormData({ ...formData, branch_id: e.target.value })}
-                  className="w-full px-3 py-2 bg-[#0a0608] border border-red-900/30 rounded-lg">
-                  <option value="">Pilih cabang</option>
-                  {branches.map(b => (
-                    <option key={b.id} value={b.id}>{b.name}</option>
-                  ))}
-                </select>
+                <SearchableSelect
+                  options={branchOptions}
+                  value={formData.branch_id}
+                  onValueChange={(val) => setFormData({ ...formData, branch_id: val })}
+                  placeholder="Pilih cabang..."
+                  searchPlaceholder="Cari cabang..."
+                  data-testid="form-branch-select"
+                />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm text-gray-400 mb-1">Tipe *</label>
-                  <select value={formData.movement_type} onChange={(e) => setFormData({ ...formData, movement_type: e.target.value })}
-                    className="w-full px-3 py-2 bg-[#0a0608] border border-red-900/30 rounded-lg">
-                    <option value="stock_in">Stok Masuk</option>
-                    <option value="stock_out">Stok Keluar</option>
-                    <option value="adjustment">Penyesuaian</option>
-                  </select>
+                  <SearchableEnumSelect
+                    options={filterMovementTypes}
+                    value={formData.movement_type}
+                    onValueChange={(val) => setFormData({ ...formData, movement_type: val })}
+                    placeholder="Pilih tipe..."
+                    data-testid="form-movement-type"
+                  />
                 </div>
                 <div>
                   <label className="block text-sm text-gray-400 mb-1">Jumlah *</label>
                   <input type="number" min="1" value={formData.quantity}
                     onChange={(e) => setFormData({ ...formData, quantity: Number(e.target.value) })}
-                    className="w-full px-3 py-2 bg-[#0a0608] border border-red-900/30 rounded-lg" required />
+                    className="w-full px-3 py-2 bg-[#0a0608] border border-red-900/30 rounded-lg text-amber-100" required 
+                    data-testid="form-quantity" />
                 </div>
               </div>
               <div>
                 <label className="block text-sm text-gray-400 mb-1">Catatan</label>
                 <textarea value={formData.notes} onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                  className="w-full px-3 py-2 bg-[#0a0608] border border-red-900/30 rounded-lg" rows={2}
-                  placeholder="Alasan adjustment, referensi, dll" />
+                  className="w-full px-3 py-2 bg-[#0a0608] border border-red-900/30 rounded-lg text-amber-100" rows={2}
+                  placeholder="Alasan adjustment, referensi, dll" data-testid="form-notes" />
               </div>
               <div className="flex justify-end gap-3 pt-4 border-t border-red-900/30">
-                <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 border border-red-900/30 rounded-lg">Batal</button>
-                <button type="submit" className="px-4 py-2 bg-gradient-to-r from-red-600 to-amber-600 text-white rounded-lg">Simpan</button>
+                <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 border border-red-900/30 rounded-lg text-amber-100">Batal</button>
+                <button type="submit" className="px-4 py-2 bg-gradient-to-r from-red-600 to-amber-600 text-white rounded-lg" data-testid="form-submit">Simpan</button>
               </div>
             </form>
           </div>

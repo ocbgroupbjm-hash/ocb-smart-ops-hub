@@ -5,8 +5,26 @@ import {
   FileText, ChevronRight, TrendingUp, Building2, ArrowRight
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { SearchableEnumSelect, STATUS_OPTIONS, URGENCY_OPTIONS } from '../components/ui/searchable-enum-select';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
+
+// Status options for planning
+const planningStatusOptions = [
+  { value: 'draft', label: 'Draft', color: 'gray' },
+  { value: 'reviewed', label: 'Reviewed', color: 'blue' },
+  { value: 'approved', label: 'Approved', color: 'green' },
+  { value: 'po_created', label: 'PO Created', color: 'purple' },
+  { value: 'cancelled', label: 'Cancelled', color: 'red' },
+];
+
+const planningUrgencyOptions = [
+  { value: 'critical', label: 'Critical', color: 'red' },
+  { value: 'high', label: 'High', color: 'orange' },
+  { value: 'medium', label: 'Medium', color: 'yellow' },
+  { value: 'low', label: 'Low', color: 'blue' },
+  { value: 'none', label: 'None', color: 'green' },
+];
 
 // Status Badge
 const StatusBadge = ({ status }) => {
@@ -327,30 +345,29 @@ const PurchasePlanning = () => {
           </div>
         </div>
         
-        <select
-          value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value)}
-          className="px-4 py-2 bg-black/30 border border-red-900/30 rounded-lg text-amber-100"
-          data-testid="filter-status"
-        >
-          <option value="">Semua Status</option>
-          <option value="draft">Draft</option>
-          <option value="reviewed">Reviewed</option>
-          <option value="approved">Approved</option>
-          <option value="po_created">PO Created</option>
-        </select>
+        <div className="w-40">
+          <SearchableEnumSelect
+            options={planningStatusOptions}
+            value={filterStatus}
+            onValueChange={setFilterStatus}
+            placeholder="Semua Status"
+            showAllOption={true}
+            allOptionLabel="Semua Status"
+            data-testid="filter-status"
+          />
+        </div>
         
-        <select
-          value={filterUrgency}
-          onChange={(e) => setFilterUrgency(e.target.value)}
-          className="px-4 py-2 bg-black/30 border border-red-900/30 rounded-lg text-amber-100"
-          data-testid="filter-urgency"
-        >
-          <option value="">Semua Urgency</option>
-          <option value="critical">Critical</option>
-          <option value="high">High</option>
-          <option value="medium">Medium</option>
-        </select>
+        <div className="w-40">
+          <SearchableEnumSelect
+            options={planningUrgencyOptions}
+            value={filterUrgency}
+            onValueChange={setFilterUrgency}
+            placeholder="Semua Urgency"
+            showAllOption={true}
+            allOptionLabel="Semua Urgency"
+            data-testid="filter-urgency"
+          />
+        </div>
         
         {selectedItems.length === 0 && plannings.some(p => p.status === 'approved') && (
           <button

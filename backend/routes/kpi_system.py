@@ -550,7 +550,7 @@ async def kpi_finance_overview(
         
         try:
             due_date = datetime.strptime(due_date_str[:10], "%Y-%m-%d").replace(tzinfo=timezone.utc)
-        except:
+        except ValueError:
             continue
         
         days = (today - due_date).days
@@ -588,7 +588,7 @@ async def kpi_finance_overview(
         
         try:
             due_date = datetime.strptime(due_date_str[:10], "%Y-%m-%d").replace(tzinfo=timezone.utc)
-        except:
+        except ValueError:
             continue
         
         days = (today - due_date).days
@@ -612,7 +612,6 @@ async def kpi_finance_overview(
     
     # Cash Position
     # Get today's cash from shifts
-    today_str = today.strftime("%Y-%m-%d")
     open_shifts = await db.cashier_shifts.find({
         "status": "open"
     }, {"_id": 0}).to_list(100)

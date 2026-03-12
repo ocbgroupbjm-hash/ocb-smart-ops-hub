@@ -6,6 +6,8 @@ import {
   ArrowUp, ArrowDown, Minus
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { SearchableEnumSelect } from '../components/ui/searchable-enum-select';
+import { DatePickerWithDefault, DateRangePickerWithDefault } from '../components/ui/date-picker-default';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -116,8 +118,18 @@ const ReportCenter = () => {
   
   // Filters
   const [period, setPeriod] = useState('month');
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
+  const [dateFrom, setDateFrom] = useState(new Date());
+  const [dateTo, setDateTo] = useState(new Date());
+  
+  // Period options for searchable enum
+  const periodOptions = [
+    { value: 'today', label: 'Hari Ini' },
+    { value: 'week', label: 'Minggu Ini' },
+    { value: 'month', label: 'Bulan Ini' },
+    { value: 'quarter', label: 'Kuartal Ini' },
+    { value: 'year', label: 'Tahun Ini' },
+    { value: 'custom', label: 'Custom Range' },
+  ];
 
   // Load report categories
   useEffect(() => {
@@ -144,8 +156,8 @@ const ReportCenter = () => {
       
       const params = new URLSearchParams();
       params.append('period', period);
-      if (dateFrom) params.append('date_from', dateFrom);
-      if (dateTo) params.append('date_to', dateTo);
+      if (dateFrom) params.append('date_from', dateFrom instanceof Date ? dateFrom.toISOString().split('T')[0] : dateFrom);
+      if (dateTo) params.append('date_to', dateTo instanceof Date ? dateTo.toISOString().split('T')[0] : dateTo);
       
       const res = await fetch(`${API_URL}${endpoint}?${params}`, {
         headers: { 'Authorization': `Bearer ${token}` }
@@ -505,36 +517,25 @@ const ReportCenter = () => {
       <div className="flex flex-wrap gap-4 items-center bg-[#1a1214] border border-red-900/30 rounded-xl p-4">
         <div className="flex items-center gap-2">
           <Calendar className="h-4 w-4 text-gray-400" />
-          <select
+          <SearchableEnumSelect
+            options={periodOptions}
             value={period}
-            onChange={(e) => setPeriod(e.target.value)}
-            className="px-3 py-2 bg-black/30 border border-red-900/30 rounded-lg text-amber-100 text-sm"
+            onValueChange={setPeriod}
+            placeholder="Pilih periode..."
+            className="w-40"
             data-testid="period-select"
-          >
-            <option value="today">Hari Ini</option>
-            <option value="week">Minggu Ini</option>
-            <option value="month">Bulan Ini</option>
-            <option value="quarter">Kuartal Ini</option>
-            <option value="year">Tahun Ini</option>
-          </select>
+          />
         </div>
         
         <div className="flex items-center gap-2">
           <Filter className="h-4 w-4 text-gray-400" />
-          <input
-            type="date"
-            value={dateFrom}
-            onChange={(e) => setDateFrom(e.target.value)}
-            className="px-3 py-2 bg-black/30 border border-red-900/30 rounded-lg text-amber-100 text-sm"
-            placeholder="From"
-          />
-          <span className="text-gray-500">-</span>
-          <input
-            type="date"
-            value={dateTo}
-            onChange={(e) => setDateTo(e.target.value)}
-            className="px-3 py-2 bg-black/30 border border-red-900/30 rounded-lg text-amber-100 text-sm"
-            placeholder="To"
+          <DateRangePickerWithDefault
+            startDate={dateFrom}
+            endDate={dateTo}
+            onStartDateChange={setDateFrom}
+            onEndDateChange={setDateTo}
+            defaultToday={true}
+            data-testid="date-range-filter"
           />
         </div>
         
@@ -542,6 +543,7 @@ const ReportCenter = () => {
           <button
             onClick={() => fetchReport(activeReport)}
             className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-sm"
+            data-testid="apply-filter-btn"
           >
             Apply Filter
           </button>

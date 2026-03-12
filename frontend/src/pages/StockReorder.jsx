@@ -5,8 +5,17 @@ import {
   ArrowDown, ArrowUp, Clock, Truck, AlertCircle, CheckCircle2
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { SearchableEnumSelect, URGENCY_OPTIONS } from '../components/ui/searchable-enum-select';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
+
+// Urgency options for reorder
+const reorderUrgencyOptions = [
+  { value: 'critical', label: 'Kritis', color: 'red' },
+  { value: 'high', label: 'Tinggi', color: 'orange' },
+  { value: 'medium', label: 'Sedang', color: 'yellow' },
+  { value: 'low', label: 'Rendah', color: 'blue' },
+];
 
 // Urgency Badge
 const UrgencyBadge = ({ urgency }) => {
@@ -354,18 +363,17 @@ const StockReorder = () => {
           </div>
         </div>
         
-        <select
-          value={urgencyFilter}
-          onChange={(e) => setUrgencyFilter(e.target.value)}
-          className="px-4 py-2 bg-black/30 border border-red-900/30 rounded-lg text-amber-100"
-          data-testid="urgency-filter"
-        >
-          <option value="">Semua Urgency</option>
-          <option value="critical">Kritis</option>
-          <option value="high">Tinggi</option>
-          <option value="medium">Sedang</option>
-          <option value="low">Rendah</option>
-        </select>
+        <div className="w-44">
+          <SearchableEnumSelect
+            options={reorderUrgencyOptions}
+            value={urgencyFilter}
+            onValueChange={setUrgencyFilter}
+            placeholder="Semua Urgency"
+            showAllOption={true}
+            allOptionLabel="Semua Urgency"
+            data-testid="urgency-filter"
+          />
+        </div>
       </div>
 
       {/* Suggestions List */}
