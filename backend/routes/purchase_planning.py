@@ -494,21 +494,26 @@ async def create_po_from_planning(
     # Create PO drafts
     created_pos = []
     for supplier_id, supplier_data in by_supplier.items():
-        po_no = f"PO-PLAN-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}-{len(created_pos)+1}"
+        po_number = f"PO-PLAN-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}-{len(created_pos)+1}"
         
         po = {
             "id": str(uuid.uuid4()),
-            "po_no": po_no,
+            "po_number": po_number,  # Use po_number to match Purchase module
+            "po_no": po_number,  # Keep for backward compatibility
             "supplier_id": supplier_id,
             "supplier_name": supplier_data["supplier_name"],
             "items": supplier_data["items"],
             "total_items": len(supplier_data["items"]),
             "total_qty": sum(i["quantity"] for i in supplier_data["items"]),
+            "subtotal": 0,
+            "total": 0,
             "status": "draft",
             "source": "purchase_planning",
+            "branch_id": user.get("branch_id"),
             "created_at": datetime.now(timezone.utc).isoformat(),
             "created_by": user.get("user_id"),
-            "created_by_name": user.get("name")
+            "created_by_name": user.get("name"),
+            "user_id": user.get("user_id")
         }
         
         await db.purchase_orders.insert_one(po)
@@ -523,7 +528,8 @@ async def create_po_from_planning(
             {"$set": {
                 "status": "po_created",
                 "po_id": po["id"],
-                "po_no": po_no,
+                "po_no": po_number,
+                "po_number": po_number,
                 "po_created_at": datetime.now(timezone.utc).isoformat()
             }}
         )
@@ -542,7 +548,7 @@ async def create_po_from_planning(
     return {
         "success": True,
         "created_pos": len(created_pos),
-        "po_list": [{"po_no": po["po_no"], "supplier": po["supplier_name"], "items": po["total_items"]} for po in created_pos],
+        "po_list": [{"po_number": po["po_number"], "supplier": po["supplier_name"], "items": po["total_items"]} for po in created_pos],
         "message": f"Created {len(created_pos)} PO drafts"
     }
 

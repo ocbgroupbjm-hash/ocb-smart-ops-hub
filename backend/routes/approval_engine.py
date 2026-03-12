@@ -73,14 +73,18 @@ async def get_user_approval_scope(user: dict) -> Dict[str, Any]:
     role_level = role.get("level", 99) if role else 99
     inherit_all = role.get("inherit_all", False) if role else False
     
+    # RBAC ENFORCEMENT: Only owner and admin can manage approval rules
+    # This is a critical security control
+    is_owner_or_admin = role_code in ["owner", "admin"] or inherit_all or role_level <= 1
+    
     return {
         "user_id": user_id,
         "user_name": user.get("name", ""),
         "role_code": role_code,
         "role_level": role_level,
         "branch_id": branch_id,
-        "is_admin": inherit_all or role_level <= 1,
-        "can_manage_rules": inherit_all or role_level <= 2,
+        "is_admin": is_owner_or_admin,
+        "can_manage_rules": is_owner_or_admin,  # RESTRICTED: Only owner/admin
         "can_approve": role_level <= 5
     }
 
@@ -260,11 +264,14 @@ async def create_approval_rule(
     request: Request,
     user: dict = Depends(get_current_user)
 ):
-    """Create new approval rule"""
+    """Create new approval rule - RESTRICTED TO OWNER/ADMIN ONLY"""
     scope = await get_user_approval_scope(user)
     
     if not scope["can_manage_rules"]:
-        raise HTTPException(status_code=403, detail="AKSES DITOLAK")
+        raise HTTPException(
+            status_code=403, 
+            detail="AKSES DITOLAK - Hanya Owner dan Admin yang dapat membuat approval rules"
+        )
     
     if data.module not in APPROVAL_MODULES:
         raise HTTPException(status_code=400, detail=f"Module tidak valid: {data.module}")
@@ -309,11 +316,14 @@ async def update_approval_rule(
     request: Request,
     user: dict = Depends(get_current_user)
 ):
-    """Update approval rule"""
+    """Update approval rule - RESTRICTED TO OWNER/ADMIN ONLY"""
     scope = await get_user_approval_scope(user)
     
     if not scope["can_manage_rules"]:
-        raise HTTPException(status_code=403, detail="AKSES DITOLAK")
+        raise HTTPException(
+            status_code=403, 
+            detail="AKSES DITOLAK - Hanya Owner dan Admin yang dapat mengubah approval rules"
+        )
     
     existing = await approval_rules.find_one({"id": rule_id}, {"_id": 0})
     if not existing:
@@ -330,7 +340,9 @@ async def update_approval_rule(
             "approval_levels": data.approval_levels,
             "branch_id": data.branch_id,
             "active": data.active,
-            "updated_at": datetime.now(timezone.utc).isoformat()
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+            "updated_by": scope["user_id"],
+            "updated_by_name": scope["user_name"]
         }}
     )
     
@@ -351,11 +363,14 @@ async def delete_approval_rule(
     request: Request,
     user: dict = Depends(get_current_user)
 ):
-    """Delete approval rule"""
+    """Delete approval rule - RESTRICTED TO OWNER/ADMIN ONLY"""
     scope = await get_user_approval_scope(user)
     
     if not scope["can_manage_rules"]:
-        raise HTTPException(status_code=403, detail="AKSES DITOLAK")
+        raise HTTPException(
+            status_code=403, 
+            detail="AKSES DITOLAK - Hanya Owner dan Admin yang dapat menghapus approval rules"
+        )
     
     existing = await approval_rules.find_one({"id": rule_id}, {"_id": 0})
     if not existing:
@@ -364,7 +379,20 @@ async def delete_approval_rule(
     # Soft delete by deactivating
     await approval_rules.update_one(
         {"id": rule_id},
-        {"$set": {"active": False, "updated_at": datetime.now(timezone.utc).isoformat()}}
+        {"$set": {
+            "active": False, 
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+            "deleted_by": scope["user_id"],
+            "deleted_by_name": scope["user_name"]
+        }}
+    )
+    
+    await log_activity(
+        db, scope["user_id"], scope["user_name"],
+        "delete", "approval_rules",
+        f"Menghapus rule approval: {existing.get('rule_name', rule_id)}",
+        request.client.host if request.client else "",
+        scope["branch_id"]
     )
     
     return {"message": "Rule berhasil dihapus"}

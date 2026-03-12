@@ -531,6 +531,7 @@ async def generate_purchase_order_draft(
     product_ids: Optional[List[str]] = None,
     branch_id: Optional[str] = None,
     urgency_filter: Optional[str] = None,  # critical, high
+    save_to_db: bool = False,  # New parameter to save drafts to database
     user: dict = Depends(require_permission("purchase", "create"))
 ):
     """Generate draft purchase orders from reorder suggestions"""
@@ -555,9 +556,12 @@ async def generate_purchase_order_draft(
     for s in suggestions:
         supplier_id = s.get("supplier_id") or "unknown"
         if supplier_id not in by_supplier:
+            # Get supplier details
+            supplier = await db.suppliers.find_one({"id": supplier_id}, {"_id": 0})
             by_supplier[supplier_id] = {
                 "supplier_id": supplier_id,
-                "supplier_name": s.get("supplier_name", "Unknown"),
+                "supplier_name": supplier.get("name", "Unknown") if supplier else s.get("supplier_name", "Unknown"),
+                "supplier_code": supplier.get("code", "") if supplier else "",
                 "items": []
             }
         by_supplier[supplier_id]["items"].append({
@@ -566,34 +570,69 @@ async def generate_purchase_order_draft(
             "product_name": s["product_name"],
             "unit": s["unit"],
             "quantity": s["suggested_qty"],
+            "unit_cost": 0,  # Will be filled by user or from price history
+            "subtotal": 0,
             "urgency": s["urgency"],
             "current_stock": s["current_stock"],
-            "minimum_stock": s["minimum_stock"]
+            "minimum_stock": s["minimum_stock"],
+            "reorder_source_id": s.get("product_id")  # Link back to reorder suggestion
         })
     
-    # Create draft POs (tidak disimpan, hanya preview)
     drafts = []
+    saved_count = 0
+    
     for supplier_id, data in by_supplier.items():
+        po_id = str(uuid.uuid4())
+        po_no = f"PO-REORDER-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}-{len(drafts)+1}"
+        
         draft = {
-            "draft_id": str(uuid.uuid4()),
+            "id": po_id,
+            "po_number": po_no,
             "supplier_id": supplier_id,
             "supplier_name": data["supplier_name"],
             "branch_id": branch_id or user.get("branch_id"),
             "items": data["items"],
             "total_items": len(data["items"]),
             "total_qty": sum(i["quantity"] for i in data["items"]),
+            "subtotal": 0,
+            "total": 0,
             "status": "draft",
+            "source": "stock_reorder",
             "created_at": datetime.now(timezone.utc).isoformat(),
-            "created_by": user.get("name")
+            "created_by": user.get("user_id"),
+            "created_by_name": user.get("name"),
+            "user_id": user.get("user_id")
         }
+        
+        # Save to database if requested
+        if save_to_db:
+            await db.purchase_orders.insert_one(draft)
+            saved_count += 1
+            # Remove _id for response
+            draft.pop("_id", None)
+        
         drafts.append(draft)
+    
+    # Audit log if saved
+    if save_to_db and saved_count > 0:
+        await db.audit_logs.insert_one({
+            "id": str(uuid.uuid4()),
+            "action": "generate_po_from_reorder",
+            "module": "stock_reorder",
+            "description": f"Generated {saved_count} PO drafts from stock reorder. Items: {sum(d['total_items'] for d in drafts)}",
+            "user_id": user.get("user_id"),
+            "user_name": user.get("name"),
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        })
     
     return {
         "success": True,
         "drafts": drafts,
         "total_drafts": len(drafts),
         "total_items": sum(d["total_items"] for d in drafts),
-        "message": f"Generated {len(drafts)} draft PO dari {len(suggestions)} item"
+        "saved_to_database": save_to_db,
+        "saved_count": saved_count,
+        "message": f"Generated {len(drafts)} draft PO dari {len(suggestions)} item" + (f" - {saved_count} saved to database" if save_to_db else " (preview only)")
     }
 
 # ==================== DASHBOARD & REPORTS ====================

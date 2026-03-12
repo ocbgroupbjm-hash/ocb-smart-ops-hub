@@ -201,7 +201,7 @@ const StockReorder = () => {
     fetchSuggestions();
   };
 
-  const generatePODraft = async () => {
+  const generatePODraft = async (saveToDb = false) => {
     try {
       const res = await fetch(`${API_URL}/api/stock-reorder/generate-po-draft`, {
         method: 'POST',
@@ -209,12 +209,21 @@ const StockReorder = () => {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ urgency_filter: 'critical' })
+        body: JSON.stringify({ 
+          urgency_filter: urgencyFilter || null,
+          save_to_db: saveToDb 
+        })
       });
       const data = await res.json();
       
       if (data.success) {
-        alert(`Berhasil generate ${data.total_drafts} draft PO dengan ${data.total_items} item`);
+        if (saveToDb) {
+          alert(`Berhasil membuat ${data.saved_count} PO Draft di Purchase Module dengan ${data.total_items} item`);
+        } else {
+          alert(`Preview: ${data.total_drafts} draft PO dengan ${data.total_items} item\n\nKlik "Save PO Draft" untuk menyimpan ke database`);
+        }
+      } else {
+        alert(data.message || 'Tidak ada item untuk di-reorder');
       }
     } catch (err) {
       alert('Gagal generate PO draft');
@@ -238,12 +247,20 @@ const StockReorder = () => {
         </div>
         <div className="flex gap-2">
           <button
-            onClick={generatePODraft}
+            onClick={() => generatePODraft(false)}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg"
+            data-testid="preview-po-btn"
+          >
+            <FileText className="h-4 w-4" />
+            Preview PO
+          </button>
+          <button
+            onClick={() => generatePODraft(true)}
             className="flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-lg"
             data-testid="generate-po-btn"
           >
-            <FileText className="h-4 w-4" />
-            Generate PO Draft
+            <ShoppingCart className="h-4 w-4" />
+            Save PO Draft
           </button>
           <button
             onClick={handleRefresh}
