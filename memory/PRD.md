@@ -426,4 +426,35 @@ Membangun sistem ERP retail komprehensif (OCB TITAN) dengan fitur POS, Inventory
 
 ---
 
-*Last Updated: 2026-03-13 (Phase 9 - Tenant Registry Sinkronisasi Complete)*
+### Phase 10: Header Tenant Badge ✅
+**Completed (2026-03-13):**
+
+**Fitur yang Ditambahkan:**
+1. **API Endpoint Baru:**
+   - `GET /api/system/current-tenant` - Info tenant aktif untuk header
+   - `GET /api/system/current-tenant/debug` - Detail info untuk admin
+
+2. **Header Badge:**
+   - Menampilkan: Tenant Name | Database Key | Tenant Type | Status
+   - Icon berbeda per tenant type (building, store, truck, shirt, monitor)
+   - Warna status: Active (hijau), Test (kuning), Internal (abu)
+   - Blueprint version untuk owner
+
+3. **Auto-update saat Switch Tenant:**
+   - Event listener `tenant-switched` untuk refresh otomatis
+   - Header berubah sesuai tenant yang dipilih
+
+**Screenshot Bukti:**
+- ocb_titan: `Tenant: OCB GROUP | Database: ocb_titan | Type: Retail & Distribusi | ACTIVE`
+- ocb_baju: `Tenant: OCB BAJU | Database: ocb_baju | Type: Fashion | ACTIVE`
+
+**Files Created/Updated:**
+- `/app/backend/routes/system_info.py` - API endpoint baru
+- `/app/backend/server.py` - Register router
+- `/app/frontend/src/components/layout/DashboardLayout.jsx` - Header badge
+- `/app/frontend/src/components/layout/Header.jsx` - Backup header
+- `/app/frontend/src/pages/Login.jsx` - Dispatch tenant-switched event
+
+---
+
+*Last Updated: 2026-03-13 (Phase 10 - Header Tenant Badge Complete)*

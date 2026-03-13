@@ -78,6 +78,9 @@ const Login = () => {
         method: 'POST'
       });
       
+      // Dispatch event to update header
+      window.dispatchEvent(new CustomEvent('tenant-switched'));
+      
       toast.success(`Database: ${business.name}`);
       setStep(2); // Move to login step
     } catch (err) {

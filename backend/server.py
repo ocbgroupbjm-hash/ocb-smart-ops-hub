@@ -275,6 +275,10 @@ app.include_router(db_init_router)
 from routes.tenant_blueprint import router as tenant_blueprint_router
 app.include_router(tenant_blueprint_router)
 
+# System Info API (Current Tenant for Header Display)
+from routes.system_info import router as system_info_router
+app.include_router(system_info_router)
+
 
 
 # Health check

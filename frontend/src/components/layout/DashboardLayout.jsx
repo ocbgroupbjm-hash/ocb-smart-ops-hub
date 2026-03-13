@@ -1,11 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import Sidebar from './Sidebar';
-import { Menu, AlertTriangle, Clock } from 'lucide-react';
+import { Menu, AlertTriangle, Clock, Database, Building2, Store, Truck, Shirt, Monitor } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import axios from 'axios';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
+
+// Icon mapping for tenant types
+const tenantIconMap = {
+  building: Building2,
+  store: Store,
+  truck: Truck,
+  shirt: Shirt,
+  monitor: Monitor,
+};
+
+// Get status color
+const getStatusColor = (status) => {
+  switch (status) {
+    case 'active': return 'bg-emerald-600/20 text-emerald-400 border-emerald-600/30';
+    case 'test': return 'bg-yellow-600/20 text-yellow-400 border-yellow-600/30';
+    case 'internal': return 'bg-gray-600/20 text-gray-400 border-gray-600/30';
+    default: return 'bg-red-600/20 text-red-400 border-red-600/30';
+  }
+};
 
 export const DashboardLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -15,9 +34,37 @@ export const DashboardLayout = () => {
   
   const [shiftStatus, setShiftStatus] = useState({ loading: true, hasActiveShift: false });
   const [showShiftBanner, setShowShiftBanner] = useState(false);
+  const [tenantInfo, setTenantInfo] = useState(null);
   
   const userRole = user?.role?.toLowerCase();
   const isKasir = userRole === 'kasir' || userRole === 'cashier';
+
+  // Fetch current tenant info
+  useEffect(() => {
+    const fetchTenantInfo = async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/system/current-tenant`);
+        if (res.ok) {
+          const data = await res.json();
+          setTenantInfo(data);
+        }
+      } catch (err) {
+        console.error('Failed to fetch tenant info:', err);
+      }
+    };
+    
+    fetchTenantInfo();
+    
+    // Listen for tenant switch events
+    const handleTenantSwitch = () => fetchTenantInfo();
+    window.addEventListener('tenant-switched', handleTenantSwitch);
+    window.addEventListener('focus', handleTenantSwitch);
+    
+    return () => {
+      window.removeEventListener('tenant-switched', handleTenantSwitch);
+      window.removeEventListener('focus', handleTenantSwitch);
+    };
+  }, []);
 
   // Check shift status for kasir
   useEffect(() => {
@@ -97,6 +144,51 @@ export const DashboardLayout = () => {
       <Sidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
       
       <main className="flex-1 overflow-auto">
+        {/* Desktop Header with Tenant Info */}
+        <div className="hidden lg:flex items-center justify-between px-6 py-3 border-b border-red-900/20 bg-gradient-to-r from-[#0a0608]/90 to-[#120a0c]/90 backdrop-blur-xl">
+          {/* Tenant Badge */}
+          {tenantInfo && (
+            <div 
+              data-testid="tenant-badge"
+              className="flex items-center gap-3 px-4 py-2 bg-[#1a1214] rounded-lg border border-red-900/30"
+            >
+              <div 
+                className="p-2 rounded-md"
+                style={{ backgroundColor: `${tenantInfo.color}20` }}
+              >
+                {React.createElement(tenantIconMap[tenantInfo.icon] || Database, {
+                  className: "h-5 w-5",
+                  style: { color: tenantInfo.color }
+                })}
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs text-gray-400">Tenant</span>
+                <span className="text-sm font-semibold text-amber-100">{tenantInfo.tenant_name}</span>
+              </div>
+              <div className="h-10 w-px bg-red-900/30" />
+              <div className="flex flex-col">
+                <span className="text-xs text-gray-400">Database</span>
+                <span className="text-sm font-mono text-amber-200/80">{tenantInfo.database}</span>
+              </div>
+              <div className="h-10 w-px bg-red-900/30" />
+              <div className="flex flex-col">
+                <span className="text-xs text-gray-400">Type</span>
+                <span className="text-sm text-gray-300">{tenantInfo.tenant_type}</span>
+              </div>
+              <span className={`ml-2 px-2.5 py-1 text-xs uppercase font-bold rounded-full border ${getStatusColor(tenantInfo.status)}`}>
+                {tenantInfo.status}
+              </span>
+            </div>
+          )}
+          
+          {/* Blueprint Version for Admin */}
+          {tenantInfo && user?.role === 'owner' && (
+            <div className="text-xs text-gray-500">
+              Blueprint v{tenantInfo.blueprint_version}
+            </div>
+          )}
+        </div>
+        
         {/* Mobile Header */}
         <div className="lg:hidden flex items-center justify-between p-4 border-b border-red-900/20 bg-[#0a0608]">
           <button
@@ -105,7 +197,18 @@ export const DashboardLayout = () => {
           >
             <Menu className="h-6 w-6" />
           </button>
-          <h1 className="text-lg font-bold text-amber-100">OCB SUPER AI</h1>
+          
+          {/* Mobile Tenant Badge */}
+          {tenantInfo && (
+            <div className="flex items-center gap-2 px-2 py-1 bg-[#1a1214] rounded-md border border-red-900/30">
+              <Database className="h-4 w-4 text-amber-500" />
+              <span className="text-xs font-mono text-amber-200/80">{tenantInfo.database}</span>
+              <span className={`px-1.5 py-0.5 text-[10px] uppercase font-bold rounded ${getStatusColor(tenantInfo.status)}`}>
+                {tenantInfo.status}
+              </span>
+            </div>
+          )}
+          
           <div className="w-10" />
         </div>
 
