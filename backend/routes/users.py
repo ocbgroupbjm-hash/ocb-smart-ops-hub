@@ -227,7 +227,12 @@ async def change_password(user_id: str, data: ChangePassword, user: dict = Depen
 
 @router.delete("/{user_id}")
 async def delete_user(user_id: str, hard: bool = False, request: Request = None, user: dict = Depends(require_permission("master_user", "delete"))):
-    """Delete user (soft or hard delete) - Requires master_user.delete permission"""
+    """Delete user (soft or hard delete) - Requires master_user.delete permission
+    
+    Soft Delete Rules:
+    - Jika user memiliki transaksi, tidak boleh delete, hanya bisa deactivate
+    - Transaksi yang dicek: sales_invoices, purchases, journal_entries, stock_movements
+    """
     if user.get("role") not in ["owner", "admin"]:
         raise HTTPException(status_code=403, detail="Insufficient permissions")
     
@@ -238,35 +243,91 @@ async def delete_user(user_id: str, hard: bool = False, request: Request = None,
     if not target:
         raise HTTPException(status_code=404, detail="User not found")
     
-    if hard and user.get("role") == "owner":
-        # Hard delete - only owner can do this
+    db = get_db()
+    
+    # Check if user has transactions (SSOT check)
+    transaction_count = 0
+    transaction_types = []
+    
+    # Check sales
+    sales_count = await db["sales_invoices"].count_documents({"user_id": user_id})
+    if sales_count > 0:
+        transaction_count += sales_count
+        transaction_types.append(f"sales: {sales_count}")
+    
+    # Check purchases
+    purchase_count = await db["purchase_orders"].count_documents({"user_id": user_id})
+    if purchase_count > 0:
+        transaction_count += purchase_count
+        transaction_types.append(f"purchases: {purchase_count}")
+    
+    # Check journals
+    journal_count = await db["journal_entries"].count_documents({"created_by": user_id})
+    if journal_count > 0:
+        transaction_count += journal_count
+        transaction_types.append(f"journals: {journal_count}")
+    
+    # Check stock movements
+    stock_count = await db["stock_movements"].count_documents({"user_id": user_id})
+    if stock_count > 0:
+        transaction_count += stock_count
+        transaction_types.append(f"stock_movements: {stock_count}")
+    
+    has_transactions = transaction_count > 0
+    
+    if hard and user.get("role") == "owner" and not has_transactions:
+        # Hard delete - only owner can do this and only if no transactions
         result = await users.delete_one({"id": user_id})
         if result.deleted_count == 0:
             raise HTTPException(status_code=404, detail="User not found")
         message = "User permanently deleted"
+        action = "hard_delete"
+    elif hard and has_transactions:
+        # Cannot hard delete if user has transactions
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Tidak dapat menghapus user yang memiliki transaksi ({', '.join(transaction_types)}). Gunakan soft delete (nonaktifkan) saja."
+        )
     else:
         # Soft delete - deactivate
         result = await users.update_one(
             {"id": user_id},
-            {"$set": {"is_active": False, "updated_at": datetime.now(timezone.utc).isoformat()}}
+            {"$set": {
+                "is_active": False, 
+                "status": "inactive",
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+                "deactivated_at": datetime.now(timezone.utc).isoformat(),
+                "deactivated_by": user.get("user_id", ""),
+                "deactivation_reason": "soft_delete"
+            }}
         )
         if result.matched_count == 0:
             raise HTTPException(status_code=404, detail="User not found")
-        message = "User deactivated"
+        message = f"User deactivated (memiliki {transaction_count} transaksi)" if has_transactions else "User deactivated"
+        action = "soft_delete"
     
     # Audit log
     log = AuditLog(
         user_id=user.get("user_id", ""),
         user_name=user.get("name", ""),
-        action="delete",
+        action=action,
         module="users",
         entity_type="user",
         entity_id=user_id,
-        old_value={"email": target.get("email"), "name": target.get("name")}
+        old_value={
+            "email": target.get("email"), 
+            "name": target.get("name"),
+            "has_transactions": has_transactions,
+            "transaction_count": transaction_count
+        }
     )
     await audit_logs.insert_one(log.model_dump())
     
-    return {"message": message}
+    return {
+        "message": message, 
+        "has_transactions": has_transactions,
+        "transaction_count": transaction_count
+    }
 
 # ==================== AUDIT LOGS ====================
 

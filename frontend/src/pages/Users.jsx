@@ -220,49 +220,53 @@ const Users = () => {
         </select>
       </div>
 
-      {/* Users Table */}
+      {/* Users Table - With Horizontal Scroll */}
       <div className="bg-[#1a1214] border border-red-900/30 rounded-xl overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-red-900/20">
-            <tr>
-              <th className="px-4 py-3 text-left text-sm font-semibold">Pengguna</th>
-              <th className="px-4 py-3 text-left text-sm font-semibold">Telepon</th>
-              <th className="px-4 py-3 text-left text-sm font-semibold">Role</th>
-              <th className="px-4 py-3 text-left text-sm font-semibold">Cabang</th>
-              <th className="px-4 py-3 text-center text-sm font-semibold">Status</th>
-              <th className="px-4 py-3 text-center text-sm font-semibold">Aksi</th>
-            </tr>
-          </thead>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[900px]">
+            <thead className="bg-red-900/20">
+              <tr>
+                <th className="px-4 py-3 text-left text-sm font-semibold whitespace-nowrap">Pengguna</th>
+                <th className="px-4 py-3 text-left text-sm font-semibold whitespace-nowrap">Telepon</th>
+                <th className="px-4 py-3 text-left text-sm font-semibold whitespace-nowrap">Role</th>
+                <th className="px-4 py-3 text-left text-sm font-semibold whitespace-nowrap">Cabang</th>
+                <th className="px-4 py-3 text-left text-sm font-semibold whitespace-nowrap">Login Terakhir</th>
+                <th className="px-4 py-3 text-center text-sm font-semibold whitespace-nowrap">Status</th>
+                <th className="px-4 py-3 text-center text-sm font-semibold whitespace-nowrap">Aksi</th>
+              </tr>
+            </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={6} className="px-4 py-8 text-center"><Loader2 className="h-8 w-8 animate-spin mx-auto text-red-400" /></td></tr>
+              <tr><td colSpan={7} className="px-4 py-8 text-center"><Loader2 className="h-8 w-8 animate-spin mx-auto text-red-400" /></td></tr>
             ) : users.length === 0 ? (
-              <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-400"><UserCog className="h-12 w-12 mx-auto mb-2 opacity-30" />Tidak ada pengguna</td></tr>
+              <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-400"><UserCog className="h-12 w-12 mx-auto mb-2 opacity-30" />Tidak ada pengguna</td></tr>
             ) : (
               users.map(user => {
                 const branch = branches.find(b => b.id === user.branch_id);
+                const lastLogin = user.last_login ? new Date(user.last_login).toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-';
                 return (
                   <tr key={user.id} className="border-t border-red-900/10 hover:bg-red-900/10">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-600 to-amber-500 flex items-center justify-center text-white font-semibold">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-600 to-amber-500 flex items-center justify-center text-white font-semibold flex-shrink-0">
                           {user.name?.[0]?.toUpperCase() || 'U'}
                         </div>
-                        <div>
-                          <div className="font-medium">{user.name}</div>
-                          <div className="text-sm text-gray-400">{user.email}</div>
+                        <div className="min-w-0">
+                          <div className="font-medium truncate">{user.name}</div>
+                          <div className="text-sm text-gray-400 truncate">{user.email}</div>
                         </div>
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-gray-400">{user.phone || '-'}</td>
+                    <td className="px-4 py-3 text-gray-400 whitespace-nowrap">{user.phone || '-'}</td>
                     <td className="px-4 py-3">
-                      <span className={`px-2 py-1 rounded text-xs font-semibold ${roleColors[user.role] || 'bg-gray-900/30 text-gray-400'}`}>
+                      <span className={`px-2 py-1 rounded text-xs font-semibold whitespace-nowrap ${roleColors[user.role] || 'bg-gray-900/30 text-gray-400'}`}>
                         {getRoleInfo(user.role)}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-gray-400">{branch?.name || '-'}</td>
+                    <td className="px-4 py-3 text-gray-400 whitespace-nowrap">{branch?.name || '-'}</td>
+                    <td className="px-4 py-3 text-gray-400 text-sm whitespace-nowrap">{lastLogin}</td>
                     <td className="px-4 py-3 text-center">
-                      <span className={`px-2 py-1 rounded text-xs font-semibold ${user.is_active !== false ? 'bg-green-900/30 text-green-400' : 'bg-red-900/30 text-red-400'}`}>
+                      <span className={`px-2 py-1 rounded text-xs font-semibold whitespace-nowrap ${user.is_active !== false ? 'bg-green-900/30 text-green-400' : 'bg-red-900/30 text-red-400'}`}>
                         {user.is_active !== false ? 'Aktif' : 'Nonaktif'}
                       </span>
                     </td>
@@ -290,6 +294,7 @@ const Users = () => {
             )}
           </tbody>
         </table>
+        </div>
       </div>
 
       {/* Add/Edit User Modal */}

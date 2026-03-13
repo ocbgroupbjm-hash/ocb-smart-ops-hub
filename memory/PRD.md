@@ -598,16 +598,66 @@ Eksekusi sesuai MASTER BLUEPRINT SUPER DEWA - COMMAND MODE:
 - [x] **Backup & Restore System** - 3 Levels implemented
 
 ### P1 - Next Steps (ROADMAP)
-- [ ] User Management Fix (UI scroll + soft delete)
-- [ ] Export to Excel functionality
-- [ ] Import Excel for master data
-- [ ] Standardized Print Engine
+- [x] User Management Fix (UI scroll + soft delete) ✅
+- [x] Export to Excel functionality ✅
+- [x] Import Excel for master data ✅
+- [x] Standardized Print Engine ✅
 
 ### P2 - Backlog
 - [ ] Dashboard Intelligence (AI-driven insights)
 - [ ] Cash Control Engine
 - [ ] Audit System
 - [ ] AI Business Engine (ON HOLD)
+
+---
+
+### Phase 16: Operational Tools Layer ✅
+**Completed (2026-03-13):**
+
+#### PRIORITAS 1: User Management Improvement
+- **UI Fix:** Added horizontal scroll to Users table (`min-w-[900px]`, `overflow-x-auto`)
+- **Soft Delete:** Enhanced `DELETE /api/users/{user_id}` with transaction check
+  - Checks: sales_invoices, purchase_orders, journal_entries, stock_movements
+  - If has transactions: only soft delete (set `is_active: false`, `status: inactive`)
+  - Added fields: `deactivated_at`, `deactivated_by`, `deactivation_reason`
+- **Last Login Display:** Added column to show last login time
+- Files: `/app/frontend/src/pages/Users.jsx`, `/app/backend/routes/users.py`
+
+#### PRIORITAS 2: Export to Excel Engine (SSOT-based)
+- Created: `/app/backend/routes/export_service.py`
+- All exports read from SSOT collections (not cache)
+- Endpoints:
+  | Endpoint | Source (SSOT) | Status |
+  |----------|--------------|--------|
+  | `/api/export/sales` | sales_invoices | ✅ |
+  | `/api/export/purchase` | purchase_orders | ✅ |
+  | `/api/export/ledger` | journal_entries | ✅ |
+  | `/api/export/trial-balance` | journal_entries (aggregated) | ✅ |
+  | `/api/export/inventory` | stock_movements (aggregated) | ✅ |
+- Features: tenant-aware, branch filter, date range filter, auto column width
+
+#### PRIORITAS 3: Import from Excel Engine
+- Created: `/app/backend/routes/import_service.py`
+- Validation: unique SKU, valid supplier, valid category
+- Atomic transactions with rollback on error
+- Endpoints:
+  | Endpoint | Status |
+  |----------|--------|
+  | `/api/import/products` | ✅ |
+  | `/api/import/suppliers` | ✅ |
+  | `/api/import/customers` | ✅ |
+  | `/api/import/template/{type}` | ✅ |
+- Error reporting with row numbers
+
+#### PRIORITAS 4: Print Engine
+- Created: `/app/backend/routes/print_service.py`
+- Tenant-aware templates
+- Endpoints:
+  | Endpoint | Format | Status |
+  |----------|--------|--------|
+  | `/api/print/invoice/{id}` | PDF, Thermal | ✅ |
+  | `/api/print/purchase-order/{id}` | PDF | ✅ |
+  | `/api/print/receipt/{id}` | Thermal (58mm/80mm) | ✅ |
 
 ---
 

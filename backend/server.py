@@ -119,6 +119,11 @@ from routes.number_settings import router as number_settings_router
 # Import Owner Control Module - Owner Edit Control with Audit Trail
 from routes.owner_control import router as owner_control_router
 
+# Import Operational Tools Layer - Export, Import, Print
+from routes.export_service import router as export_service_router
+from routes.import_service import router as import_service_router
+from routes.print_service import router as print_service_router
+
 # Mount all routers under /api - Core ERP
 app.include_router(auth_router, prefix="/api")
 app.include_router(products_router, prefix="/api")
@@ -206,6 +211,11 @@ app.include_router(number_settings_router)
 
 # Mount Owner Control Module - Owner Edit Control with Audit Trail
 app.include_router(owner_control_router, prefix="/api")
+
+# Mount Operational Tools Layer - Export, Import, Print
+app.include_router(export_service_router, prefix="/api")
+app.include_router(import_service_router, prefix="/api")
+app.include_router(print_service_router, prefix="/api")
 
 # Mount Account Settings Module - iPOS Style
 app.include_router(account_settings_router)
