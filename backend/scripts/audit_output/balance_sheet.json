@@ -1,230 +1,50 @@
 {
-  "generated_at": "2026-03-13",
-  "tenant": "ocb_titan",
+  "as_of_date": "2026-03-13",
   "assets": {
-    "accounts": [
+    "items": [
       {
-        "code": "1-1000",
+        "code": "1101",
         "name": "Kas",
-        "balance": -5400000
+        "type": "asset",
+        "debit": 9464405.0,
+        "credit": 0,
+        "balance": 9464405.0
       },
       {
-        "code": "1-1001",
-        "name": "Kas Kecil",
+        "code": "1102",
+        "name": "Bank",
+        "type": "asset",
+        "debit": 0,
+        "credit": 15211617.5,
         "balance": 0
       },
       {
-        "code": "1-1002",
-        "name": "Bank BCA",
-        "balance": 0
-      },
-      {
-        "code": "1-2000",
-        "name": "Piutang Usaha",
-        "balance": 0
-      },
-      {
-        "code": "1-3000",
-        "name": "Persediaan Barang",
-        "balance": 0
-      },
-      {
-        "code": "1-4000",
-        "name": "Peralatan",
-        "balance": 0
-      },
-      {
-        "code": "1-1003",
-        "name": "Bank Mandiri",
-        "balance": 0
-      },
-      {
-        "code": "1-1010",
-        "name": "Kas Penjualan",
-        "balance": 0
-      },
-      {
-        "code": "1-2001",
-        "name": "Piutang Karyawan",
-        "balance": 0
-      },
-      {
-        "code": "1-5000",
-        "name": "Aktiva Tetap",
-        "balance": 0
-      },
-      {
-        "code": "1-5001",
-        "name": "Akumulasi Penyusutan",
+        "code": "1201",
+        "name": "Piutang Dagang",
+        "type": "asset",
+        "debit": 0,
+        "credit": 5275000.0,
         "balance": 0
       }
     ],
-    "total": -5400000
+    "total": 9464405.0
   },
   "liabilities": {
-    "accounts": [
+    "items": [
       {
-        "code": "2-1000",
-        "name": "Hutang Usaha",
-        "balance": 1190000
-      },
-      {
-        "code": "2-2000",
-        "name": "Hutang Bank",
-        "balance": 0
-      },
-      {
-        "code": "2-1001",
-        "name": "Hutang Gaji",
-        "balance": 0
-      },
-      {
-        "code": "2-1002",
-        "name": "Hutang Pajak",
-        "balance": 0
-      }
-    ],
-    "total": 1190000
-  },
-  "equity": {
-    "accounts": [
-      {
-        "code": "3-1000",
-        "name": "Modal Pemilik",
-        "balance": 0
-      },
-      {
-        "code": "3-2000",
-        "name": "Laba Ditahan",
-        "balance": 0
-      },
-      {
-        "code": "3-0001",
-        "name": "MODAL AWAL",
-        "balance": 0
-      },
-      {
-        "code": "3-3000",
-        "name": "Laba Tahun Berjalan",
+        "code": "2101",
+        "name": "Hutang Dagang",
+        "type": "liability",
+        "debit": 11000000.0,
+        "credit": 0,
         "balance": 0
       }
     ],
     "total": 0
   },
-  "revenue": {
-    "accounts": [
-      {
-        "code": "4-1000",
-        "name": "Penjualan",
-        "balance": 14875500.0
-      },
-      {
-        "code": "4-2000",
-        "name": "Diskon Penjualan",
-        "balance": 0
-      },
-      {
-        "code": "4-1001",
-        "name": "Diskon Penjualan",
-        "balance": 0
-      },
-      {
-        "code": "4-1002",
-        "name": "Retur Penjualan",
-        "balance": 0
-      }
-    ],
-    "total": 14875500.0
+  "equity": {
+    "items": [],
+    "total": 0
   },
-  "expenses": {
-    "accounts": [
-      {
-        "code": "5-1000",
-        "name": "Harga Pokok Penjualan",
-        "balance": 6275000.0
-      },
-      {
-        "code": "5-2000",
-        "name": "Beban Gaji",
-        "balance": 5000000
-      },
-      {
-        "code": "5-3000",
-        "name": "Beban Sewa",
-        "balance": 0
-      },
-      {
-        "code": "5-4000",
-        "name": "Beban Listrik",
-        "balance": 0
-      },
-      {
-        "code": "5-1001",
-        "name": "Pembelian",
-        "balance": 0
-      },
-      {
-        "code": "5-1002",
-        "name": "Diskon Pembelian",
-        "balance": 0
-      },
-      {
-        "code": "5-1003",
-        "name": "Retur Pembelian",
-        "balance": 0
-      },
-      {
-        "code": "6-1000",
-        "name": "Beban Gaji",
-        "balance": 0
-      },
-      {
-        "code": "6-1001",
-        "name": "Beban Sewa",
-        "balance": 0
-      },
-      {
-        "code": "6-1002",
-        "name": "Beban Listrik & Air",
-        "balance": 0
-      },
-      {
-        "code": "6-1003",
-        "name": "Beban Telepon & Internet",
-        "balance": 0
-      },
-      {
-        "code": "6-1004",
-        "name": "Beban Penyusutan",
-        "balance": 0
-      },
-      {
-        "code": "6-1005",
-        "name": "Beban Administrasi",
-        "balance": 0
-      },
-      {
-        "code": "6-2000",
-        "name": "Beban Selisih Kas",
-        "balance": 0
-      },
-      {
-        "code": "6-2001",
-        "name": "Beban Selisih Stok",
-        "balance": 0
-      },
-      {
-        "code": "6-3000",
-        "name": "Beban Lain-lain",
-        "balance": 0
-      }
-    ],
-    "total": 11275000.0
-  },
-  "net_income": 3600500.0,
-  "accounting_equation": {
-    "assets": -5400000,
-    "liabilities_plus_equity": 4790500.0,
-    "balanced": false
-  }
+  "is_balanced": false
 }

@@ -721,3 +721,55 @@ async def initialize_default_accounts(user: dict = Depends(get_current_user)):
         "settings_created": count,
         "message": f"Berhasil inisialisasi {count} default account settings"
     }
+
+
+# ==================== CASH/BANK ACCOUNTS ENDPOINT ====================
+
+@router.get("/cash-bank")
+async def get_cash_bank_accounts(
+    user: dict = Depends(get_current_user)
+):
+    """
+    Get all active Cash and Bank accounts for payment selection
+    Query: chart_of_accounts WHERE account_type IN ('cash', 'bank') AND is_active = true
+    """
+    db = get_database()
+    
+    # Query accounts with type cash or bank
+    # Also check account code patterns: 1-1100 (Kas), 1-1200 (Bank)
+    accounts = await db.chart_of_accounts.find({
+        "$and": [
+            {"$or": [
+                {"type": {"$in": ["cash", "bank"]}},
+                {"account_type": {"$in": ["cash", "bank"]}},
+                {"category": {"$in": ["cash", "bank"]}},
+                {"code": {"$regex": "^1-11|^1-12", "$options": "i"}},  # Standard cash/bank codes
+                {"code": {"$regex": "^1101|^1102|^1103|^1104|^1105", "$options": "i"}},  # Legacy codes
+            ]},
+            {"$or": [
+                {"is_active": True},
+                {"is_active": {"$exists": False}}
+            ]}
+        ]
+    }, {"_id": 0}).sort("code", 1).to_list(100)
+    
+    # If no accounts found from COA, return default ones
+    if not accounts:
+        accounts = [
+            {"id": "kas-default", "code": "1-1100", "name": "Kas", "type": "cash", "balance": 0},
+            {"id": "bank-default", "code": "1-1200", "name": "Bank", "type": "bank", "balance": 0},
+        ]
+    else:
+        # Ensure each account has an id
+        for acc in accounts:
+            if not acc.get("id"):
+                acc["id"] = acc.get("code", str(uuid.uuid4()))
+    
+    return {
+        "accounts": accounts,
+        "total": len(accounts)
+    }
+
+
+# Also add to /api/accounts prefix for easy access
+

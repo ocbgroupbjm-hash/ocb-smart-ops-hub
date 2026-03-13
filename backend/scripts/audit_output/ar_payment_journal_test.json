@@ -1,0 +1,17 @@
+{
+  "module": "ar_payment_journal",
+  "timestamp": "2026-03-13T21:44:58.970260+00:00",
+  "tests": [
+    {
+      "name": "Find Open AR",
+      "status": "PASS",
+      "count": 6
+    },
+    {
+      "name": "AR Payment Endpoint Ready",
+      "status": "PASS",
+      "ar_no": "AR-INV000020",
+      "outstanding": 125000.0
+    }
+  ]
+}

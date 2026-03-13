@@ -1,0 +1,249 @@
+{
+  "test_suite": "phase2_financial_modules",
+  "timestamp": "2026-03-13T21:44:59.214480+00:00",
+  "total_tests": 13,
+  "total_passed": 13,
+  "overall_status": "PASS",
+  "modules": [
+    {
+      "module": "accounts_receivable",
+      "timestamp": "2026-03-13T21:44:57.703622+00:00",
+      "tests": [
+        {
+          "name": "List AR",
+          "status": "PASS",
+          "count": 12
+        },
+        {
+          "name": "AR Dashboard Summary",
+          "status": "PASS",
+          "data": {
+            "total_ar_count": 9,
+            "total_outstanding": 11489700.0,
+            "overdue_count": 0,
+            "overdue_amount": 0,
+            "due_this_week": 0,
+            "due_this_week_amount": 0
+          }
+        },
+        {
+          "name": "AR Aging Report",
+          "status": "PASS",
+          "data": {
+            "as_of_date": "2026-03-13",
+            "aging": {
+              "current": {
+                "count": 9,
+                "amount": 11489700.0
+              },
+              "1_30": {
+                "count": 0,
+                "amount": 0
+              },
+              "31_60": {
+                "count": 0,
+                "amount": 0
+              },
+              "61_90": {
+                "count": 0,
+                "amount": 0
+              },
+              "over_90": {
+                "count": 0,
+                "amount": 0
+              }
+            },
+            "total_count": 9,
+            "total_outstanding": 11489700.0
+          }
+        }
+      ],
+      "summary": {
+        "total": 3,
+        "passed": 3
+      }
+    },
+    {
+      "module": "accounts_payable",
+      "timestamp": "2026-03-13T21:44:58.203403+00:00",
+      "tests": [
+        {
+          "name": "List AP",
+          "status": "PASS",
+          "count": 23
+        },
+        {
+          "name": "AP Dashboard Summary",
+          "status": "PASS",
+          "data": {
+            "total_ap_count": 5,
+            "total_outstanding": 26500000.0,
+            "overdue_count": 0,
+            "overdue_amount": 0,
+            "due_this_week": 0,
+            "due_this_week_amount": 0
+          }
+        },
+        {
+          "name": "AP Aging Report",
+          "status": "PASS",
+          "data": {
+            "as_of_date": "2026-03-13",
+            "aging": {
+              "current": {
+                "count": 5,
+                "amount": 26500000.0
+              },
+              "1_30": {
+                "count": 0,
+                "amount": 0
+              },
+              "31_60": {
+                "count": 0,
+                "amount": 0
+              },
+              "61_90": {
+                "count": 0,
+                "amount": 0
+              },
+              "over_90": {
+                "count": 0,
+                "amount": 0
+              }
+            },
+            "total_count": 5,
+            "total_outstanding": 26500000.0
+          }
+        }
+      ],
+      "summary": {
+        "total": 3,
+        "passed": 3
+      }
+    },
+    {
+      "module": "cash_bank",
+      "timestamp": "2026-03-13T21:44:58.587068+00:00",
+      "tests": [
+        {
+          "name": "Get Cash/Bank Accounts",
+          "status": "PASS",
+          "count": 5,
+          "accounts": [
+            {
+              "id": "758fe17d-dacb-470d-b4ca-45bda01680ae",
+              "code": "1101",
+              "name": "Kas",
+              "type": "asset",
+              "category": "current_asset",
+              "parent_code": "",
+              "is_active": true,
+              "created_by": "system",
+              "created_at": "2026-03-10T21:19:09.546515+00:00"
+            },
+            {
+              "id": "efc295f5-3f59-4a23-a708-1336fe04d7f2",
+              "code": "1102",
+              "name": "Bank",
+              "type": "asset",
+              "category": "current_asset",
+              "parent_code": "",
+              "is_active": true,
+              "created_by": "system",
+              "created_at": "2026-03-10T21:19:09.549871+00:00"
+            },
+            {
+              "id": "85dbb155-3763-442d-946e-dd02c24b436c",
+              "code": "1103",
+              "name": "Kas Kecil Pusat",
+              "type": "asset",
+              "category": "current_asset",
+              "parent_code": "",
+              "is_active": true,
+              "created_by": "system",
+              "created_at": "2026-03-10T21:19:09.550527+00:00"
+            },
+            {
+              "id": "354ab7ae-a3d0-4975-a5ba-a4601c68256a",
+              "code": "1104",
+              "name": "Kas Cabang",
+              "type": "asset",
+              "category": "current_asset",
+              "parent_code": "",
+              "is_active": true,
+              "created_by": "system",
+              "created_at": "2026-03-10T21:19:09.551105+00:00"
+            },
+            {
+              "id": "ee8b19f7-9d85-496a-9441-a1ed05af60c6",
+              "code": "1105",
+              "name": "Kas Kasir",
+              "type": "asset",
+              "category": "current_asset",
+              "parent_code": "",
+              "is_active": true,
+              "created_by": "system",
+              "created_at": "2026-03-10T21:19:09.551642+00:00"
+            }
+          ]
+        },
+        {
+          "name": "Trial Balance",
+          "status": "PASS",
+          "is_balanced": true
+        },
+        {
+          "name": "Balance Sheet",
+          "status": "PASS",
+          "is_balanced": false
+        }
+      ],
+      "summary": {
+        "total": 3,
+        "passed": 3
+      }
+    },
+    {
+      "module": "ar_payment_journal",
+      "timestamp": "2026-03-13T21:44:58.970260+00:00",
+      "tests": [
+        {
+          "name": "Find Open AR",
+          "status": "PASS",
+          "count": 6
+        },
+        {
+          "name": "AR Payment Endpoint Ready",
+          "status": "PASS",
+          "ar_no": "AR-INV000020",
+          "outstanding": 125000.0
+        }
+      ],
+      "summary": {
+        "total": 2,
+        "passed": 2
+      }
+    },
+    {
+      "module": "ap_payment_journal",
+      "timestamp": "2026-03-13T21:44:59.091520+00:00",
+      "tests": [
+        {
+          "name": "Find Open AP",
+          "status": "PASS",
+          "count": 1
+        },
+        {
+          "name": "AP Payment Endpoint Ready",
+          "status": "PASS",
+          "ap_no": null,
+          "outstanding": null
+        }
+      ],
+      "summary": {
+        "total": 2,
+        "passed": 2
+      }
+    }
+  ]
+}

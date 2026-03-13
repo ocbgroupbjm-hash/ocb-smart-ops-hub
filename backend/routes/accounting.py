@@ -1087,3 +1087,52 @@ async def get_trial_balance(
         },
         "journal_count": len(all_je)
     }
+
+
+
+# ==================== CASH/BANK ACCOUNTS ENDPOINT ====================
+
+@router.get("/accounts/cash-bank")
+async def get_cash_bank_accounts(
+    user: dict = Depends(get_current_user)
+):
+    """
+    Get all active Cash and Bank accounts for payment selection.
+    Used by AR Payment and AP Payment modals.
+    """
+    # Get chart of accounts
+    coa = db["chart_of_accounts"]
+    
+    # Query accounts with type cash or bank
+    accounts = await coa.find({
+        "$and": [
+            {"$or": [
+                {"type": {"$in": ["cash", "bank"]}},
+                {"account_type": {"$in": ["cash", "bank"]}},
+                {"category": {"$in": ["cash", "bank"]}},
+                {"code": {"$regex": "^1-11|^1-12", "$options": "i"}},
+                {"code": {"$regex": "^1101|^1102|^1103|^1104|^1105", "$options": "i"}},
+            ]},
+            {"$or": [
+                {"is_active": True},
+                {"is_active": {"$exists": False}}
+            ]}
+        ]
+    }, {"_id": 0}).sort("code", 1).to_list(100)
+    
+    # If no accounts found, return defaults
+    if not accounts:
+        accounts = [
+            {"id": "kas-default", "code": "1-1100", "name": "Kas", "type": "cash", "balance": 0},
+            {"id": "bank-default", "code": "1-1200", "name": "Bank", "type": "bank", "balance": 0},
+            {"id": "kas-kecil", "code": "1-1101", "name": "Kas Kecil", "type": "cash", "balance": 0},
+        ]
+    else:
+        for acc in accounts:
+            if not acc.get("id"):
+                acc["id"] = acc.get("code", str(uuid.uuid4()))
+    
+    return {
+        "accounts": accounts,
+        "total": len(accounts)
+    }

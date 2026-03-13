@@ -1,0 +1,17 @@
+{
+  "module": "ap_payment_journal",
+  "timestamp": "2026-03-13T21:44:59.091520+00:00",
+  "tests": [
+    {
+      "name": "Find Open AP",
+      "status": "PASS",
+      "count": 1
+    },
+    {
+      "name": "AP Payment Endpoint Ready",
+      "status": "PASS",
+      "ap_no": null,
+      "outstanding": null
+    }
+  ]
+}

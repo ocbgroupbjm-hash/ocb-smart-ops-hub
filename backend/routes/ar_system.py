@@ -411,8 +411,16 @@ async def get_ar_aging(
         if not due_date_str:
             continue
         
-        due_date = datetime.strptime(due_date_str, "%Y-%m-%d")
-        days_overdue = (as_of - due_date).days
+        # Handle both date formats: YYYY-MM-DD and ISO format
+        try:
+            if "T" in str(due_date_str):
+                due_date = datetime.fromisoformat(str(due_date_str).replace("Z", "+00:00"))
+            else:
+                due_date = datetime.strptime(str(due_date_str)[:10], "%Y-%m-%d")
+        except (ValueError, TypeError):
+            continue
+            
+        days_overdue = (as_of - due_date.replace(tzinfo=None)).days
         outstanding = ar.get("outstanding_amount", 0)
         
         if days_overdue <= 0:

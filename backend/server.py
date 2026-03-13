@@ -236,6 +236,10 @@ app.include_router(mobile_api_router, prefix="/api")
 # Mount Account Settings Module - iPOS Style
 app.include_router(account_settings_router)
 
+# Mount Accounts API (Cash/Bank for payments)
+from routes.accounts_api import router as accounts_api_router
+app.include_router(accounts_api_router)
+
 # Mount ERP Hardening Module - Fiscal Period & Multi-Currency
 from routes.erp_hardening import router as erp_hardening_router
 app.include_router(erp_hardening_router)
