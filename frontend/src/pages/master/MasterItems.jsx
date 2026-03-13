@@ -10,9 +10,10 @@ import {
 import { toast } from 'sonner';
 import { PricingConfigModal } from '../../components/pricing';
 import { ItemFormModal } from '../../components/master';
+import { OwnerEditButton, OwnerEditModal } from '../../components/OwnerEditButton';
 
 const MasterItems = () => {
-  const { api, token } = useAuth();
+  const { api, token, user } = useAuth();
   const { hasPermission } = usePermission();
   
   // Data states
@@ -57,6 +58,10 @@ const MasterItems = () => {
   const [aiProcessing, setAiProcessing] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
   const [enhancedImage, setEnhancedImage] = useState(null);
+  
+  // Owner edit states
+  const [showOwnerEdit, setShowOwnerEdit] = useState(false);
+  const [ownerEditItem, setOwnerEditItem] = useState(null);
   
   // Pricing Modal states
   const [showPricingModal, setShowPricingModal] = useState(false);
@@ -750,6 +755,14 @@ const MasterItems = () => {
                             <DollarSign className="h-3 w-3" />
                           </button>
                         )}
+                        {/* Owner Edit Button */}
+                        <OwnerEditButton
+                          item={item}
+                          module="item"
+                          onEdit={(i) => { setOwnerEditItem(i); setShowOwnerEdit(true); }}
+                          size="sm"
+                          showLabel={false}
+                        />
                         <button
                           onClick={() => openBranchStockManager(item)}
                           className="p-1 hover:bg-purple-900/30 rounded text-purple-400"
@@ -1106,6 +1119,21 @@ const MasterItems = () => {
         onSave={() => {
           loadItems();
         }}
+      />
+      
+      {/* Owner Edit Modal */}
+      <OwnerEditModal
+        isOpen={showOwnerEdit}
+        onClose={() => { setShowOwnerEdit(false); setOwnerEditItem(null); }}
+        module="item"
+        item={ownerEditItem}
+        fields={[
+          { name: 'name', label: 'Nama Produk', type: 'text' },
+          { name: 'cost_price', label: 'Harga Beli (Rp)', type: 'number' },
+          { name: 'selling_price', label: 'Harga Jual (Rp)', type: 'number' },
+          { name: 'min_stock', label: 'Stok Minimum', type: 'number' }
+        ]}
+        onSave={() => { setShowOwnerEdit(false); setOwnerEditItem(null); loadItems(); }}
       />
     </div>
   );

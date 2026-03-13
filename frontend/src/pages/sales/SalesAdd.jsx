@@ -4,7 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { 
   Plus, Search, Save, X, Loader2, FileText, Trash2, Calendar, 
   User, Clock, Percent, Warehouse, Printer, Package, CreditCard,
-  Banknote, DollarSign
+  Banknote, DollarSign, Tag, Gift, Sparkles
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { SearchableSelect } from '../../components/ui/searchable-select';
@@ -19,6 +19,7 @@ const SalesAdd = () => {
   const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [calculatingPricing, setCalculatingPricing] = useState(false);
   const itemInputRef = useRef(null);
 
   // Master data
@@ -27,6 +28,12 @@ const SalesAdd = () => {
   const [products, setProducts] = useState([]);
   const [warehouses, setWarehouses] = useState([]);
   const [salesOrders, setSalesOrders] = useState([]);
+  
+  // Pricing engine results
+  const [appliedDiscounts, setAppliedDiscounts] = useState([]);
+  const [appliedPromos, setAppliedPromos] = useState([]);
+  const [freeItems, setFreeItems] = useState([]);
+  const [customerPriceLevel, setCustomerPriceLevel] = useState(1);
   
   // Convert master data to options format for SearchableSelect
   const customerOptions = useMemo(() => 
@@ -130,6 +137,123 @@ const SalesAdd = () => {
     loadMasterData();
   }, [api]);
 
+  // ==================== PRICE LEVEL & DISCOUNT ENGINE ====================
+  
+  // Get price for customer based on price level
+  const getPriceForCustomer = async (productId, customerId) => {
+    if (!productId || !customerId) return null;
+    try {
+      const res = await api(`/api/master/price-for-customer/${productId}/${customerId}`);
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (err) {
+      console.error('Error getting price for customer:', err);
+    }
+    return null;
+  };
+
+  // Calculate pricing with auto-apply discounts & promos
+  const calculatePricing = async () => {
+    if (form.items.length === 0) {
+      setAppliedDiscounts([]);
+      setAppliedPromos([]);
+      setFreeItems([]);
+      return;
+    }
+    
+    setCalculatingPricing(true);
+    try {
+      const res = await api('/api/master/calculate-pricing', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          items: form.items.map(item => ({
+            product_id: item.product_id,
+            quantity: item.qty,
+            unit_price: item.unit_price
+          })),
+          customer_id: form.customer_id,
+          branch_id: form.warehouse_id
+        })
+      });
+      
+      if (res.ok) {
+        const data = await res.json();
+        
+        // Update items with calculated discounts
+        const updatedItems = form.items.map((item, idx) => {
+          const calcItem = data.items?.[idx];
+          if (calcItem) {
+            return {
+              ...item,
+              unit_price: calcItem.unit_price || item.unit_price,
+              price_level: calcItem.price_level || 1,
+              discount_amount: calcItem.discount_amount || 0,
+              applied_discount: calcItem.applied_discount,
+              subtotal: calcItem.total || item.subtotal
+            };
+          }
+          return item;
+        });
+        
+        setForm(prev => ({
+          ...prev,
+          items: updatedItems,
+          discount_amount: data.totals?.total_discount || 0
+        }));
+        
+        setAppliedDiscounts(data.discounts || []);
+        setAppliedPromos(data.promotions || []);
+        setFreeItems(data.free_items || []);
+        
+        if (data.discounts?.length > 0 || data.promotions?.length > 0) {
+          toast.success(`${data.discounts?.length || 0} diskon & ${data.promotions?.length || 0} promo diterapkan`);
+        }
+      }
+    } catch (err) {
+      console.error('Error calculating pricing:', err);
+    } finally {
+      setCalculatingPricing(false);
+    }
+  };
+
+  // Re-calculate pricing when items or customer changes
+  useEffect(() => {
+    if (form.customer_id && form.items.length > 0) {
+      const timer = setTimeout(() => {
+        calculatePricing();
+      }, 500); // Debounce 500ms
+      return () => clearTimeout(timer);
+    }
+  }, [form.customer_id, form.items.length]);
+
+  // Update prices when customer changes (price level)
+  const handleCustomerChange = async (customerId) => {
+    setForm(prev => ({ ...prev, customer_id: customerId }));
+    
+    if (!customerId || form.items.length === 0) return;
+    
+    // Get price for each item based on customer's price level
+    const updatedItems = await Promise.all(form.items.map(async (item) => {
+      const priceInfo = await getPriceForCustomer(item.product_id, customerId);
+      if (priceInfo) {
+        setCustomerPriceLevel(priceInfo.price_level || 1);
+        const newPrice = priceInfo.price || item.unit_price;
+        return {
+          ...item,
+          unit_price: newPrice,
+          price_level: priceInfo.price_level || 1,
+          subtotal: item.qty * newPrice
+        };
+      }
+      return item;
+    }));
+    
+    setForm(prev => ({ ...prev, items: updatedItems }));
+    toast.info(`Harga diupdate sesuai level customer`);
+  };
+
   // Load SO if selected
   const loadSalesOrder = async (soId) => {
     if (!soId) return;
@@ -165,11 +289,23 @@ const SalesAdd = () => {
     }
   };
 
-  // Add item
-  const addItem = (product) => {
+  // Add item with price level lookup
+  const addItem = async (product) => {
     if (form.items.find(i => i.product_id === product.id)) {
       toast.error('Item sudah ada');
       return;
+    }
+    
+    // Get price based on customer's price level
+    let unitPrice = product.sell_price || 0;
+    let priceLevel = 1;
+    
+    if (form.customer_id) {
+      const priceInfo = await getPriceForCustomer(product.id, form.customer_id);
+      if (priceInfo) {
+        unitPrice = priceInfo.price || unitPrice;
+        priceLevel = priceInfo.price_level || 1;
+      }
     }
     
     const newItem = {
@@ -181,14 +317,16 @@ const SalesAdd = () => {
       qty_from_so: 0,
       qty: 1,
       unit: product.unit || 'PCS',
-      unit_price: product.sell_price || 0,
+      unit_price: unitPrice,
+      price_level: priceLevel,
       discount_percent: 0,
+      discount_amount: 0,
       tax_percent: 0,
-      subtotal: product.sell_price || 0,
+      subtotal: unitPrice,
     };
     
     setForm(prev => ({ ...prev, items: [...prev.items, newItem] }));
-    toast.success(`${product.name} ditambahkan`);
+    toast.success(`${product.name} ditambahkan${priceLevel > 1 ? ` (Level ${priceLevel})` : ''}`);
   };
 
   // Update item
@@ -218,22 +356,29 @@ const SalesAdd = () => {
     }));
   };
 
-  // Calculate totals
+  // Calculate totals including engine discounts
   const calculateTotals = () => {
     let subtotal = 0;
     let itemTax = 0;
+    let itemDiscounts = 0;
+    
     form.items.forEach(item => {
       subtotal += item.subtotal || 0;
       itemTax += (item.subtotal || 0) * (parseFloat(item.tax_percent) || 0) / 100;
+      itemDiscounts += item.discount_amount || 0;
     });
     
-    const discAmt = parseFloat(form.discount_amount) || 0;
-    const afterDisc = subtotal - discAmt;
+    // Engine discount + manual discount
+    const engineDisc = itemDiscounts;
+    const manualDisc = parseFloat(form.discount_amount) || 0;
+    const totalDisc = engineDisc + manualDisc;
+    
+    const afterDisc = subtotal - manualDisc;
     const taxAmt = afterDisc * (parseFloat(form.ppn_percent) || 0) / 100 + itemTax;
     const otherCost = parseFloat(form.other_cost) || 0;
     const grandTotal = afterDisc + taxAmt + otherCost;
     
-    return { subtotal, taxAmt, grandTotal };
+    return { subtotal, taxAmt, grandTotal, engineDisc, totalDisc };
   };
 
   const totals = calculateTotals();
@@ -383,11 +528,17 @@ const SalesAdd = () => {
             <SearchableSelect
               options={customerOptions}
               value={form.customer_id}
-              onValueChange={(val) => setForm(p => ({...p, customer_id: val}))}
+              onValueChange={handleCustomerChange}
               placeholder="Pilih Pelanggan"
               searchPlaceholder="Ketik nama pelanggan..."
               data-testid="customer-select"
             />
+            {customerPriceLevel > 1 && (
+              <div className="text-xs text-amber-400 mt-1 flex items-center gap-1">
+                <Tag className="h-3 w-3" />
+                Level Harga: {customerPriceLevel}
+              </div>
+            )}
           </div>
           <div>
             <label className="block text-xs text-gray-400 mb-1">Sales</label>
@@ -563,10 +714,49 @@ const SalesAdd = () => {
               <span className="text-gray-400">Sub Total</span>
               <span>{formatRupiah(totals.subtotal)}</span>
             </div>
+            
+            {/* Auto-applied discounts from engine */}
+            {appliedDiscounts.length > 0 && (
+              <div className="flex justify-between items-center">
+                <span className="text-gray-400 flex items-center gap-1">
+                  <Tag className="h-3 w-3 text-amber-400" />
+                  Diskon Otomatis ({appliedDiscounts.length})
+                </span>
+                <span className="text-amber-400">-{formatRupiah(totals.engineDisc)}</span>
+              </div>
+            )}
+            
+            {/* Manual discount */}
             <div className="flex justify-between">
-              <span className="text-gray-400">Potongan</span>
+              <span className="text-gray-400">Potongan Manual</span>
               <span className="text-red-400">-{formatRupiah(form.discount_amount)}</span>
             </div>
+            
+            {/* Promotions */}
+            {appliedPromos.length > 0 && (
+              <div className="flex justify-between items-center text-green-400">
+                <span className="flex items-center gap-1">
+                  <Gift className="h-3 w-3" />
+                  Promo ({appliedPromos.length})
+                </span>
+                <span className="text-xs">{appliedPromos.map(p => p.promo_name).join(', ')}</span>
+              </div>
+            )}
+            
+            {/* Free items from promo */}
+            {freeItems.length > 0 && (
+              <div className="bg-green-900/20 border border-green-700/30 rounded p-2 mt-2">
+                <span className="text-xs text-green-400 flex items-center gap-1 mb-1">
+                  <Sparkles className="h-3 w-3" /> Item Gratis:
+                </span>
+                {freeItems.map((item, idx) => (
+                  <div key={idx} className="text-xs text-green-300">
+                    {item.quantity}x {item.product_name}
+                  </div>
+                ))}
+              </div>
+            )}
+            
             <div className="flex justify-between">
               <span className="text-gray-400">Pajak</span>
               <span>{formatRupiah(totals.taxAmt)}</span>
@@ -576,6 +766,14 @@ const SalesAdd = () => {
               <span className="text-xl font-bold text-green-400">{formatRupiah(totals.grandTotal)}</span>
             </div>
           </div>
+          
+          {/* Calculating indicator */}
+          {calculatingPricing && (
+            <div className="mt-2 text-xs text-gray-400 flex items-center gap-1">
+              <Loader2 className="h-3 w-3 animate-spin" />
+              Menghitung diskon & promo...
+            </div>
+          )}
         </div>
       </div>
 

@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { Search, Plus, Minus, Trash2, ShoppingCart, CreditCard, Banknote, QrCode, Wallet, User, Clock, X, Check, Loader2, Printer, MessageCircle } from 'lucide-react';
+import { Search, Plus, Minus, Trash2, ShoppingCart, CreditCard, Banknote, QrCode, Wallet, User, Clock, X, Check, Loader2, Printer, MessageCircle, Tag, Gift, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 
 const POS = () => {
@@ -23,9 +23,17 @@ const POS = () => {
   const searchRef = useRef(null);
   const barcodeBuffer = useRef('');
   const barcodeTimeout = useRef(null);
+  
+  // Pricing engine state
+  const [appliedDiscounts, setAppliedDiscounts] = useState([]);
+  const [appliedPromos, setAppliedPromos] = useState([]);
+  const [freeItems, setFreeItems] = useState([]);
+  const [engineDiscount, setEngineDiscount] = useState(0);
+  const [customerPriceLevel, setCustomerPriceLevel] = useState(1);
+  const [calculatingPricing, setCalculatingPricing] = useState(false);
 
   const subtotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
-  const discountAmount = subtotal * (discountPercent / 100);
+  const discountAmount = subtotal * (discountPercent / 100) + engineDiscount;
   const total = subtotal - discountAmount;
   const formatRupiah = (num) => `Rp ${(num || 0).toLocaleString('id-ID')}`;
 
@@ -72,13 +80,104 @@ const POS = () => {
     } catch (err) { toast.error('Error scan barcode'); }
   };
 
-  const addToCart = (product) => {
-    // Price fallback logic: selling_price -> wholesale_price -> cost_price -> 0
-    const price = product.selling_price || product.wholesale_price || product.cost_price || 0;
+  // ==================== PRICING ENGINE INTEGRATION ====================
+  
+  // Get price for customer based on price level
+  const getPriceForCustomer = async (productId, customerId) => {
+    if (!productId || !customerId) return null;
+    try {
+      const res = await api(`/api/master/price-for-customer/${productId}/${customerId}`);
+      if (res.ok) return await res.json();
+    } catch (err) { console.error('Error getting price:', err); }
+    return null;
+  };
+
+  // Calculate pricing with auto-apply discounts & promos
+  const calculatePricing = useCallback(async () => {
+    if (cart.length === 0) {
+      setAppliedDiscounts([]);
+      setAppliedPromos([]);
+      setFreeItems([]);
+      setEngineDiscount(0);
+      return;
+    }
+    
+    setCalculatingPricing(true);
+    try {
+      const res = await api('/api/master/calculate-pricing', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          items: cart.map(item => ({
+            product_id: item.id,
+            quantity: item.qty,
+            unit_price: item.price
+          })),
+          customer_id: customer?.id,
+          branch_id: user?.branch_id
+        })
+      });
+      
+      if (res.ok) {
+        const data = await res.json();
+        setAppliedDiscounts(data.discounts || []);
+        setAppliedPromos(data.promotions || []);
+        setFreeItems(data.free_items || []);
+        setEngineDiscount(data.totals?.total_discount || 0);
+        
+        if ((data.discounts?.length > 0 || data.promotions?.length > 0) && cart.length > 0) {
+          toast.success(`${data.discounts?.length || 0} diskon & ${data.promotions?.length || 0} promo aktif`);
+        }
+      }
+    } catch (err) { console.error('Error calculating pricing:', err); }
+    finally { setCalculatingPricing(false); }
+  }, [cart, customer, user, api]);
+
+  // Re-calculate pricing when cart or customer changes
+  useEffect(() => {
+    if (cart.length > 0) {
+      const timer = setTimeout(calculatePricing, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [cart, customer, calculatePricing]);
+
+  // Update prices when customer changes
+  const handleCustomerSelect = async (selectedCustomer) => {
+    setCustomer(selectedCustomer);
+    setShowCustomerModal(false);
+    
+    if (!selectedCustomer || cart.length === 0) return;
+    
+    // Get price for each item based on customer's price level
+    const updatedCart = await Promise.all(cart.map(async (item) => {
+      const priceInfo = await getPriceForCustomer(item.id, selectedCustomer.id);
+      if (priceInfo && priceInfo.price > 0) {
+        setCustomerPriceLevel(priceInfo.price_level || 1);
+        return { ...item, price: priceInfo.price, price_level: priceInfo.price_level };
+      }
+      return item;
+    }));
+    
+    setCart(updatedCart);
+    toast.info(`Harga diupdate sesuai level customer`);
+  };
+
+  const addToCart = async (product) => {
+    // Get price based on customer's price level
+    let price = product.selling_price || product.wholesale_price || product.cost_price || 0;
+    let priceLevel = 1;
+    
+    if (customer?.id) {
+      const priceInfo = await getPriceForCustomer(product.id, customer.id);
+      if (priceInfo && priceInfo.price > 0) {
+        price = priceInfo.price;
+        priceLevel = priceInfo.price_level || 1;
+      }
+    }
     
     if (price <= 0) {
       toast.error(`Harga produk "${product.name}" tidak valid (Rp 0). Silakan set harga jual di Master Item.`);
-      return; // Prevent adding item with no price
+      return;
     }
     
     setCart(prev => {
@@ -89,7 +188,8 @@ const POS = () => {
       return [...prev, {
         id: product.id, code: product.code, name: product.name,
         price: price, cost: product.cost_price || 0,
-        stock: product.stock || product.available || 999, qty: 1, discount: 0
+        stock: product.stock || product.available || 999, qty: 1, discount: 0,
+        price_level: priceLevel
       }];
     });
     setSearchQuery('');
@@ -411,8 +511,49 @@ _Terima kasih atas kunjungan Anda!_`;
               <span>Subtotal</span>
               <span>{formatRupiah(subtotal)}</span>
             </div>
+            
+            {/* Auto-applied discounts from engine */}
+            {appliedDiscounts.length > 0 && (
+              <div className="flex justify-between items-center text-amber-400">
+                <span className="flex items-center gap-1">
+                  <Tag className="h-3 w-3" />
+                  Diskon Otomatis ({appliedDiscounts.length})
+                </span>
+                <span>-{formatRupiah(engineDiscount)}</span>
+              </div>
+            )}
+            
+            {/* Promotions */}
+            {appliedPromos.length > 0 && (
+              <div className="bg-green-900/20 border border-green-700/30 rounded p-2">
+                <span className="text-xs text-green-400 flex items-center gap-1 mb-1">
+                  <Gift className="h-3 w-3" /> Promo Aktif:
+                </span>
+                {appliedPromos.map((promo, idx) => (
+                  <div key={idx} className="text-xs text-green-300">
+                    {promo.promo_name}: {promo.benefit?.description}
+                  </div>
+                ))}
+              </div>
+            )}
+            
+            {/* Free items from promo */}
+            {freeItems.length > 0 && (
+              <div className="bg-green-900/20 border border-green-700/30 rounded p-2">
+                <span className="text-xs text-green-400 flex items-center gap-1 mb-1">
+                  <Sparkles className="h-3 w-3" /> Item Gratis:
+                </span>
+                {freeItems.map((item, idx) => (
+                  <div key={idx} className="text-xs text-green-300">
+                    {item.quantity}x {item.product_name}
+                  </div>
+                ))}
+              </div>
+            )}
+            
+            {/* Manual discount */}
             <div className="flex justify-between items-center">
-              <span className="text-gray-400">Diskon</span>
+              <span className="text-gray-400">Diskon Manual</span>
               <div className="flex items-center gap-2">
                 <input
                   type="number"
@@ -425,8 +566,24 @@ _Terima kasih atas kunjungan Anda!_`;
             </div>
             {discountAmount > 0 && (
               <div className="flex justify-between text-red-400">
-                <span>Potongan</span>
+                <span>Total Potongan</span>
                 <span>-{formatRupiah(discountAmount)}</span>
+              </div>
+            )}
+            
+            {/* Customer price level indicator */}
+            {customer && customerPriceLevel > 1 && (
+              <div className="text-xs text-amber-400 flex items-center gap-1">
+                <Tag className="h-3 w-3" />
+                Harga Level {customerPriceLevel} ({customer.name})
+              </div>
+            )}
+            
+            {/* Calculating indicator */}
+            {calculatingPricing && (
+              <div className="text-xs text-gray-400 flex items-center gap-1">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                Menghitung diskon & promo...
               </div>
             )}
           </div>
@@ -593,7 +750,7 @@ _Terima kasih atas kunjungan Anda!_`;
               {customerResults.map(c => (
                 <button
                   key={c.id}
-                  onClick={() => { setCustomer(c); setShowCustomerModal(false); }}
+                  onClick={() => handleCustomerSelect(c)}
                   className="w-full p-3 bg-[#0a0608] rounded-lg hover:bg-red-900/20 text-left"
                 >
                   <div className="font-medium">{c.name}</div>
@@ -602,7 +759,7 @@ _Terima kasih atas kunjungan Anda!_`;
               ))}
             </div>
             {customer && (
-              <button onClick={() => { setCustomer(null); setShowCustomerModal(false); }} className="w-full mt-4 py-2 border border-red-900/30 rounded-lg text-red-400 hover:bg-red-900/20">
+              <button onClick={() => { setCustomer(null); setCustomerPriceLevel(1); setShowCustomerModal(false); }} className="w-full mt-4 py-2 border border-red-900/30 rounded-lg text-red-400 hover:bg-red-900/20">
                 Hapus Pelanggan
               </button>
             )}

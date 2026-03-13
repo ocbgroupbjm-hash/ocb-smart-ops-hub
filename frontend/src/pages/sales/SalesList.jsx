@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { 
-  Plus, Search, Eye, Printer, Trash2, Loader2, RefreshCw
+  Plus, Search, Eye, Printer, Trash2, Loader2, RefreshCw, Edit
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { OwnerEditButton, OwnerEditModal } from '../../components/OwnerEditButton';
 
 const formatRupiah = (num) => `Rp ${(num || 0).toLocaleString('id-ID')}`;
 const formatDate = (date) => date ? new Date(date).toLocaleDateString('id-ID') : '-';
@@ -18,11 +19,15 @@ const StatusBadge = ({ status }) => {
 };
 
 const SalesList = () => {
-  const { api } = useAuth();
+  const { api, user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [sales, setSales] = useState([]);
   const [filters, setFilters] = useState({ keyword: '', dateFrom: '', dateTo: '', warehouse_id: '' });
   const [warehouses, setWarehouses] = useState([]);
+  
+  // Owner edit states
+  const [showOwnerEdit, setShowOwnerEdit] = useState(false);
+  const [editItem, setEditItem] = useState(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -144,6 +149,14 @@ const SalesList = () => {
                     <div className="flex gap-1">
                       <a href={`/sales/${s.id}`} className="p-1 hover:bg-gray-700 rounded"><Eye className="h-3.5 w-3.5" /></a>
                       <button className="p-1 hover:bg-gray-700 rounded"><Printer className="h-3.5 w-3.5" /></button>
+                      {/* Owner Edit Button */}
+                      <OwnerEditButton
+                        item={s}
+                        module="sales"
+                        onEdit={(item) => { setEditItem(item); setShowOwnerEdit(true); }}
+                        size="sm"
+                        showLabel={false}
+                      />
                       <button className="p-1 hover:bg-red-700 rounded"><Trash2 className="h-3.5 w-3.5 text-red-400" /></button>
                     </div>
                   </td>
@@ -153,6 +166,19 @@ const SalesList = () => {
           </table>
         </div>
       </div>
+
+      {/* Owner Edit Modal */}
+      <OwnerEditModal
+        isOpen={showOwnerEdit}
+        onClose={() => { setShowOwnerEdit(false); setEditItem(null); }}
+        module="sales"
+        item={editItem}
+        fields={[
+          { name: 'notes', label: 'Catatan', type: 'textarea' },
+          { name: 'discount_amount', label: 'Potongan (Rp)', type: 'number' }
+        ]}
+        onSave={() => { setShowOwnerEdit(false); setEditItem(null); loadData(); }}
+      />
 
       {/* Summary */}
       <div className="bg-gray-800/50 rounded-lg border border-gray-700 p-3">
