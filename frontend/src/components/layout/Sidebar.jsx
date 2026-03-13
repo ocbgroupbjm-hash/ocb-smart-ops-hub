@@ -104,7 +104,8 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       submenu: [
         { name: 'Daftar Item', icon: Package, path: '/master/items' },
         { name: 'Item Baru', icon: Plus, path: '/master/items?new=true' },
-        { name: 'Datasheet', icon: Table, path: '/master/datasheet' },
+        // HIDDEN: MasterDatasheet - jarang dipakai (Phase A Cleanup 2026-03-13)
+        // { name: 'Datasheet', icon: Table, path: '/master/datasheet' },
         // Kartu Stok dipindahkan ke menu Inventory (menghindari duplicate)
         { name: 'Barcode', icon: QrCode, path: '/master/barcode' },
         { divider: true, label: 'Promosi & Diskon' },
@@ -121,7 +122,8 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
         { name: 'Satuan', icon: Scale, path: '/master/units' },
         { name: 'Dept/Gudang', icon: Warehouse, path: '/master/warehouses' },
         { name: 'E-Money', icon: CreditCard, path: '/master/emoney' },
-        { name: 'Jenis Barang', icon: Tags, path: '/master/item-types' },
+        // HIDDEN: MasterItemTypes - jarang dipakai (Phase A Cleanup 2026-03-13)
+        // { name: 'Jenis Barang', icon: Tags, path: '/master/item-types' },
         { name: 'Merk', icon: Award, path: '/master/brands' },
         { name: 'Kategori', icon: Grid, path: '/master/categories' },
         { name: 'Bank', icon: Building2, path: '/master/banks' },
@@ -222,9 +224,10 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
         { name: 'Neraca Saldo', icon: Scale, path: '/accounting/trial-balance' },
         { name: 'Neraca', icon: BookOpen, path: '/accounting/balance-sheet' },
         { name: 'Laba Rugi', icon: BarChart2, path: '/accounting/income-statement' },
-        { divider: true, label: 'Financial Control' },
-        { name: 'Multi Tax Engine', icon: Percent, path: '/accounting/financial-control' },
-        { name: 'Consistency Checker', icon: AlertCircle, path: '/accounting/financial-control' },
+        // HIDDEN: FinancialControl - advanced feature (Phase A Cleanup 2026-03-13)
+        // { divider: true, label: 'Financial Control' },
+        // { name: 'Multi Tax Engine', icon: Percent, path: '/accounting/financial-control' },
+        // { name: 'Consistency Checker', icon: AlertCircle, path: '/accounting/financial-control' },
       ]
     },
 
@@ -337,15 +340,16 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     },
 
     // ============================================================
+    // HIDDEN: WarehouseControl - overlap dengan Inventory (Phase A Cleanup 2026-03-13)
     // BRANCH INVENTORY CONTROL - (Renamed from Warehouse Control)
     // Karena sistem menggunakan konsep: Gudang = Cabang
     // ============================================================
-    {
-      name: 'Branch Inventory Control',
-      icon: Warehouse,
-      path: '/warehouse-control',
-      roles: ['owner', 'admin', 'inventory']
-    },
+    // {
+    //   name: 'Branch Inventory Control',
+    //   icon: Warehouse,
+    //   path: '/warehouse-control',
+    //   roles: ['owner', 'admin', 'inventory']
+    // },
 
     // ============================================================
     // PURCHASE PLANNING - Phase 3
@@ -441,8 +445,10 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
         { name: 'Hallo OCB AI', icon: MessageSquare, path: '/hallo-ai' },
         { divider: true, label: 'War Room & Monitoring' },
         { name: 'War Room', icon: Activity, path: '/warroom' },
-        { name: 'War Room V2', icon: Activity, path: '/war-room-v2' },
-        { name: 'AI War Room Super', icon: Shield, path: '/ai-warroom-super' },
+        // HIDDEN: WarRoomV2 - Phase 6 AI HOLD (Phase A Cleanup 2026-03-13)
+        // { name: 'War Room V2', icon: Activity, path: '/war-room-v2' },
+        // HIDDEN: AIWarRoomSuper - Phase 6 AI HOLD (Phase A Cleanup 2026-03-13)
+        // { name: 'AI War Room Super', icon: Shield, path: '/ai-warroom-super' },
         { name: 'War Room Alerts', icon: Bell, path: '/warroom-alerts' },
         { divider: true, label: 'CRM & KPI' },
         { name: 'CRM AI', icon: Users, path: '/crm-ai' },

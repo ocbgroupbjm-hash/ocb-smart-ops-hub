@@ -9,7 +9,8 @@ import Dashboard from './pages/Dashboard';
 import POS from './pages/POS';
 import Products from './pages/Products';
 import Inventory from './pages/Inventory';
-import Purchase from './pages/Purchase';
+// DELETED: Purchase.jsx - replaced by PurchaseModule.jsx (Phase B Cleanup 2026-03-13)
+// import Purchase from './pages/Purchase';
 import PurchaseModule from './pages/PurchaseModule';
 import Suppliers from './pages/Suppliers';
 import Customers from './pages/Customers';
@@ -102,9 +103,10 @@ import {
   MasterWarehouses, MasterSuppliers, MasterCustomers, MasterSalesPersons,
   MasterCustomerGroups, MasterRegions, MasterBanks, MasterEmoney,
   MasterShippingCosts, MasterDiscounts, MasterPromotions,
-  MasterItemTypes, MasterCustomerPoints, MasterBarcode, MasterStockCards, MasterDatasheet,
+  MasterItemTypes, MasterCustomerPoints, MasterBarcode, MasterDatasheet,
   SettingAkunERP
 } from './pages/master';
+// DELETED: MasterStockCards - replaced by KartuStok.jsx (Phase B Cleanup 2026-03-13)
 
 // Purchase Pages
 import { 
@@ -252,7 +254,8 @@ function App() {
             <Route path="kasir" element={<POS />} />
             <Route path="produk" element={<Products />} />
             <Route path="stok" element={<Inventory />} />
-            <Route path="pembelian" element={<Purchase />} />
+            {/* REDIRECT: /pembelian -> /purchase (Phase B Cleanup 2026-03-13) */}
+            <Route path="pembelian" element={<Navigate to="/purchase" replace />} />
             <Route path="supplier" element={<Suppliers />} />
             <Route path="pelanggan" element={<Customers />} />
             <Route path="keuangan" element={<Finance />} />
@@ -280,7 +283,8 @@ function App() {
             <Route path="master/emoney" element={<MasterEmoney />} />
             <Route path="master/banks" element={<MasterBanks />} />
             <Route path="master/shipping-costs" element={<MasterShippingCosts />} />
-            <Route path="master/stock-cards" element={<MasterStockCards />} />
+            {/* DELETED: master/stock-cards route - use /inventory/kartu-stok instead (Phase B Cleanup 2026-03-13) */}
+            <Route path="master/stock-cards" element={<Navigate to="/inventory/kartu-stok" replace />} />
             <Route path="master/discounts" element={<MasterDiscounts />} />
             <Route path="master/promotions" element={<MasterPromotions />} />
             <Route path="master/item-types" element={<MasterItemTypes />} />

@@ -16,6 +16,7 @@ export { default as MasterPromotions } from './MasterPromotions';
 export { default as MasterItemTypes } from './MasterItemTypes';
 export { default as MasterCustomerPoints } from './MasterCustomerPoints';
 export { default as MasterBarcode } from './MasterBarcode';
-export { default as MasterStockCards } from './MasterStockCards';
+// DELETED: MasterStockCards - replaced by KartuStok.jsx (Phase B Cleanup 2026-03-13)
+// export { default as MasterStockCards } from './MasterStockCards';
 export { default as MasterDatasheet } from './MasterDatasheet';
 export { default as SettingAkunERP } from './SettingAkunERP';
