@@ -18,7 +18,60 @@ Sistem ERP retail lengkap dengan AI untuk OCB Group yang mencakup:
 
 ## COMPLETED FEATURES (March 12, 2026)
 
-### SYSTEM ARCHITECTURE CONTROL ✅ (Latest)
+### RBAC, KASIR FLOW & ACCESS CONTROL ✅ (Latest - March 13, 2026)
+
+#### 1. KASIR SHIFT FLOW - WAJIB ✅
+**Frontend:** `/app/frontend/src/components/layout/DashboardLayout.jsx`, `/app/frontend/src/components/layout/Sidebar.jsx`
+**Backend:** `/app/backend/routes/pos.py`, `/app/backend/routes/sales_module.py`
+
+**Flow Kasir:**
+```
+Login → Kontrol Kas → Buka Shift → Penjualan → Tutup Shift → Logout
+```
+
+**Rules Implemented:**
+- ✅ Kasir tidak boleh transaksi jika shift belum dibuka (403 SHIFT_REQUIRED)
+- ✅ Kasir tidak boleh logout jika shift masih aktif (modal warning)
+- ✅ Semua transaksi kasir terikat ke shift_id, cashier_user_id, branch_id
+- ✅ Warning banner ditampilkan jika kasir belum buka shift
+- ✅ Route guard memblokir akses ke /kasir, /sales/add tanpa shift
+
+#### 2. RBAC SINKRONISASI - SINGLE SOURCE OF TRUTH ✅
+**Frontend:** `/app/frontend/src/utils/rbacHelper.js`
+
+**Permission Matrix per Role:**
+- **owner/pemilik/super_admin**: Level 0, all modules, all actions
+- **admin**: Level 1, full access except owner-only
+- **direktur**: Level 2, strategic view, limited edit
+- **manager**: Level 3, operational management
+- **supervisor**: Level 4, team supervision
+- **finance/keuangan**: Level 5, financial operations
+- **gudang/inventory**: Level 6, warehouse operations
+- **kasir/cashier**: Level 7, MINIMAL ACCESS (requires_shift: true)
+- **sales**: Level 6, sales operations
+
+**Kasir Access Control:**
+```javascript
+// Kasir HANYA boleh akses:
+modules: ['dashboard', 'sales', 'cash_control']
+actions: ['view', 'create', 'print']
+
+// Kasir TIDAK BOLEH akses:
+forbidden_modules: ['accounting', 'ap', 'ar', 'master', 'purchase', 
+                    'setting', 'hr', 'credit_control', 'ai_tools']
+```
+
+**Menu Sinkronisasi:**
+- Sidebar.jsx menggunakan `getKasirAllowedMenus()` untuk filter menu kasir
+- Menu yang tampil = permission yang ada di database
+- Tidak ada hardcode menu yang tidak membaca permission
+
+#### 3. OWNER FULL ACCESS + AUDIT TRAIL ✅
+- Owner tetap bisa edit semua modul
+- Setiap edit memicu audit log, stock recalculation, journal recalculation
+- Audit log mencatat: user, action, module, old_value, new_value, timestamp
+
+### SYSTEM ARCHITECTURE CONTROL ✅
 
 #### 1. STOCK CARD - SINGLE SOURCE OF TRUTH ✅
 **Backend Service:** `/app/backend/services/stock_ssot.py`
@@ -176,7 +229,9 @@ Sistem ERP retail lengkap dengan AI untuk OCB Group yang mencakup:
 │   │   ├── barcode_engine.py      # Barcode templates CRUD
 │   │   ├── loyalty_points.py      # Customer points system
 │   │   ├── sales_target.py        # Sales target tracking
-│   │   ├── cash_control.py        # Cashier shift management
+│   │   ├── cash_control.py        # Cashier shift management + shift validation
+│   │   ├── pos.py                 # POS with kasir shift validation
+│   │   ├── sales_module.py        # Sales with kasir shift validation
 │   │   ├── erp_hardening.py       # Fiscal Period & Multi-Currency
 │   │   └── account_settings.py    # Default ERP accounts
 │   ├── services/
@@ -186,6 +241,10 @@ Sistem ERP retail lengkap dengan AI untuk OCB Group yang mencakup:
 │   └── server.py                  # FastAPI main app
 └── frontend/
     └── src/
+        ├── utils/
+        │   └── rbacHelper.js             # RBAC Permission Helper (SINGLE SOURCE)
+        ├── hooks/
+        │   └── useShiftGuard.js          # Kasir shift guard hooks
         ├── pages/master/
         │   ├── MasterBarcode.jsx         # Barcode printing UI
         │   ├── MasterDiscounts.jsx       # Discount management
@@ -193,7 +252,8 @@ Sistem ERP retail lengkap dengan AI untuk OCB Group yang mencakup:
         │   ├── MasterCustomerGroups.jsx  # Customer groups with price levels
         │   └── MasterCustomerPoints.jsx  # Loyalty points UI
         └── components/layout/
-            └── Sidebar.jsx               # Navigation (module cleanup applied)
+            ├── Sidebar.jsx               # Navigation (RBAC filtered, shift guard)
+            └── DashboardLayout.jsx       # Layout with kasir shift validation
 ```
 
 ## Database Collections
@@ -214,6 +274,13 @@ Sistem ERP retail lengkap dengan AI untuk OCB Group yang mencakup:
 ## P0/P1/P2 Backlog
 
 ### P0 - COMPLETED
+- [x] RBAC, Kasir Flow & Access Control (Latest)
+  - [x] Kasir shift flow (buka shift → transaksi → tutup shift → logout)
+  - [x] Kasir tidak boleh transaksi tanpa shift (403 SHIFT_REQUIRED)
+  - [x] Kasir tidak boleh logout dengan shift aktif (modal warning)
+  - [x] RBAC sinkronisasi (permission = menu = route = API)
+  - [x] Kasir hanya akses: Dashboard, Penjualan, Kontrol Kas
+  - [x] Owner full access dengan audit trail
 - [x] System Architecture Control
   - [x] Stock Card Single Source of Truth
   - [x] Owner Full Edit Control
