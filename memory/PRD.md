@@ -67,12 +67,22 @@ Membangun sistem ERP retail komprehensif (OCB TITAN) dengan fitur POS, Inventory
 
 **Inventory Modules:**
 - Stock Transfers - 3 tombol toolbar
+- Stock Opname - 5 tombol (Tambah Opname, Edit, Hapus, Print, Approve) + Custom branch buttons
 
-**Bug Fixes (Batch 3 - 2026-03-13):**
+**Bug Fixes (Batch 3-4 - 2026-03-13):**
 - Fixed: AR Payment dropdown akun kas/bank kosong (endpoint /api/accounting/coa → /api/accounting/accounts)
+- Fixed: RBAC middleware tidak bisa lookup role by role_code
+- Fixed: Stock Opname icon rendering crash (Lucide icon passed as object instead of JSX)
 
-**Remaining:**
-- Stock Opname / Inventory Adjustment toolbar
+**Database Initialization (Batch 4 - 2026-03-13):**
+- Created `/app/backend/routes/database_init.py` - Service inisialisasi database
+- Auto-init saat login: accounts, account_settings, numbering_settings, branches, company_profile, roles
+- Endpoint: `/api/system/init-check` untuk verifikasi kesiapan database
+
+**RBAC Validation (Batch 4 - 2026-03-13):**
+- Owner role: Full access dengan permissions ['*']
+- Kasir role: Limited - hanya POS, view products, tidak bisa delete master/edit jurnal
+- RBAC middleware diperbaiki untuk support role_code lookup
 
 ---
 
@@ -140,25 +150,28 @@ Membangun sistem ERP retail komprehensif (OCB TITAN) dengan fitur POS, Inventory
 - `/app/test_reports/iteration_52.json` - ERP Toolbar Batch 1 (100% PASS)
 - `/app/test_reports/iteration_53.json` - ERP Toolbar Batch 2 - Purchase & Sales Sub-Modules (100% PASS)
 - `/app/test_reports/iteration_54.json` - ERP Toolbar Batch 3 - Accounting + AR Payment Fix (100% PASS)
+- `/app/test_reports/iteration_55.json` - Final Validation: RBAC, Stock Opname, DB Init (100% PASS)
 
 ---
 
 ## Prioritized Backlog
 
-### P0 - Critical
-- [x] Kartu Stok Modal - Sudah terimplementasi di Master Items
+### P0 - Critical ✅ COMPLETED
+- [x] Kartu Stok Modal - Terimplementasi di Master Items
 - [x] Standard Toolbar di semua modul Purchase & Sales
 - [x] Standard Toolbar di modul Accounting (Kas, Jurnal, COA)
 - [x] Fix dropdown Akun Kas/Bank di AR Payment
+- [x] Stock Opname dengan ERPActionToolbar
+- [x] Database Initialization Service
+- [x] RBAC validation (Owner, Kasir)
 
 ### P1 - High Priority  
-- [ ] Stock Opname toolbar
-- [ ] Validasi RBAC komprehensif dengan berbagai role (Owner vs Kasir)
-- [ ] Test jurnal pembayaran piutang (journal entry untuk AR payment)
+- [ ] Test jurnal AR Payment (double-entry Debit Kas, Credit Piutang)
+- [ ] Export Excel implementation
+- [ ] Print functionality implementation
 
 ### P2 - Medium Priority
-- [ ] Print functionality implementation
-- [ ] Import/Export Excel implementation
+- [ ] Import Excel untuk master data
 
 ### P3 - Future
 - Phase 6: AI Business Engine (ON HOLD)
@@ -196,4 +209,4 @@ Membangun sistem ERP retail komprehensif (OCB TITAN) dengan fitur POS, Inventory
 
 ---
 
-*Last Updated: 2026-03-13 (Iteration 54)*
+*Last Updated: 2026-03-13 (Iteration 55 - Final Validation)*
