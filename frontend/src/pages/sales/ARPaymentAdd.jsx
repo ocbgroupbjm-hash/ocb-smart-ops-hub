@@ -49,11 +49,20 @@ const ARPaymentAdd = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const accRes = await api('/api/accounting/coa?type=kas');
+        // Load cash and bank accounts from Chart of Accounts
+        // Filter: category = asset AND code starts with 1-1 (cash/bank accounts)
+        const accRes = await api('/api/accounting/accounts?category=asset');
         if (accRes.ok) {
           const data = await accRes.json();
-          const accs = data.accounts || data.items || data || [];
-          setAccounts(accs.map(a => ({
+          const allAccs = data.items || data.accounts || data || [];
+          // Filter only kas/bank accounts (codes 1-1xxx are typically cash and bank)
+          const kasBank = allAccs.filter(a => 
+            a.is_active !== false && 
+            (a.code?.startsWith('1-1') || 
+             a.name?.toLowerCase().includes('kas') || 
+             a.name?.toLowerCase().includes('bank'))
+          );
+          setAccounts(kasBank.map(a => ({
             value: a.id || a.code,
             label: `${a.code} - ${a.name}`,
             code: a.code,
@@ -164,6 +173,10 @@ const ARPaymentAdd = () => {
   const handleSave = async () => {
     if (!form.customer_id) {
       toast.error('Pilih pelanggan');
+      return;
+    }
+    if (!form.account_id) {
+      toast.error('Pilih akun Kas/Bank');
       return;
     }
     if (form.items.length === 0) {

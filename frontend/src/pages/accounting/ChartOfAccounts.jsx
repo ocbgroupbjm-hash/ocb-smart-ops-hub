@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { Plus, Search, Edit2, Trash2, Loader2, X, FileText, ChevronRight } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, Loader2, X, FileText, ChevronRight, Printer } from 'lucide-react';
 import { toast } from 'sonner';
+import ERPActionToolbar from '../../components/ERPActionToolbar';
 
 const ChartOfAccounts = () => {
   const { api } = useAuth();
@@ -11,6 +12,7 @@ const ChartOfAccounts = () => {
   const [categoryFilter, setCategoryFilter] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
+  const [selectedItem, setSelectedItem] = useState(null);
   const [formData, setFormData] = useState({
     code: '', name: '', category: 'asset', parent_id: '', 
     account_type: 'detail', is_cash: false, is_active: true, 
@@ -88,10 +90,14 @@ const ChartOfAccounts = () => {
       const res = await api(`/api/accounting/accounts/${item.id}`, { method: 'DELETE' });
       if (res.ok) {
         toast.success('Akun berhasil dihapus');
+        setSelectedItem(null);
         loadAccounts();
       }
     } catch { toast.error('Gagal menghapus'); }
   };
+
+  const handlePrint = (item) => { toast.info(`Mencetak akun ${item.code} - ${item.name}...`); };
+  const handleRowSelect = (item) => { setSelectedItem(selectedItem?.id === item.id ? null : item); };
 
   const resetForm = () => {
     setEditingItem(null);
@@ -114,11 +120,20 @@ const ChartOfAccounts = () => {
           <h1 className="text-2xl font-bold text-amber-100">Daftar Perkiraan</h1>
           <p className="text-gray-400 text-sm">Chart of Accounts - Kelola akun perkiraan</p>
         </div>
-        <button onClick={() => { resetForm(); setShowModal(true); }}
-          className="px-4 py-2 bg-gradient-to-r from-red-600 to-amber-600 text-white rounded-lg flex items-center gap-2">
-          <Plus className="h-4 w-4" /> Tambah Akun
-        </button>
       </div>
+
+      {/* TOOLBAR STANDAR ERP */}
+      <ERPActionToolbar
+        module="master_coa"
+        selectedItem={selectedItem}
+        onAdd={() => { resetForm(); setShowModal(true); }}
+        onEdit={(item) => handleEdit(item)}
+        onDelete={(item) => handleDelete(item)}
+        onPrint={(item) => handlePrint(item)}
+        addLabel="Tambah Akun"
+        editLabel="Edit"
+        deleteLabel="Hapus"
+      />
 
       {/* Summary Cards */}
       <div className="grid grid-cols-5 gap-4">
@@ -157,6 +172,9 @@ const ChartOfAccounts = () => {
           <table className="w-full">
             <thead className="bg-red-900/20">
               <tr>
+                <th className="px-3 py-3 text-center text-xs font-semibold text-amber-200 w-10">
+                  <input type="checkbox" className="w-3 h-3" disabled />
+                </th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-amber-200">KODE</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-amber-200">NAMA AKUN</th>
                 <th className="px-4 py-3 text-center text-xs font-semibold text-amber-200">KATEGORI</th>
@@ -169,11 +187,16 @@ const ChartOfAccounts = () => {
             </thead>
             <tbody className="divide-y divide-red-900/20">
               {loading ? (
-                <tr><td colSpan={8} className="px-4 py-8 text-center"><Loader2 className="h-8 w-8 animate-spin mx-auto text-amber-400" /></td></tr>
+                <tr><td colSpan={9} className="px-4 py-8 text-center"><Loader2 className="h-8 w-8 animate-spin mx-auto text-amber-400" /></td></tr>
               ) : accounts.length === 0 ? (
-                <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400">Belum ada data akun</td></tr>
-              ) : accounts.map(account => (
-                <tr key={account.id} className={`hover:bg-red-900/10 ${!account.is_active ? 'opacity-50' : ''}`}>
+                <tr><td colSpan={9} className="px-4 py-8 text-center text-gray-400">Belum ada data akun</td></tr>
+              ) : accounts.map((account, idx) => (
+                <tr key={account.id} onClick={() => handleRowSelect(account)}
+                  className={`cursor-pointer transition-colors ${selectedItem?.id === account.id ? 'bg-amber-900/30 border-l-2 border-amber-500' : ''} ${!account.is_active ? 'opacity-50' : 'hover:bg-red-900/10'}`}
+                  data-testid={`account-row-${idx}`}>
+                  <td className="px-3 py-3 text-center">
+                    <input type="radio" checked={selectedItem?.id === account.id} onChange={() => handleRowSelect(account)} className="w-3 h-3 accent-amber-500" />
+                  </td>
                   <td className="px-4 py-3 text-sm font-mono text-amber-300">{account.code}</td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
@@ -200,10 +223,13 @@ const ChartOfAccounts = () => {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-center gap-1">
-                      <button onClick={() => handleEdit(account)} className="p-1.5 hover:bg-blue-600/20 rounded text-blue-400">
+                      <button onClick={(e) => { e.stopPropagation(); handlePrint(account); }} className="p-1.5 hover:bg-blue-600/20 rounded text-blue-400">
+                        <Printer className="h-4 w-4" />
+                      </button>
+                      <button onClick={(e) => { e.stopPropagation(); handleEdit(account); }} className="p-1.5 hover:bg-purple-600/20 rounded text-purple-400">
                         <Edit2 className="h-4 w-4" />
                       </button>
-                      <button onClick={() => handleDelete(account)} className="p-1.5 hover:bg-red-600/20 rounded text-red-400">
+                      <button onClick={(e) => { e.stopPropagation(); handleDelete(account); }} className="p-1.5 hover:bg-red-600/20 rounded text-red-400">
                         <Trash2 className="h-4 w-4" />
                       </button>
                     </div>

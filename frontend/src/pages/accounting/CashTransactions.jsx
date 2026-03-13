@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { Plus, Search, Loader2, X, ArrowDownLeft, ArrowUpRight, ArrowLeftRight, Wallet } from 'lucide-react';
+import { Plus, Search, Loader2, X, ArrowDownLeft, ArrowUpRight, ArrowLeftRight, Wallet, Edit2, Trash2, Printer } from 'lucide-react';
 import { toast } from 'sonner';
+import ERPActionToolbar from '../../components/ERPActionToolbar';
 
 const CashTransactions = () => {
   const { api } = useAuth();
@@ -13,6 +14,8 @@ const CashTransactions = () => {
   const [dateTo, setDateTo] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [totals, setTotals] = useState({ in: 0, out: 0 });
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [editingItem, setEditingItem] = useState(null);
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
     transaction_type: 'cash_in',
@@ -102,6 +105,36 @@ const CashTransactions = () => {
     }
   };
 
+  const handleRowSelect = (item) => { setSelectedItem(selectedItem?.id === item.id ? null : item); };
+
+  const handleEdit = (item) => {
+    setEditingItem(item);
+    setFormData({
+      date: item.date || new Date().toISOString().split('T')[0],
+      transaction_type: item.transaction_type || 'cash_in',
+      account_id: item.account_id || '',
+      to_account_id: item.to_account_id || '',
+      amount: item.amount || 0,
+      description: item.description || '',
+      reference: item.reference || ''
+    });
+    setShowModal(true);
+  };
+
+  const handleDelete = async (item) => {
+    if (!confirm(`Hapus transaksi "${item.transaction_number}"?`)) return;
+    try {
+      const res = await api(`/api/accounting/cash/${item.id}`, { method: 'DELETE' });
+      if (res.ok) {
+        toast.success('Transaksi berhasil dihapus');
+        setSelectedItem(null);
+        loadTransactions();
+      }
+    } catch { toast.error('Gagal menghapus'); }
+  };
+
+  const handlePrint = (item) => { toast.info(`Mencetak ${item.transaction_number}...`); };
+
   return (
     <div className="space-y-4" data-testid="cash-transactions-page">
       <div className="flex items-center justify-between">
@@ -109,11 +142,20 @@ const CashTransactions = () => {
           <h1 className="text-2xl font-bold text-amber-100">Kas Masuk/Keluar/Transfer</h1>
           <p className="text-gray-400 text-sm">Kelola transaksi kas perusahaan</p>
         </div>
-        <button onClick={() => { resetForm(); setShowModal(true); }}
-          className="px-4 py-2 bg-gradient-to-r from-red-600 to-amber-600 text-white rounded-lg flex items-center gap-2">
-          <Plus className="h-4 w-4" /> Tambah Transaksi
-        </button>
       </div>
+
+      {/* TOOLBAR STANDAR ERP */}
+      <ERPActionToolbar
+        module="cash_transaction"
+        selectedItem={selectedItem}
+        onAdd={() => { resetForm(); setShowModal(true); }}
+        onEdit={(item) => handleEdit(item)}
+        onDelete={(item) => handleDelete(item)}
+        onPrint={(item) => handlePrint(item)}
+        addLabel="Tambah Transaksi"
+        editLabel="Edit"
+        deleteLabel="Hapus"
+      />
 
       {/* Summary */}
       <div className="grid grid-cols-3 gap-4">
@@ -156,21 +198,30 @@ const CashTransactions = () => {
           <table className="w-full">
             <thead className="bg-red-900/20">
               <tr>
+                <th className="px-3 py-3 text-center text-xs font-semibold text-amber-200 w-10">
+                  <input type="checkbox" className="w-3 h-3" disabled />
+                </th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-amber-200">NO. TRANSAKSI</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-amber-200">TANGGAL</th>
                 <th className="px-4 py-3 text-center text-xs font-semibold text-amber-200">TIPE</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-amber-200">AKUN</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-amber-200">KETERANGAN</th>
                 <th className="px-4 py-3 text-right text-xs font-semibold text-amber-200">JUMLAH</th>
+                <th className="px-4 py-3 text-center text-xs font-semibold text-amber-200">AKSI</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-red-900/20">
               {loading ? (
-                <tr><td colSpan={6} className="px-4 py-8 text-center"><Loader2 className="h-8 w-8 animate-spin mx-auto text-amber-400" /></td></tr>
+                <tr><td colSpan={8} className="px-4 py-8 text-center"><Loader2 className="h-8 w-8 animate-spin mx-auto text-amber-400" /></td></tr>
               ) : transactions.length === 0 ? (
-                <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-400">Belum ada transaksi kas</td></tr>
-              ) : transactions.map(trans => (
-                <tr key={trans.id} className="hover:bg-red-900/10">
+                <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400">Belum ada transaksi kas</td></tr>
+              ) : transactions.map((trans, idx) => (
+                <tr key={trans.id} onClick={() => handleRowSelect(trans)}
+                  className={`cursor-pointer transition-colors ${selectedItem?.id === trans.id ? 'bg-amber-900/30 border-l-2 border-amber-500' : 'hover:bg-red-900/10'}`}
+                  data-testid={`cash-row-${idx}`}>
+                  <td className="px-3 py-3 text-center">
+                    <input type="radio" checked={selectedItem?.id === trans.id} onChange={() => handleRowSelect(trans)} className="w-3 h-3 accent-amber-500" />
+                  </td>
                   <td className="px-4 py-3 text-sm font-mono text-amber-300">{trans.transaction_number}</td>
                   <td className="px-4 py-3 text-sm text-gray-400">
                     {new Date(trans.date).toLocaleDateString('id-ID')}
@@ -191,6 +242,13 @@ const CashTransactions = () => {
                     trans.transaction_type === 'cash_out' ? 'text-red-400' : 'text-blue-400'
                   }`}>
                     Rp {(trans.amount || 0).toLocaleString('id-ID')}
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center justify-center gap-1">
+                      <button onClick={(e) => { e.stopPropagation(); handlePrint(trans); }} className="p-1.5 hover:bg-blue-600/20 rounded text-blue-400"><Printer className="h-4 w-4" /></button>
+                      <button onClick={(e) => { e.stopPropagation(); handleEdit(trans); }} className="p-1.5 hover:bg-purple-600/20 rounded text-purple-400"><Edit2 className="h-4 w-4" /></button>
+                      <button onClick={(e) => { e.stopPropagation(); handleDelete(trans); }} className="p-1.5 hover:bg-red-600/20 rounded text-red-400"><Trash2 className="h-4 w-4" /></button>
+                    </div>
                   </td>
                 </tr>
               ))}

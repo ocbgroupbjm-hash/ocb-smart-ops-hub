@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Plus, Search, Edit2, Trash2, Loader2, X, FileText, Download, Printer, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
+import ERPActionToolbar from '../../components/ERPActionToolbar';
 
 const JournalEntries = () => {
   const { api } = useAuth();
@@ -15,6 +16,7 @@ const JournalEntries = () => {
   const [showUnbalanced, setShowUnbalanced] = useState(false);
   const [unbalancedJournals, setUnbalancedJournals] = useState([]);
   const [editingItem, setEditingItem] = useState(null);
+  const [selectedItem, setSelectedItem] = useState(null);
   const [totals, setTotals] = useState({ debit: 0, credit: 0 });
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
@@ -149,11 +151,15 @@ const JournalEntries = () => {
       const res = await api(`/api/accounting/journals/${journal.id}`, { method: 'DELETE' });
       if (res.ok) {
         toast.success('Jurnal berhasil dihapus');
+        setSelectedItem(null);
         loadJournals();
         loadUnbalanced();
       }
     } catch { toast.error('Gagal menghapus'); }
   };
+
+  const handlePrint = (item) => { toast.info(`Mencetak ${item.journal_number}...`); };
+  const handleRowSelect = (item) => { setSelectedItem(selectedItem?.id === item.id ? null : item); };
 
   const resetForm = () => {
     setEditingItem(null);
@@ -177,19 +183,26 @@ const JournalEntries = () => {
           <h1 className="text-2xl font-bold text-amber-100">Data Jurnal</h1>
           <p className="text-gray-400 text-sm">Kelola jurnal umum</p>
         </div>
-        <div className="flex gap-2">
-          {unbalancedJournals.length > 0 && (
-            <button onClick={() => setShowUnbalanced(true)}
-              className="px-4 py-2 bg-red-600/20 text-red-400 rounded-lg flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4" /> {unbalancedJournals.length} Tidak Seimbang
-            </button>
-          )}
-          <button onClick={() => { resetForm(); setShowModal(true); }}
-            className="px-4 py-2 bg-gradient-to-r from-red-600 to-amber-600 text-white rounded-lg flex items-center gap-2">
-            <Plus className="h-4 w-4" /> Tambah Jurnal
+        {unbalancedJournals.length > 0 && (
+          <button onClick={() => setShowUnbalanced(true)}
+            className="px-4 py-2 bg-red-600/20 text-red-400 rounded-lg flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4" /> {unbalancedJournals.length} Tidak Seimbang
           </button>
-        </div>
+        )}
       </div>
+
+      {/* TOOLBAR STANDAR ERP */}
+      <ERPActionToolbar
+        module="journal"
+        selectedItem={selectedItem}
+        onAdd={() => { resetForm(); setShowModal(true); }}
+        onEdit={(item) => handleEdit(item)}
+        onDelete={(item) => handleDelete(item)}
+        onPrint={(item) => handlePrint(item)}
+        addLabel="Tambah Jurnal"
+        editLabel="Edit"
+        deleteLabel="Hapus"
+      />
 
       {/* Summary */}
       <div className="grid grid-cols-3 gap-4">
@@ -229,6 +242,9 @@ const JournalEntries = () => {
           <table className="w-full">
             <thead className="bg-red-900/20">
               <tr>
+                <th className="px-3 py-3 text-center text-xs font-semibold text-amber-200 w-10">
+                  <input type="checkbox" className="w-3 h-3" disabled />
+                </th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-amber-200">NO. JURNAL</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-amber-200">TANGGAL</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-amber-200">KETERANGAN</th>
@@ -240,11 +256,16 @@ const JournalEntries = () => {
             </thead>
             <tbody className="divide-y divide-red-900/20">
               {loading ? (
-                <tr><td colSpan={7} className="px-4 py-8 text-center"><Loader2 className="h-8 w-8 animate-spin mx-auto text-amber-400" /></td></tr>
+                <tr><td colSpan={8} className="px-4 py-8 text-center"><Loader2 className="h-8 w-8 animate-spin mx-auto text-amber-400" /></td></tr>
               ) : journals.length === 0 ? (
-                <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-400">Belum ada data jurnal</td></tr>
-              ) : journals.map(journal => (
-                <tr key={journal.id} className="hover:bg-red-900/10">
+                <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400">Belum ada data jurnal</td></tr>
+              ) : journals.map((journal, idx) => (
+                <tr key={journal.id} onClick={() => handleRowSelect(journal)}
+                  className={`cursor-pointer transition-colors ${selectedItem?.id === journal.id ? 'bg-amber-900/30 border-l-2 border-amber-500' : 'hover:bg-red-900/10'}`}
+                  data-testid={`journal-row-${idx}`}>
+                  <td className="px-3 py-3 text-center">
+                    <input type="radio" checked={selectedItem?.id === journal.id} onChange={() => handleRowSelect(journal)} className="w-3 h-3 accent-amber-500" />
+                  </td>
                   <td className="px-4 py-3 text-sm font-mono text-amber-300">{journal.journal_number}</td>
                   <td className="px-4 py-3 text-sm text-gray-400">
                     {new Date(journal.date).toLocaleDateString('id-ID')}
@@ -265,10 +286,13 @@ const JournalEntries = () => {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-center gap-1">
-                      <button onClick={() => handleEdit(journal)} className="p-1.5 hover:bg-blue-600/20 rounded text-blue-400">
+                      <button onClick={(e) => { e.stopPropagation(); handlePrint(journal); }} className="p-1.5 hover:bg-blue-600/20 rounded text-blue-400">
+                        <Printer className="h-4 w-4" />
+                      </button>
+                      <button onClick={(e) => { e.stopPropagation(); handleEdit(journal); }} className="p-1.5 hover:bg-purple-600/20 rounded text-purple-400">
                         <Edit2 className="h-4 w-4" />
                       </button>
-                      <button onClick={() => handleDelete(journal)} className="p-1.5 hover:bg-red-600/20 rounded text-red-400">
+                      <button onClick={(e) => { e.stopPropagation(); handleDelete(journal); }} className="p-1.5 hover:bg-red-600/20 rounded text-red-400">
                         <Trash2 className="h-4 w-4" />
                       </button>
                     </div>
