@@ -4,9 +4,10 @@ import {
   Plus, Search, Eye, Printer, Edit, Trash2, Save, X, Loader2,
   FileText, Package, Truck, CreditCard, RotateCcw, History,
   Calendar, Check, ChevronDown, ChevronRight, RefreshCw,
-  Download, Upload, Filter, Building2
+  Download, Upload, Filter, Building2, AlertTriangle
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { OwnerEditButton, OwnerEditModal, AuditLogButton, isOwner } from '../components/OwnerEditButton';
 
 // ==================== UTILITY FUNCTIONS ====================
 const formatRupiah = (num) => `Rp ${(num || 0).toLocaleString('id-ID')}`;
@@ -88,6 +89,11 @@ const PurchaseModule = () => {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   
+  // Owner Edit Modal States
+  const [showOwnerEditModal, setShowOwnerEditModal] = useState(false);
+  const [ownerEditItem, setOwnerEditItem] = useState(null);
+  const [ownerEditModule, setOwnerEditModule] = useState('');
+  
   // Form States
   const [poForm, setPoForm] = useState({
     supplier_id: '',
@@ -115,6 +121,37 @@ const PurchaseModule = () => {
     notes: '',
     items: []
   });
+
+  // ==================== OWNER EDIT HANDLERS ====================
+  const handleOwnerEdit = (item, module) => {
+    setOwnerEditItem(item);
+    setOwnerEditModule(module);
+    setShowOwnerEditModal(true);
+  };
+
+  const handleOwnerEditSave = async (result) => {
+    // Refresh data after owner edit
+    if (ownerEditModule === 'purchase-order') {
+      await loadOrders();
+    } else if (ownerEditModule === 'purchase') {
+      await loadPurchases();
+    }
+    setShowOwnerEditModal(false);
+    setOwnerEditItem(null);
+  };
+
+  // Define editable fields for each module
+  const getOwnerEditFields = (module) => {
+    if (module === 'purchase-order') {
+      return [
+        { name: 'notes', label: 'Catatan', type: 'textarea', placeholder: 'Catatan PO...' },
+        { name: 'expected_date', label: 'Tanggal Diharapkan', type: 'date' }
+      ];
+    }
+    return [
+      { name: 'notes', label: 'Catatan', type: 'textarea' }
+    ];
+  };
 
   // ==================== DATA LOADING ====================
   const loadMasterData = useCallback(async () => {
@@ -650,6 +687,18 @@ const PurchaseModule = () => {
                         >
                           <Eye className="h-4 w-4 text-gray-400" />
                         </button>
+                        
+                        {/* OWNER EDIT BUTTON - Only visible for owner role */}
+                        {isOwner(user) && (
+                          <OwnerEditButton
+                            item={order}
+                            module="purchase-order"
+                            onEdit={(item) => handleOwnerEdit(item, 'purchase-order')}
+                            size="sm"
+                            showLabel={false}
+                          />
+                        )}
+                        
                         {order.status === 'draft' && (
                           <>
                             <button
@@ -1840,6 +1889,16 @@ const PurchaseModule = () => {
         {showReceiveModal && renderReceiveModal()}
         {showPaymentModal && renderPaymentModal()}
         {showDetailModal && renderDetailModal()}
+        
+        {/* Owner Edit Modal */}
+        <OwnerEditModal
+          isOpen={showOwnerEditModal}
+          onClose={() => { setShowOwnerEditModal(false); setOwnerEditItem(null); }}
+          module={ownerEditModule}
+          item={ownerEditItem}
+          fields={getOwnerEditFields(ownerEditModule)}
+          onSave={handleOwnerEditSave}
+        />
       </div>
     </div>
   );

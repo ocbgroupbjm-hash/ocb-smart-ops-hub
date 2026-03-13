@@ -1121,3 +1121,103 @@ async def delete_item_type(item_type_id: str, user: dict = Depends(get_current_u
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Jenis barang tidak ditemukan")
     return {"success": True}
+
+
+
+# ==================== AUTO-APPLY DISCOUNT & PROMO API ====================
+
+class PricingRequest(BaseModel):
+    items: List[dict]
+    customer_id: Optional[str] = None
+    branch_id: Optional[str] = None
+
+@router.post("/calculate-pricing")
+async def calculate_pricing(
+    data: PricingRequest,
+    user: dict = Depends(get_current_user)
+):
+    """
+    Calculate pricing with auto-applied discounts, promotions, and price levels.
+    
+    Request body:
+    {
+        "items": [{"product_id": "...", "quantity": 10, "unit_price": 50000}],
+        "customer_id": "optional",
+        "branch_id": "optional"
+    }
+    
+    Returns:
+    - items: with applied price levels and discounts
+    - free_items: from promotions
+    - discounts: list of applied discounts
+    - promotions: list of applied promotions
+    - totals: calculated totals
+    """
+    from services.discount_promo_engine import get_discount_promo_engine
+    
+    engine = get_discount_promo_engine(db)
+    result = await engine.process_transaction(data.items, data.customer_id, data.branch_id)
+    
+    return result
+
+
+@router.get("/price-for-customer/{product_id}/{customer_id}")
+async def get_price_for_customer_api(
+    product_id: str,
+    customer_id: str,
+    user: dict = Depends(get_current_user)
+):
+    """
+    Get correct price for item based on customer's price level.
+    Use this when adding item to cart after customer is selected.
+    """
+    from services.discount_promo_engine import get_discount_promo_engine
+    
+    engine = get_discount_promo_engine(db)
+    result = await engine.get_price_for_customer(product_id, customer_id)
+    
+    return result
+
+
+class DiscountCheckRequest(BaseModel):
+    item: dict
+    customer_id: Optional[str] = None
+    branch_id: Optional[str] = None
+
+@router.post("/check-discounts")
+async def check_item_discounts(
+    data: DiscountCheckRequest,
+    user: dict = Depends(get_current_user)
+):
+    """
+    Check applicable discounts for a single item.
+    Returns list of all applicable discounts sorted by priority.
+    """
+    from services.discount_promo_engine import get_discount_promo_engine
+    
+    engine = get_discount_promo_engine(db)
+    result = await engine.calculate_item_discounts(data.item, data.customer_id, data.branch_id)
+    
+    return {"discounts": result}
+
+
+class PromoCheckRequest(BaseModel):
+    items: List[dict]
+    customer_id: Optional[str] = None
+    branch_id: Optional[str] = None
+
+@router.post("/check-promotions")
+async def check_promotions(
+    data: PromoCheckRequest,
+    user: dict = Depends(get_current_user)
+):
+    """
+    Check applicable promotions for a transaction.
+    Returns list of triggered promotions with benefits.
+    """
+    from services.discount_promo_engine import get_discount_promo_engine
+    
+    engine = get_discount_promo_engine(db)
+    result = await engine.calculate_promotions(data.items, data.customer_id, data.branch_id)
+    
+    return {"promotions": result}
