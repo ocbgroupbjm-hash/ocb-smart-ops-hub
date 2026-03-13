@@ -2,12 +2,13 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { 
   Plus, Search, Eye, Printer, Truck, Check, X, RotateCcw, 
-  Loader2, FileText, Calendar, Package, ChevronDown
+  Loader2, FileText, Calendar, Package, ChevronDown, Edit
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { OwnerEditButton, OwnerEditModal, isOwner } from '../../components/OwnerEditButton';
 
 const PurchaseOrders = () => {
-  const { api } = useAuth();
+  const { api, user } = useAuth();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -17,6 +18,10 @@ const PurchaseOrders = () => {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [suppliers, setSuppliers] = useState([]);
   const [products, setProducts] = useState([]);
+  
+  // Owner Edit States
+  const [showOwnerEditModal, setShowOwnerEditModal] = useState(false);
+  const [ownerEditItem, setOwnerEditItem] = useState(null);
   
   const [formData, setFormData] = useState({
     supplier_id: '',
@@ -324,6 +329,15 @@ const PurchaseOrders = () => {
                       <button className="p-1.5 hover:bg-gray-600/20 rounded text-gray-400" title="Print">
                         <Printer className="h-4 w-4" />
                       </button>
+                      
+                      {/* OWNER EDIT BUTTON */}
+                      <OwnerEditButton
+                        item={order}
+                        module="purchase-order"
+                        onEdit={(item) => { setOwnerEditItem(item); setShowOwnerEditModal(true); }}
+                        size="sm"
+                        showLabel={false}
+                      />
                     </div>
                   </td>
                 </tr>
@@ -532,6 +546,19 @@ const PurchaseOrders = () => {
           </div>
         </div>
       )}
+      
+      {/* Owner Edit Modal */}
+      <OwnerEditModal
+        isOpen={showOwnerEditModal}
+        onClose={() => { setShowOwnerEditModal(false); setOwnerEditItem(null); }}
+        module="purchase-order"
+        item={ownerEditItem}
+        fields={[
+          { name: 'notes', label: 'Catatan', type: 'textarea', placeholder: 'Catatan PO...' },
+          { name: 'expected_date', label: 'Tanggal Diharapkan', type: 'date' }
+        ]}
+        onSave={() => { setShowOwnerEditModal(false); setOwnerEditItem(null); loadOrders(); }}
+      />
     </div>
   );
 };

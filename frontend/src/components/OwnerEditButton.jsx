@@ -30,8 +30,8 @@ export const OwnerEditButton = ({
   const { user, api } = useAuth();
   const [loading, setLoading] = useState(false);
   
-  // Hide if not owner
-  if (!isOwner(user)) {
+  // Hide if user not loaded yet or not owner
+  if (!user || !isOwner(user)) {
     return null;
   }
   
@@ -85,24 +85,33 @@ export const OwnerEditModal = ({
   const handleSave = async () => {
     setSaving(true);
     try {
-      // Call owner edit API
+      // Call owner edit API - using fetch-based api from AuthContext
       const endpoint = `/api/owner/edit/${module}/${item.id}`;
-      const response = await api.put(endpoint, formData);
+      const response = await api(endpoint, {
+        method: 'PUT',
+        body: JSON.stringify(formData)
+      });
       
-      setResult(response.data);
-      toast.success('Data berhasil diupdate');
-      
-      if (onSave) {
-        onSave(response.data);
+      if (response.ok) {
+        const data = await response.json();
+        setResult(data);
+        toast.success('Data berhasil diupdate');
+        
+        if (onSave) {
+          onSave(data);
+        }
+        
+        // Close after showing result
+        setTimeout(() => {
+          onClose();
+          setResult(null);
+        }, 2000);
+      } else {
+        const errData = await response.json();
+        toast.error(errData.detail || 'Gagal update data');
       }
-      
-      // Close after showing result
-      setTimeout(() => {
-        onClose();
-        setResult(null);
-      }, 2000);
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Gagal update data');
+      toast.error(error.message || 'Gagal update data');
     } finally {
       setSaving(false);
     }
@@ -280,8 +289,11 @@ export const AuditLogModal = ({ recordId, module, onClose }) => {
   React.useEffect(() => {
     const fetchLogs = async () => {
       try {
-        const response = await api.get(`/api/owner/audit-logs/${recordId}`);
-        setLogs(response.data.history || []);
+        const response = await api(`/api/owner/audit-logs/${recordId}`);
+        if (response.ok) {
+          const data = await response.json();
+          setLogs(data.history || []);
+        }
       } catch (error) {
         console.error('Failed to fetch audit logs:', error);
       } finally {

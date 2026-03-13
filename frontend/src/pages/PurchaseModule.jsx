@@ -689,15 +689,13 @@ const PurchaseModule = () => {
                         </button>
                         
                         {/* OWNER EDIT BUTTON - Only visible for owner role */}
-                        {isOwner(user) && (
-                          <OwnerEditButton
-                            item={order}
-                            module="purchase-order"
-                            onEdit={(item) => handleOwnerEdit(item, 'purchase-order')}
-                            size="sm"
-                            showLabel={false}
-                          />
-                        )}
+                        <OwnerEditButton
+                          item={order}
+                          module="purchase-order"
+                          onEdit={(item) => handleOwnerEdit(item, 'purchase-order')}
+                          size="sm"
+                          showLabel={false}
+                        />
                         
                         {order.status === 'draft' && (
                           <>
