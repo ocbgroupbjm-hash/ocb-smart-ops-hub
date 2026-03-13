@@ -1,17 +1,14 @@
 {
-  "module": "ap_payment_journal",
-  "timestamp": "2026-03-13T21:44:59.091520+00:00",
-  "tests": [
-    {
-      "name": "Find Open AP",
-      "status": "PASS",
-      "count": 1
-    },
-    {
-      "name": "AP Payment Endpoint Ready",
-      "status": "PASS",
-      "ap_no": null,
-      "outstanding": null
-    }
-  ]
+  "test_type": "ap_payment_journal",
+  "journal_rule": {
+    "debit": "Hutang Usaha",
+    "credit": "Kas / Bank"
+  },
+  "endpoint": "POST /api/ap/{id}/payment",
+  "status": "ENDPOINT_READY",
+  "sample_ap": {
+    "ap_no": null,
+    "supplier": "PT Distributor Utama",
+    "outstanding": null
+  }
 }

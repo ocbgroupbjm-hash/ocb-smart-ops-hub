@@ -1,0 +1,418 @@
+{
+  "items": [
+    {
+      "id": "AUDIT-20260313213106",
+      "tenant_id": "ocb_titan",
+      "user_id": "21e37a5c-3ebd-4182-bd6e-61f7dcf5d105",
+      "user_name": "Oscar OCB",
+      "action": "INTEGRITY_REPORT_GENERATED",
+      "module": "integrity_monitor",
+      "entity_type": "report",
+      "description": "Integrity report generated: CRITICAL",
+      "created_at": "2026-03-13T21:31:06.603124+00:00"
+    },
+    {
+      "id": "57086801-7035-40ae-a2a6-3c1bb887fe27",
+      "tenant_id": "ocb_titan",
+      "user_id": "21e37a5c-3ebd-4182-bd6e-61f7dcf5d105",
+      "user_name": "Oscar OCB",
+      "action": "INVENTORY_GL_RECONCILIATION",
+      "module": "reconciliation",
+      "entity_type": "report",
+      "entity_id": "INVGL-20260313_213105",
+      "before_data": null,
+      "after_data": {
+        "status": "MAJOR_VARIANCE",
+        "difference": 47807000.0
+      },
+      "description": "Generated inventory vs GL reconciliation: MAJOR_VARIANCE",
+      "ip_address": "system",
+      "created_at": "2026-03-13T21:31:05.367775+00:00"
+    },
+    {
+      "id": "62112564-ae3c-4457-bf91-52d40dcaac85",
+      "tenant_id": "ocb_titan",
+      "user_id": "21e37a5c-3ebd-4182-bd6e-61f7dcf5d105",
+      "user_name": "Oscar OCB",
+      "action": "ACCOUNTING_PERIOD_UNLOCKED",
+      "module": "accounting_period",
+      "entity_type": "period",
+      "entity_id": "ded06d60-0ff9-4b02-b26d-6e859bcb999e",
+      "before_data": {
+        "status": "locked"
+      },
+      "after_data": {
+        "status": "open",
+        "reason": "Unlocking for test cleanup"
+      },
+      "description": "Unlocked accounting period 2026-03: Unlocking for test cleanup",
+      "ip_address": "system",
+      "created_at": "2026-03-13T21:31:04.828769+00:00"
+    },
+    {
+      "id": "4667bf25-c4ae-40a2-a78e-b0f8868a406e",
+      "tenant_id": "ocb_titan",
+      "user_id": "21e37a5c-3ebd-4182-bd6e-61f7dcf5d105",
+      "user_name": "Oscar OCB",
+      "action": "ACCOUNTING_PERIOD_LOCKED",
+      "module": "accounting_period",
+      "entity_type": "period",
+      "entity_id": "ded06d60-0ff9-4b02-b26d-6e859bcb999e",
+      "before_data": {
+        "status": "open"
+      },
+      "after_data": {
+        "status": "locked",
+        "period": "2026-03"
+      },
+      "description": "Locked accounting period 2026-03",
+      "ip_address": "system",
+      "created_at": "2026-03-13T21:31:04.458616+00:00"
+    },
+    {
+      "id": "0f281f5f-8ff5-4db2-92b2-442a1b6ea266",
+      "tenant_id": "ocb_titan",
+      "user_id": "21e37a5c-3ebd-4182-bd6e-61f7dcf5d105",
+      "user_name": "Oscar OCB",
+      "action": "ACCOUNTING_PERIOD_LOCKED",
+      "module": "accounting_period",
+      "entity_type": "period",
+      "entity_id": "d0e57e75-7ffc-45c0-80ba-37831bc74b97",
+      "before_data": {
+        "status": "open"
+      },
+      "after_data": {
+        "status": "locked",
+        "period": "2026-01"
+      },
+      "description": "Locked accounting period 2026-01",
+      "ip_address": "system",
+      "created_at": "2026-03-13T21:28:35.481005+00:00"
+    },
+    {
+      "id": "37410d36-0587-435a-8821-634b448bf9cd",
+      "tenant_id": "ocb_titan",
+      "user_id": "SYSTEM",
+      "user_name": "Stock Reconciliation Engine",
+      "action": "STOCK_RECONCILIATION_RUN",
+      "module": "stock_reconciliation",
+      "entity_type": "inventory",
+      "entity_id": "",
+      "before_data": null,
+      "after_data": {
+        "tenant": "ocb_titan",
+        "products_checked": 575,
+        "discrepancies_found": 13,
+        "status": "ALERT"
+      },
+      "description": "Stock reconciliation: STOCK_RECONCILIATION_RUN",
+      "ip_address": "localhost",
+      "created_at": "2026-03-13T21:07:26.327348+00:00"
+    },
+    {
+      "id": "c595d73c-9af9-4b5b-a6b6-e6445c8368ac",
+      "tenant_id": "ocb_titan",
+      "user_id": "SYSTEM",
+      "user_name": "Stock Reconciliation Engine",
+      "action": "STOCK_DISCREPANCY_AUTO_FIXED",
+      "module": "stock_reconciliation",
+      "entity_type": "inventory",
+      "entity_id": "0dab5f74-cf6e-40e6-83c0-48ef5ea32c51",
+      "before_data": null,
+      "after_data": {
+        "product_id": "0dab5f74-cf6e-40e6-83c0-48ef5ea32c51",
+        "old_cache": 0,
+        "new_cache": 18,
+        "adjustment": -18,
+        "auto_fixed": true
+      },
+      "description": "Stock reconciliation: STOCK_DISCREPANCY_AUTO_FIXED",
+      "ip_address": "localhost",
+      "created_at": "2026-03-13T21:07:26.327141+00:00"
+    },
+    {
+      "id": "865aa104-6ea6-40e3-bf59-493263f0fb89",
+      "tenant_id": "ocb_titan",
+      "user_id": "SYSTEM",
+      "user_name": "Stock Reconciliation Engine",
+      "action": "STOCK_DISCREPANCY_AUTO_FIXED",
+      "module": "stock_reconciliation",
+      "entity_type": "inventory",
+      "entity_id": "PRD-AUDIT-001",
+      "before_data": null,
+      "after_data": {
+        "product_id": "PRD-AUDIT-001",
+        "old_cache": 0,
+        "new_cache": -35,
+        "adjustment": 35,
+        "auto_fixed": true
+      },
+      "description": "Stock reconciliation: STOCK_DISCREPANCY_AUTO_FIXED",
+      "ip_address": "localhost",
+      "created_at": "2026-03-13T21:07:26.326461+00:00"
+    },
+    {
+      "id": "03ce5ffb-7a9d-4e94-aab4-92554ee4a578",
+      "tenant_id": "ocb_titan",
+      "user_id": "SYSTEM",
+      "user_name": "Stock Reconciliation Engine",
+      "action": "STOCK_DISCREPANCY_AUTO_FIXED",
+      "module": "stock_reconciliation",
+      "entity_type": "inventory",
+      "entity_id": "0dab5f74-cf6e-40e6-83c0-48ef5ea32c51",
+      "before_data": null,
+      "after_data": {
+        "product_id": "0dab5f74-cf6e-40e6-83c0-48ef5ea32c51",
+        "old_cache": 0,
+        "new_cache": -18,
+        "adjustment": 18,
+        "auto_fixed": true
+      },
+      "description": "Stock reconciliation: STOCK_DISCREPANCY_AUTO_FIXED",
+      "ip_address": "localhost",
+      "created_at": "2026-03-13T21:07:26.325792+00:00"
+    },
+    {
+      "id": "c994b028-6c25-42f3-b9c1-83d4350eb446",
+      "tenant_id": "ocb_titan",
+      "user_id": "SYSTEM",
+      "user_name": "Stock Reconciliation Engine",
+      "action": "STOCK_DISCREPANCY_AUTO_FIXED",
+      "module": "stock_reconciliation",
+      "entity_type": "inventory",
+      "entity_id": "c64bcb0b-6dc7-4bf8-8478-2c612706d370",
+      "before_data": null,
+      "after_data": {
+        "product_id": "c64bcb0b-6dc7-4bf8-8478-2c612706d370",
+        "old_cache": 0,
+        "new_cache": 15,
+        "adjustment": -15,
+        "auto_fixed": true
+      },
+      "description": "Stock reconciliation: STOCK_DISCREPANCY_AUTO_FIXED",
+      "ip_address": "localhost",
+      "created_at": "2026-03-13T21:07:26.325020+00:00"
+    },
+    {
+      "id": "28a74de4-b73e-4f09-9416-0254d463181a",
+      "tenant_id": "ocb_titan",
+      "user_id": "SYSTEM",
+      "user_name": "Stock Reconciliation Engine",
+      "action": "STOCK_DISCREPANCY_AUTO_FIXED",
+      "module": "stock_reconciliation",
+      "entity_type": "inventory",
+      "entity_id": "c64bcb0b-6dc7-4bf8-8478-2c612706d370",
+      "before_data": null,
+      "after_data": {
+        "product_id": "c64bcb0b-6dc7-4bf8-8478-2c612706d370",
+        "old_cache": 0,
+        "new_cache": -15,
+        "adjustment": 15,
+        "auto_fixed": true
+      },
+      "description": "Stock reconciliation: STOCK_DISCREPANCY_AUTO_FIXED",
+      "ip_address": "localhost",
+      "created_at": "2026-03-13T21:07:26.324274+00:00"
+    },
+    {
+      "id": "72e4af4c-d305-4c06-a310-c138c0e0deef",
+      "tenant_id": "ocb_titan",
+      "user_id": "SYSTEM",
+      "user_name": "Stock Reconciliation Engine",
+      "action": "STOCK_DISCREPANCY_AUTO_FIXED",
+      "module": "stock_reconciliation",
+      "entity_type": "inventory",
+      "entity_id": "b0ec8a99-5555-4c92-8639-3b4e9fa8c92d",
+      "before_data": null,
+      "after_data": {
+        "product_id": "b0ec8a99-5555-4c92-8639-3b4e9fa8c92d",
+        "old_cache": 0,
+        "new_cache": 20,
+        "adjustment": -20,
+        "auto_fixed": true
+      },
+      "description": "Stock reconciliation: STOCK_DISCREPANCY_AUTO_FIXED",
+      "ip_address": "localhost",
+      "created_at": "2026-03-13T21:07:26.323546+00:00"
+    },
+    {
+      "id": "0b776313-b9ef-455c-9d0f-08a8acbb2581",
+      "tenant_id": "ocb_titan",
+      "user_id": "SYSTEM",
+      "user_name": "Stock Reconciliation Engine",
+      "action": "STOCK_DISCREPANCY_AUTO_FIXED",
+      "module": "stock_reconciliation",
+      "entity_type": "inventory",
+      "entity_id": "b0ec8a99-5555-4c92-8639-3b4e9fa8c92d",
+      "before_data": null,
+      "after_data": {
+        "product_id": "b0ec8a99-5555-4c92-8639-3b4e9fa8c92d",
+        "old_cache": 0,
+        "new_cache": -20,
+        "adjustment": 20,
+        "auto_fixed": true
+      },
+      "description": "Stock reconciliation: STOCK_DISCREPANCY_AUTO_FIXED",
+      "ip_address": "localhost",
+      "created_at": "2026-03-13T21:07:26.322842+00:00"
+    },
+    {
+      "id": "21e75577-f994-48dd-aac8-6a94cf5a8103",
+      "tenant_id": "ocb_titan",
+      "user_id": "SYSTEM",
+      "user_name": "Stock Reconciliation Engine",
+      "action": "STOCK_DISCREPANCY_AUTO_FIXED",
+      "module": "stock_reconciliation",
+      "entity_type": "inventory",
+      "entity_id": "a009a443-2e22-4597-91a6-cfd7d763b206",
+      "before_data": null,
+      "after_data": {
+        "product_id": "a009a443-2e22-4597-91a6-cfd7d763b206",
+        "old_cache": 0,
+        "new_cache": 24,
+        "adjustment": -24,
+        "auto_fixed": true
+      },
+      "description": "Stock reconciliation: STOCK_DISCREPANCY_AUTO_FIXED",
+      "ip_address": "localhost",
+      "created_at": "2026-03-13T21:07:26.322105+00:00"
+    },
+    {
+      "id": "cf941176-12bc-4dcc-8633-1a04e938fb71",
+      "tenant_id": "ocb_titan",
+      "user_id": "SYSTEM",
+      "user_name": "Stock Reconciliation Engine",
+      "action": "STOCK_DISCREPANCY_AUTO_FIXED",
+      "module": "stock_reconciliation",
+      "entity_type": "inventory",
+      "entity_id": "a009a443-2e22-4597-91a6-cfd7d763b206",
+      "before_data": null,
+      "after_data": {
+        "product_id": "a009a443-2e22-4597-91a6-cfd7d763b206",
+        "old_cache": 0,
+        "new_cache": -24,
+        "adjustment": 24,
+        "auto_fixed": true
+      },
+      "description": "Stock reconciliation: STOCK_DISCREPANCY_AUTO_FIXED",
+      "ip_address": "localhost",
+      "created_at": "2026-03-13T21:07:26.321295+00:00"
+    },
+    {
+      "id": "d32572d0-8ba4-4063-b527-e4ab81004b0b",
+      "tenant_id": "ocb_titan",
+      "user_id": "SYSTEM",
+      "user_name": "Stock Reconciliation Engine",
+      "action": "STOCK_DISCREPANCY_AUTO_FIXED",
+      "module": "stock_reconciliation",
+      "entity_type": "inventory",
+      "entity_id": "PRD-AUDIT-001",
+      "before_data": null,
+      "after_data": {
+        "product_id": "PRD-AUDIT-001",
+        "old_cache": 0,
+        "new_cache": 35,
+        "adjustment": -35,
+        "auto_fixed": true
+      },
+      "description": "Stock reconciliation: STOCK_DISCREPANCY_AUTO_FIXED",
+      "ip_address": "localhost",
+      "created_at": "2026-03-13T21:07:26.320293+00:00"
+    },
+    {
+      "id": "2f4ba4b2-6738-47ef-8b20-227f9cb61a95",
+      "tenant_id": "ocb_titan",
+      "user_id": "SYSTEM",
+      "user_name": "Stock Reconciliation Engine",
+      "action": "STOCK_RECONCILIATION_RUN",
+      "module": "stock_reconciliation",
+      "entity_type": "inventory",
+      "entity_id": "",
+      "before_data": null,
+      "after_data": {
+        "tenant": "ocb_titan",
+        "products_checked": 575,
+        "discrepancies_found": 13,
+        "status": "ALERT"
+      },
+      "description": "Stock reconciliation: STOCK_RECONCILIATION_RUN",
+      "ip_address": "localhost",
+      "created_at": "2026-03-13T21:07:14.675037+00:00"
+    },
+    {
+      "id": "fc9e1a9a-162e-4cb8-9afc-2b044ea7de73",
+      "tenant_id": "ocb_titan",
+      "user_id": "SYSTEM",
+      "user_name": "Stock Reconciliation Engine",
+      "action": "STOCK_DISCREPANCY_DETECTED",
+      "module": "stock_reconciliation",
+      "entity_type": "inventory",
+      "entity_id": "None",
+      "before_data": null,
+      "after_data": {
+        "product_id": "None",
+        "product_name": "",
+        "branch_id": "911c5363-74c8-47de-802c-37b1d4aa765a",
+        "branch_name": "",
+        "movement_qty": 0,
+        "cached_qty": 5,
+        "difference": -5,
+        "status": "DISCREPANCY"
+      },
+      "description": "Stock reconciliation: STOCK_DISCREPANCY_DETECTED",
+      "ip_address": "localhost",
+      "created_at": "2026-03-13T21:07:14.674661+00:00"
+    },
+    {
+      "id": "d1d0ca86-877d-4b07-8814-0cfcef455507",
+      "tenant_id": "ocb_titan",
+      "user_id": "SYSTEM",
+      "user_name": "Stock Reconciliation Engine",
+      "action": "STOCK_DISCREPANCY_DETECTED",
+      "module": "stock_reconciliation",
+      "entity_type": "inventory",
+      "entity_id": "0dab5f74-cf6e-40e6-83c0-48ef5ea32c51",
+      "before_data": null,
+      "after_data": {
+        "product_id": "0dab5f74-cf6e-40e6-83c0-48ef5ea32c51",
+        "product_name": "",
+        "branch_id": null,
+        "branch_name": null,
+        "movement_qty": -18,
+        "cached_qty": 0,
+        "difference": -18,
+        "status": "DISCREPANCY"
+      },
+      "description": "Stock reconciliation: STOCK_DISCREPANCY_DETECTED",
+      "ip_address": "localhost",
+      "created_at": "2026-03-13T21:07:14.674083+00:00"
+    },
+    {
+      "id": "d4c3405e-1e88-40bd-96b6-c35f1a00e674",
+      "tenant_id": "ocb_titan",
+      "user_id": "SYSTEM",
+      "user_name": "Stock Reconciliation Engine",
+      "action": "STOCK_DISCREPANCY_DETECTED",
+      "module": "stock_reconciliation",
+      "entity_type": "inventory",
+      "entity_id": "PRD-AUDIT-001",
+      "before_data": null,
+      "after_data": {
+        "product_id": "PRD-AUDIT-001",
+        "product_name": "",
+        "branch_id": null,
+        "branch_name": null,
+        "movement_qty": -35,
+        "cached_qty": 0,
+        "difference": -35,
+        "status": "DISCREPANCY"
+      },
+      "description": "Stock reconciliation: STOCK_DISCREPANCY_DETECTED",
+      "ip_address": "localhost",
+      "created_at": "2026-03-13T21:07:14.673518+00:00"
+    }
+  ],
+  "total": 529,
+  "skip": 0,
+  "limit": 20
+}

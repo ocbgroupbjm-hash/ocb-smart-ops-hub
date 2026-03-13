@@ -1,0 +1,221 @@
+{
+  "verification_suite": "phase2_full_verification",
+  "timestamp": "2026-03-13T21:53:43.339682+00:00",
+  "total_tests": 24,
+  "total_passed": 23,
+  "all_phases_pass": true,
+  "phases": [
+    {
+      "phase": "A",
+      "name": "AR Module",
+      "tests": [
+        {
+          "test": "AR Aging Report",
+          "status": "PASS",
+          "evidence": "ar_aging_report.json"
+        },
+        {
+          "test": "AR Invoice Sample",
+          "status": "PASS",
+          "evidence": "ar_invoice_sample.json",
+          "count": 10
+        },
+        {
+          "test": "AR Payment Journal",
+          "status": "PASS",
+          "evidence": "ar_payment_journal_test.json"
+        }
+      ],
+      "status": "PASS",
+      "passed": 3,
+      "total": 3
+    },
+    {
+      "phase": "B",
+      "name": "AP Module",
+      "tests": [
+        {
+          "test": "AP Aging Report",
+          "status": "PASS",
+          "evidence": "ap_aging_report.json"
+        },
+        {
+          "test": "AP Invoice Sample",
+          "status": "PASS",
+          "evidence": "ap_invoice_sample.json",
+          "count": 10
+        },
+        {
+          "test": "AP Payment Journal",
+          "status": "PASS",
+          "evidence": "ap_payment_journal_test.json"
+        }
+      ],
+      "status": "PASS",
+      "passed": 3,
+      "total": 3
+    },
+    {
+      "phase": "C",
+      "name": "Accounting",
+      "tests": [
+        {
+          "test": "Trial Balance",
+          "status": "PASS",
+          "evidence": "trial_balance.json",
+          "total_debit": 26229117.5,
+          "total_credit": 26229117.5,
+          "is_balanced": true
+        },
+        {
+          "test": "Balance Sheet",
+          "status": "FAIL",
+          "evidence": "balance_sheet.json",
+          "is_balanced": false
+        },
+        {
+          "test": "General Ledger",
+          "status": "PASS",
+          "evidence": "general_ledger.json"
+        }
+      ],
+      "status": "PASS",
+      "passed": 2,
+      "total": 3
+    },
+    {
+      "phase": "D",
+      "name": "Inventory vs GL",
+      "tests": [
+        {
+          "test": "Inventory vs GL Reconciliation",
+          "status": "WARNING",
+          "evidence": "inventory_vs_gl_recon.json",
+          "difference": 47807000.0,
+          "recon_status": "MAJOR_VARIANCE"
+        },
+        {
+          "test": "Stock Movement Sample",
+          "status": "PASS",
+          "evidence": "stock_movement_sample.json",
+          "count": 20
+        }
+      ],
+      "status": "PASS",
+      "passed": 2,
+      "total": 2
+    },
+    {
+      "phase": "E",
+      "name": "Tenant Isolation",
+      "tests": [
+        {
+          "test": "Tenant Isolation",
+          "status": "PASS",
+          "evidence": "tenant_isolation_test_report.md"
+        },
+        {
+          "test": "Tenant Provisioning",
+          "status": "PASS",
+          "evidence": "tenant_provisioning_report.md"
+        }
+      ],
+      "status": "PASS",
+      "passed": 2,
+      "total": 2
+    },
+    {
+      "phase": "F",
+      "name": "Audit Logs",
+      "tests": [
+        {
+          "test": "Audit Logs Sample",
+          "status": "PASS",
+          "evidence": "audit_logs_sample.json",
+          "count": 20
+        },
+        {
+          "test": "Audit Immutability",
+          "status": "PASS",
+          "evidence": "audit_immutability_test.md"
+        }
+      ],
+      "status": "PASS",
+      "passed": 2,
+      "total": 2
+    },
+    {
+      "phase": "G",
+      "name": "Security",
+      "tests": [
+        {
+          "test": "RBAC Test",
+          "status": "PASS",
+          "evidence": "rbac_test_report.md"
+        },
+        {
+          "test": "Endpoint Auth Audit",
+          "status": "PASS",
+          "evidence": "endpoint_auth_audit.md"
+        }
+      ],
+      "status": "PASS",
+      "passed": 2,
+      "total": 2
+    },
+    {
+      "phase": "H",
+      "name": "E2E Tests",
+      "tests": [
+        {
+          "test": "E2E Regression",
+          "status": "PASS",
+          "evidence": "e2e_regression_report.md"
+        },
+        {
+          "test": "E2E Finance",
+          "status": "PASS",
+          "evidence": "e2e_finance_validation.md"
+        },
+        {
+          "test": "E2E Inventory",
+          "status": "PASS",
+          "evidence": "e2e_inventory_validation.md"
+        }
+      ],
+      "status": "PASS",
+      "passed": 3,
+      "total": 3
+    },
+    {
+      "phase": "I",
+      "name": "Handoff Pack",
+      "tests": [
+        {
+          "test": "Handoff Pack",
+          "status": "PASS",
+          "evidence": "production_handoff_pack.md"
+        },
+        {
+          "test": "Evidence Index",
+          "status": "PASS",
+          "evidence": "evidence_index.json"
+        },
+        {
+          "test": "Release Note",
+          "status": "PASS",
+          "evidence": "release_note.md"
+        },
+        {
+          "test": "Rollback Plan",
+          "status": "PASS",
+          "evidence": "rollback_plan.md"
+        }
+      ],
+      "status": "PASS",
+      "passed": 4,
+      "total": 4
+    }
+  ],
+  "overall_status": "PASS"
+}

@@ -1,0 +1,135 @@
+{
+  "items": [
+    {
+      "account_id": "05519d81-4ebb-406f-a5e9-29f697ecef9e",
+      "account_code": "1-1000",
+      "account_name": "Kas",
+      "entries": [
+        {
+          "date": "2026-03-01",
+          "journal_number": "JRN20260308141229",
+          "description": "Modal awal dari pemilik",
+          "debit": 100000000.0,
+          "credit": 0.0
+        },
+        {
+          "date": "2026-03-02",
+          "journal_number": "JRN20260308141229",
+          "description": "Pembelian persediaan barang",
+          "debit": 0.0,
+          "credit": 30000000.0
+        },
+        {
+          "date": "2026-03-05",
+          "journal_number": "JRN20260308141229",
+          "description": "Penjualan tunai",
+          "debit": 50000000.0,
+          "credit": 0.0
+        },
+        {
+          "date": "2026-03-07",
+          "journal_number": "JRN20260308141229",
+          "description": "Pembayaran gaji karyawan",
+          "debit": 0.0,
+          "credit": 5000000.0
+        }
+      ],
+      "total_debit": 150000000.0,
+      "total_credit": 35000000.0,
+      "balance": 115000000.0
+    },
+    {
+      "account_id": "fb41f7dd-a122-4213-be15-42ae77dd4867",
+      "account_code": "3-1000",
+      "account_name": "Modal Pemilik",
+      "entries": [
+        {
+          "date": "2026-03-01",
+          "journal_number": "JRN20260308141229",
+          "description": "Modal awal dari pemilik",
+          "debit": 0.0,
+          "credit": 100000000.0
+        }
+      ],
+      "total_debit": 0.0,
+      "total_credit": 100000000.0,
+      "balance": 100000000.0
+    },
+    {
+      "account_id": "1a7922e3-98ee-49e1-bb7d-e120fde0abdf",
+      "account_code": "1-3000",
+      "account_name": "Persediaan Barang",
+      "entries": [
+        {
+          "date": "2026-03-02",
+          "journal_number": "JRN20260308141229",
+          "description": "Pembelian persediaan barang",
+          "debit": 30000000.0,
+          "credit": 0.0
+        },
+        {
+          "date": "2026-03-05",
+          "journal_number": "JRN20260308141229",
+          "description": "Harga Pokok Penjualan",
+          "debit": 0.0,
+          "credit": 20000000.0
+        }
+      ],
+      "total_debit": 30000000.0,
+      "total_credit": 20000000.0,
+      "balance": 10000000.0
+    },
+    {
+      "account_id": "82d3d109-5399-4e2f-945d-4f3b3e05a50c",
+      "account_code": "4-1000",
+      "account_name": "Penjualan",
+      "entries": [
+        {
+          "date": "2026-03-05",
+          "journal_number": "JRN20260308141229",
+          "description": "Penjualan tunai",
+          "debit": 0.0,
+          "credit": 50000000.0
+        }
+      ],
+      "total_debit": 0.0,
+      "total_credit": 50000000.0,
+      "balance": 50000000.0
+    },
+    {
+      "account_id": "0eccdd64-ec34-4d69-b3c4-21d200f57db3",
+      "account_code": "5-1000",
+      "account_name": "Harga Pokok Penjualan",
+      "entries": [
+        {
+          "date": "2026-03-05",
+          "journal_number": "JRN20260308141229",
+          "description": "Harga Pokok Penjualan",
+          "debit": 20000000.0,
+          "credit": 0.0
+        }
+      ],
+      "total_debit": 20000000.0,
+      "total_credit": 0.0,
+      "balance": 20000000.0
+    },
+    {
+      "account_id": "929396ac-154d-4930-9920-c04a999e6a75",
+      "account_code": "5-2000",
+      "account_name": "Beban Gaji",
+      "entries": [
+        {
+          "date": "2026-03-07",
+          "journal_number": "JRN20260308141229",
+          "description": "Pembayaran gaji karyawan",
+          "debit": 5000000.0,
+          "credit": 0.0
+        }
+      ],
+      "total_debit": 5000000.0,
+      "total_credit": 0.0,
+      "balance": 5000000.0
+    }
+  ],
+  "total": 6
+}
