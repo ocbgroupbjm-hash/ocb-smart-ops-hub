@@ -1,0 +1,156 @@
+[
+  {
+    "name": "Get Event Types",
+    "status": "PASS",
+    "response": {
+      "event_types": {
+        "sale.created": "Penjualan dibuat",
+        "sale.posted": "Penjualan di-posting",
+        "sale.cancelled": "Penjualan dibatalkan",
+        "sale.returned": "Penjualan di-retur",
+        "purchase.created": "Pembelian dibuat",
+        "purchase.received": "Pembelian diterima",
+        "purchase.cancelled": "Pembelian dibatalkan",
+        "purchase.returned": "Pembelian di-retur",
+        "inventory.adjusted": "Stok di-adjust",
+        "inventory.transferred": "Stok ditransfer",
+        "inventory.opname_completed": "Stock opname selesai",
+        "payment.received": "Pembayaran diterima",
+        "payment.made": "Pembayaran dilakukan",
+        "cash.shift_opened": "Shift kasir dibuka",
+        "cash.shift_closed": "Shift kasir ditutup",
+        "cash.deposited": "Setoran kas dicatat",
+        "cash.variance_detected": "Selisih kas terdeteksi",
+        "journal.posted": "Jurnal di-posting",
+        "journal.reversed": "Jurnal di-reverse",
+        "payroll.processed": "Payroll diproses",
+        "payroll.paid": "Payroll dibayar",
+        "user.created": "User dibuat",
+        "user.deactivated": "User dinonaktifkan",
+        "system.backup_completed": "Backup selesai",
+        "system.restore_completed": "Restore selesai",
+        "system.period_locked": "Periode dikunci",
+        "system.reconciliation_completed": "Rekonsiliasi selesai"
+      },
+      "total": 27
+    }
+  },
+  {
+    "name": "Publish Test Event",
+    "status": "PASS",
+    "response": {
+      "success": true,
+      "message": "Event bus test completed",
+      "event": {
+        "id": "106e530a-c7ec-4685-a719-eabd5bfef8c2",
+        "event_type": "sale.posted",
+        "payload": {
+          "test": true,
+          "message": "Event bus test",
+          "timestamp": "2026-03-13T21:31:06.006568+00:00"
+        },
+        "tenant_id": "ocb_titan",
+        "user_id": "21e37a5c-3ebd-4182-bd6e-61f7dcf5d105",
+        "user_name": "Oscar OCB",
+        "branch_id": "0acd2ffd-c2d9-4324-b860-a4626840e80e",
+        "created_at": "2026-03-13T21:31:06.006598+00:00",
+        "status": "no_listeners",
+        "delivery_results": []
+      }
+    }
+  },
+  {
+    "name": "Get Event Log",
+    "status": "PASS",
+    "response": {
+      "events": [
+        {
+          "id": "106e530a-c7ec-4685-a719-eabd5bfef8c2",
+          "event_type": "sale.posted",
+          "payload": {
+            "test": true,
+            "message": "Event bus test",
+            "timestamp": "2026-03-13T21:31:06.006568+00:00"
+          },
+          "tenant_id": "ocb_titan",
+          "user_id": "21e37a5c-3ebd-4182-bd6e-61f7dcf5d105",
+          "user_name": "Oscar OCB",
+          "branch_id": "0acd2ffd-c2d9-4324-b860-a4626840e80e",
+          "created_at": "2026-03-13T21:31:06.006598+00:00",
+          "status": "no_listeners",
+          "delivery_results": []
+        },
+        {
+          "id": "e9cc9bb3-e6fa-4a4f-baca-606686645538",
+          "event_type": "sale.posted",
+          "payload": {
+            "test": true,
+            "message": "Event bus test",
+            "timestamp": "2026-03-13T21:29:27.187388+00:00"
+          },
+          "tenant_id": "ocb_titan",
+          "user_id": "21e37a5c-3ebd-4182-bd6e-61f7dcf5d105",
+          "user_name": "Oscar OCB",
+          "branch_id": "0acd2ffd-c2d9-4324-b860-a4626840e80e",
+          "created_at": "2026-03-13T21:29:27.187418+00:00",
+          "status": "no_listeners",
+          "delivery_results": []
+        },
+        {
+          "id": "02babfdf-2b3d-4ebe-b1af-d69150bdf19d",
+          "event_type": "sale.posted",
+          "payload": {
+            "test": true,
+            "message": "Event bus test",
+            "timestamp": "2026-03-13T21:29:01.945349+00:00"
+          },
+          "tenant_id": "ocb_titan",
+          "user_id": "21e37a5c-3ebd-4182-bd6e-61f7dcf5d105",
+          "user_name": "Oscar OCB",
+          "branch_id": "0acd2ffd-c2d9-4324-b860-a4626840e80e",
+          "created_at": "2026-03-13T21:29:01.945380+00:00",
+          "status": "no_listeners",
+          "delivery_results": []
+        },
+        {
+          "id": "2223712b-d091-4558-862c-3dcb7cbbd275",
+          "event_type": "sale.posted",
+          "payload": {
+            "test": true,
+            "message": "Event bus test",
+            "timestamp": "2026-03-13T21:28:56.544212+00:00"
+          },
+          "tenant_id": "ocb_titan",
+          "user_id": "21e37a5c-3ebd-4182-bd6e-61f7dcf5d105",
+          "user_name": "Oscar OCB",
+          "branch_id": "0acd2ffd-c2d9-4324-b860-a4626840e80e",
+          "created_at": "2026-03-13T21:28:56.544245+00:00",
+          "status": "no_listeners",
+          "delivery_results": []
+        }
+      ],
+      "total": 4
+    }
+  },
+  {
+    "name": "Get Event Stats",
+    "status": "PASS",
+    "response": {
+      "period_days": 7,
+      "total_events": 4,
+      "by_type": [
+        {
+          "_id": "sale.posted",
+          "count": 4,
+          "failed": 0
+        }
+      ],
+      "by_status": [
+        {
+          "_id": "no_listeners",
+          "count": 4
+        }
+      ]
+    }
+  }
+]

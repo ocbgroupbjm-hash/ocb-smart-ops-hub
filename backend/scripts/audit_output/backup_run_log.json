@@ -1,0 +1,193 @@
+[
+  {
+    "name": "Get Backup Config",
+    "status": "PASS",
+    "response": {
+      "config": {
+        "backup_schedule": {
+          "daily": {
+            "enabled": true,
+            "time": "01:00",
+            "retention_days": 7,
+            "description": "Daily backup untuk recovery cepat"
+          },
+          "weekly": {
+            "enabled": true,
+            "day": "Sunday",
+            "time": "02:00",
+            "retention_weeks": 4,
+            "description": "Weekly backup untuk recovery mingguan"
+          },
+          "monthly": {
+            "enabled": true,
+            "day": 1,
+            "time": "03:00",
+            "retention_months": 12,
+            "description": "Monthly backup untuk archive"
+          }
+        },
+        "backup_settings": {
+          "backup_directory": "/app/backend/backups",
+          "include_tenants": [
+            "ocb_titan",
+            "ocb_baju",
+            "ocb_counter",
+            "ocb_unit_4",
+            "ocb_unt_1"
+          ],
+          "compression": true,
+          "compression_level": 9,
+          "encryption": false,
+          "encryption_key": "",
+          "max_concurrent_backups": 2,
+          "timeout_minutes": 30
+        },
+        "notifications": {
+          "on_success": true,
+          "on_failure": true,
+          "channels": [
+            "audit_log",
+            "event_bus"
+          ],
+          "email_recipients": [],
+          "webhook_url": ""
+        },
+        "verification": {
+          "auto_verify": true,
+          "verify_after_backup": true,
+          "test_restore": false
+        },
+        "cleanup": {
+          "auto_cleanup": true,
+          "cleanup_on_startup": true,
+          "cleanup_interval_hours": 24
+        },
+        "metadata": {
+          "version": "1.0.0",
+          "created_at": "2026-03-13",
+          "updated_at": "2026-03-13",
+          "created_by": "system"
+        }
+      },
+      "config_path": "/app/backend/config/backup_schedule_config.yml"
+    }
+  },
+  {
+    "name": "Get Backup Status",
+    "status": "PASS",
+    "response": {
+      "status": "WARNING",
+      "total_backups": 7,
+      "total_size_mb": 23.0,
+      "latest_backups": {
+        "daily": null,
+        "weekly": null,
+        "monthly": null
+      },
+      "recent_runs": [],
+      "config": {
+        "daily": {
+          "enabled": true,
+          "time": "01:00",
+          "retention_days": 7,
+          "description": "Daily backup untuk recovery cepat"
+        },
+        "weekly": {
+          "enabled": true,
+          "day": "Sunday",
+          "time": "02:00",
+          "retention_weeks": 4,
+          "description": "Weekly backup untuk recovery mingguan"
+        },
+        "monthly": {
+          "enabled": true,
+          "day": 1,
+          "time": "03:00",
+          "retention_months": 12,
+          "description": "Monthly backup untuk archive"
+        }
+      }
+    }
+  },
+  {
+    "name": "List Backups",
+    "status": "PASS",
+    "response": {
+      "backups": [
+        {
+          "filename": "api_test_20260313_203456.gz",
+          "filepath": "/app/backend/backups/api_test_20260313_203456.gz",
+          "tenant": "api",
+          "backup_type": "manual",
+          "size_bytes": 3445258,
+          "size_mb": 3.29,
+          "created_at": "2026-03-13T20:34:57.248474"
+        },
+        {
+          "filename": "dr_test_20260313_203049.gz",
+          "filepath": "/app/backend/backups/dr_test_20260313_203049.gz",
+          "tenant": "dr",
+          "backup_type": "manual",
+          "size_bytes": 3443625,
+          "size_mb": 3.28,
+          "created_at": "2026-03-13T20:30:49.730473"
+        },
+        {
+          "filename": "dr_test_20260313_203007.gz",
+          "filepath": "/app/backend/backups/dr_test_20260313_203007.gz",
+          "tenant": "dr",
+          "backup_type": "manual",
+          "size_bytes": 3443691,
+          "size_mb": 3.28,
+          "created_at": "2026-03-13T20:30:08.134473"
+        },
+        {
+          "filename": "dr_test_20260313_202936.gz",
+          "filepath": "/app/backend/backups/dr_test_20260313_202936.gz",
+          "tenant": "dr",
+          "backup_type": "manual",
+          "size_bytes": 3443487,
+          "size_mb": 3.28,
+          "created_at": "2026-03-13T20:29:37.155473"
+        },
+        {
+          "filename": "tenant_backup_20260313_201131.dump",
+          "filepath": "/app/backend/backups/tenant_backup_20260313_201131.dump",
+          "tenant": "tenant",
+          "backup_type": "manual",
+          "size_bytes": 3438940,
+          "size_mb": 3.28,
+          "created_at": "2026-03-13T20:11:31.958467"
+        },
+        {
+          "filename": "system_backup_20260313_190802.ocb",
+          "filepath": "/app/backend/backups/system_backup_20260313_190802.ocb",
+          "tenant": "system",
+          "backup_type": "manual",
+          "size_bytes": 3456343,
+          "size_mb": 3.3,
+          "created_at": "2026-03-13T19:08:03.734446"
+        },
+        {
+          "filename": "backup_ocb_titan_20260313_190802.tar.gz",
+          "filepath": "/app/backend/backups/backup_ocb_titan_20260313_190802.tar.gz",
+          "tenant": "backup",
+          "backup_type": "manual",
+          "size_bytes": 3443522,
+          "size_mb": 3.28,
+          "created_at": "2026-03-13T19:08:02.942446"
+        }
+      ],
+      "total": 7,
+      "backup_directory": "/app/backend/backups"
+    }
+  },
+  {
+    "name": "Get Backup History",
+    "status": "PASS",
+    "response": {
+      "history": [],
+      "total": 0
+    }
+  }
+]

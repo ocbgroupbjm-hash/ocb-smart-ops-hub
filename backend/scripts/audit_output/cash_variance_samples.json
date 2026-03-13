@@ -1,0 +1,26 @@
+[
+  {
+    "name": "Get Variance Report",
+    "status": "PASS",
+    "response": {
+      "variances": [],
+      "summary": {
+        "total_records": 0,
+        "shortages": 0,
+        "overages": 0,
+        "matches": 0,
+        "total_shortage": 0,
+        "total_overage": 0,
+        "net_variance": 0
+      }
+    }
+  },
+  {
+    "name": "Get Cashier Ranking",
+    "status": "PASS",
+    "response": {
+      "period_days": 30,
+      "ranking": []
+    }
+  }
+]

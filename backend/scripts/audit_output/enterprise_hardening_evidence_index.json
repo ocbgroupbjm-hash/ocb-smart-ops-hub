@@ -1,0 +1,14 @@
+{
+  "period_lock_test_report.md": "/app/backend/scripts/audit_output/period_lock_test_report.md",
+  "cash_variance_test_report.md": "/app/backend/scripts/audit_output/cash_variance_test_report.md",
+  "cash_variance_samples.json": "/app/backend/scripts/audit_output/cash_variance_samples.json",
+  "inventory_vs_gl_recon.json": "/app/backend/scripts/audit_output/inventory_vs_gl_recon.json",
+  "inventory_vs_gl_recon_report.md": "/app/backend/scripts/audit_output/inventory_vs_gl_recon_report.md",
+  "idempotency_test_report.md": "/app/backend/scripts/audit_output/idempotency_test_report.md",
+  "event_bus_test_report.md": "/app/backend/scripts/audit_output/event_bus_test_report.md",
+  "event_samples.json": "/app/backend/scripts/audit_output/event_samples.json",
+  "integrity_monitor_report.md": "/app/backend/scripts/audit_output/integrity_monitor_report.md",
+  "integrity_monitor_report.json": "/app/backend/scripts/audit_output/integrity_monitor_report.json",
+  "backup_schedule_config.yml": "/app/backend/config/backup_schedule_config.yml",
+  "backup_run_log.json": "/app/backend/scripts/audit_output/backup_run_log.json"
+}

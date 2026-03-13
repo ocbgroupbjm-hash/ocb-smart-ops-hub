@@ -137,7 +137,7 @@ import SerialNumbers from './pages/inventory/SerialNumbers';
 import ProductAssembly from './pages/inventory/ProductAssembly';
 
 // Settings Pages
-import { PrinterSettings, RBACManagement } from './pages/settings';
+import { PrinterSettings, RBACManagement, IntegrityMonitor } from './pages/settings';
 import NumberSettings from './pages/settings/NumberSettings';
 import TenantManagement from './pages/settings/TenantManagement';
 import BackupManager from './pages/settings/BackupManager';
@@ -456,10 +456,10 @@ function App() {
             <Route path="settings/printer" element={<PrinterSettings />} />
             <Route path="settings/tenants" element={<TenantManagement />} />
             <Route path="settings/backup" element={<BackupManager />} />
+            <Route path="settings/integrity-monitor" element={<IntegrityMonitor />} />
             <Route path="settings/theme" element={<Settings />} />
             <Route path="settings/import" element={<Settings />} />
             <Route path="settings/export" element={<Settings />} />
-            <Route path="settings/backup" element={<Settings />} />
             <Route path="settings/activity-log" element={<Settings />} />
             <Route path="settings/system-analysis" element={<Settings />} />
             <Route path="settings/help" element={<Settings />} />

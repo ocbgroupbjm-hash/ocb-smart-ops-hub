@@ -1,0 +1,64 @@
+# OCB TITAN ERP - BACKUP SCHEDULE CONFIGURATION
+# MASTER BLUEPRINT: Enterprise Hardening Phase - Guard System 7
+
+backup_schedule:
+  daily:
+    enabled: true
+    time: "01:00"
+    retention_days: 7
+    description: "Daily backup untuk recovery cepat"
+  
+  weekly:
+    enabled: true
+    day: "Sunday"
+    time: "02:00"
+    retention_weeks: 4
+    description: "Weekly backup untuk recovery mingguan"
+  
+  monthly:
+    enabled: true
+    day: 1  # Tanggal 1 setiap bulan
+    time: "03:00"
+    retention_months: 12
+    description: "Monthly backup untuk archive"
+
+backup_settings:
+  backup_directory: /app/backend/backups
+  include_tenants:
+    - ocb_titan
+    - ocb_baju
+    - ocb_counter
+    - ocb_unit_4
+    - ocb_unt_1
+  compression: true
+  compression_level: 9  # Maximum compression
+  encryption: false
+  encryption_key: ""  # Set jika encryption enabled
+  max_concurrent_backups: 2
+  timeout_minutes: 30
+
+notifications:
+  on_success: true
+  on_failure: true
+  channels:
+    - audit_log
+    - event_bus
+  email_recipients: []
+  webhook_url: ""
+
+verification:
+  auto_verify: true
+  verify_after_backup: true
+  test_restore: false  # Set true untuk auto test restore
+
+cleanup:
+  auto_cleanup: true
+  cleanup_on_startup: true
+  cleanup_interval_hours: 24
+
+# Scheduler metadata
+metadata:
+  version: "1.0.0"
+  created_at: "2026-03-13"
+  updated_at: "2026-03-13"
+  created_by: "system"

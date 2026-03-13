@@ -1,0 +1,1103 @@
+{
+  "test_suite": "enterprise_hardening_phase1",
+  "timestamp": "2026-03-13T21:31:07.106648+00:00",
+  "total_tests": 22,
+  "total_passed": 22,
+  "total_failed": 0,
+  "overall_status": "PASS",
+  "guard_systems": [
+    {
+      "test": "accounting_period_lock",
+      "timestamp": "2026-03-13T21:31:04.235370+00:00",
+      "tests": [
+        {
+          "name": "List Periods",
+          "status": "PASS",
+          "response": {
+            "periods": [
+              {
+                "month": 1,
+                "year": 2026,
+                "id": "d0e57e75-7ffc-45c0-80ba-37831bc74b97",
+                "lock_reason": "Testing period lock",
+                "locked_at": "2026-03-13T21:28:35.458946+00:00",
+                "locked_by": "21e37a5c-3ebd-4182-bd6e-61f7dcf5d105",
+                "locked_by_name": "Oscar OCB",
+                "period_name": "2026-01",
+                "statistics": {
+                  "journal_count": 0,
+                  "sales_count": 0,
+                  "total_debit": 0,
+                  "total_credit": 0,
+                  "balanced": true
+                },
+                "status": "locked"
+              }
+            ],
+            "total": 1
+          }
+        },
+        {
+          "name": "Lock Period 2026-03",
+          "status": "PASS",
+          "response": {
+            "success": true,
+            "message": "Periode 2026-03 berhasil di-LOCK",
+            "period": {
+              "id": "ded06d60-0ff9-4b02-b26d-6e859bcb999e",
+              "year": 2026,
+              "month": 3,
+              "period_name": "2026-03",
+              "status": "locked",
+              "locked_at": "2026-03-13T21:31:04.457771+00:00",
+              "locked_by": "21e37a5c-3ebd-4182-bd6e-61f7dcf5d105",
+              "locked_by_name": "Oscar OCB",
+              "lock_reason": "Test lock for validation",
+              "statistics": {
+                "journal_count": 1996,
+                "sales_count": 0,
+                "total_debit": 6685000.0,
+                "total_credit": 6685000.0,
+                "balanced": true
+              }
+            }
+          }
+        },
+        {
+          "name": "Verify Period Locked",
+          "status": "PASS",
+          "response": {
+            "month": 3,
+            "year": 2026,
+            "id": "ded06d60-0ff9-4b02-b26d-6e859bcb999e",
+            "lock_reason": "Test lock for validation",
+            "locked_at": "2026-03-13T21:31:04.457771+00:00",
+            "locked_by": "21e37a5c-3ebd-4182-bd6e-61f7dcf5d105",
+            "locked_by_name": "Oscar OCB",
+            "period_name": "2026-03",
+            "statistics": {
+              "journal_count": 1996,
+              "sales_count": 0,
+              "total_debit": 6685000.0,
+              "total_credit": 6685000.0,
+              "balanced": true
+            },
+            "status": "locked"
+          }
+        },
+        {
+          "name": "Validate Blocked Date",
+          "status": "PASS",
+          "response": {
+            "allowed": false,
+            "reason": "Periode 2026-03 sudah di-LOCK. Transaksi tidak dapat diubah.",
+            "period": "2026-03",
+            "status": "locked"
+          }
+        },
+        {
+          "name": "Unlock Period",
+          "status": "PASS",
+          "response": {
+            "success": true,
+            "message": "Periode 2026-03 berhasil di-UNLOCK",
+            "reason": "Unlocking for test cleanup"
+          }
+        }
+      ],
+      "summary": {
+        "total": 5,
+        "passed": 5,
+        "failed": 0,
+        "overall": "PASS"
+      }
+    },
+    {
+      "test": "cash_variance_engine",
+      "timestamp": "2026-03-13T21:31:04.848600+00:00",
+      "tests": [
+        {
+          "name": "Get Variance Report",
+          "status": "PASS",
+          "response": {
+            "variances": [],
+            "summary": {
+              "total_records": 0,
+              "shortages": 0,
+              "overages": 0,
+              "matches": 0,
+              "total_shortage": 0,
+              "total_overage": 0,
+              "net_variance": 0
+            }
+          }
+        },
+        {
+          "name": "Get Cashier Ranking",
+          "status": "PASS",
+          "response": {
+            "period_days": 30,
+            "ranking": []
+          }
+        }
+      ],
+      "summary": {
+        "total": 2,
+        "passed": 2,
+        "failed": 0,
+        "overall": "PASS"
+      }
+    },
+    {
+      "test": "inventory_gl_reconciliation",
+      "timestamp": "2026-03-13T21:31:05.088081+00:00",
+      "tests": [
+        {
+          "name": "Run Reconciliation",
+          "status": "PASS",
+          "response": {
+            "reconciliation_id": "INVGL-20260313_213105",
+            "timestamp": "2026-03-13T21:31:05.219280+00:00",
+            "inventory": {
+              "source": "inventory",
+              "total_value": 48872000.0,
+              "total_qty": 20751781.0,
+              "product_count": 15
+            },
+            "gl": {
+              "source": "gl_1104",
+              "account_code": "1104",
+              "account_name": "Inventory / Persediaan",
+              "total_debit": 3625000.0,
+              "total_credit": 2560000.0,
+              "balance": 1065000.0,
+              "journal_count": 10
+            },
+            "comparison": {
+              "inventory_value": 48872000.0,
+              "gl_balance": 1065000.0,
+              "difference": 47807000.0,
+              "percentage_difference": 4488.92,
+              "status": "MAJOR_VARIANCE",
+              "alert_required": true
+            },
+            "recommendation": "Inventory lebih besar dari GL sebesar Rp 47,807,000. Periksa: (1) Penerimaan barang tanpa journal, (2) Adjustment stok tanpa journal."
+          }
+        },
+        {
+          "name": "Generate Report",
+          "status": "PASS",
+          "response": {
+            "success": true,
+            "reconciliation": {
+              "reconciliation_id": "INVGL-20260313_213105",
+              "timestamp": "2026-03-13T21:31:05.362551+00:00",
+              "inventory": {
+                "source": "inventory",
+                "total_value": 48872000.0,
+                "total_qty": 20751781.0,
+                "product_count": 15
+              },
+              "gl": {
+                "source": "gl_1104",
+                "account_code": "1104",
+                "account_name": "Inventory / Persediaan",
+                "total_debit": 3625000.0,
+                "total_credit": 2560000.0,
+                "balance": 1065000.0,
+                "journal_count": 10
+              },
+              "comparison": {
+                "inventory_value": 48872000.0,
+                "gl_balance": 1065000.0,
+                "difference": 47807000.0,
+                "percentage_difference": 4488.92,
+                "status": "MAJOR_VARIANCE",
+                "alert_required": true
+              },
+              "recommendation": "Inventory lebih besar dari GL sebesar Rp 47,807,000. Periksa: (1) Penerimaan barang tanpa journal, (2) Adjustment stok tanpa journal."
+            },
+            "files_generated": {
+              "json": "/app/backend/scripts/audit_output/inventory_vs_gl_recon.json",
+              "markdown": "/app/backend/scripts/audit_output/inventory_vs_gl_recon_report.md"
+            }
+          }
+        }
+      ],
+      "summary": {
+        "total": 2,
+        "passed": 2,
+        "failed": 0,
+        "overall": "PASS"
+      }
+    },
+    {
+      "test": "idempotency_protection",
+      "timestamp": "2026-03-13T21:31:05.389647+00:00",
+      "tests": [
+        {
+          "name": "First Request with Key",
+          "status": "PASS",
+          "response": {
+            "success": true,
+            "idempotency_key": "TEST-dafee8a1",
+            "message": "Request baru berhasil diproses",
+            "data": {
+              "test_data": "idempotency test"
+            },
+            "processed_at": "2026-03-13T21:31:05.495735+00:00"
+          }
+        },
+        {
+          "name": "Replay Same Request (Should Return Cached)",
+          "status": "PASS",
+          "response": {
+            "first": "2026-03-13T21:31:05.495735+00:00",
+            "second": "2026-03-13T21:31:05.495735+00:00",
+            "cached": true
+          }
+        },
+        {
+          "name": "Get Idempotency Stats",
+          "status": "PASS",
+          "response": {
+            "total_keys": 2,
+            "active_keys": 2,
+            "expired_keys": 0,
+            "by_endpoint": [
+              {
+                "_id": "/api/idempotency/test",
+                "count": 2
+              }
+            ],
+            "ttl_hours": 24
+          }
+        }
+      ],
+      "summary": {
+        "total": 3,
+        "passed": 3,
+        "failed": 0,
+        "overall": "PASS"
+      }
+    },
+    {
+      "test": "event_bus_system",
+      "timestamp": "2026-03-13T21:31:05.773363+00:00",
+      "tests": [
+        {
+          "name": "Get Event Types",
+          "status": "PASS",
+          "response": {
+            "event_types": {
+              "sale.created": "Penjualan dibuat",
+              "sale.posted": "Penjualan di-posting",
+              "sale.cancelled": "Penjualan dibatalkan",
+              "sale.returned": "Penjualan di-retur",
+              "purchase.created": "Pembelian dibuat",
+              "purchase.received": "Pembelian diterima",
+              "purchase.cancelled": "Pembelian dibatalkan",
+              "purchase.returned": "Pembelian di-retur",
+              "inventory.adjusted": "Stok di-adjust",
+              "inventory.transferred": "Stok ditransfer",
+              "inventory.opname_completed": "Stock opname selesai",
+              "payment.received": "Pembayaran diterima",
+              "payment.made": "Pembayaran dilakukan",
+              "cash.shift_opened": "Shift kasir dibuka",
+              "cash.shift_closed": "Shift kasir ditutup",
+              "cash.deposited": "Setoran kas dicatat",
+              "cash.variance_detected": "Selisih kas terdeteksi",
+              "journal.posted": "Jurnal di-posting",
+              "journal.reversed": "Jurnal di-reverse",
+              "payroll.processed": "Payroll diproses",
+              "payroll.paid": "Payroll dibayar",
+              "user.created": "User dibuat",
+              "user.deactivated": "User dinonaktifkan",
+              "system.backup_completed": "Backup selesai",
+              "system.restore_completed": "Restore selesai",
+              "system.period_locked": "Periode dikunci",
+              "system.reconciliation_completed": "Rekonsiliasi selesai"
+            },
+            "total": 27
+          }
+        },
+        {
+          "name": "Publish Test Event",
+          "status": "PASS",
+          "response": {
+            "success": true,
+            "message": "Event bus test completed",
+            "event": {
+              "id": "106e530a-c7ec-4685-a719-eabd5bfef8c2",
+              "event_type": "sale.posted",
+              "payload": {
+                "test": true,
+                "message": "Event bus test",
+                "timestamp": "2026-03-13T21:31:06.006568+00:00"
+              },
+              "tenant_id": "ocb_titan",
+              "user_id": "21e37a5c-3ebd-4182-bd6e-61f7dcf5d105",
+              "user_name": "Oscar OCB",
+              "branch_id": "0acd2ffd-c2d9-4324-b860-a4626840e80e",
+              "created_at": "2026-03-13T21:31:06.006598+00:00",
+              "status": "no_listeners",
+              "delivery_results": []
+            }
+          }
+        },
+        {
+          "name": "Get Event Log",
+          "status": "PASS",
+          "response": {
+            "events": [
+              {
+                "id": "106e530a-c7ec-4685-a719-eabd5bfef8c2",
+                "event_type": "sale.posted",
+                "payload": {
+                  "test": true,
+                  "message": "Event bus test",
+                  "timestamp": "2026-03-13T21:31:06.006568+00:00"
+                },
+                "tenant_id": "ocb_titan",
+                "user_id": "21e37a5c-3ebd-4182-bd6e-61f7dcf5d105",
+                "user_name": "Oscar OCB",
+                "branch_id": "0acd2ffd-c2d9-4324-b860-a4626840e80e",
+                "created_at": "2026-03-13T21:31:06.006598+00:00",
+                "status": "no_listeners",
+                "delivery_results": []
+              },
+              {
+                "id": "e9cc9bb3-e6fa-4a4f-baca-606686645538",
+                "event_type": "sale.posted",
+                "payload": {
+                  "test": true,
+                  "message": "Event bus test",
+                  "timestamp": "2026-03-13T21:29:27.187388+00:00"
+                },
+                "tenant_id": "ocb_titan",
+                "user_id": "21e37a5c-3ebd-4182-bd6e-61f7dcf5d105",
+                "user_name": "Oscar OCB",
+                "branch_id": "0acd2ffd-c2d9-4324-b860-a4626840e80e",
+                "created_at": "2026-03-13T21:29:27.187418+00:00",
+                "status": "no_listeners",
+                "delivery_results": []
+              },
+              {
+                "id": "02babfdf-2b3d-4ebe-b1af-d69150bdf19d",
+                "event_type": "sale.posted",
+                "payload": {
+                  "test": true,
+                  "message": "Event bus test",
+                  "timestamp": "2026-03-13T21:29:01.945349+00:00"
+                },
+                "tenant_id": "ocb_titan",
+                "user_id": "21e37a5c-3ebd-4182-bd6e-61f7dcf5d105",
+                "user_name": "Oscar OCB",
+                "branch_id": "0acd2ffd-c2d9-4324-b860-a4626840e80e",
+                "created_at": "2026-03-13T21:29:01.945380+00:00",
+                "status": "no_listeners",
+                "delivery_results": []
+              },
+              {
+                "id": "2223712b-d091-4558-862c-3dcb7cbbd275",
+                "event_type": "sale.posted",
+                "payload": {
+                  "test": true,
+                  "message": "Event bus test",
+                  "timestamp": "2026-03-13T21:28:56.544212+00:00"
+                },
+                "tenant_id": "ocb_titan",
+                "user_id": "21e37a5c-3ebd-4182-bd6e-61f7dcf5d105",
+                "user_name": "Oscar OCB",
+                "branch_id": "0acd2ffd-c2d9-4324-b860-a4626840e80e",
+                "created_at": "2026-03-13T21:28:56.544245+00:00",
+                "status": "no_listeners",
+                "delivery_results": []
+              }
+            ],
+            "total": 4
+          }
+        },
+        {
+          "name": "Get Event Stats",
+          "status": "PASS",
+          "response": {
+            "period_days": 7,
+            "total_events": 4,
+            "by_type": [
+              {
+                "_id": "sale.posted",
+                "count": 4,
+                "failed": 0
+              }
+            ],
+            "by_status": [
+              {
+                "_id": "no_listeners",
+                "count": 4
+              }
+            ]
+          }
+        }
+      ],
+      "summary": {
+        "total": 4,
+        "passed": 4,
+        "failed": 0,
+        "overall": "PASS"
+      }
+    },
+    {
+      "test": "integrity_monitor",
+      "timestamp": "2026-03-13T21:31:06.273696+00:00",
+      "tests": [
+        {
+          "name": "Get Full Dashboard",
+          "status": "PASS",
+          "response": {
+            "timestamp": "2026-03-13T21:31:06.381469+00:00",
+            "tenant": "ocb_titan",
+            "checks": [
+              {
+                "check": "journal_balance",
+                "status": "PASS",
+                "total_debit": 74689867.5,
+                "total_credit": 74689867.5,
+                "difference": 0.0,
+                "journal_count": 70,
+                "unbalanced_count": 0,
+                "unbalanced_journals": [],
+                "checked_at": "2026-03-13T21:31:06.390776+00:00"
+              },
+              {
+                "check": "stock_drift",
+                "status": "FAIL",
+                "products_checked": 60,
+                "discrepancies_found": 15,
+                "discrepancies": [
+                  {
+                    "product_id": "2ad75718-76d6-4b91-8cb3-b4a310ca94a3",
+                    "name": "XL Unlimited 30 Hari",
+                    "sku": null,
+                    "stored_stock": 296,
+                    "calculated_stock": 0,
+                    "difference": 296
+                  },
+                  {
+                    "product_id": "e1cd6253-04e6-4382-9e26-4dda3ebcd362",
+                    "name": "Kabel Data Type-C",
+                    "sku": null,
+                    "stored_stock": 1,
+                    "calculated_stock": 0,
+                    "difference": 1
+                  },
+                  {
+                    "product_id": "PRD-AUDIT-001",
+                    "name": "Charger Fast 20W USB-C",
+                    "sku": "CHG-001",
+                    "stored_stock": 16,
+                    "calculated_stock": 0,
+                    "difference": 16
+                  },
+                  {
+                    "product_id": "PRD-AUDIT-002",
+                    "name": "Charger Fast 33W Dual Port",
+                    "sku": "CHG-002",
+                    "stored_stock": 13,
+                    "calculated_stock": 0,
+                    "difference": 13
+                  },
+                  {
+                    "product_id": "2881765d-83ab-4f9f-bd98-22bdb9c6e7b5",
+                    "name": "Saldo Server XL",
+                    "sku": null,
+                    "stored_stock": 17000000.0,
+                    "calculated_stock": 0,
+                    "difference": 17000000.0
+                  },
+                  {
+                    "product_id": "6d1fd21f-d558-4751-b74c-b73316a03a8d",
+                    "name": "Voucher Zero XL 10GB",
+                    "sku": null,
+                    "stored_stock": 40.0,
+                    "calculated_stock": 0,
+                    "difference": 40.0
+                  },
+                  {
+                    "product_id": "0dab5f74-cf6e-40e6-83c0-48ef5ea32c51",
+                    "name": "Voucher Fisik XL 10GB 30 Hari",
+                    "sku": null,
+                    "stored_stock": 58.0,
+                    "calculated_stock": 0,
+                    "difference": 58.0
+                  },
+                  {
+                    "product_id": "d072cb3d-dba8-47fc-925c-f4da72b99064",
+                    "name": "AUDIT-Pulsa Telkomsel 50K (Updated)",
+                    "sku": null,
+                    "stored_stock": 44,
+                    "calculated_stock": 0,
+                    "difference": 44
+                  },
+                  {
+                    "product_id": "26185e7b-efac-4745-8d8d-c1e114a863ed",
+                    "name": "STRESS-Saldo Server Telkomsel",
+                    "sku": null,
+                    "stored_stock": 3750000.0,
+                    "calculated_stock": 0,
+                    "difference": 3750000.0
+                  },
+                  {
+                    "product_id": "c62a3f9c-cc19-469e-a783-3a0c0b354bf3",
+                    "name": "STRESS-Voucher Zero Telkomsel 5GB",
+                    "sku": null,
+                    "stored_stock": 50.0,
+                    "calculated_stock": 0,
+                    "difference": 50.0
+                  },
+                  {
+                    "product_id": "c64bcb0b-6dc7-4bf8-8478-2c612706d370",
+                    "name": "STRESS-Voucher Fisik Telkomsel 5GB 30H",
+                    "sku": null,
+                    "stored_stock": 47.0,
+                    "calculated_stock": 0,
+                    "difference": 47.0
+                  },
+                  {
+                    "product_id": "baa5a5fd-0fa2-4459-9a27-d32ec1412cf9",
+                    "name": "Kabel Data Type-C Test v2 (Edited)",
+                    "sku": null,
+                    "stored_stock": 50,
+                    "calculated_stock": 0,
+                    "difference": 50
+                  },
+                  {
+                    "product_id": "b0ec8a99-5555-4c92-8639-3b4e9fa8c92d",
+                    "name": "Kabel Data Premium Test",
+                    "sku": null,
+                    "stored_stock": 77,
+                    "calculated_stock": 0,
+                    "difference": 77
+                  },
+                  {
+                    "product_id": "a42b820d-d311-4a24-81c8-4afb423af027",
+                    "name": "Item Test P0",
+                    "sku": null,
+                    "stored_stock": 94,
+                    "calculated_stock": 0,
+                    "difference": 94
+                  },
+                  {
+                    "product_id": "a009a443-2e22-4597-91a6-cfd7d763b206",
+                    "name": "E2E Test Product",
+                    "sku": null,
+                    "stored_stock": 995,
+                    "calculated_stock": 0,
+                    "difference": 995
+                  }
+                ],
+                "checked_at": "2026-03-13T21:31:06.422706+00:00"
+              },
+              {
+                "check": "inventory_vs_gl",
+                "status": "FAIL",
+                "inventory_value": 48872000.0,
+                "gl_balance": -3750000.0,
+                "difference": 52622000.0,
+                "percentage_diff": -1403.25,
+                "checked_at": "2026-03-13T21:31:06.426586+00:00"
+              },
+              {
+                "check": "cash_variance",
+                "status": "WARNING",
+                "period_days": 7,
+                "variance_count": 0,
+                "total_shortage": 0,
+                "total_overage": 0,
+                "net_variance": 0,
+                "pending_discrepancies": 5,
+                "recent_variances": [],
+                "checked_at": "2026-03-13T21:31:06.427462+00:00"
+              },
+              {
+                "check": "backup_status",
+                "status": "PASS",
+                "backup_count": 12,
+                "latest_backup": {
+                  "filename": "api_test_20260313_203456_metadata.json",
+                  "size_bytes": 2184,
+                  "size_mb": 0.0,
+                  "created_at": "2026-03-13T20:34:57.278474"
+                },
+                "has_recent_backup": true,
+                "backup_directory": "/app/backend/backups",
+                "checked_at": "2026-03-13T21:31:06.427655+00:00"
+              },
+              {
+                "check": "event_queue",
+                "status": "PASS",
+                "period_hours": 1,
+                "total_events": 4,
+                "by_status": {
+                  "no_listeners": 4
+                },
+                "failed_count": 0,
+                "checked_at": "2026-03-13T21:31:06.428069+00:00"
+              },
+              {
+                "check": "system_health",
+                "status": "PASS",
+                "counts": {
+                  "active_users": 12,
+                  "products": 63,
+                  "posted_journals": 2075,
+                  "sales": 0
+                },
+                "database": "ocb_titan",
+                "checked_at": "2026-03-13T21:31:06.429974+00:00"
+              }
+            ],
+            "overall_status": "CRITICAL",
+            "summary": {
+              "total_checks": 7,
+              "passed": 4,
+              "warnings": 1,
+              "failed": 2
+            }
+          }
+        },
+        {
+          "name": "Generate Report",
+          "status": "PASS",
+          "response": {
+            "success": true,
+            "report": {
+              "timestamp": "2026-03-13T21:31:06.549101+00:00",
+              "tenant": "ocb_titan",
+              "checks": [
+                {
+                  "check": "journal_balance",
+                  "status": "PASS",
+                  "total_debit": 74689867.5,
+                  "total_credit": 74689867.5,
+                  "difference": 0.0,
+                  "journal_count": 70,
+                  "unbalanced_count": 0,
+                  "unbalanced_journals": [],
+                  "checked_at": "2026-03-13T21:31:06.558966+00:00"
+                },
+                {
+                  "check": "stock_drift",
+                  "status": "FAIL",
+                  "products_checked": 60,
+                  "discrepancies_found": 15,
+                  "discrepancies": [
+                    {
+                      "product_id": "2ad75718-76d6-4b91-8cb3-b4a310ca94a3",
+                      "name": "XL Unlimited 30 Hari",
+                      "sku": null,
+                      "stored_stock": 296,
+                      "calculated_stock": 0,
+                      "difference": 296
+                    },
+                    {
+                      "product_id": "e1cd6253-04e6-4382-9e26-4dda3ebcd362",
+                      "name": "Kabel Data Type-C",
+                      "sku": null,
+                      "stored_stock": 1,
+                      "calculated_stock": 0,
+                      "difference": 1
+                    },
+                    {
+                      "product_id": "PRD-AUDIT-001",
+                      "name": "Charger Fast 20W USB-C",
+                      "sku": "CHG-001",
+                      "stored_stock": 16,
+                      "calculated_stock": 0,
+                      "difference": 16
+                    },
+                    {
+                      "product_id": "PRD-AUDIT-002",
+                      "name": "Charger Fast 33W Dual Port",
+                      "sku": "CHG-002",
+                      "stored_stock": 13,
+                      "calculated_stock": 0,
+                      "difference": 13
+                    },
+                    {
+                      "product_id": "2881765d-83ab-4f9f-bd98-22bdb9c6e7b5",
+                      "name": "Saldo Server XL",
+                      "sku": null,
+                      "stored_stock": 17000000.0,
+                      "calculated_stock": 0,
+                      "difference": 17000000.0
+                    },
+                    {
+                      "product_id": "6d1fd21f-d558-4751-b74c-b73316a03a8d",
+                      "name": "Voucher Zero XL 10GB",
+                      "sku": null,
+                      "stored_stock": 40.0,
+                      "calculated_stock": 0,
+                      "difference": 40.0
+                    },
+                    {
+                      "product_id": "0dab5f74-cf6e-40e6-83c0-48ef5ea32c51",
+                      "name": "Voucher Fisik XL 10GB 30 Hari",
+                      "sku": null,
+                      "stored_stock": 58.0,
+                      "calculated_stock": 0,
+                      "difference": 58.0
+                    },
+                    {
+                      "product_id": "d072cb3d-dba8-47fc-925c-f4da72b99064",
+                      "name": "AUDIT-Pulsa Telkomsel 50K (Updated)",
+                      "sku": null,
+                      "stored_stock": 44,
+                      "calculated_stock": 0,
+                      "difference": 44
+                    },
+                    {
+                      "product_id": "26185e7b-efac-4745-8d8d-c1e114a863ed",
+                      "name": "STRESS-Saldo Server Telkomsel",
+                      "sku": null,
+                      "stored_stock": 3750000.0,
+                      "calculated_stock": 0,
+                      "difference": 3750000.0
+                    },
+                    {
+                      "product_id": "c62a3f9c-cc19-469e-a783-3a0c0b354bf3",
+                      "name": "STRESS-Voucher Zero Telkomsel 5GB",
+                      "sku": null,
+                      "stored_stock": 50.0,
+                      "calculated_stock": 0,
+                      "difference": 50.0
+                    },
+                    {
+                      "product_id": "c64bcb0b-6dc7-4bf8-8478-2c612706d370",
+                      "name": "STRESS-Voucher Fisik Telkomsel 5GB 30H",
+                      "sku": null,
+                      "stored_stock": 47.0,
+                      "calculated_stock": 0,
+                      "difference": 47.0
+                    },
+                    {
+                      "product_id": "baa5a5fd-0fa2-4459-9a27-d32ec1412cf9",
+                      "name": "Kabel Data Type-C Test v2 (Edited)",
+                      "sku": null,
+                      "stored_stock": 50,
+                      "calculated_stock": 0,
+                      "difference": 50
+                    },
+                    {
+                      "product_id": "b0ec8a99-5555-4c92-8639-3b4e9fa8c92d",
+                      "name": "Kabel Data Premium Test",
+                      "sku": null,
+                      "stored_stock": 77,
+                      "calculated_stock": 0,
+                      "difference": 77
+                    },
+                    {
+                      "product_id": "a42b820d-d311-4a24-81c8-4afb423af027",
+                      "name": "Item Test P0",
+                      "sku": null,
+                      "stored_stock": 94,
+                      "calculated_stock": 0,
+                      "difference": 94
+                    },
+                    {
+                      "product_id": "a009a443-2e22-4597-91a6-cfd7d763b206",
+                      "name": "E2E Test Product",
+                      "sku": null,
+                      "stored_stock": 995,
+                      "calculated_stock": 0,
+                      "difference": 995
+                    }
+                  ],
+                  "checked_at": "2026-03-13T21:31:06.594164+00:00"
+                },
+                {
+                  "check": "inventory_vs_gl",
+                  "status": "FAIL",
+                  "inventory_value": 48872000.0,
+                  "gl_balance": -3750000.0,
+                  "difference": 52622000.0,
+                  "percentage_diff": -1403.25,
+                  "checked_at": "2026-03-13T21:31:06.598318+00:00"
+                },
+                {
+                  "check": "cash_variance",
+                  "status": "WARNING",
+                  "period_days": 7,
+                  "variance_count": 0,
+                  "total_shortage": 0,
+                  "total_overage": 0,
+                  "net_variance": 0,
+                  "pending_discrepancies": 5,
+                  "recent_variances": [],
+                  "checked_at": "2026-03-13T21:31:06.599432+00:00"
+                },
+                {
+                  "check": "backup_status",
+                  "status": "PASS",
+                  "backup_count": 12,
+                  "latest_backup": {
+                    "filename": "api_test_20260313_203456_metadata.json",
+                    "size_bytes": 2184,
+                    "size_mb": 0.0,
+                    "created_at": "2026-03-13T20:34:57.278474"
+                  },
+                  "has_recent_backup": true,
+                  "backup_directory": "/app/backend/backups",
+                  "checked_at": "2026-03-13T21:31:06.599616+00:00"
+                },
+                {
+                  "check": "event_queue",
+                  "status": "PASS",
+                  "period_hours": 1,
+                  "total_events": 4,
+                  "by_status": {
+                    "no_listeners": 4
+                  },
+                  "failed_count": 0,
+                  "checked_at": "2026-03-13T21:31:06.600231+00:00"
+                },
+                {
+                  "check": "system_health",
+                  "status": "PASS",
+                  "counts": {
+                    "active_users": 12,
+                    "products": 63,
+                    "posted_journals": 2075,
+                    "sales": 0
+                  },
+                  "database": "ocb_titan",
+                  "checked_at": "2026-03-13T21:31:06.602555+00:00"
+                }
+              ],
+              "overall_status": "CRITICAL",
+              "summary": {
+                "total_checks": 7,
+                "passed": 4,
+                "warnings": 1,
+                "failed": 2
+              }
+            },
+            "files": {
+              "json": "/app/backend/scripts/audit_output/integrity_monitor_report.json",
+              "markdown": "/app/backend/scripts/audit_output/integrity_monitor_report.md"
+            }
+          }
+        }
+      ],
+      "summary": {
+        "total": 2,
+        "passed": 2,
+        "failed": 0,
+        "overall": "PASS"
+      }
+    },
+    {
+      "test": "backup_automation",
+      "timestamp": "2026-03-13T21:31:06.628287+00:00",
+      "tests": [
+        {
+          "name": "Get Backup Config",
+          "status": "PASS",
+          "response": {
+            "config": {
+              "backup_schedule": {
+                "daily": {
+                  "enabled": true,
+                  "time": "01:00",
+                  "retention_days": 7,
+                  "description": "Daily backup untuk recovery cepat"
+                },
+                "weekly": {
+                  "enabled": true,
+                  "day": "Sunday",
+                  "time": "02:00",
+                  "retention_weeks": 4,
+                  "description": "Weekly backup untuk recovery mingguan"
+                },
+                "monthly": {
+                  "enabled": true,
+                  "day": 1,
+                  "time": "03:00",
+                  "retention_months": 12,
+                  "description": "Monthly backup untuk archive"
+                }
+              },
+              "backup_settings": {
+                "backup_directory": "/app/backend/backups",
+                "include_tenants": [
+                  "ocb_titan",
+                  "ocb_baju",
+                  "ocb_counter",
+                  "ocb_unit_4",
+                  "ocb_unt_1"
+                ],
+                "compression": true,
+                "compression_level": 9,
+                "encryption": false,
+                "encryption_key": "",
+                "max_concurrent_backups": 2,
+                "timeout_minutes": 30
+              },
+              "notifications": {
+                "on_success": true,
+                "on_failure": true,
+                "channels": [
+                  "audit_log",
+                  "event_bus"
+                ],
+                "email_recipients": [],
+                "webhook_url": ""
+              },
+              "verification": {
+                "auto_verify": true,
+                "verify_after_backup": true,
+                "test_restore": false
+              },
+              "cleanup": {
+                "auto_cleanup": true,
+                "cleanup_on_startup": true,
+                "cleanup_interval_hours": 24
+              },
+              "metadata": {
+                "version": "1.0.0",
+                "created_at": "2026-03-13",
+                "updated_at": "2026-03-13",
+                "created_by": "system"
+              }
+            },
+            "config_path": "/app/backend/config/backup_schedule_config.yml"
+          }
+        },
+        {
+          "name": "Get Backup Status",
+          "status": "PASS",
+          "response": {
+            "status": "WARNING",
+            "total_backups": 7,
+            "total_size_mb": 23.0,
+            "latest_backups": {
+              "daily": null,
+              "weekly": null,
+              "monthly": null
+            },
+            "recent_runs": [],
+            "config": {
+              "daily": {
+                "enabled": true,
+                "time": "01:00",
+                "retention_days": 7,
+                "description": "Daily backup untuk recovery cepat"
+              },
+              "weekly": {
+                "enabled": true,
+                "day": "Sunday",
+                "time": "02:00",
+                "retention_weeks": 4,
+                "description": "Weekly backup untuk recovery mingguan"
+              },
+              "monthly": {
+                "enabled": true,
+                "day": 1,
+                "time": "03:00",
+                "retention_months": 12,
+                "description": "Monthly backup untuk archive"
+              }
+            }
+          }
+        },
+        {
+          "name": "List Backups",
+          "status": "PASS",
+          "response": {
+            "backups": [
+              {
+                "filename": "api_test_20260313_203456.gz",
+                "filepath": "/app/backend/backups/api_test_20260313_203456.gz",
+                "tenant": "api",
+                "backup_type": "manual",
+                "size_bytes": 3445258,
+                "size_mb": 3.29,
+                "created_at": "2026-03-13T20:34:57.248474"
+              },
+              {
+                "filename": "dr_test_20260313_203049.gz",
+                "filepath": "/app/backend/backups/dr_test_20260313_203049.gz",
+                "tenant": "dr",
+                "backup_type": "manual",
+                "size_bytes": 3443625,
+                "size_mb": 3.28,
+                "created_at": "2026-03-13T20:30:49.730473"
+              },
+              {
+                "filename": "dr_test_20260313_203007.gz",
+                "filepath": "/app/backend/backups/dr_test_20260313_203007.gz",
+                "tenant": "dr",
+                "backup_type": "manual",
+                "size_bytes": 3443691,
+                "size_mb": 3.28,
+                "created_at": "2026-03-13T20:30:08.134473"
+              },
+              {
+                "filename": "dr_test_20260313_202936.gz",
+                "filepath": "/app/backend/backups/dr_test_20260313_202936.gz",
+                "tenant": "dr",
+                "backup_type": "manual",
+                "size_bytes": 3443487,
+                "size_mb": 3.28,
+                "created_at": "2026-03-13T20:29:37.155473"
+              },
+              {
+                "filename": "tenant_backup_20260313_201131.dump",
+                "filepath": "/app/backend/backups/tenant_backup_20260313_201131.dump",
+                "tenant": "tenant",
+                "backup_type": "manual",
+                "size_bytes": 3438940,
+                "size_mb": 3.28,
+                "created_at": "2026-03-13T20:11:31.958467"
+              },
+              {
+                "filename": "system_backup_20260313_190802.ocb",
+                "filepath": "/app/backend/backups/system_backup_20260313_190802.ocb",
+                "tenant": "system",
+                "backup_type": "manual",
+                "size_bytes": 3456343,
+                "size_mb": 3.3,
+                "created_at": "2026-03-13T19:08:03.734446"
+              },
+              {
+                "filename": "backup_ocb_titan_20260313_190802.tar.gz",
+                "filepath": "/app/backend/backups/backup_ocb_titan_20260313_190802.tar.gz",
+                "tenant": "backup",
+                "backup_type": "manual",
+                "size_bytes": 3443522,
+                "size_mb": 3.28,
+                "created_at": "2026-03-13T19:08:02.942446"
+              }
+            ],
+            "total": 7,
+            "backup_directory": "/app/backend/backups"
+          }
+        },
+        {
+          "name": "Get Backup History",
+          "status": "PASS",
+          "response": {
+            "history": [],
+            "total": 0
+          }
+        }
+      ],
+      "summary": {
+        "total": 4,
+        "passed": 4,
+        "failed": 0,
+        "overall": "PASS"
+      }
+    }
+  ]
+}

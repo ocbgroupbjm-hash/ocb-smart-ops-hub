@@ -321,6 +321,38 @@ app.include_router(backup_restore_api_router, prefix="/api")
 from routes.reconciliation_monitor import router as reconciliation_monitor_router
 app.include_router(reconciliation_monitor_router, prefix="/api")
 
+# =============================================================
+# ENTERPRISE HARDENING PHASE - Guard Systems
+# =============================================================
+
+# Guard System 1: Accounting Period Lock
+from routes.accounting_period_lock import router as accounting_period_lock_router
+app.include_router(accounting_period_lock_router, prefix="/api")
+
+# Guard System 2: Cash Variance Engine
+from routes.cash_variance_engine import router as cash_variance_engine_router
+app.include_router(cash_variance_engine_router, prefix="/api")
+
+# Guard System 3: Inventory vs GL Reconciliation
+from routes.inventory_gl_reconciliation import router as inventory_gl_reconciliation_router
+app.include_router(inventory_gl_reconciliation_router, prefix="/api")
+
+# Guard System 4: Idempotency Protection
+from routes.idempotency_middleware import router as idempotency_router
+app.include_router(idempotency_router, prefix="/api")
+
+# Guard System 5: Event Bus System
+from routes.event_bus import router as event_bus_router
+app.include_router(event_bus_router, prefix="/api")
+
+# Guard System 6: Integrity Monitoring Dashboard
+from routes.integrity_monitor import router as integrity_monitor_router
+app.include_router(integrity_monitor_router, prefix="/api")
+
+# Guard System 7: Backup Automation
+from routes.backup_automation import router as backup_automation_router
+app.include_router(backup_automation_router, prefix="/api")
+
 
 # Health check
 @app.get("/api/health")
