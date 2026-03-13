@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Plus, Search, Edit2, Trash2, Loader2, X, Phone, Mail, Star } from 'lucide-react';
 import { toast } from 'sonner';
+import ERPActionToolbar from '../../components/ERPActionToolbar';
 
 const MasterCustomers = () => {
   const { api } = useAuth();
@@ -10,6 +11,7 @@ const MasterCustomers = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
+  const [selectedItem, setSelectedItem] = useState(null);
   const [groups, setGroups] = useState([]);
   const [formData, setFormData] = useState({
     code: '', name: '', phone: '', email: '', address: '', city: '',
@@ -56,8 +58,12 @@ const MasterCustomers = () => {
   
   const handleDelete = async (item) => { 
     if (!confirm(`Hapus pelanggan "${item.name}"?`)) return; 
-    try { await api(`/api/customers/${item.id}`, { method: 'DELETE' }); toast.success('Berhasil dihapus'); loadData(); } 
-    catch { toast.error('Gagal menghapus'); } 
+    try { 
+      await api(`/api/customers/${item.id}`, { method: 'DELETE' }); 
+      toast.success('Berhasil dihapus'); 
+      setSelectedItem(null);
+      loadData(); 
+    } catch { toast.error('Gagal menghapus'); } 
   };
 
   const resetForm = () => {
@@ -65,19 +71,25 @@ const MasterCustomers = () => {
     setFormData({ code: '', name: '', phone: '', email: '', address: '', city: '', group_id: '', credit_limit: 0, points: 0, is_active: true });
   };
 
+  const handleRowSelect = (item) => {
+    if (selectedItem?.id === item.id) {
+      setSelectedItem(null);
+    } else {
+      setSelectedItem(item);
+    }
+  };
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" data-testid="master-customers-page">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-amber-100">Daftar Pelanggan</h1>
           <p className="text-gray-400 text-sm">Kelola data pelanggan</p>
         </div>
-        <button onClick={() => { resetForm(); setShowModal(true); }} 
-          className="px-4 py-2 bg-gradient-to-r from-red-600 to-amber-600 text-white rounded-lg flex items-center gap-2">
-          <Plus className="h-4 w-4" /> Tambah Pelanggan
-        </button>
       </div>
 
+      {/* Search Bar */}
       <div className="bg-[#1a1214] border border-red-900/30 rounded-xl p-4">
         <div className="relative max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -86,11 +98,27 @@ const MasterCustomers = () => {
         </div>
       </div>
 
+      {/* TOOLBAR STANDAR ERP */}
+      <ERPActionToolbar
+        module="customer"
+        selectedItem={selectedItem}
+        onAdd={() => { resetForm(); setShowModal(true); }}
+        onEdit={(item) => handleEdit(item)}
+        onDelete={(item) => handleDelete(item)}
+        addLabel="Tambah"
+        editLabel="Edit"
+        deleteLabel="Hapus"
+      />
+
+      {/* Table */}
       <div className="bg-[#1a1214] border border-red-900/30 rounded-xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-red-900/20">
               <tr>
+                <th className="px-3 py-3 text-center text-xs font-semibold text-amber-200 w-10">
+                  <input type="checkbox" className="w-3 h-3" disabled />
+                </th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-amber-200">KODE</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-amber-200">NAMA PELANGGAN</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-amber-200">TELEPON</th>
@@ -103,11 +131,28 @@ const MasterCustomers = () => {
             </thead>
             <tbody className="divide-y divide-red-900/20">
               {loading ? (
-                <tr><td colSpan={8} className="px-4 py-8 text-center"><Loader2 className="h-8 w-8 animate-spin mx-auto text-amber-400" /></td></tr>
+                <tr><td colSpan={9} className="px-4 py-8 text-center"><Loader2 className="h-8 w-8 animate-spin mx-auto text-amber-400" /></td></tr>
               ) : items.length === 0 ? (
-                <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400">Belum ada data pelanggan</td></tr>
-              ) : items.map(item => (
-                <tr key={item.id} className="hover:bg-red-900/10">
+                <tr><td colSpan={9} className="px-4 py-8 text-center text-gray-400">Belum ada data pelanggan</td></tr>
+              ) : items.map((item, idx) => (
+                <tr 
+                  key={item.id} 
+                  onClick={() => handleRowSelect(item)}
+                  className={`cursor-pointer transition-colors ${
+                    selectedItem?.id === item.id 
+                      ? 'bg-amber-900/30 border-l-2 border-amber-500' 
+                      : 'hover:bg-red-900/10'
+                  }`}
+                  data-testid={`customer-row-${idx}`}
+                >
+                  <td className="px-3 py-3 text-center">
+                    <input 
+                      type="radio" 
+                      checked={selectedItem?.id === item.id}
+                      onChange={() => handleRowSelect(item)}
+                      className="w-3 h-3 accent-amber-500"
+                    />
+                  </td>
                   <td className="px-4 py-3 text-sm font-mono text-amber-300">{item.code}</td>
                   <td className="px-4 py-3">
                     <div className="font-medium text-gray-200">{item.name}</div>
@@ -132,8 +177,12 @@ const MasterCustomers = () => {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-center gap-1">
-                      <button onClick={() => handleEdit(item)} className="p-1.5 hover:bg-blue-600/20 rounded text-blue-400"><Edit2 className="h-4 w-4" /></button>
-                      <button onClick={() => handleDelete(item)} className="p-1.5 hover:bg-red-600/20 rounded text-red-400"><Trash2 className="h-4 w-4" /></button>
+                      <button onClick={(e) => { e.stopPropagation(); handleEdit(item); }} className="p-1.5 hover:bg-blue-600/20 rounded text-blue-400" title="Edit">
+                        <Edit2 className="h-4 w-4" />
+                      </button>
+                      <button onClick={(e) => { e.stopPropagation(); handleDelete(item); }} className="p-1.5 hover:bg-red-600/20 rounded text-red-400" title="Hapus">
+                        <Trash2 className="h-4 w-4" />
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -143,6 +192,7 @@ const MasterCustomers = () => {
         </div>
       </div>
 
+      {/* Modal Form */}
       {showModal && (
         <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
           <div className="bg-[#1a1214] border border-red-900/30 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">

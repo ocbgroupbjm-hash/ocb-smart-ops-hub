@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Plus, Search, Edit2, Trash2, Loader2, X, Building } from 'lucide-react';
 import { toast } from 'sonner';
+import ERPActionToolbar from '../../components/ERPActionToolbar';
 
 const MasterWarehouses = () => {
   const { api } = useAuth();
@@ -10,6 +11,7 @@ const MasterWarehouses = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
+  const [selectedItem, setSelectedItem] = useState(null);
   const [branches, setBranches] = useState([]);
   const [formData, setFormData] = useState({ code: '', name: '', branch_id: '', address: '', is_active: true });
 
@@ -45,35 +47,64 @@ const MasterWarehouses = () => {
   
   const handleDelete = async (item) => { 
     if (!confirm(`Hapus "${item.name}"?`)) return; 
-    try { await api(`/api/master/warehouses/${item.id}`, { method: 'DELETE' }); toast.success('Berhasil dihapus'); loadData(); } 
+    try { 
+      await api(`/api/master/warehouses/${item.id}`, { method: 'DELETE' }); 
+      toast.success('Berhasil dihapus'); 
+      setSelectedItem(null);
+      loadData(); 
+    } 
     catch { toast.error('Gagal menghapus'); } 
   };
 
+  const handleRowSelect = (item) => {
+    if (selectedItem?.id === item.id) {
+      setSelectedItem(null);
+    } else {
+      setSelectedItem(item);
+    }
+  };
+
+  const resetForm = () => {
+    setEditingItem(null);
+    setFormData({ code: '', name: '', branch_id: '', address: '', is_active: true });
+  };
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" data-testid="master-warehouses-page">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-amber-100">Dept / Gudang</h1>
           <p className="text-gray-400 text-sm">Kelola departemen dan gudang</p>
         </div>
-        <button onClick={() => { setEditingItem(null); setFormData({ code: '', name: '', branch_id: '', address: '', is_active: true }); setShowModal(true); }} 
-          className="px-4 py-2 bg-gradient-to-r from-red-600 to-amber-600 text-white rounded-lg flex items-center gap-2">
-          <Plus className="h-4 w-4" /> Tambah
-        </button>
       </div>
 
       <div className="bg-[#1a1214] border border-red-900/30 rounded-xl p-4">
         <div className="relative max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <input type="text" placeholder="Cari gudang..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} 
+          <input type="text" placeholder="Cari gudang..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-10 pr-4 py-2 bg-[#0a0608] border border-red-900/30 rounded-lg text-gray-200" />
         </div>
       </div>
+
+      {/* TOOLBAR STANDAR ERP */}
+      <ERPActionToolbar
+        module="warehouse"
+        selectedItem={selectedItem}
+        onAdd={() => { resetForm(); setShowModal(true); }}
+        onEdit={(item) => handleEdit(item)}
+        onDelete={(item) => handleDelete(item)}
+        addLabel="Tambah"
+        editLabel="Edit"
+        deleteLabel="Hapus"
+      />
 
       <div className="bg-[#1a1214] border border-red-900/30 rounded-xl overflow-hidden">
         <table className="w-full">
           <thead className="bg-red-900/20">
             <tr>
+              <th className="px-3 py-3 text-center text-xs font-semibold text-amber-200 w-10">
+                <input type="checkbox" className="w-3 h-3" disabled />
+              </th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-amber-200">KODE</th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-amber-200">NAMA</th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-amber-200">CABANG</th>
@@ -84,11 +115,28 @@ const MasterWarehouses = () => {
           </thead>
           <tbody className="divide-y divide-red-900/20">
             {loading ? (
-              <tr><td colSpan={6} className="px-4 py-8 text-center"><Loader2 className="h-8 w-8 animate-spin mx-auto text-amber-400" /></td></tr>
+              <tr><td colSpan={7} className="px-4 py-8 text-center"><Loader2 className="h-8 w-8 animate-spin mx-auto text-amber-400" /></td></tr>
             ) : items.length === 0 ? (
-              <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-400">Belum ada data</td></tr>
-            ) : items.map(item => (
-              <tr key={item.id} className="hover:bg-red-900/10">
+              <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-400">Belum ada data</td></tr>
+            ) : items.map((item, idx) => (
+              <tr 
+                key={item.id} 
+                onClick={() => handleRowSelect(item)}
+                className={`cursor-pointer transition-colors ${
+                  selectedItem?.id === item.id 
+                    ? 'bg-amber-900/30 border-l-2 border-amber-500' 
+                    : 'hover:bg-red-900/10'
+                }`}
+                data-testid={`warehouse-row-${idx}`}
+              >
+                <td className="px-3 py-3 text-center">
+                  <input 
+                    type="radio" 
+                    checked={selectedItem?.id === item.id}
+                    onChange={() => handleRowSelect(item)}
+                    className="w-3 h-3 accent-amber-500"
+                  />
+                </td>
                 <td className="px-4 py-3 text-sm font-mono text-amber-300">{item.code}</td>
                 <td className="px-4 py-3 font-medium text-gray-200">
                   <div className="flex items-center gap-2">
@@ -105,8 +153,12 @@ const MasterWarehouses = () => {
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center justify-center gap-1">
-                    <button onClick={() => handleEdit(item)} className="p-1.5 hover:bg-blue-600/20 rounded text-blue-400"><Edit2 className="h-4 w-4" /></button>
-                    <button onClick={() => handleDelete(item)} className="p-1.5 hover:bg-red-600/20 rounded text-red-400"><Trash2 className="h-4 w-4" /></button>
+                    <button onClick={(e) => { e.stopPropagation(); handleEdit(item); }} className="p-1.5 hover:bg-purple-600/20 rounded text-purple-400" title="Edit">
+                      <Edit2 className="h-4 w-4" />
+                    </button>
+                    <button onClick={(e) => { e.stopPropagation(); handleDelete(item); }} className="p-1.5 hover:bg-red-600/20 rounded text-red-400" title="Hapus">
+                      <Trash2 className="h-4 w-4" />
+                    </button>
                   </div>
                 </td>
               </tr>
@@ -125,13 +177,13 @@ const MasterWarehouses = () => {
             <form onSubmit={handleSubmit} className="p-4 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm text-gray-400 mb-1">Kode</label>
-                  <input type="text" value={formData.code} onChange={(e) => setFormData({ ...formData, code: e.target.value })} 
+                  <label className="block text-sm text-gray-400 mb-1">Kode *</label>
+                  <input type="text" value={formData.code} onChange={(e) => setFormData({ ...formData, code: e.target.value })}
                     className="w-full px-3 py-2 bg-[#0a0608] border border-red-900/30 rounded-lg" required />
                 </div>
                 <div>
                   <label className="block text-sm text-gray-400 mb-1">Cabang</label>
-                  <select value={formData.branch_id} onChange={(e) => setFormData({ ...formData, branch_id: e.target.value })} 
+                  <select value={formData.branch_id} onChange={(e) => setFormData({ ...formData, branch_id: e.target.value })}
                     className="w-full px-3 py-2 bg-[#0a0608] border border-red-900/30 rounded-lg">
                     <option value="">Pilih Cabang</option>
                     {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
@@ -139,13 +191,13 @@ const MasterWarehouses = () => {
                 </div>
               </div>
               <div>
-                <label className="block text-sm text-gray-400 mb-1">Nama</label>
-                <input type="text" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} 
+                <label className="block text-sm text-gray-400 mb-1">Nama *</label>
+                <input type="text" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   className="w-full px-3 py-2 bg-[#0a0608] border border-red-900/30 rounded-lg" required />
               </div>
               <div>
                 <label className="block text-sm text-gray-400 mb-1">Alamat</label>
-                <textarea value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })} 
+                <textarea value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                   className="w-full px-3 py-2 bg-[#0a0608] border border-red-900/30 rounded-lg" rows={2} />
               </div>
               <label className="flex items-center gap-2 cursor-pointer">

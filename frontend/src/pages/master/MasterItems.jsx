@@ -11,6 +11,8 @@ import { toast } from 'sonner';
 import { PricingConfigModal } from '../../components/pricing';
 import { ItemFormModal } from '../../components/master';
 import { OwnerEditButton, OwnerEditModal } from '../../components/OwnerEditButton';
+import ERPActionToolbar from '../../components/ERPActionToolbar';
+import StockCardModal from '../../components/StockCardModal';
 
 const MasterItems = () => {
   const { api, token, user } = useAuth();
@@ -66,6 +68,13 @@ const MasterItems = () => {
   // Pricing Modal states
   const [showPricingModal, setShowPricingModal] = useState(false);
   const [selectedItemForPricing, setSelectedItemForPricing] = useState(null);
+  
+  // Selected row for toolbar actions
+  const [selectedItem, setSelectedItem] = useState(null);
+  
+  // Stock Card Modal
+  const [showStockCard, setShowStockCard] = useState(false);
+  const [stockCardItem, setStockCardItem] = useState(null);
   
   // Form data
   const [formData, setFormData] = useState({
@@ -190,6 +199,7 @@ const MasterItems = () => {
       const res = await api(`/api/master/items/${item.id}`, { method: 'DELETE' });
       if (res.ok) {
         toast.success('Item berhasil dihapus');
+        setSelectedItem(null);
         loadItems();
       }
     } catch (err) {
@@ -200,6 +210,70 @@ const MasterItems = () => {
   const handleEdit = (item) => {
     setEditingItem(item);
     setShowModal(true);
+  };
+
+  // Duplikasi item - generate kode baru otomatis
+  const handleDuplicate = async (item) => {
+    try {
+      // Get next item code from number settings
+      const codeRes = await api('/api/number-settings/generate/item');
+      let newCode = item.code + '-DUP';
+      if (codeRes.ok) {
+        const codeData = await codeRes.json();
+        newCode = codeData.number || codeData.generated_number || newCode;
+      }
+      
+      // Create duplicate with new code
+      const duplicateData = {
+        code: newCode,
+        barcode: '', // Clear barcode, user must set new one
+        name: item.name + ' (Duplikat)',
+        category_id: item.category_id,
+        unit_id: item.unit_id,
+        brand_id: item.brand_id,
+        branch_id: item.branch_id,
+        rack: item.rack,
+        item_type: item.item_type,
+        cost_price: item.cost_price,
+        selling_price: item.selling_price,
+        description: item.description,
+        is_active: true,
+        track_stock: item.track_stock,
+        discontinued: false,
+        min_stock: item.min_stock,
+        max_stock: item.max_stock,
+        pricing_mode: item.pricing_mode
+      };
+      
+      // Open form with duplicate data for user to review/edit before saving
+      setEditingItem(null);
+      setFormData(duplicateData);
+      setShowModal(true);
+      toast.info('Data item diduplikasi. Silakan review dan simpan.');
+    } catch (err) {
+      toast.error('Gagal menduplikasi item');
+    }
+  };
+
+  // Kartu Stok handler
+  const handleStockCard = (item) => {
+    setStockCardItem(item);
+    setShowStockCard(true);
+  };
+
+  // Import handler
+  const handleImport = () => {
+    // Navigate to import page or open import modal
+    window.location.href = '/import?type=items';
+  };
+
+  // Row selection handler
+  const handleRowSelect = (item) => {
+    if (selectedItem?.id === item.id) {
+      setSelectedItem(null); // Deselect if same row clicked
+    } else {
+      setSelectedItem(item);
+    }
   };
 
   // Branch stock management
@@ -633,12 +707,35 @@ const MasterItems = () => {
         </div>
       </div>
 
+      {/* TOOLBAR STANDAR ERP - Di Atas Tabel */}
+      <ERPActionToolbar
+        module="master_item"
+        selectedItem={selectedItem}
+        onAdd={() => { setEditingItem(null); setFormData({
+          code: '', barcode: '', name: '', category_id: '', unit_id: '', brand_id: '',
+          branch_id: '', rack: '', item_type: 'barang', cost_price: 0, selling_price: 0,
+          description: '', is_active: true, track_stock: true, discontinued: false
+        }); setShowModal(true); }}
+        onEdit={(item) => handleEdit(item)}
+        onDelete={(item) => handleDelete(item)}
+        onDuplicate={(item) => handleDuplicate(item)}
+        onStockCard={(item) => handleStockCard(item)}
+        onImport={handleImport}
+        onExport={() => handleExport('xlsx')}
+        addLabel="Item Baru"
+        editLabel="Edit Item"
+        deleteLabel="Hapus Item"
+      />
+
       {/* DATA TABLE - Compact ERP Style */}
       <div className="bg-[#1a1214] border border-red-900/30 rounded-lg overflow-hidden">
-        <div className="overflow-x-auto" style={{ maxHeight: 'calc(100vh - 280px)' }}>
+        <div className="overflow-x-auto" style={{ maxHeight: 'calc(100vh - 340px)' }}>
           <table className="w-full text-xs">
             <thead className="bg-red-900/30 sticky top-0">
               <tr>
+                <th className="px-2 py-2 text-center text-amber-200 font-semibold w-8">
+                  <input type="checkbox" className="w-3 h-3" disabled title="Pilih baris dengan klik" />
+                </th>
                 <th className="px-2 py-2 text-left text-amber-200 font-semibold">KODE</th>
                 <th className="px-2 py-2 text-left text-amber-200 font-semibold">BARCODE</th>
                 <th className="px-2 py-2 text-left text-amber-200 font-semibold">NAMA ITEM</th>
@@ -657,14 +754,14 @@ const MasterItems = () => {
             <tbody className="divide-y divide-red-900/20">
               {loading ? (
                 <tr>
-                  <td colSpan={13} className="px-4 py-8 text-center text-gray-400">
+                  <td colSpan={14} className="px-4 py-8 text-center text-gray-400">
                     <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" />
                     Memuat data...
                   </td>
                 </tr>
               ) : items.length === 0 ? (
                 <tr>
-                  <td colSpan={13} className="px-4 py-8 text-center text-gray-400">
+                  <td colSpan={14} className="px-4 py-8 text-center text-gray-400">
                     Tidak ada data item ditemukan
                   </td>
                 </tr>
@@ -672,9 +769,22 @@ const MasterItems = () => {
                 items.map((item, idx) => (
                   <tr 
                     key={item.id} 
-                    className={`hover:bg-red-900/10 ${idx % 2 === 0 ? 'bg-[#0a0608]/30' : ''}`}
+                    onClick={() => handleRowSelect(item)}
+                    className={`cursor-pointer transition-colors ${
+                      selectedItem?.id === item.id 
+                        ? 'bg-amber-900/30 border-l-2 border-amber-500' 
+                        : idx % 2 === 0 ? 'bg-[#0a0608]/30 hover:bg-red-900/10' : 'hover:bg-red-900/10'
+                    }`}
                     data-testid={`item-row-${idx}`}
                   >
+                    <td className="px-2 py-1.5 text-center">
+                      <input 
+                        type="radio" 
+                        checked={selectedItem?.id === item.id}
+                        onChange={() => handleRowSelect(item)}
+                        className="w-3 h-3 accent-amber-500"
+                      />
+                    </td>
                     <td className="px-2 py-1.5 text-gray-200 font-mono">{item.code}</td>
                     <td className="px-2 py-1.5 text-gray-400 font-mono">{item.barcode || '-'}</td>
                     <td className="px-2 py-1.5 text-gray-200">{item.name}</td>
@@ -1134,6 +1244,13 @@ const MasterItems = () => {
           { name: 'min_stock', label: 'Stok Minimum', type: 'number' }
         ]}
         onSave={() => { setShowOwnerEdit(false); setOwnerEditItem(null); loadItems(); }}
+      />
+      
+      {/* Stock Card Modal - Kartu Stok dari stock_movements SSOT */}
+      <StockCardModal
+        isOpen={showStockCard}
+        onClose={() => { setShowStockCard(false); setStockCardItem(null); }}
+        item={stockCardItem}
       />
     </div>
   );

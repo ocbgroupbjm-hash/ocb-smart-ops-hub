@@ -305,3 +305,99 @@ async def create_test_stock_movements(
         "movements_created": len(test_movements),
         "final_stock": 50
     }
+
+
+
+@router.get("/stock-card-modal")
+async def get_stock_card_modal(
+    item_id: str = Query(..., description="Item ID"),
+    branch_id: str = Query("", description="Branch ID (optional)"),
+    date_from: str = Query("", description="Start date (YYYY-MM-DD)"),
+    date_to: str = Query("", description="End date (YYYY-MM-DD)"),
+    user: dict = Depends(get_current_user)
+):
+    """
+    Get stock card for modal display - more flexible date filtering.
+    Returns movements from stock_movements (SSOT) with running balance.
+    """
+    db = get_db()
+    
+    # Verify item exists
+    item = await db["products"].find_one({"id": item_id}, {"_id": 0, "id": 1, "code": 1, "name": 1})
+    if not item:
+        raise HTTPException(status_code=404, detail="Item tidak ditemukan")
+    
+    # Build query
+    query = {"item_id": item_id}
+    
+    if branch_id:
+        query["branch_id"] = branch_id
+    
+    if date_from:
+        query["created_at"] = query.get("created_at", {})
+        query["created_at"]["$gte"] = f"{date_from}T00:00:00"
+    
+    if date_to:
+        query["created_at"] = query.get("created_at", {})
+        query["created_at"]["$lte"] = f"{date_to}T23:59:59"
+    
+    # Get movements sorted by date
+    movements = await db["stock_movements"].find(
+        query,
+        {"_id": 0}
+    ).sort([("created_at", 1)]).to_list(1000)
+    
+    # Get branch names
+    branches_cursor = await db["branches"].find({}, {"_id": 0, "id": 1, "name": 1}).to_list(500)
+    branch_map = {b["id"]: b["name"] for b in branches_cursor}
+    
+    # Get transaction type labels
+    type_labels = {
+        "purchase": "Pembelian",
+        "purchase_receive": "Terima Barang",
+        "sales": "Penjualan",
+        "pos": "POS",
+        "transfer_in": "Transfer Masuk",
+        "transfer_out": "Transfer Keluar",
+        "adjustment_in": "Penyesuaian +",
+        "adjustment_out": "Penyesuaian -",
+        "opname": "Stock Opname",
+        "return_in": "Retur Masuk",
+        "return_out": "Retur Keluar",
+        "initial": "Stok Awal"
+    }
+    
+    # Build response with enriched data
+    result_movements = []
+    total_in = 0
+    total_out = 0
+    
+    for mov in movements:
+        qty = mov.get("quantity", 0)
+        if qty > 0:
+            total_in += qty
+        else:
+            total_out += abs(qty)
+        
+        result_movements.append({
+            "id": mov.get("id"),
+            "created_at": mov.get("created_at"),
+            "timestamp": mov.get("created_at"),
+            "reference_number": mov.get("reference_number", mov.get("reference_id", "")),
+            "ref_id": mov.get("reference_id", ""),
+            "transaction_type": mov.get("movement_type", mov.get("type", "other")),
+            "transaction_label": type_labels.get(mov.get("movement_type", mov.get("type", "")), mov.get("movement_type", "Lainnya")),
+            "branch_id": mov.get("branch_id"),
+            "branch_name": branch_map.get(mov.get("branch_id"), "-"),
+            "quantity": qty,
+            "notes": mov.get("notes", mov.get("description", ""))
+        })
+    
+    return {
+        "item": item,
+        "movements": result_movements,
+        "total_in": total_in,
+        "total_out": total_out,
+        "balance": total_in - total_out,
+        "count": len(result_movements)
+    }

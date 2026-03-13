@@ -2,10 +2,11 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { 
   Plus, Search, Eye, Printer, Truck, Check, X, RotateCcw, 
-  Loader2, FileText, Calendar, Package, ChevronDown, Edit
+  Loader2, FileText, Calendar, Package, ChevronDown, Edit, Edit2, Trash2
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { OwnerEditButton, OwnerEditModal, isOwner } from '../../components/OwnerEditButton';
+import ERPActionToolbar from '../../components/ERPActionToolbar';
 
 const PurchaseOrders = () => {
   const { api, user } = useAuth();
@@ -16,6 +17,7 @@ const PurchaseOrders = () => {
   const [showModal, setShowModal] = useState(false);
   const [showReceiveModal, setShowReceiveModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const [selectedItem, setSelectedItem] = useState(null); // For toolbar selection
   const [suppliers, setSuppliers] = useState([]);
   const [products, setProducts] = useState([]);
   
@@ -144,10 +146,69 @@ const PurchaseOrders = () => {
       const res = await api(`/api/purchase/orders/${order.id}/cancel`, { method: 'POST' });
       if (res.ok) {
         toast.success('PO dibatalkan');
+        setSelectedItem(null);
         loadOrders();
       }
     } catch (err) {
       toast.error('Gagal membatalkan PO');
+    }
+  };
+
+  // Delete PO handler
+  const handleDelete = async (order) => {
+    if (order.status !== 'draft') {
+      toast.error('Hanya PO dengan status Draft yang bisa dihapus');
+      return;
+    }
+    if (!confirm(`Hapus PO ${order.po_number}?`)) return;
+    try {
+      const res = await api(`/api/purchase/orders/${order.id}`, { method: 'DELETE' });
+      if (res.ok) {
+        toast.success('PO berhasil dihapus');
+        setSelectedItem(null);
+        loadOrders();
+      }
+    } catch (err) {
+      toast.error('Gagal menghapus PO');
+    }
+  };
+
+  // Edit PO handler - open form with existing data
+  const handleEdit = (order) => {
+    if (order.status !== 'draft') {
+      toast.warning('Hanya PO dengan status Draft yang bisa diedit langsung');
+      // For non-draft, use owner edit
+      setOwnerEditItem(order);
+      setShowOwnerEditModal(true);
+      return;
+    }
+    setFormData({
+      supplier_id: order.supplier_id || '',
+      notes: order.notes || '',
+      items: order.items?.map(i => ({
+        product_id: i.product_id,
+        quantity: i.quantity,
+        unit_cost: i.unit_cost,
+        discount_percent: i.discount_percent || 0
+      })) || [{ product_id: '', quantity: 1, unit_cost: 0, discount_percent: 0 }]
+    });
+    setSelectedOrder(order);
+    setShowModal(true);
+  };
+
+  // Print handler
+  const handlePrint = (order) => {
+    toast.info(`Mencetak PO ${order.po_number}...`);
+    // TODO: Implement print functionality
+    window.print();
+  };
+
+  // Row selection handler
+  const handleRowSelect = (order) => {
+    if (selectedItem?.id === order.id) {
+      setSelectedItem(null);
+    } else {
+      setSelectedItem(order);
     }
   };
 
@@ -157,6 +218,7 @@ const PurchaseOrders = () => {
       notes: '',
       items: [{ product_id: '', quantity: 1, unit_cost: 0, discount_percent: 0 }]
     });
+    setSelectedOrder(null);
   };
 
   const addItem = () => {
@@ -227,12 +289,6 @@ const PurchaseOrders = () => {
           <h1 className="text-2xl font-bold text-amber-100">Pesanan Pembelian</h1>
           <p className="text-gray-400 text-sm">Kelola purchase order ke supplier</p>
         </div>
-        <button 
-          onClick={() => { resetForm(); setShowModal(true); }}
-          className="px-4 py-2 bg-gradient-to-r from-red-600 to-amber-600 text-white rounded-lg flex items-center gap-2"
-        >
-          <Plus className="h-4 w-4" /> Buat PO Baru
-        </button>
       </div>
 
       {/* Filters */}
@@ -263,12 +319,30 @@ const PurchaseOrders = () => {
         </div>
       </div>
 
+      {/* TOOLBAR STANDAR ERP */}
+      <ERPActionToolbar
+        module="purchase_order"
+        selectedItem={selectedItem}
+        onAdd={() => { resetForm(); setShowModal(true); }}
+        onEdit={(item) => handleEdit(item)}
+        onDelete={(item) => handleDelete(item)}
+        onPrint={(item) => handlePrint(item)}
+        onApprove={(item) => handleSubmitPO(item)}
+        onReceive={(item) => { setSelectedOrder(item); setShowReceiveModal(true); }}
+        addLabel="Tambah PO"
+        editLabel="Edit PO"
+        deleteLabel="Hapus PO"
+      />
+
       {/* Table */}
       <div className="bg-[#1a1214] border border-red-900/30 rounded-xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-red-900/20">
               <tr>
+                <th className="px-3 py-3 text-center text-xs font-semibold text-amber-200 w-10">
+                  <input type="checkbox" className="w-3 h-3" disabled />
+                </th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-amber-200">NO. PO</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-amber-200">TANGGAL</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-amber-200">SUPPLIER</th>
@@ -280,11 +354,28 @@ const PurchaseOrders = () => {
             </thead>
             <tbody className="divide-y divide-red-900/20">
               {loading ? (
-                <tr><td colSpan={7} className="px-4 py-8 text-center"><Loader2 className="h-8 w-8 animate-spin mx-auto text-amber-400" /></td></tr>
+                <tr><td colSpan={8} className="px-4 py-8 text-center"><Loader2 className="h-8 w-8 animate-spin mx-auto text-amber-400" /></td></tr>
               ) : orders.length === 0 ? (
-                <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-400">Belum ada purchase order</td></tr>
-              ) : orders.map(order => (
-                <tr key={order.id} className="hover:bg-red-900/10">
+                <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400">Belum ada purchase order</td></tr>
+              ) : orders.map((order, idx) => (
+                <tr 
+                  key={order.id} 
+                  onClick={() => handleRowSelect(order)}
+                  className={`cursor-pointer transition-colors ${
+                    selectedItem?.id === order.id 
+                      ? 'bg-amber-900/30 border-l-2 border-amber-500' 
+                      : 'hover:bg-red-900/10'
+                  }`}
+                  data-testid={`po-row-${idx}`}
+                >
+                  <td className="px-3 py-3 text-center">
+                    <input 
+                      type="radio" 
+                      checked={selectedItem?.id === order.id}
+                      onChange={() => handleRowSelect(order)}
+                      className="w-3 h-3 accent-amber-500"
+                    />
+                  </td>
                   <td className="px-4 py-3">
                     <div className="font-medium text-amber-300 font-mono">{order.po_number}</div>
                   </td>
