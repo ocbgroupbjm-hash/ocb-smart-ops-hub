@@ -4,17 +4,17 @@
     {
       "id": "a09893d5-4c52-4e5f-870c-018f1134b1df",
       "name": "Telkomsel 10GB",
-      "stock": -400
+      "stock": 0
     },
     {
       "id": "2ad75718-76d6-4b91-8cb3-b4a310ca94a3",
       "name": "XL Unlimited 30 Hari",
-      "stock": 9
+      "stock": 296
     },
     {
       "id": "e1cd6253-04e6-4382-9e26-4dda3ebcd362",
       "name": "Kabel Data Type-C",
-      "stock": 11
+      "stock": 1
     },
     {
       "id": "8985a1b8-334a-49bf-8950-c2592f4020b6",
@@ -274,7 +274,7 @@
     {
       "id": "d072cb3d-dba8-47fc-925c-f4da72b99064",
       "name": "AUDIT-Pulsa Telkomsel 50K (Updated)",
-      "stock": 50
+      "stock": 44
     },
     {
       "id": "26185e7b-efac-4745-8d8d-c1e114a863ed",
@@ -293,12 +293,13 @@
     },
     {
       "id": "baa5a5fd-0fa2-4459-9a27-d32ec1412cf9",
-      "name": "Kabel Data Type-C Test v2 (Edited)"
+      "name": "Kabel Data Type-C Test v2 (Edited)",
+      "stock": 50
     },
     {
       "id": "b0ec8a99-5555-4c92-8639-3b4e9fa8c92d",
       "name": "Kabel Data Premium Test",
-      "stock": -20
+      "stock": 77
     },
     {
       "id": "d01a1138-85df-4d35-8921-a9ea8bc8c1fd",
@@ -307,7 +308,7 @@
     {
       "id": "a42b820d-d311-4a24-81c8-4afb423af027",
       "name": "Item Test P0",
-      "stock": 100
+      "stock": 94
     },
     {
       "id": "9de64dec-5cc8-408d-b8f9-1eda3e4329eb",
@@ -320,7 +321,8 @@
     {
       "id": "a009a443-2e22-4597-91a6-cfd7d763b206",
       "name": "E2E Test Product",
-      "category": "Test"
+      "category": "Test",
+      "stock": 995
     }
   ]
 }

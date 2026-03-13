@@ -1,0 +1,83 @@
+{
+  "reconciliation_id": "FIX-20260313_210539",
+  "timestamp": "2026-03-13T21:05:39.806247+00:00",
+  "summary": {
+    "total_adjustments": 10,
+    "total_journals": 10,
+    "total_adjustment_value": 6185000.0,
+    "inventory_account": "1104",
+    "adjustment_account": "5901"
+  },
+  "journal_summary": [
+    {
+      "journal_id": "cf3547f7-108f-44ae-b68a-1d603f1ca333",
+      "journal_number": "JV-ADJ-20260313210539-001",
+      "adjustment_id": "38755b95-ea2a-4cd2-92d8-f36146f11b2e",
+      "amount": 100000.0,
+      "type": "minus"
+    },
+    {
+      "journal_id": "6861b1e8-9c42-4568-ae53-816005eaa4aa",
+      "journal_number": "JV-ADJ-20260313210539-002",
+      "adjustment_id": "8efbc900-715b-46dd-985c-749e12d8669c",
+      "amount": 180000.0,
+      "type": "minus"
+    },
+    {
+      "journal_id": "b60f7518-1fe3-47d9-a044-60b99f1c7085",
+      "journal_number": "JV-ADJ-20260313210539-003",
+      "adjustment_id": "807c3f07-acd6-44ff-b5ea-d2102f1ba95f",
+      "amount": 1000000.0,
+      "type": "minus"
+    },
+    {
+      "journal_id": "a9661420-78a4-4485-a334-ff0e678587cd",
+      "journal_number": "JV-ADJ-20260313210539-004",
+      "adjustment_id": "5625b11e-eceb-4a47-8b70-7119248c620a",
+      "amount": 50000.0,
+      "type": "minus"
+    },
+    {
+      "journal_id": "f0cd18d7-fd20-4fea-bc05-29c4e5fd4919",
+      "journal_number": "JV-ADJ-20260313210539-005",
+      "adjustment_id": "54aa9602-f0c2-497b-bae8-39fe8c065455",
+      "amount": 990000.0,
+      "type": "minus"
+    },
+    {
+      "journal_id": "0b75fade-7d90-46e1-a6fd-c0a4da87464b",
+      "journal_number": "JV-ADJ-20260313210539-006",
+      "adjustment_id": "e10a20ff-8f19-46a9-933d-a223b3fe6b34",
+      "amount": 350000,
+      "type": "plus"
+    },
+    {
+      "journal_id": "c591862c-2887-4525-9977-88a517733d91",
+      "journal_number": "JV-ADJ-20260313210539-007",
+      "adjustment_id": "824eb931-a90a-41d4-84d3-c30058e1aa74",
+      "amount": 900000.0,
+      "type": "plus"
+    },
+    {
+      "journal_id": "d563ec69-8dfa-4b21-8d03-c8f67e63153f",
+      "journal_number": "JV-ADJ-20260313210539-008",
+      "adjustment_id": "12efd721-28a7-46c8-bdb3-3bf2149cbb12",
+      "amount": 240000,
+      "type": "minus"
+    },
+    {
+      "journal_id": "2e5e2d91-ea0b-495e-8578-0ddb2d35fac6",
+      "journal_number": "JV-ADJ-20260313210539-009",
+      "adjustment_id": "49891524-9e87-40fb-93ab-ce691a6375d2",
+      "amount": 375000.0,
+      "type": "plus"
+    },
+    {
+      "journal_id": "2c51a696-e75b-4fec-a40f-187531abf668",
+      "journal_number": "JV-ADJ-20260313210539-010",
+      "adjustment_id": "11a81ee3-97cd-44ad-95fd-593922ceaf51",
+      "amount": 2000000.0,
+      "type": "plus"
+    }
+  ]
+}

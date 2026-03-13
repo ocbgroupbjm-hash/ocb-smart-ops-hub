@@ -227,9 +227,14 @@ class StockReconciliationEngine:
         
         return log_entry
     
-    async def run_reconciliation(self, tenants: List[str] = None) -> Dict:
+    async def run_reconciliation(self, tenants: List[str] = None, auto_fix: bool = False, auto_fix_threshold: int = 50) -> Dict:
         """
         Run full stock reconciliation for all tenants
+        
+        Args:
+            tenants: List of tenant db names to reconcile
+            auto_fix: If True, automatically fix small discrepancies
+            auto_fix_threshold: Max discrepancy size for auto-fix (default 50 units)
         """
         await self.connect()
         
@@ -237,6 +242,9 @@ class StockReconciliationEngine:
         print("="*70)
         print("OCB TITAN - STOCK RECONCILIATION ENGINE")
         print(f"Timestamp: {timestamp.isoformat()}")
+        print(f"Auto-Fix Mode: {auto_fix}")
+        if auto_fix:
+            print(f"Auto-Fix Threshold: {auto_fix_threshold} units")
         print("="*70)
         
         # Get tenant list
@@ -264,9 +272,16 @@ class StockReconciliationEngine:
                 
                 # Create alerts and audit logs for discrepancies
                 for disc in result.get("discrepancies", []):
-                    await self.create_alert(db, disc, tenant)
-                    await self.create_audit_log(db, "STOCK_DISCREPANCY_DETECTED", disc, tenant)
-                    total_discrepancies += 1
+                    # Check if should auto-fix
+                    if auto_fix and abs(disc.get("difference", 0)) <= auto_fix_threshold:
+                        # Auto-fix small discrepancies
+                        await self.auto_fix_discrepancy(db, disc, tenant)
+                        total_discrepancies += 1
+                    else:
+                        # Create alert for manual review
+                        await self.create_alert(db, disc, tenant)
+                        await self.create_audit_log(db, "STOCK_DISCREPANCY_DETECTED", disc, tenant)
+                        total_discrepancies += 1
                 
                 # Log reconciliation run
                 await self.create_audit_log(db, "STOCK_RECONCILIATION_RUN", {
@@ -291,6 +306,8 @@ class StockReconciliationEngine:
             "report_id": f"STOCKREC-{timestamp.strftime('%Y%m%d_%H%M%S')}",
             "timestamp": timestamp.isoformat(),
             "scheduler": "daily_02:00",
+            "auto_fix_enabled": auto_fix,
+            "auto_fix_threshold": auto_fix_threshold if auto_fix else None,
             "tenants_processed": len(tenants),
             "total_discrepancies": total_discrepancies,
             "alerts_generated": len(self.alerts),
@@ -376,6 +393,56 @@ class StockReconciliationEngine:
             "discrepancies_fixed": len(fixed),
             "details": fixed
         }
+    
+    async def auto_fix_discrepancy(self, db, discrepancy: Dict, tenant: str):
+        """
+        Auto-fix a single small discrepancy
+        Used when auto_fix=True and difference <= threshold
+        """
+        product_id = discrepancy.get("product_id", "")
+        
+        if not product_id or product_id == "None":
+            return  # Skip invalid products
+        
+        movement_qty = discrepancy.get("movement_qty", 0) or 0
+        cached_qty = discrepancy.get("cached_qty", 0) or 0
+        difference = discrepancy.get("difference", 0)
+        
+        # Update cache to match SSOT
+        await db["products"].update_one(
+            {"id": product_id},
+            {"$set": {"stock": movement_qty}}
+        )
+        
+        # Create stock movement for the adjustment
+        adjustment_id = str(uuid.uuid4())
+        movement_type = "ADJUSTMENT_PLUS" if -difference > 0 else "ADJUSTMENT_MINUS"
+        
+        stock_movement = {
+            "id": str(uuid.uuid4()),
+            "product_id": product_id,
+            "branch_id": discrepancy.get("branch_id"),
+            "movement_type": movement_type,
+            "quantity": -difference,  # Adjust to sync
+            "reference_id": adjustment_id,
+            "reference_type": "auto_reconciliation",
+            "notes": f"Auto-fix: SSOT={movement_qty}, Cache was={cached_qty}",
+            "user_id": "SYSTEM_AUTO_RECON",
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        
+        await db["stock_movements"].insert_one(stock_movement)
+        
+        # Log the auto-fix
+        await self.create_audit_log(db, "STOCK_DISCREPANCY_AUTO_FIXED", {
+            "product_id": product_id,
+            "old_cache": cached_qty,
+            "new_cache": movement_qty,
+            "adjustment": -difference,
+            "auto_fixed": True
+        }, tenant)
+        
+        print(f"    ✅ Auto-fixed: {product_id[:20]}... (diff: {difference})")
 
 
 # ==================== SCHEDULER FUNCTIONS ====================
@@ -395,6 +462,8 @@ async def main():
     parser.add_argument("--tenant", type=str, help="Specific tenant to reconcile")
     parser.add_argument("--all", action="store_true", help="Reconcile all tenants")
     parser.add_argument("--fix", action="store_true", help="Auto-fix discrepancies (USE WITH CAUTION)")
+    parser.add_argument("--auto-fix", action="store_true", help="Enable auto-fix mode for small discrepancies")
+    parser.add_argument("--threshold", type=int, default=50, help="Auto-fix threshold (default: 50 units)")
     
     args = parser.parse_args()
     
@@ -403,9 +472,9 @@ async def main():
     if args.fix and args.tenant:
         result = await engine.fix_discrepancies(args.tenant, auto_fix=True)
     elif args.tenant:
-        result = await engine.run_reconciliation([args.tenant])
+        result = await engine.run_reconciliation([args.tenant], auto_fix=args.auto_fix, auto_fix_threshold=args.threshold)
     else:
-        result = await engine.run_reconciliation()
+        result = await engine.run_reconciliation(auto_fix=args.auto_fix, auto_fix_threshold=args.threshold)
     
     return result
 

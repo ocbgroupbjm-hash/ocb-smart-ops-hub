@@ -1,0 +1,61 @@
+# OCB TITAN ERP - CRON CONFIGURATION
+# MASTER BLUEPRINT: Production Scheduler
+
+# Stock Reconciliation Engine - Daily 02:00
+stock_reconciliation:
+  script: /app/backend/scripts/stock_reconciliation_engine.py
+  schedule: "0 2 * * *"  # Daily at 02:00
+  args:
+    - --all
+  on_discrepancy:
+    - send_alert
+    - create_audit_log
+  output: /app/reports/stock_reconciliation_report.json
+  log: /app/logs/stock_reconciliation.log
+
+# Business Snapshot Generator - Daily 03:00
+business_snapshot:
+  script: /app/backend/scripts/business_snapshot_generator.py
+  schedule: "0 3 * * *"  # Daily at 03:00
+  args:
+    - --tenant
+    - ocb_titan
+  output: /app/backend/backups/business_snapshot/
+  log: /app/logs/business_snapshot.log
+
+# Database Backup - Daily 01:00
+database_backup:
+  script: /app/backend/scripts/backup_system.py
+  schedule: "0 1 * * *"  # Daily at 01:00
+  args:
+    - --all-tenants
+  output: /app/backend/backups/
+  retention_days: 30
+  log: /app/logs/backup.log
+
+# Post-Restore Validation - After every restore
+restore_validation:
+  script: /app/backend/scripts/validate_restore.py
+  trigger: post_restore
+  args:
+    - --all
+  log: /app/logs/restore_validation.log
+
+# Alert Configuration
+alerts:
+  email:
+    enabled: false
+    recipients:
+      - admin@ocb.group
+  webhook:
+    enabled: true
+    url: /api/system/alerts
+  telegram:
+    enabled: false
+    chat_id: null
+
+# Retention Policy
+retention:
+  reports: 90  # days
+  backups: 30  # days
+  logs: 30     # days

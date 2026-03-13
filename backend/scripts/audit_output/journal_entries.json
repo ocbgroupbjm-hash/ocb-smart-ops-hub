@@ -2,6 +2,306 @@
   "count": 50,
   "entries": [
     {
+      "id": "cf3547f7-108f-44ae-b68a-1d603f1ca333",
+      "journal_number": "JV-ADJ-20260313210539-001",
+      "transaction_type": "inventory_adjustment",
+      "reference_id": "38755b95-ea2a-4cd2-92d8-f36146f11b2e",
+      "reference_type": "stock_adjustment",
+      "description": "Reconciliation adjustment: ADJ-FIX-20260313210539-001",
+      "entries": [
+        {
+          "account_code": "5901",
+          "account_name": "Inventory Adjustment Expense",
+          "debit": 100000.0,
+          "credit": 0,
+          "description": "Stock adjustment OUT: Item Test Cabang Banjarmasin"
+        },
+        {
+          "account_code": "1104",
+          "account_name": "Inventory",
+          "debit": 0,
+          "credit": 100000.0,
+          "description": "Stock adjustment OUT: Item Test Cabang Banjarmasin"
+        }
+      ],
+      "status": "posted",
+      "total_debit": 100000.0,
+      "total_credit": 100000.0,
+      "created_by": "SYSTEM_BRE",
+      "created_at": "2026-03-13T21:05:39.806247+00:00",
+      "posted_at": "2026-03-13T21:05:39.806247+00:00"
+    },
+    {
+      "id": "6861b1e8-9c42-4568-ae53-816005eaa4aa",
+      "journal_number": "JV-ADJ-20260313210539-002",
+      "transaction_type": "inventory_adjustment",
+      "reference_id": "8efbc900-715b-46dd-985c-749e12d8669c",
+      "reference_type": "stock_adjustment",
+      "description": "Reconciliation adjustment: ADJ-FIX-20260313210539-002",
+      "entries": [
+        {
+          "account_code": "5901",
+          "account_name": "Inventory Adjustment Expense",
+          "debit": 180000.0,
+          "credit": 0,
+          "description": "Stock adjustment OUT: XL Unlimited 30 Hari"
+        },
+        {
+          "account_code": "1104",
+          "account_name": "Inventory",
+          "debit": 0,
+          "credit": 180000.0,
+          "description": "Stock adjustment OUT: XL Unlimited 30 Hari"
+        }
+      ],
+      "status": "posted",
+      "total_debit": 180000.0,
+      "total_credit": 180000.0,
+      "created_by": "SYSTEM_BRE",
+      "created_at": "2026-03-13T21:05:39.806247+00:00",
+      "posted_at": "2026-03-13T21:05:39.806247+00:00"
+    },
+    {
+      "id": "b60f7518-1fe3-47d9-a044-60b99f1c7085",
+      "journal_number": "JV-ADJ-20260313210539-003",
+      "transaction_type": "inventory_adjustment",
+      "reference_id": "807c3f07-acd6-44ff-b5ea-d2102f1ba95f",
+      "reference_type": "stock_adjustment",
+      "description": "Reconciliation adjustment: ADJ-FIX-20260313210539-003",
+      "entries": [
+        {
+          "account_code": "5901",
+          "account_name": "Inventory Adjustment Expense",
+          "debit": 1000000.0,
+          "credit": 0,
+          "description": "Stock adjustment OUT: ACC001"
+        },
+        {
+          "account_code": "1104",
+          "account_name": "Inventory",
+          "debit": 0,
+          "credit": 1000000.0,
+          "description": "Stock adjustment OUT: ACC001"
+        }
+      ],
+      "status": "posted",
+      "total_debit": 1000000.0,
+      "total_credit": 1000000.0,
+      "created_by": "SYSTEM_BRE",
+      "created_at": "2026-03-13T21:05:39.806247+00:00",
+      "posted_at": "2026-03-13T21:05:39.806247+00:00"
+    },
+    {
+      "id": "a9661420-78a4-4485-a334-ff0e678587cd",
+      "journal_number": "JV-ADJ-20260313210539-004",
+      "transaction_type": "inventory_adjustment",
+      "reference_id": "5625b11e-eceb-4a47-8b70-7119248c620a",
+      "reference_type": "stock_adjustment",
+      "description": "Reconciliation adjustment: ADJ-FIX-20260313210539-004",
+      "entries": [
+        {
+          "account_code": "5901",
+          "account_name": "Inventory Adjustment Expense",
+          "debit": 50000.0,
+          "credit": 0,
+          "description": "Stock adjustment OUT: Item Test Cabang Banjarmasin"
+        },
+        {
+          "account_code": "1104",
+          "account_name": "Inventory",
+          "debit": 0,
+          "credit": 50000.0,
+          "description": "Stock adjustment OUT: Item Test Cabang Banjarmasin"
+        }
+      ],
+      "status": "posted",
+      "total_debit": 50000.0,
+      "total_credit": 50000.0,
+      "created_by": "SYSTEM_BRE",
+      "created_at": "2026-03-13T21:05:39.806247+00:00",
+      "posted_at": "2026-03-13T21:05:39.806247+00:00"
+    },
+    {
+      "id": "f0cd18d7-fd20-4fea-bc05-29c4e5fd4919",
+      "journal_number": "JV-ADJ-20260313210539-005",
+      "transaction_type": "inventory_adjustment",
+      "reference_id": "54aa9602-f0c2-497b-bae8-39fe8c065455",
+      "reference_type": "stock_adjustment",
+      "description": "Reconciliation adjustment: ADJ-FIX-20260313210539-005",
+      "entries": [
+        {
+          "account_code": "5901",
+          "account_name": "Inventory Adjustment Expense",
+          "debit": 990000.0,
+          "credit": 0,
+          "description": "Stock adjustment OUT: XL Unlimited 30 Hari"
+        },
+        {
+          "account_code": "1104",
+          "account_name": "Inventory",
+          "debit": 0,
+          "credit": 990000.0,
+          "description": "Stock adjustment OUT: XL Unlimited 30 Hari"
+        }
+      ],
+      "status": "posted",
+      "total_debit": 990000.0,
+      "total_credit": 990000.0,
+      "created_by": "SYSTEM_BRE",
+      "created_at": "2026-03-13T21:05:39.806247+00:00",
+      "posted_at": "2026-03-13T21:05:39.806247+00:00"
+    },
+    {
+      "id": "0b75fade-7d90-46e1-a6fd-c0a4da87464b",
+      "journal_number": "JV-ADJ-20260313210539-006",
+      "transaction_type": "inventory_adjustment",
+      "reference_id": "e10a20ff-8f19-46a9-933d-a223b3fe6b34",
+      "reference_type": "stock_adjustment",
+      "description": "Reconciliation adjustment: ADJ-FIX-20260313210539-006",
+      "entries": [
+        {
+          "account_code": "1104",
+          "account_name": "Inventory",
+          "debit": 350000,
+          "credit": 0,
+          "description": "Stock adjustment IN: Charger Fast 20W USB-C"
+        },
+        {
+          "account_code": "5901",
+          "account_name": "Inventory Adjustment",
+          "debit": 0,
+          "credit": 350000,
+          "description": "Stock adjustment IN: Charger Fast 20W USB-C"
+        }
+      ],
+      "status": "posted",
+      "total_debit": 350000,
+      "total_credit": 350000,
+      "created_by": "SYSTEM_BRE",
+      "created_at": "2026-03-13T21:05:39.806247+00:00",
+      "posted_at": "2026-03-13T21:05:39.806247+00:00"
+    },
+    {
+      "id": "c591862c-2887-4525-9977-88a517733d91",
+      "journal_number": "JV-ADJ-20260313210539-007",
+      "transaction_type": "inventory_adjustment",
+      "reference_id": "824eb931-a90a-41d4-84d3-c30058e1aa74",
+      "reference_type": "stock_adjustment",
+      "description": "Reconciliation adjustment: ADJ-FIX-20260313210539-007",
+      "entries": [
+        {
+          "account_code": "1104",
+          "account_name": "Inventory",
+          "debit": 900000.0,
+          "credit": 0,
+          "description": "Stock adjustment IN: Voucher Fisik XL 10GB 30 Hari"
+        },
+        {
+          "account_code": "5901",
+          "account_name": "Inventory Adjustment",
+          "debit": 0,
+          "credit": 900000.0,
+          "description": "Stock adjustment IN: Voucher Fisik XL 10GB 30 Hari"
+        }
+      ],
+      "status": "posted",
+      "total_debit": 900000.0,
+      "total_credit": 900000.0,
+      "created_by": "SYSTEM_BRE",
+      "created_at": "2026-03-13T21:05:39.806247+00:00",
+      "posted_at": "2026-03-13T21:05:39.806247+00:00"
+    },
+    {
+      "id": "d563ec69-8dfa-4b21-8d03-c8f67e63153f",
+      "journal_number": "JV-ADJ-20260313210539-008",
+      "transaction_type": "inventory_adjustment",
+      "reference_id": "12efd721-28a7-46c8-bdb3-3bf2149cbb12",
+      "reference_type": "stock_adjustment",
+      "description": "Reconciliation adjustment: ADJ-FIX-20260313210539-008",
+      "entries": [
+        {
+          "account_code": "5901",
+          "account_name": "Inventory Adjustment Expense",
+          "debit": 240000,
+          "credit": 0,
+          "description": "Stock adjustment OUT: E2E Test Product"
+        },
+        {
+          "account_code": "1104",
+          "account_name": "Inventory",
+          "debit": 0,
+          "credit": 240000,
+          "description": "Stock adjustment OUT: E2E Test Product"
+        }
+      ],
+      "status": "posted",
+      "total_debit": 240000,
+      "total_credit": 240000,
+      "created_by": "SYSTEM_BRE",
+      "created_at": "2026-03-13T21:05:39.806247+00:00",
+      "posted_at": "2026-03-13T21:05:39.806247+00:00"
+    },
+    {
+      "id": "2e5e2d91-ea0b-495e-8578-0ddb2d35fac6",
+      "journal_number": "JV-ADJ-20260313210539-009",
+      "transaction_type": "inventory_adjustment",
+      "reference_id": "49891524-9e87-40fb-93ab-ce691a6375d2",
+      "reference_type": "stock_adjustment",
+      "description": "Reconciliation adjustment: ADJ-FIX-20260313210539-009",
+      "entries": [
+        {
+          "account_code": "1104",
+          "account_name": "Inventory",
+          "debit": 375000.0,
+          "credit": 0,
+          "description": "Stock adjustment IN: STRESS-Voucher Fisik Telkomsel 5GB 30H"
+        },
+        {
+          "account_code": "5901",
+          "account_name": "Inventory Adjustment",
+          "debit": 0,
+          "credit": 375000.0,
+          "description": "Stock adjustment IN: STRESS-Voucher Fisik Telkomsel 5GB 30H"
+        }
+      ],
+      "status": "posted",
+      "total_debit": 375000.0,
+      "total_credit": 375000.0,
+      "created_by": "SYSTEM_BRE",
+      "created_at": "2026-03-13T21:05:39.806247+00:00",
+      "posted_at": "2026-03-13T21:05:39.806247+00:00"
+    },
+    {
+      "id": "2c51a696-e75b-4fec-a40f-187531abf668",
+      "journal_number": "JV-ADJ-20260313210539-010",
+      "transaction_type": "inventory_adjustment",
+      "reference_id": "11a81ee3-97cd-44ad-95fd-593922ceaf51",
+      "reference_type": "stock_adjustment",
+      "description": "Reconciliation adjustment: ADJ-FIX-20260313210539-010",
+      "entries": [
+        {
+          "account_code": "1104",
+          "account_name": "Inventory",
+          "debit": 2000000.0,
+          "credit": 0,
+          "description": "Stock adjustment IN: Kabel Data Premium Test"
+        },
+        {
+          "account_code": "5901",
+          "account_name": "Inventory Adjustment",
+          "debit": 0,
+          "credit": 2000000.0,
+          "description": "Stock adjustment IN: Kabel Data Premium Test"
+        }
+      ],
+      "status": "posted",
+      "total_debit": 2000000.0,
+      "total_credit": 2000000.0,
+      "created_by": "SYSTEM_BRE",
+      "created_at": "2026-03-13T21:05:39.806247+00:00",
+      "posted_at": "2026-03-13T21:05:39.806247+00:00"
+    },
+    {
       "id": "d592d88d-02a2-436d-8d66-6a60c8e75008",
       "journal_number": "JV-E2E-20260313190516-001",
       "date": "2026-03-13",
@@ -1221,306 +1521,6 @@
       "created_by": "system_migration",
       "created_at": "2026-03-13T17:43:03.641253+00:00",
       "posted_at": "2026-03-13T17:43:03.641253+00:00"
-    },
-    {
-      "id": "403ab28c-c57a-4655-aeca-0aff4a6b2ae6",
-      "journal_number": "JV-SALES-SEED-20260309-001584",
-      "date": "2026-03-09T14:06:53.068321+00:00",
-      "description": "Penjualan SEED-20260309-001584",
-      "reference_type": "sales",
-      "reference_id": "d80d73d7-4d93-4f0d-9584-48692a3833de",
-      "lines": [
-        {
-          "id": "b897fa28-2a06-4c18-a489-0cf3f953e8c7",
-          "account_id": "e146ea83-b0e3-407f-9766-e397109193a7",
-          "description": "Penjualan - SEED-20260309-001584",
-          "debit": 1335175,
-          "credit": 0
-        },
-        {
-          "id": "8b879fd5-3bef-406d-a492-2e5b5214b420",
-          "account_id": "82d3d109-5399-4e2f-945d-4f3b3e05a50c",
-          "description": "Penjualan - SEED-20260309-001584",
-          "debit": 0,
-          "credit": 1335175
-        }
-      ],
-      "total_debit": 1335175,
-      "total_credit": 1335175,
-      "status": "posted",
-      "created_by": "system_migration",
-      "created_at": "2026-03-13T17:43:03.638857+00:00",
-      "posted_at": "2026-03-13T17:43:03.638857+00:00"
-    },
-    {
-      "id": "0f50960d-9d24-4c00-b833-5a5814bca66e",
-      "journal_number": "JV-SALES-SEED-20260309-001583",
-      "date": "2026-03-09T14:06:53.068321+00:00",
-      "description": "Penjualan SEED-20260309-001583",
-      "reference_type": "sales",
-      "reference_id": "f7ef132d-6715-44ce-82d8-f0329cb9a6ec",
-      "lines": [
-        {
-          "id": "ba66800c-ba7b-4c61-99ef-19e24924e1b2",
-          "account_id": "e146ea83-b0e3-407f-9766-e397109193a7",
-          "description": "Penjualan - SEED-20260309-001583",
-          "debit": 1168665,
-          "credit": 0
-        },
-        {
-          "id": "4bb93859-40cc-462d-a947-5658aa1035ae",
-          "account_id": "82d3d109-5399-4e2f-945d-4f3b3e05a50c",
-          "description": "Penjualan - SEED-20260309-001583",
-          "debit": 0,
-          "credit": 1168665
-        }
-      ],
-      "total_debit": 1168665,
-      "total_credit": 1168665,
-      "status": "posted",
-      "created_by": "system_migration",
-      "created_at": "2026-03-13T17:43:03.636148+00:00",
-      "posted_at": "2026-03-13T17:43:03.636148+00:00"
-    },
-    {
-      "id": "1c526a3f-999e-4444-8752-fabc36ec5cc7",
-      "journal_number": "JV-SALES-SEED-20260309-001582",
-      "date": "2026-03-09T14:06:53.068321+00:00",
-      "description": "Penjualan SEED-20260309-001582",
-      "reference_type": "sales",
-      "reference_id": "795dc2ec-8d1b-4136-b89f-da2ec2619ae3",
-      "lines": [
-        {
-          "id": "b45aa8ca-40c0-468f-942b-926cf4c14490",
-          "account_id": "e146ea83-b0e3-407f-9766-e397109193a7",
-          "description": "Penjualan - SEED-20260309-001582",
-          "debit": 1307787,
-          "credit": 0
-        },
-        {
-          "id": "47055191-d042-4ed0-83dc-b6b9f2f7fc61",
-          "account_id": "82d3d109-5399-4e2f-945d-4f3b3e05a50c",
-          "description": "Penjualan - SEED-20260309-001582",
-          "debit": 0,
-          "credit": 1307787
-        }
-      ],
-      "total_debit": 1307787,
-      "total_credit": 1307787,
-      "status": "posted",
-      "created_by": "system_migration",
-      "created_at": "2026-03-13T17:43:03.633172+00:00",
-      "posted_at": "2026-03-13T17:43:03.633172+00:00"
-    },
-    {
-      "id": "ad7df4ba-25a3-491a-a343-b8e0bf28721e",
-      "journal_number": "JV-SALES-SEED-20260309-001581",
-      "date": "2026-03-09T14:06:53.068321+00:00",
-      "description": "Penjualan SEED-20260309-001581",
-      "reference_type": "sales",
-      "reference_id": "a26896b7-53f7-4081-a1a0-ddb72f76d008",
-      "lines": [
-        {
-          "id": "83192a93-3e84-4489-9758-94753a89f183",
-          "account_id": "e146ea83-b0e3-407f-9766-e397109193a7",
-          "description": "Penjualan - SEED-20260309-001581",
-          "debit": 1655254,
-          "credit": 0
-        },
-        {
-          "id": "157e6d3f-57bd-459e-ad60-c00f461a06db",
-          "account_id": "82d3d109-5399-4e2f-945d-4f3b3e05a50c",
-          "description": "Penjualan - SEED-20260309-001581",
-          "debit": 0,
-          "credit": 1655254
-        }
-      ],
-      "total_debit": 1655254,
-      "total_credit": 1655254,
-      "status": "posted",
-      "created_by": "system_migration",
-      "created_at": "2026-03-13T17:43:03.630116+00:00",
-      "posted_at": "2026-03-13T17:43:03.630116+00:00"
-    },
-    {
-      "id": "8e9ee76a-6bb1-4c21-912b-c249cc6ff446",
-      "journal_number": "JV-SALES-SEED-20260309-001580",
-      "date": "2026-03-09T14:06:53.068321+00:00",
-      "description": "Penjualan SEED-20260309-001580",
-      "reference_type": "sales",
-      "reference_id": "c395fe48-1dc3-4226-9c10-3ee08adaaf3a",
-      "lines": [
-        {
-          "id": "fe580337-2d55-4285-ac22-2465076fc92a",
-          "account_id": "e146ea83-b0e3-407f-9766-e397109193a7",
-          "description": "Penjualan - SEED-20260309-001580",
-          "debit": 1402231,
-          "credit": 0
-        },
-        {
-          "id": "1ae0de9b-3494-4ba1-bcac-afa22cd4620b",
-          "account_id": "82d3d109-5399-4e2f-945d-4f3b3e05a50c",
-          "description": "Penjualan - SEED-20260309-001580",
-          "debit": 0,
-          "credit": 1402231
-        }
-      ],
-      "total_debit": 1402231,
-      "total_credit": 1402231,
-      "status": "posted",
-      "created_by": "system_migration",
-      "created_at": "2026-03-13T17:43:03.627282+00:00",
-      "posted_at": "2026-03-13T17:43:03.627282+00:00"
-    },
-    {
-      "id": "12e4389a-40ad-452d-af3e-003987a1a377",
-      "journal_number": "JV-SALES-SEED-20260309-001579",
-      "date": "2026-03-09T14:06:53.068321+00:00",
-      "description": "Penjualan SEED-20260309-001579",
-      "reference_type": "sales",
-      "reference_id": "63b06ecc-ec02-4ebc-acc1-ec0bc5de70d7",
-      "lines": [
-        {
-          "id": "70802a02-99cd-48e2-bf72-6623ca0a2747",
-          "account_id": "e146ea83-b0e3-407f-9766-e397109193a7",
-          "description": "Penjualan - SEED-20260309-001579",
-          "debit": 1544225,
-          "credit": 0
-        },
-        {
-          "id": "82ebdad4-b186-4658-a24c-bc4b7e6e76a1",
-          "account_id": "82d3d109-5399-4e2f-945d-4f3b3e05a50c",
-          "description": "Penjualan - SEED-20260309-001579",
-          "debit": 0,
-          "credit": 1544225
-        }
-      ],
-      "total_debit": 1544225,
-      "total_credit": 1544225,
-      "status": "posted",
-      "created_by": "system_migration",
-      "created_at": "2026-03-13T17:43:03.624458+00:00",
-      "posted_at": "2026-03-13T17:43:03.624458+00:00"
-    },
-    {
-      "id": "ea079c6a-65eb-442c-a118-679d6ea4203d",
-      "journal_number": "JV-SALES-SEED-20260309-001578",
-      "date": "2026-03-09T14:06:53.068321+00:00",
-      "description": "Penjualan SEED-20260309-001578",
-      "reference_type": "sales",
-      "reference_id": "76b99e9c-bfcd-4a94-986e-5b027fd1a789",
-      "lines": [
-        {
-          "id": "f13ac550-b3f2-46bb-a105-a44898509e16",
-          "account_id": "e146ea83-b0e3-407f-9766-e397109193a7",
-          "description": "Penjualan - SEED-20260309-001578",
-          "debit": 1609259,
-          "credit": 0
-        },
-        {
-          "id": "adf1eac9-8978-44b3-bd99-e6564a7f02a7",
-          "account_id": "82d3d109-5399-4e2f-945d-4f3b3e05a50c",
-          "description": "Penjualan - SEED-20260309-001578",
-          "debit": 0,
-          "credit": 1609259
-        }
-      ],
-      "total_debit": 1609259,
-      "total_credit": 1609259,
-      "status": "posted",
-      "created_by": "system_migration",
-      "created_at": "2026-03-13T17:43:03.621979+00:00",
-      "posted_at": "2026-03-13T17:43:03.621979+00:00"
-    },
-    {
-      "id": "a1ce54c1-a084-4585-8a73-a4bf16b1651a",
-      "journal_number": "JV-SALES-SEED-20260309-001577",
-      "date": "2026-03-09T14:06:53.068321+00:00",
-      "description": "Penjualan SEED-20260309-001577",
-      "reference_type": "sales",
-      "reference_id": "79435b51-3d9c-4d4c-aab3-32a64ad74a5c",
-      "lines": [
-        {
-          "id": "a691d447-7a98-472a-a686-88154ced383e",
-          "account_id": "e146ea83-b0e3-407f-9766-e397109193a7",
-          "description": "Penjualan - SEED-20260309-001577",
-          "debit": 1539009,
-          "credit": 0
-        },
-        {
-          "id": "cdb7da8f-de24-43d1-8814-ef8dd870cd40",
-          "account_id": "82d3d109-5399-4e2f-945d-4f3b3e05a50c",
-          "description": "Penjualan - SEED-20260309-001577",
-          "debit": 0,
-          "credit": 1539009
-        }
-      ],
-      "total_debit": 1539009,
-      "total_credit": 1539009,
-      "status": "posted",
-      "created_by": "system_migration",
-      "created_at": "2026-03-13T17:43:03.619864+00:00",
-      "posted_at": "2026-03-13T17:43:03.619864+00:00"
-    },
-    {
-      "id": "e9f2d691-b149-4d18-afa0-515be4df0995",
-      "journal_number": "JV-SALES-SEED-20260309-001576",
-      "date": "2026-03-09T14:06:53.068321+00:00",
-      "description": "Penjualan SEED-20260309-001576",
-      "reference_type": "sales",
-      "reference_id": "a22360e3-037e-4d99-bbad-0df261b7027f",
-      "lines": [
-        {
-          "id": "bc1104f3-de79-4ae7-b0dd-418625a312e9",
-          "account_id": "e146ea83-b0e3-407f-9766-e397109193a7",
-          "description": "Penjualan - SEED-20260309-001576",
-          "debit": 1420827,
-          "credit": 0
-        },
-        {
-          "id": "b48a3683-6fba-4c2c-95da-fd5efd0c0d28",
-          "account_id": "82d3d109-5399-4e2f-945d-4f3b3e05a50c",
-          "description": "Penjualan - SEED-20260309-001576",
-          "debit": 0,
-          "credit": 1420827
-        }
-      ],
-      "total_debit": 1420827,
-      "total_credit": 1420827,
-      "status": "posted",
-      "created_by": "system_migration",
-      "created_at": "2026-03-13T17:43:03.617447+00:00",
-      "posted_at": "2026-03-13T17:43:03.617447+00:00"
-    },
-    {
-      "id": "6b9cdecd-bcdc-4ba3-957b-1901e1410a1a",
-      "journal_number": "JV-SALES-SEED-20260309-001575",
-      "date": "2026-03-09T14:06:53.068321+00:00",
-      "description": "Penjualan SEED-20260309-001575",
-      "reference_type": "sales",
-      "reference_id": "dace7ecf-2976-46bc-96cc-d0e9fc62dab5",
-      "lines": [
-        {
-          "id": "d8d9f378-d69c-46bf-83eb-7e4fb79970be",
-          "account_id": "e146ea83-b0e3-407f-9766-e397109193a7",
-          "description": "Penjualan - SEED-20260309-001575",
-          "debit": 1278326,
-          "credit": 0
-        },
-        {
-          "id": "5d302015-02df-4da7-9e83-ef7c8e8c0c95",
-          "account_id": "82d3d109-5399-4e2f-945d-4f3b3e05a50c",
-          "description": "Penjualan - SEED-20260309-001575",
-          "debit": 0,
-          "credit": 1278326
-        }
-      ],
-      "total_debit": 1278326,
-      "total_credit": 1278326,
-      "status": "posted",
-      "created_by": "system_migration",
-      "created_at": "2026-03-13T17:43:03.614467+00:00",
-      "posted_at": "2026-03-13T17:43:03.614467+00:00"
     }
   ]
 }
