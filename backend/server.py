@@ -279,6 +279,10 @@ app.include_router(tenant_blueprint_router)
 from routes.system_info import router as system_info_router
 app.include_router(system_info_router)
 
+# Accounting Migration Engine
+from routes.accounting_migration import router as accounting_migration_router
+app.include_router(accounting_migration_router)
+
 
 
 # Health check

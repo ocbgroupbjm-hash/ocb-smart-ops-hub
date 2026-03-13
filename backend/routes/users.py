@@ -24,6 +24,7 @@ class UserUpdate(BaseModel):
     name: Optional[str] = None
     phone: Optional[str] = None
     role: Optional[str] = None
+    role_id: Optional[str] = None  # Direct role_id override
     branch_id: Optional[str] = None
     branch_ids: Optional[List[str]] = None
     is_active: Optional[bool] = None
@@ -87,17 +88,30 @@ async def get_user(user_id: str, user: dict = Depends(require_permission("master
 async def create_user(data: UserCreate, request: Request, user: dict = Depends(require_permission("master_user", "create"))):
     """Create new user - Requires master_user.create permission"""
     if user.get("role") not in ["owner", "admin"]:
-        raise HTTPException(status_code=403, detail="Insufficient permissions")
+        raise HTTPException(status_code=403, detail="Insufficient permissions: Hanya owner/admin yang dapat membuat user baru")
     
+    # Validate email format
+    if not data.email or "@" not in data.email:
+        raise HTTPException(status_code=400, detail="Format email tidak valid")
+    
+    # Check email uniqueness per tenant
     existing = await users.find_one({"email": data.email})
     if existing:
-        raise HTTPException(status_code=400, detail="Email already registered")
+        raise HTTPException(status_code=400, detail=f"Email '{data.email}' sudah terdaftar di tenant ini")
     
     # Get current database and find role
     db = get_db()
     role_code = data.role if data.role in [r.value for r in UserRole] else "cashier"
     role_doc = await db["roles"].find_one({"code": role_code})
-    role_id = role_doc.get("id") if role_doc else None
+    if not role_doc:
+        raise HTTPException(status_code=400, detail=f"Role '{role_code}' tidak ditemukan. Role valid: owner, admin, finance, warehouse, cashier")
+    role_id = role_doc.get("id")
+    
+    # Validate branch_id if provided
+    if data.branch_id:
+        branch_exists = await db["branches"].find_one({"id": data.branch_id})
+        if not branch_exists:
+            raise HTTPException(status_code=400, detail=f"Branch ID '{data.branch_id}' tidak ditemukan")
     
     new_user = User(
         email=data.email,
@@ -128,7 +142,7 @@ async def create_user(data: UserCreate, request: Request, user: dict = Depends(r
     )
     await audit_logs.insert_one(log.model_dump())
     
-    return {"id": new_user.id, "message": "User created"}
+    return {"id": new_user.id, "message": "User berhasil dibuat", "role_id": role_id}
 
 @router.put("/{user_id}")
 async def update_user(user_id: str, data: UserUpdate, request: Request, user: dict = Depends(require_permission("master_user", "edit"))):
@@ -146,9 +160,25 @@ async def update_user(user_id: str, data: UserUpdate, request: Request, user: di
     if "role" in update_data and user.get("role") not in ["owner", "admin"]:
         del update_data["role"]
     
+    # Handle role -> role_id mapping
+    if "role" in update_data:
+        db = get_db()
+        role_code = update_data["role"]
+        role_doc = await db["roles"].find_one({"code": role_code})
+        if role_doc:
+            update_data["role_id"] = role_doc.get("id")
+            update_data["role_code"] = role_code
+        else:
+            raise HTTPException(status_code=400, detail=f"Role '{role_code}' tidak ditemukan di database")
+    
     # Handle password update
     if "password" in update_data:
         update_data["password_hash"] = hash_password(update_data.pop("password"))
+    
+    # Handle branch_id "all" or empty
+    if "branch_id" in update_data:
+        if update_data["branch_id"] in ["", "all", None]:
+            update_data["branch_id"] = None
     
     update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
     
@@ -167,7 +197,7 @@ async def update_user(user_id: str, data: UserUpdate, request: Request, user: di
     )
     await audit_logs.insert_one(log.model_dump())
     
-    return {"message": "User updated"}
+    return {"message": "User updated", "user_id": user_id}
 
 @router.post("/{user_id}/change-password")
 async def change_password(user_id: str, data: ChangePassword, user: dict = Depends(get_current_user)):
