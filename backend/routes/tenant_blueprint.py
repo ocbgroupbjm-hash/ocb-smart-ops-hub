@@ -12,8 +12,38 @@ import os
 router = APIRouter(prefix="/api/tenant", tags=["Tenant Management"])
 
 # ==================== BLUEPRINT VERSION ====================
-CURRENT_BLUEPRINT_VERSION = "1.0.0"
-CURRENT_MIGRATION_VERSION = 1
+CURRENT_BLUEPRINT_VERSION = "2.0.0"  # Updated for full collection sync
+CURRENT_MIGRATION_VERSION = 2
+
+# ==================== REQUIRED COLLECTIONS ====================
+# All tenant databases MUST have these collections
+REQUIRED_COLLECTIONS = [
+    "users",
+    "roles",
+    "branches",
+    "company_profile",
+    "account_settings",
+    "numbering_settings",
+    "accounts",
+    "products",
+    "customers",
+    "suppliers",
+    "stock_movements",
+    "transactions",
+    "journal_entries",
+    "product_stocks",
+    "categories",
+    "units",
+    "brands",
+    "purchase_orders",
+    "sales_invoices",
+    "accounts_receivable",
+    "accounts_payable",
+    "ar_payments",
+    "ap_payments",
+    "cash_movements",
+    "audit_logs",
+]
 
 # ==================== DEFAULT DATA TEMPLATES ====================
 
@@ -197,7 +227,15 @@ async def initialize_tenant_database(db_name: str, company_name: str = ""):
         }})
         init_log["changes"].append("Updated tenant metadata version")
     
-    # 2. Initialize Chart of Accounts
+    # 2. Ensure all required collections exist
+    existing_collections = await db.list_collection_names()
+    for coll_name in REQUIRED_COLLECTIONS:
+        if coll_name not in existing_collections:
+            # Create collection with a placeholder document then remove it
+            await db.create_collection(coll_name)
+            init_log["changes"].append(f"Created collection: {coll_name}")
+    
+    # 3. Initialize Chart of Accounts
     accounts_count = await db["accounts"].count_documents({})
     if accounts_count == 0:
         for acc in DEFAULT_COA:
@@ -205,7 +243,7 @@ async def initialize_tenant_database(db_name: str, company_name: str = ""):
             await db["accounts"].insert_one(acc_doc)
         init_log["changes"].append(f"Created {len(DEFAULT_COA)} accounts")
     
-    # 3. Initialize Account Settings
+    # 4. Initialize Account Settings
     settings_count = await db["account_settings"].count_documents({})
     if settings_count == 0:
         for s in DEFAULT_ACCOUNT_SETTINGS:
@@ -213,7 +251,7 @@ async def initialize_tenant_database(db_name: str, company_name: str = ""):
             await db["account_settings"].insert_one(s_doc)
         init_log["changes"].append(f"Created {len(DEFAULT_ACCOUNT_SETTINGS)} account settings")
     
-    # 4. Initialize Numbering Settings
+    # 5. Initialize Numbering Settings
     numbering_count = await db["numbering_settings"].count_documents({})
     if numbering_count == 0:
         for n in DEFAULT_NUMBERING:
@@ -221,7 +259,7 @@ async def initialize_tenant_database(db_name: str, company_name: str = ""):
             await db["numbering_settings"].insert_one(n_doc)
         init_log["changes"].append(f"Created {len(DEFAULT_NUMBERING)} numbering settings")
     
-    # 5. Initialize Default Branch
+    # 6. Initialize Default Branch
     branch_count = await db["branches"].count_documents({})
     if branch_count == 0:
         await db["branches"].insert_one({
@@ -236,7 +274,7 @@ async def initialize_tenant_database(db_name: str, company_name: str = ""):
         })
         init_log["changes"].append("Created default branch (HQ)")
     
-    # 6. Initialize Company Profile
+    # 7. Initialize Company Profile
     company = await db["company_profile"].find_one({})
     if not company:
         await db["company_profile"].insert_one({
@@ -255,7 +293,7 @@ async def initialize_tenant_database(db_name: str, company_name: str = ""):
         })
         init_log["changes"].append("Created company profile")
     
-    # 7. Initialize Roles
+    # 8. Initialize Roles
     for role_template in DEFAULT_ROLES:
         existing = await db["roles"].find_one({"code": role_template["code"]})
         if not existing:
@@ -275,7 +313,7 @@ async def initialize_tenant_database(db_name: str, company_name: str = ""):
                 }}
             )
     
-    # 8. Fix user role_ids
+    # 9. Fix user role_ids
     users = await db["users"].find({}).to_list(100)
     for user in users:
         if not user.get("role_id"):
@@ -288,7 +326,19 @@ async def initialize_tenant_database(db_name: str, company_name: str = ""):
                 )
                 init_log["changes"].append(f"Fixed role_id for user: {user.get('email')}")
     
-    # 9. Create required indexes (ignore if already exist)
+    # 10. Initialize default units
+    units_count = await db["units"].count_documents({})
+    if units_count == 0:
+        default_units = [
+            {"id": str(uuid.uuid4()), "code": "PCS", "name": "Pieces", "created_at": now},
+            {"id": str(uuid.uuid4()), "code": "BOX", "name": "Box", "created_at": now},
+            {"id": str(uuid.uuid4()), "code": "KG", "name": "Kilogram", "created_at": now},
+            {"id": str(uuid.uuid4()), "code": "LTR", "name": "Liter", "created_at": now},
+        ]
+        await db["units"].insert_many(default_units)
+        init_log["changes"].append(f"Created {len(default_units)} default units")
+    
+    # 11. Create required indexes (ignore if already exist)
     try:
         await db["products"].create_index("code", unique=True, sparse=True)
     except Exception:
@@ -305,8 +355,16 @@ async def initialize_tenant_database(db_name: str, company_name: str = ""):
         await db["journal_entries"].create_index("journal_number")
     except Exception:
         pass
+    try:
+        await db["customers"].create_index("code", unique=True, sparse=True)
+    except Exception:
+        pass
+    try:
+        await db["suppliers"].create_index("code", unique=True, sparse=True)
+    except Exception:
+        pass
     
-    # 10. Log migration
+    # 12. Log migration
     await db["_migration_log"].insert_one(init_log)
     
     return init_log
@@ -363,12 +421,13 @@ async def sync_all_tenants():
     client = get_mongo_client()
     all_dbs = await client.list_database_names()
     
-    # Target business databases
-    target_dbs = ['ocb_titan', 'ocb_unit_4', 'ocb_unt_1', 'ocb_baju', 'ocb_counter']
-    existing_dbs = [db for db in target_dbs if db in all_dbs]
+    # Target ALL business databases (ocb_*)
+    # Exclude system databases and erp_db (metadata only)
+    excluded = ['admin', 'local', 'config', 'test_database', 'erp_db']
+    target_dbs = [db for db in all_dbs if db.startswith('ocb_') and db not in excluded]
     
     results = []
-    for db_name in existing_dbs:
+    for db_name in target_dbs:
         result = await initialize_tenant_database(db_name)
         # Sanitize result for JSON serialization
         sanitized = {
@@ -379,6 +438,60 @@ async def sync_all_tenants():
             "changes": result.get("changes", [])
         }
         results.append(sanitized)
+    
+    return results
+
+
+async def cleanup_tenant_collections(db_name: str):
+    """Remove unnecessary/test collections from a tenant database"""
+    client = get_mongo_client()
+    db = client[db_name]
+    
+    # Collections to delete if found
+    garbage_collections = [
+        "test", "test_users", "dummy", "backup_old", "sample_data",
+        "temp", "dev_logs", "debug", "test_data", "old_", "backup_"
+    ]
+    
+    existing = await db.list_collection_names()
+    deleted = []
+    
+    for coll in existing:
+        # Check if collection name matches garbage patterns
+        for garbage in garbage_collections:
+            if coll.startswith(garbage) or coll == garbage:
+                await db.drop_collection(coll)
+                deleted.append(coll)
+                break
+    
+    return deleted
+
+
+async def get_tenant_blueprint_status():
+    """Get detailed blueprint status for all tenants"""
+    client = get_mongo_client()
+    all_dbs = await client.list_database_names()
+    
+    excluded = ['admin', 'local', 'config', 'test_database', 'erp_db']
+    target_dbs = [db for db in all_dbs if db.startswith('ocb_') and db not in excluded]
+    
+    results = []
+    for db_name in target_dbs:
+        db = client[db_name]
+        existing_collections = set(await db.list_collection_names())
+        required_set = set(REQUIRED_COLLECTIONS)
+        
+        missing = required_set - existing_collections
+        metadata = await db["_tenant_metadata"].find_one({})
+        
+        results.append({
+            "database": db_name,
+            "blueprint_version": metadata.get("blueprint_version") if metadata else None,
+            "total_collections": len(existing_collections),
+            "missing_collections": list(missing),
+            "has_all_required": len(missing) == 0,
+            "needs_sync": metadata.get("blueprint_version") != CURRENT_BLUEPRINT_VERSION if metadata else True
+        })
     
     return results
 
@@ -403,7 +516,30 @@ async def sync_all_databases(user: dict = Depends(get_current_user)):
     return {
         "status": "completed",
         "blueprint_version": CURRENT_BLUEPRINT_VERSION,
+        "total_synced": len(results),
         "results": results
+    }
+
+
+@router.get("/blueprint-status")
+async def get_blueprint_status(user: dict = Depends(get_current_user)):
+    """Get blueprint status for all tenants"""
+    status = await get_tenant_blueprint_status()
+    return {
+        "current_blueprint_version": CURRENT_BLUEPRINT_VERSION,
+        "required_collections": REQUIRED_COLLECTIONS,
+        "tenants": status
+    }
+
+
+@router.post("/cleanup/{db_name}")
+async def cleanup_database(db_name: str, user: dict = Depends(get_current_user)):
+    """Remove garbage/test collections from a tenant database"""
+    deleted = await cleanup_tenant_collections(db_name)
+    return {
+        "database": db_name,
+        "deleted_collections": deleted,
+        "count": len(deleted)
     }
 
 

@@ -93,17 +93,28 @@ async def create_user(data: UserCreate, request: Request, user: dict = Depends(r
     if existing:
         raise HTTPException(status_code=400, detail="Email already registered")
     
+    # Get current database and find role
+    db = get_db()
+    role_code = data.role if data.role in [r.value for r in UserRole] else "cashier"
+    role_doc = await db["roles"].find_one({"code": role_code})
+    role_id = role_doc.get("id") if role_doc else None
+    
     new_user = User(
         email=data.email,
         password_hash=hash_password(data.password),
         name=data.name,
         phone=data.phone,
-        role=UserRole(data.role) if data.role in [r.value for r in UserRole] else UserRole.CASHIER,
+        role=UserRole(role_code),
         branch_id=data.branch_id,
         branch_ids=data.branch_ids or ([data.branch_id] if data.branch_id else [])
     )
     
-    await users.insert_one(new_user.model_dump())
+    # Add role_id and role_code to user document
+    user_dict = new_user.model_dump()
+    user_dict["role_id"] = role_id
+    user_dict["role_code"] = role_code
+    
+    await users.insert_one(user_dict)
     
     # Audit log
     log = AuditLog(
@@ -113,7 +124,7 @@ async def create_user(data: UserCreate, request: Request, user: dict = Depends(r
         module="users",
         entity_type="user",
         entity_id=new_user.id,
-        new_value={"email": new_user.email, "name": new_user.name, "role": new_user.role.value}
+        new_value={"email": new_user.email, "name": new_user.name, "role": role_code, "role_id": role_id}
     )
     await audit_logs.insert_one(log.model_dump())
     
