@@ -448,6 +448,70 @@ async def create_transaction(
         document_no=invoice
     )
     
+    # =============== AUTO-CREATE JOURNAL FOR CASH SALES ===============
+    # SSOT: Setiap transaksi penjualan WAJIB membuat jurnal
+    journal_id = None
+    if not data.is_credit and total > 0:
+        journal_id = str(uuid.uuid4())
+        journal_no = f"JV-SALES-{invoice}"
+        
+        # Derive accounts from Setting Akun ERP
+        cash_account = await derive_pos_account(db, "pembayaran_tunai", branch_id=branch_id)
+        sales_account = await derive_pos_account(db, "pendapatan_jual", branch_id=branch_id)
+        
+        # Get account IDs for SSOT ledger integration
+        cash_acc = await db["accounts"].find_one({"code": cash_account["code"]})
+        sales_acc = await db["accounts"].find_one({"code": sales_account["code"]})
+        cash_acc_id = cash_acc.get("id") if cash_acc else None
+        sales_acc_id = sales_acc.get("id") if sales_acc else None
+        
+        journal_entry = {
+            "id": journal_id,
+            "journal_number": journal_no,
+            "journal_no": journal_no,
+            "date": datetime.now(timezone.utc).isoformat(),
+            "journal_date": datetime.now(timezone.utc).isoformat(),
+            "reference_type": "sales",
+            "reference_id": tx.id,
+            "source_type": "sales_cash",
+            "source_id": tx.id,
+            "description": f"Penjualan tunai {invoice}",
+            "lines": [
+                {
+                    "id": str(uuid.uuid4()),
+                    "account_id": cash_acc_id,
+                    "account_code": cash_account["code"],
+                    "account_name": cash_account["name"],
+                    "description": f"Kas penjualan {invoice}",
+                    "debit": total,
+                    "credit": 0
+                },
+                {
+                    "id": str(uuid.uuid4()),
+                    "account_id": sales_acc_id,
+                    "account_code": sales_account["code"],
+                    "account_name": sales_account["name"],
+                    "description": f"Penjualan tunai {invoice}",
+                    "debit": 0,
+                    "credit": total
+                }
+            ],
+            "total_debit": total,
+            "total_credit": total,
+            "status": "posted",
+            "branch_id": branch_id,
+            "created_by": user.get("user_id", ""),
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "posted_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db["journal_entries"].insert_one(journal_entry)
+        
+        # Update transaction with journal_id
+        await transactions.update_one(
+            {"id": tx.id},
+            {"$set": {"journal_id": journal_id}}
+        )
+    
     return {
         "id": tx.id,
         "invoice_number": invoice,
@@ -456,7 +520,8 @@ async def create_transaction(
         "change": change,
         "is_credit": data.is_credit,
         "ar_id": ar_id,
-        "message": "Transaction completed" + (" (Credit sale - AR created)" if ar_id else "")
+        "journal_id": journal_id,
+        "message": "Transaction completed" + (" (Credit sale - AR created)" if ar_id else "") + (" - Journal posted" if journal_id else "")
     }
 
 # ==================== HOLD & RECALL ====================
