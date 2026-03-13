@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { Plus, Search, Loader2, ArrowUpRight, ArrowDownLeft, X, Package } from 'lucide-react';
+import { Plus, Search, Loader2, ArrowUpRight, ArrowDownLeft, X, Package, Edit2, Trash2, Printer } from 'lucide-react';
 import { toast } from 'sonner';
 import { SearchableSelect } from '../../components/ui/searchable-select';
 import { SearchableEnumSelect, STOCK_MOVEMENT_TYPES } from '../../components/ui/searchable-enum-select';
 import { DatePickerWithDefault } from '../../components/ui/date-picker-default';
 import { useProducts, useBranches } from '../../hooks/useMasterData';
+import ERPActionToolbar from '../../components/ERPActionToolbar';
 
 const StockMovements = () => {
   const { api, token } = useAuth();
@@ -15,6 +16,8 @@ const StockMovements = () => {
   const [typeFilter, setTypeFilter] = useState('');
   const [dateFilter, setDateFilter] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [editingItem, setEditingItem] = useState(null);
   
   // Use custom hooks for master data
   const { data: productOptions, loading: productsLoading } = useProducts(token);
@@ -75,6 +78,45 @@ const StockMovements = () => {
 
   const resetForm = () => {
     setFormData({ product_id: '', branch_id: '', movement_type: 'stock_in', quantity: 0, notes: '' });
+    setEditingItem(null);
+  };
+
+  const handleRowSelect = (item) => {
+    setSelectedItem(selectedItem?.id === item.id ? null : item);
+  };
+
+  const handleEdit = (item) => {
+    setEditingItem(item);
+    setFormData({
+      product_id: item.product_id || '',
+      branch_id: item.branch_id || '',
+      movement_type: item.movement_type || 'stock_in',
+      quantity: item.quantity || 0,
+      notes: item.notes || ''
+    });
+    setShowModal(true);
+  };
+
+  const handleDelete = async (item) => {
+    if (!confirm(`Hapus movement untuk produk "${item.product_name}"?`)) return;
+    try {
+      const res = await api(`/api/inventory/movements/${item.id}`, { method: 'DELETE' });
+      if (res.ok) {
+        toast.success('Movement berhasil dihapus dan stok disesuaikan');
+        setSelectedItem(null);
+        loadMovements();
+      } else {
+        const err = await res.json();
+        toast.error(err.detail || 'Gagal menghapus');
+      }
+    } catch (err) {
+      toast.error('Gagal menghapus movement');
+    }
+  };
+
+  const handlePrint = (item) => {
+    toast.info(`Mencetak movement ${item.product_name}...`);
+    window.print();
   };
 
   return (
@@ -85,11 +127,20 @@ const StockMovements = () => {
           <h1 className="text-2xl font-bold text-amber-100">Stok Masuk/Keluar</h1>
           <p className="text-gray-400 text-sm">Catat pergerakan stok manual</p>
         </div>
-        <button onClick={() => { resetForm(); setShowModal(true); }}
-          className="px-4 py-2 bg-gradient-to-r from-red-600 to-amber-600 text-white rounded-lg flex items-center gap-2">
-          <Plus className="h-4 w-4" /> Tambah Movement
-        </button>
       </div>
+
+      {/* TOOLBAR STANDAR ERP */}
+      <ERPActionToolbar
+        module="stock_movement"
+        selectedItem={selectedItem}
+        onAdd={() => { resetForm(); setShowModal(true); }}
+        onEdit={(item) => handleEdit(item)}
+        onDelete={(item) => handleDelete(item)}
+        onPrint={(item) => handlePrint(item)}
+        addLabel="Tambah Movement"
+        editLabel="Edit"
+        deleteLabel="Hapus"
+      />
 
       {/* Filters */}
       <div className="bg-[#1a1214] border border-red-900/30 rounded-xl p-4">
@@ -139,21 +190,30 @@ const StockMovements = () => {
           <table className="w-full">
             <thead className="bg-red-900/20">
               <tr>
+                <th className="px-3 py-3 text-center text-xs font-semibold text-amber-200 w-10">
+                  <input type="checkbox" className="w-3 h-3" disabled />
+                </th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-amber-200">TANGGAL</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-amber-200">PRODUK</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-amber-200">CABANG</th>
                 <th className="px-4 py-3 text-center text-xs font-semibold text-amber-200">TIPE</th>
                 <th className="px-4 py-3 text-center text-xs font-semibold text-amber-200">QTY</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-amber-200">CATATAN</th>
+                <th className="px-4 py-3 text-center text-xs font-semibold text-amber-200">AKSI</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-red-900/20">
               {loading ? (
-                <tr><td colSpan={6} className="px-4 py-8 text-center"><Loader2 className="h-8 w-8 animate-spin mx-auto text-amber-400" /></td></tr>
+                <tr><td colSpan={8} className="px-4 py-8 text-center"><Loader2 className="h-8 w-8 animate-spin mx-auto text-amber-400" /></td></tr>
               ) : movements.length === 0 ? (
-                <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-400">Belum ada data movement</td></tr>
+                <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400">Belum ada data movement</td></tr>
               ) : movements.map((m, idx) => (
-                <tr key={idx} className="hover:bg-red-900/10">
+                <tr key={m.id || idx} onClick={() => handleRowSelect(m)}
+                  className={`cursor-pointer transition-colors ${selectedItem?.id === m.id ? 'bg-amber-900/30 border-l-2 border-amber-500' : 'hover:bg-red-900/10'}`}
+                  data-testid={`movement-row-${idx}`}>
+                  <td className="px-3 py-3 text-center">
+                    <input type="radio" checked={selectedItem?.id === m.id} onChange={() => handleRowSelect(m)} className="w-3 h-3 accent-amber-500" />
+                  </td>
                   <td className="px-4 py-3 text-sm text-gray-400">
                     {new Date(m.created_at).toLocaleDateString('id-ID')}
                   </td>
@@ -174,6 +234,13 @@ const StockMovements = () => {
                   </td>
                   <td className="px-4 py-3 text-center font-medium text-gray-200">{m.quantity}</td>
                   <td className="px-4 py-3 text-sm text-gray-400">{m.notes || '-'}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center justify-center gap-1">
+                      <button onClick={(e) => { e.stopPropagation(); handlePrint(m); }} className="p-1.5 hover:bg-blue-600/20 rounded text-blue-400"><Printer className="h-4 w-4" /></button>
+                      <button onClick={(e) => { e.stopPropagation(); handleEdit(m); }} className="p-1.5 hover:bg-purple-600/20 rounded text-purple-400"><Edit2 className="h-4 w-4" /></button>
+                      <button onClick={(e) => { e.stopPropagation(); handleDelete(m); }} className="p-1.5 hover:bg-red-600/20 rounded text-red-400"><Trash2 className="h-4 w-4" /></button>
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>

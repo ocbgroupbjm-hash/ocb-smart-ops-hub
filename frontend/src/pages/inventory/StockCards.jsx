@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { Search, Package, Loader2, TrendingUp, TrendingDown, Download, Filter } from 'lucide-react';
+import { Search, Package, Loader2, TrendingUp, TrendingDown, Download, Filter, Printer, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
+import ERPActionToolbar from '../../components/ERPActionToolbar';
 
 const StockCards = () => {
   const { api } = useAuth();
@@ -10,7 +11,7 @@ const StockCards = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [branchFilter, setBranchFilter] = useState('');
   const [branches, setBranches] = useState([]);
-  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [selectedItem, setSelectedItem] = useState(null);
   const [showDetail, setShowDetail] = useState(false);
   const [movements, setMovements] = useState([]);
 
@@ -48,8 +49,12 @@ const StockCards = () => {
     loadBranches();
   }, [loadStocks, loadBranches]);
 
+  const handleRowSelect = (item) => {
+    setSelectedItem(selectedItem?.product_id === item.product_id ? null : item);
+  };
+
   const viewMovements = async (product) => {
-    setSelectedProduct(product);
+    setSelectedItem(product);
     try {
       const res = await api(`/api/inventory/movements?product_id=${product.product_id}`);
       if (res.ok) {
@@ -58,6 +63,21 @@ const StockCards = () => {
       }
     } catch (err) { toast.error('Gagal memuat history'); }
     setShowDetail(true);
+  };
+
+  const handlePrint = (item) => {
+    viewMovements(item);
+    setTimeout(() => window.print(), 500);
+  };
+
+  const handleExport = () => {
+    toast.info('Mengekspor data kartu stok...');
+    // TODO: Implement Excel export
+  };
+
+  const handleRefresh = () => {
+    loadStocks();
+    toast.success('Data diperbarui');
   };
 
   const getStockStatus = (stock) => {
@@ -76,9 +96,28 @@ const StockCards = () => {
           <h1 className="text-2xl font-bold text-amber-100">Kartu Stok</h1>
           <p className="text-gray-400 text-sm">Pantau stok barang dan pergerakan</p>
         </div>
-        <button className="px-4 py-2 bg-green-600/20 text-green-400 rounded-lg flex items-center gap-2">
-          <Download className="h-4 w-4" /> Export
-        </button>
+      </div>
+
+      {/* TOOLBAR STANDAR ERP - Read Only dengan Print/Export/Refresh */}
+      <div className="bg-[#1a1214] border border-red-900/30 rounded-xl p-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <button onClick={handleRefresh} className="px-4 py-2 bg-gray-600/20 hover:bg-gray-600/30 text-gray-300 rounded-lg flex items-center gap-2 text-sm transition-colors">
+            <RefreshCw className="h-4 w-4" /> Refresh
+          </button>
+          <button onClick={() => selectedItem ? handlePrint(selectedItem) : toast.warning('Pilih item dulu')} 
+            disabled={!selectedItem}
+            className={`px-4 py-2 rounded-lg flex items-center gap-2 text-sm transition-colors ${selectedItem ? 'bg-blue-600/20 hover:bg-blue-600/30 text-blue-400' : 'bg-gray-700/20 text-gray-500 cursor-not-allowed'}`}>
+            <Printer className="h-4 w-4" /> Print Kartu Stok
+          </button>
+          <button onClick={handleExport} className="px-4 py-2 bg-green-600/20 hover:bg-green-600/30 text-green-400 rounded-lg flex items-center gap-2 text-sm transition-colors">
+            <Download className="h-4 w-4" /> Export Excel
+          </button>
+          {selectedItem && (
+            <span className="ml-auto text-sm text-amber-400">
+              Dipilih: <span className="font-medium">{selectedItem.product_name}</span>
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Summary */}
@@ -139,6 +178,9 @@ const StockCards = () => {
           <table className="w-full">
             <thead className="bg-red-900/20">
               <tr>
+                <th className="px-3 py-3 text-center text-xs font-semibold text-amber-200 w-10">
+                  <input type="checkbox" className="w-3 h-3" disabled />
+                </th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-amber-200">KODE</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-amber-200">NAMA PRODUK</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-amber-200">CABANG</th>
@@ -156,7 +198,12 @@ const StockCards = () => {
               ) : stocks.map((stock, idx) => {
                 const status = getStockStatus(stock);
                 return (
-                  <tr key={idx} className="hover:bg-red-900/10">
+                  <tr key={idx} onClick={() => handleRowSelect(stock)}
+                    className={`cursor-pointer transition-colors ${selectedItem?.product_id === stock.product_id ? 'bg-amber-900/30 border-l-2 border-amber-500' : 'hover:bg-red-900/10'}`}
+                    data-testid={`stock-row-${idx}`}>
+                    <td className="px-3 py-3 text-center">
+                      <input type="radio" checked={selectedItem?.product_id === stock.product_id} onChange={() => handleRowSelect(stock)} className="w-3 h-3 accent-amber-500" />
+                    </td>
                     <td className="px-4 py-3 text-sm font-mono text-amber-300">{stock.product_code || '-'}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
@@ -173,10 +220,10 @@ const StockCards = () => {
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-center">
                         <button 
-                          onClick={() => viewMovements(stock)}
+                          onClick={(e) => { e.stopPropagation(); viewMovements(stock); }}
                           className="px-3 py-1 bg-blue-600/20 text-blue-400 rounded text-sm hover:bg-blue-600/30"
                         >
-                          History
+                          Kartu Stok
                         </button>
                       </div>
                     </td>
@@ -189,13 +236,13 @@ const StockCards = () => {
       </div>
 
       {/* Movement History Modal */}
-      {showDetail && selectedProduct && (
+      {showDetail && selectedItem && (
         <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
           <div className="bg-[#1a1214] border border-red-900/30 rounded-xl w-full max-w-2xl max-h-[80vh] overflow-y-auto">
             <div className="p-4 border-b border-red-900/30 flex items-center justify-between">
               <div>
-                <h2 className="text-lg font-semibold text-amber-100">History Pergerakan Stok</h2>
-                <p className="text-sm text-gray-400">{selectedProduct.product_name}</p>
+                <h2 className="text-lg font-semibold text-amber-100">Kartu Stok</h2>
+                <p className="text-sm text-gray-400">{selectedItem.product_name}</p>
               </div>
               <button onClick={() => setShowDetail(false)} className="p-2 hover:bg-red-900/20 rounded text-gray-400">✕</button>
             </div>

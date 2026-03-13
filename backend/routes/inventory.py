@@ -415,6 +415,47 @@ async def get_stock_movements(
     
     return {"items": items, "total": total}
 
+
+@router.delete("/movements/{movement_id}")
+async def delete_movement(movement_id: str, user: dict = Depends(require_permission("stock_movement", "delete"))):
+    """Delete a stock movement and reverse the stock change"""
+    # Find the movement
+    movement = await stock_movements.find_one({"id": movement_id}, {"_id": 0})
+    if not movement:
+        raise HTTPException(status_code=404, detail="Movement tidak ditemukan")
+    
+    product_id = movement.get("product_id")
+    branch_id = movement.get("branch_id")
+    quantity = movement.get("quantity", 0)
+    movement_type = movement.get("movement_type", "")
+    
+    # Reverse the stock change
+    stock = await product_stocks.find_one({"product_id": product_id, "branch_id": branch_id})
+    if stock:
+        current_qty = stock.get("quantity", 0)
+        
+        # Reverse: if was stock_in, subtract; if was stock_out, add back
+        if movement_type in ["stock_in", "purchase", "transfer_in", "adjustment_in"]:
+            new_qty = max(0, current_qty - quantity)
+        else:  # stock_out, sales, transfer_out, adjustment_out
+            new_qty = current_qty + quantity
+        
+        await product_stocks.update_one(
+            {"product_id": product_id, "branch_id": branch_id},
+            {"$set": {
+                "quantity": new_qty,
+                "available": new_qty - stock.get("reserved", 0),
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }}
+        )
+    
+    # Delete the movement
+    await stock_movements.delete_one({"id": movement_id})
+    
+    return {"message": "Movement berhasil dihapus dan stok disesuaikan"}
+
+
+
 @router.post("/adjust")
 async def adjust_stock(data: StockAdjustment, request: Request, user: dict = Depends(require_permission("stock_opname", "edit"))):
     """Adjust stock quantity - Requires stock_opname.edit permission"""
