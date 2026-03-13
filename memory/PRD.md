@@ -65,9 +65,17 @@ Membangun sistem ERP retail komprehensif (OCB TITAN) dengan fitur POS, Inventory
 - JournalEntries - 4 tombol (Tambah Jurnal, Edit, Hapus, Print)
 - ChartOfAccounts - 4 tombol (Tambah Akun, Edit, Hapus, Print)
 
-**Inventory Modules:**
-- Stock Transfers - 3 tombol toolbar
-- Stock Opname - 5 tombol (Tambah Opname, Edit, Hapus, Print, Approve) + Custom branch buttons
+**Inventory Modules (Batch 5 - 2026-03-13):**
+- StockMovements - 4 tombol (Tambah Movement, Edit, Hapus, Print) + row selection
+- StockCards - 3 tombol (Refresh, Print Kartu Stok, Export Excel) + row selection
+- StockTransfers - 4 tombol (Tambah, Edit, Hapus, Print)
+- StockOpname - 6 tombol (Tambah Opname, Edit, Hapus, Print, Approve, + custom branch buttons)
+
+**Bug Fixes (Batch 5 - 2026-03-13):**
+- Fixed: User role_id null menyebabkan ERPActionToolbar tidak muncul
+- Fixed: Login flow sekarang memastikan role_id selalu ada
+- Fixed: Missing 'roles' collection export di database.py
+- Added: DELETE /api/inventory/movements/{id} endpoint dengan reverse stock
 
 **Bug Fixes (Batch 3-4 - 2026-03-13):**
 - Fixed: AR Payment dropdown akun kas/bank kosong (endpoint /api/accounting/coa → /api/accounting/accounts)
@@ -152,6 +160,8 @@ Membangun sistem ERP retail komprehensif (OCB TITAN) dengan fitur POS, Inventory
 - `/app/test_reports/iteration_54.json` - ERP Toolbar Batch 3 - Accounting (100% PASS)
 - `/app/test_reports/iteration_55.json` - RBAC, Stock Opname, DB Init (100% PASS)
 - `/app/test_reports/iteration_56.json` - FINAL VALIDATION with Screenshots (100% PASS)
+- `/app/test_reports/iteration_57.json` - Inventory Backend (100% PASS)
+- `/app/test_reports/iteration_58.json` - Inventory Frontend Toolbar Fix (100% PASS)
 
 ---
 
@@ -210,4 +220,4 @@ Membangun sistem ERP retail komprehensif (OCB TITAN) dengan fitur POS, Inventory
 
 ---
 
-*Last Updated: 2026-03-13 (Iteration 56 - Final Validation with Screenshots)*
+*Last Updated: 2026-03-13 (Iteration 58 - Inventory Toolbar Complete)*
