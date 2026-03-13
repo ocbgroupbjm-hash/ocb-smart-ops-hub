@@ -415,6 +415,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
         { name: 'Hak Akses', icon: Shield, path: '/settings/roles' },
         { name: 'Data Perusahaan', icon: Building2, path: '/settings/company' },
         { name: 'Cabang', icon: Building2, path: '/settings/branches' },
+        { name: 'Manajemen Tenant', icon: Database, path: '/settings/tenants', roles: ['owner', 'super_admin'] },
         { divider: true },
         { name: 'Printer & Struk', icon: Printer, path: '/settings/printer' },
         { name: 'Import Excel', icon: Upload, path: '/settings/import' },

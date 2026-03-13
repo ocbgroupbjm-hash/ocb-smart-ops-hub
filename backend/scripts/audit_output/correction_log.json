@@ -1,0 +1,52 @@
+{
+  "correction_timestamp": "2026-03-13T18:46:22+00:00",
+  "executed_by": "system_audit",
+  "tenant": "ocb_titan",
+  "total_corrections": 3,
+  "total_amount_corrected": 11100000,
+  "corrections": [
+    {
+      "id": "1",
+      "original_journal_number": "JV-20260312-0006",
+      "original_reference": "INV-20260312-0006",
+      "correction_journal_number": "COR-20260313184622-F83C",
+      "correction_amount": 4440000,
+      "correction_account": "1-1300 Piutang Usaha",
+      "correction_type": "debit",
+      "reason": "Jurnal penjualan tidak memiliki entry Debit Piutang/Kas",
+      "method": "correcting_entry",
+      "status": "applied"
+    },
+    {
+      "id": "2",
+      "original_journal_number": "JV-20260312-0007",
+      "original_reference": "INV-20260312-0007",
+      "correction_journal_number": "COR-20260313184622-2786",
+      "correction_amount": 4440000,
+      "correction_account": "1-1300 Piutang Usaha",
+      "correction_type": "debit",
+      "reason": "Jurnal penjualan tidak memiliki entry Debit Piutang/Kas",
+      "method": "correcting_entry",
+      "status": "applied"
+    },
+    {
+      "id": "3",
+      "original_journal_number": "JV-20260312-0008",
+      "original_reference": "INV-20260312-0008",
+      "correction_journal_number": "COR-20260313184622-9023",
+      "correction_amount": 2220000,
+      "correction_account": "1-1300 Piutang Usaha",
+      "correction_type": "debit",
+      "reason": "Jurnal penjualan tidak memiliki entry Debit Piutang/Kas",
+      "method": "correcting_entry",
+      "status": "applied"
+    }
+  ],
+  "audit_fields_added": {
+    "correction_of_journal_id": "Reference to original journal",
+    "correction_reason": "Explanation of the correction",
+    "corrected_by": "Who made the correction",
+    "corrected_at": "When correction was made",
+    "correction_method": "correcting_entry | reversal | suspense_clearing"
+  }
+}

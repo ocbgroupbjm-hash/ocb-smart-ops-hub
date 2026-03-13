@@ -1,0 +1,53 @@
+{
+  "audit_timestamp": "2026-03-13T18:47:00+00:00",
+  "status": "COMPLETED",
+  "summary": {
+    "total_tenants_audited": 5,
+    "total_journals_before": 2046,
+    "total_journals_after": 2049,
+    "corrections_applied": 3,
+    "trial_balance_status": "BALANCED",
+    "balance_sheet_status": "BALANCED"
+  },
+  "corrections_applied": [
+    {
+      "original_journal": "JV-20260312-0006",
+      "correction_journal": "COR-20260313184622-F83C",
+      "amount": 4440000,
+      "reason": "Missing Debit Piutang Usaha entry",
+      "method": "correcting_entry"
+    },
+    {
+      "original_journal": "JV-20260312-0007",
+      "correction_journal": "COR-20260313184622-2786",
+      "amount": 4440000,
+      "reason": "Missing Debit Piutang Usaha entry",
+      "method": "correcting_entry"
+    },
+    {
+      "original_journal": "JV-20260312-0008",
+      "correction_journal": "COR-20260313184622-9023",
+      "amount": 2220000,
+      "reason": "Missing Debit Piutang Usaha entry",
+      "method": "correcting_entry"
+    }
+  ],
+  "trial_balance_after": {
+    "total_debit": 2107948326,
+    "total_credit": 2107948326,
+    "difference": 0,
+    "is_balanced": true
+  },
+  "tenant_status": {
+    "ocb_titan": {
+      "journals": 2049,
+      "corrections_applied": 3,
+      "trial_balance": "BALANCED",
+      "balance_sheet": "BALANCED"
+    },
+    "ocb_baju": {"journals": 0, "status": "CLEAN"},
+    "ocb_counter": {"journals": 0, "status": "CLEAN"},
+    "ocb_unit_4": {"journals": 0, "status": "CLEAN"},
+    "ocb_unt_1": {"journals": 1, "status": "BALANCED"}
+  }
+}

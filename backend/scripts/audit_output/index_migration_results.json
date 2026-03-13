@@ -1,0 +1,880 @@
+{
+  "migration_timestamp": "2026-03-13T18:48:14.890101+00:00",
+  "tenants": {
+    "ocb_titan": {
+      "tenant": "ocb_titan",
+      "collections_processed": 8,
+      "indexes_created": 22,
+      "indexes_existed": 0,
+      "errors": [
+        {
+          "collection": "journal_entries",
+          "index": "idx_journal_number",
+          "error": "Index build failed: 07d98602-20d8-4ba6-a601-f3c3e36c172a: Collection ocb_titan.journal_entries ( f335c819-b85a-4e18-b0bd-60cef5a245f9 ) :: caused by :: E11000 duplicate key error collection: ocb_titan.journal_entries index: idx_journal_number dup key: { journal_number: null }, full error: {'ok': 0.0, 'errmsg': 'Index build failed: 07d98602-20d8-4ba6-a601-f3c3e36c172a: Collection ocb_titan.journal_entries ( f335c819-b85a-4e18-b0bd-60cef5a245f9 ) :: caused by :: E11000 duplicate key error collection: ocb_titan.journal_entries index: idx_journal_number dup key: { journal_number: null }', 'code': 11000, 'codeName': 'DuplicateKey', 'keyPattern': {'journal_number': 1}, 'keyValue': {'journal_number': None}}"
+        },
+        {
+          "collection": "stock_movements",
+          "index": "idx_branch",
+          "error": "Index already exists with a different name: branch_id_1, full error: {'ok': 0.0, 'errmsg': 'Index already exists with a different name: branch_id_1', 'code': 85, 'codeName': 'IndexOptionsConflict'}"
+        },
+        {
+          "collection": "transactions",
+          "index": "idx_branch_date",
+          "error": "Index already exists with a different name: branch_id_1_created_at_-1, full error: {'ok': 0.0, 'errmsg': 'Index already exists with a different name: branch_id_1_created_at_-1', 'code': 85, 'codeName': 'IndexOptionsConflict'}"
+        },
+        {
+          "collection": "transactions",
+          "index": "idx_customer",
+          "error": "Index already exists with a different name: customer_id_1, full error: {'ok': 0.0, 'errmsg': 'Index already exists with a different name: customer_id_1', 'code': 85, 'codeName': 'IndexOptionsConflict'}"
+        },
+        {
+          "collection": "users",
+          "index": "idx_email",
+          "error": "Index already exists with a different name: email_1, full error: {'ok': 0.0, 'errmsg': 'Index already exists with a different name: email_1', 'code': 85, 'codeName': 'IndexOptionsConflict'}"
+        },
+        {
+          "collection": "users",
+          "index": "idx_branch",
+          "error": "Index already exists with a different name: branch_id_1, full error: {'ok': 0.0, 'errmsg': 'Index already exists with a different name: branch_id_1', 'code': 85, 'codeName': 'IndexOptionsConflict'}"
+        },
+        {
+          "collection": "products",
+          "index": "idx_name",
+          "error": "Index already exists with a different name: name_1, full error: {'ok': 0.0, 'errmsg': 'Index already exists with a different name: name_1', 'code': 85, 'codeName': 'IndexOptionsConflict'}"
+        },
+        {
+          "collection": "accounts",
+          "index": "idx_code",
+          "error": "Index already exists with a different name: code_1, full error: {'ok': 0.0, 'errmsg': 'Index already exists with a different name: code_1', 'code': 85, 'codeName': 'IndexOptionsConflict'}"
+        }
+      ],
+      "details": [
+        {
+          "collection": "journal_entries",
+          "index": "idx_status_posted",
+          "status": "created"
+        },
+        {
+          "collection": "journal_entries",
+          "index": "idx_ref_type_id",
+          "status": "created"
+        },
+        {
+          "collection": "journal_entries",
+          "index": "idx_reference",
+          "status": "created"
+        },
+        {
+          "collection": "journal_entries",
+          "index": "idx_created_at",
+          "status": "created"
+        },
+        {
+          "collection": "journal_lines",
+          "status": "skipped",
+          "reason": "collection does not exist"
+        },
+        {
+          "collection": "stock_movements",
+          "index": "idx_wh_prod_date",
+          "status": "created"
+        },
+        {
+          "collection": "stock_movements",
+          "index": "idx_ref_type_id",
+          "status": "created"
+        },
+        {
+          "collection": "stock_movements",
+          "index": "idx_product",
+          "status": "created"
+        },
+        {
+          "collection": "transactions",
+          "index": "idx_transaction_number",
+          "status": "created"
+        },
+        {
+          "collection": "transactions",
+          "index": "idx_status",
+          "status": "created"
+        },
+        {
+          "collection": "sales_invoices",
+          "index": "idx_branch_posted",
+          "status": "created"
+        },
+        {
+          "collection": "sales_invoices",
+          "index": "idx_invoice_number",
+          "status": "created"
+        },
+        {
+          "collection": "sales_invoices",
+          "index": "idx_customer",
+          "status": "created"
+        },
+        {
+          "collection": "sales_invoices",
+          "index": "idx_status",
+          "status": "created"
+        },
+        {
+          "collection": "purchase_invoices",
+          "status": "skipped",
+          "reason": "collection does not exist"
+        },
+        {
+          "collection": "users",
+          "index": "idx_role",
+          "status": "created"
+        },
+        {
+          "collection": "users",
+          "index": "idx_username",
+          "status": "created"
+        },
+        {
+          "collection": "products",
+          "index": "idx_code",
+          "status": "created"
+        },
+        {
+          "collection": "products",
+          "index": "idx_category",
+          "status": "created"
+        },
+        {
+          "collection": "products",
+          "index": "idx_active",
+          "status": "created"
+        },
+        {
+          "collection": "accounts",
+          "index": "idx_type",
+          "status": "created"
+        },
+        {
+          "collection": "accounts",
+          "index": "idx_parent",
+          "status": "created"
+        },
+        {
+          "collection": "shifts",
+          "status": "skipped",
+          "reason": "collection does not exist"
+        },
+        {
+          "collection": "deposits",
+          "index": "idx_shift",
+          "status": "created"
+        },
+        {
+          "collection": "deposits",
+          "index": "idx_branch_date",
+          "status": "created"
+        }
+      ]
+    },
+    "ocb_baju": {
+      "tenant": "ocb_baju",
+      "collections_processed": 7,
+      "indexes_created": 21,
+      "indexes_existed": 0,
+      "errors": [
+        {
+          "collection": "stock_movements",
+          "index": "idx_branch",
+          "error": "Index already exists with a different name: branch_id_1, full error: {'ok': 0.0, 'errmsg': 'Index already exists with a different name: branch_id_1', 'code': 85, 'codeName': 'IndexOptionsConflict'}"
+        },
+        {
+          "collection": "transactions",
+          "index": "idx_branch_date",
+          "error": "Index already exists with a different name: branch_id_1_created_at_-1, full error: {'ok': 0.0, 'errmsg': 'Index already exists with a different name: branch_id_1_created_at_-1', 'code': 85, 'codeName': 'IndexOptionsConflict'}"
+        },
+        {
+          "collection": "transactions",
+          "index": "idx_customer",
+          "error": "Index already exists with a different name: customer_id_1, full error: {'ok': 0.0, 'errmsg': 'Index already exists with a different name: customer_id_1', 'code': 85, 'codeName': 'IndexOptionsConflict'}"
+        },
+        {
+          "collection": "users",
+          "index": "idx_email",
+          "error": "Index already exists with a different name: email_1, full error: {'ok': 0.0, 'errmsg': 'Index already exists with a different name: email_1', 'code': 85, 'codeName': 'IndexOptionsConflict'}"
+        },
+        {
+          "collection": "users",
+          "index": "idx_branch",
+          "error": "Index already exists with a different name: branch_id_1, full error: {'ok': 0.0, 'errmsg': 'Index already exists with a different name: branch_id_1', 'code': 85, 'codeName': 'IndexOptionsConflict'}"
+        },
+        {
+          "collection": "products",
+          "index": "idx_name",
+          "error": "Index already exists with a different name: name_1, full error: {'ok': 0.0, 'errmsg': 'Index already exists with a different name: name_1', 'code': 85, 'codeName': 'IndexOptionsConflict'}"
+        },
+        {
+          "collection": "accounts",
+          "index": "idx_code",
+          "error": "Index already exists with a different name: code_1, full error: {'ok': 0.0, 'errmsg': 'Index already exists with a different name: code_1', 'code': 85, 'codeName': 'IndexOptionsConflict'}"
+        }
+      ],
+      "details": [
+        {
+          "collection": "journal_entries",
+          "index": "idx_status_posted",
+          "status": "created"
+        },
+        {
+          "collection": "journal_entries",
+          "index": "idx_ref_type_id",
+          "status": "created"
+        },
+        {
+          "collection": "journal_entries",
+          "index": "idx_reference",
+          "status": "created"
+        },
+        {
+          "collection": "journal_entries",
+          "index": "idx_created_at",
+          "status": "created"
+        },
+        {
+          "collection": "journal_entries",
+          "index": "idx_journal_number",
+          "status": "created"
+        },
+        {
+          "collection": "journal_lines",
+          "status": "skipped",
+          "reason": "collection does not exist"
+        },
+        {
+          "collection": "stock_movements",
+          "index": "idx_wh_prod_date",
+          "status": "created"
+        },
+        {
+          "collection": "stock_movements",
+          "index": "idx_ref_type_id",
+          "status": "created"
+        },
+        {
+          "collection": "stock_movements",
+          "index": "idx_product",
+          "status": "created"
+        },
+        {
+          "collection": "transactions",
+          "index": "idx_transaction_number",
+          "status": "created"
+        },
+        {
+          "collection": "transactions",
+          "index": "idx_status",
+          "status": "created"
+        },
+        {
+          "collection": "sales_invoices",
+          "index": "idx_branch_posted",
+          "status": "created"
+        },
+        {
+          "collection": "sales_invoices",
+          "index": "idx_invoice_number",
+          "status": "created"
+        },
+        {
+          "collection": "sales_invoices",
+          "index": "idx_customer",
+          "status": "created"
+        },
+        {
+          "collection": "sales_invoices",
+          "index": "idx_status",
+          "status": "created"
+        },
+        {
+          "collection": "purchase_invoices",
+          "status": "skipped",
+          "reason": "collection does not exist"
+        },
+        {
+          "collection": "users",
+          "index": "idx_role",
+          "status": "created"
+        },
+        {
+          "collection": "users",
+          "index": "idx_username",
+          "status": "created"
+        },
+        {
+          "collection": "products",
+          "index": "idx_code",
+          "status": "created"
+        },
+        {
+          "collection": "products",
+          "index": "idx_category",
+          "status": "created"
+        },
+        {
+          "collection": "products",
+          "index": "idx_active",
+          "status": "created"
+        },
+        {
+          "collection": "accounts",
+          "index": "idx_type",
+          "status": "created"
+        },
+        {
+          "collection": "accounts",
+          "index": "idx_parent",
+          "status": "created"
+        },
+        {
+          "collection": "shifts",
+          "status": "skipped",
+          "reason": "collection does not exist"
+        },
+        {
+          "collection": "deposits",
+          "status": "skipped",
+          "reason": "collection does not exist"
+        }
+      ]
+    },
+    "ocb_counter": {
+      "tenant": "ocb_counter",
+      "collections_processed": 7,
+      "indexes_created": 27,
+      "indexes_existed": 0,
+      "errors": [
+        {
+          "collection": "accounts",
+          "index": "idx_code",
+          "error": "Index already exists with a different name: code_1, full error: {'ok': 0.0, 'errmsg': 'Index already exists with a different name: code_1', 'code': 85, 'codeName': 'IndexOptionsConflict'}"
+        }
+      ],
+      "details": [
+        {
+          "collection": "journal_entries",
+          "index": "idx_status_posted",
+          "status": "created"
+        },
+        {
+          "collection": "journal_entries",
+          "index": "idx_ref_type_id",
+          "status": "created"
+        },
+        {
+          "collection": "journal_entries",
+          "index": "idx_reference",
+          "status": "created"
+        },
+        {
+          "collection": "journal_entries",
+          "index": "idx_created_at",
+          "status": "created"
+        },
+        {
+          "collection": "journal_entries",
+          "index": "idx_journal_number",
+          "status": "created"
+        },
+        {
+          "collection": "journal_lines",
+          "status": "skipped",
+          "reason": "collection does not exist"
+        },
+        {
+          "collection": "stock_movements",
+          "index": "idx_wh_prod_date",
+          "status": "created"
+        },
+        {
+          "collection": "stock_movements",
+          "index": "idx_ref_type_id",
+          "status": "created"
+        },
+        {
+          "collection": "stock_movements",
+          "index": "idx_product",
+          "status": "created"
+        },
+        {
+          "collection": "stock_movements",
+          "index": "idx_branch",
+          "status": "created"
+        },
+        {
+          "collection": "transactions",
+          "index": "idx_branch_date",
+          "status": "created"
+        },
+        {
+          "collection": "transactions",
+          "index": "idx_transaction_number",
+          "status": "created"
+        },
+        {
+          "collection": "transactions",
+          "index": "idx_customer",
+          "status": "created"
+        },
+        {
+          "collection": "transactions",
+          "index": "idx_status",
+          "status": "created"
+        },
+        {
+          "collection": "sales_invoices",
+          "index": "idx_branch_posted",
+          "status": "created"
+        },
+        {
+          "collection": "sales_invoices",
+          "index": "idx_invoice_number",
+          "status": "created"
+        },
+        {
+          "collection": "sales_invoices",
+          "index": "idx_customer",
+          "status": "created"
+        },
+        {
+          "collection": "sales_invoices",
+          "index": "idx_status",
+          "status": "created"
+        },
+        {
+          "collection": "purchase_invoices",
+          "status": "skipped",
+          "reason": "collection does not exist"
+        },
+        {
+          "collection": "users",
+          "index": "idx_email",
+          "status": "created"
+        },
+        {
+          "collection": "users",
+          "index": "idx_role",
+          "status": "created"
+        },
+        {
+          "collection": "users",
+          "index": "idx_branch",
+          "status": "created"
+        },
+        {
+          "collection": "users",
+          "index": "idx_username",
+          "status": "created"
+        },
+        {
+          "collection": "products",
+          "index": "idx_code",
+          "status": "created"
+        },
+        {
+          "collection": "products",
+          "index": "idx_name",
+          "status": "created"
+        },
+        {
+          "collection": "products",
+          "index": "idx_category",
+          "status": "created"
+        },
+        {
+          "collection": "products",
+          "index": "idx_active",
+          "status": "created"
+        },
+        {
+          "collection": "accounts",
+          "index": "idx_type",
+          "status": "created"
+        },
+        {
+          "collection": "accounts",
+          "index": "idx_parent",
+          "status": "created"
+        },
+        {
+          "collection": "shifts",
+          "status": "skipped",
+          "reason": "collection does not exist"
+        },
+        {
+          "collection": "deposits",
+          "status": "skipped",
+          "reason": "collection does not exist"
+        }
+      ]
+    },
+    "ocb_unit_4": {
+      "tenant": "ocb_unit_4",
+      "collections_processed": 7,
+      "indexes_created": 21,
+      "indexes_existed": 0,
+      "errors": [
+        {
+          "collection": "stock_movements",
+          "index": "idx_branch",
+          "error": "Index already exists with a different name: branch_id_1, full error: {'ok': 0.0, 'errmsg': 'Index already exists with a different name: branch_id_1', 'code': 85, 'codeName': 'IndexOptionsConflict'}"
+        },
+        {
+          "collection": "transactions",
+          "index": "idx_branch_date",
+          "error": "Index already exists with a different name: branch_id_1_created_at_-1, full error: {'ok': 0.0, 'errmsg': 'Index already exists with a different name: branch_id_1_created_at_-1', 'code': 85, 'codeName': 'IndexOptionsConflict'}"
+        },
+        {
+          "collection": "transactions",
+          "index": "idx_customer",
+          "error": "Index already exists with a different name: customer_id_1, full error: {'ok': 0.0, 'errmsg': 'Index already exists with a different name: customer_id_1', 'code': 85, 'codeName': 'IndexOptionsConflict'}"
+        },
+        {
+          "collection": "users",
+          "index": "idx_email",
+          "error": "Index already exists with a different name: email_1, full error: {'ok': 0.0, 'errmsg': 'Index already exists with a different name: email_1', 'code': 85, 'codeName': 'IndexOptionsConflict'}"
+        },
+        {
+          "collection": "users",
+          "index": "idx_branch",
+          "error": "Index already exists with a different name: branch_id_1, full error: {'ok': 0.0, 'errmsg': 'Index already exists with a different name: branch_id_1', 'code': 85, 'codeName': 'IndexOptionsConflict'}"
+        },
+        {
+          "collection": "products",
+          "index": "idx_name",
+          "error": "Index already exists with a different name: name_1, full error: {'ok': 0.0, 'errmsg': 'Index already exists with a different name: name_1', 'code': 85, 'codeName': 'IndexOptionsConflict'}"
+        },
+        {
+          "collection": "accounts",
+          "index": "idx_code",
+          "error": "Index already exists with a different name: code_1, full error: {'ok': 0.0, 'errmsg': 'Index already exists with a different name: code_1', 'code': 85, 'codeName': 'IndexOptionsConflict'}"
+        }
+      ],
+      "details": [
+        {
+          "collection": "journal_entries",
+          "index": "idx_status_posted",
+          "status": "created"
+        },
+        {
+          "collection": "journal_entries",
+          "index": "idx_ref_type_id",
+          "status": "created"
+        },
+        {
+          "collection": "journal_entries",
+          "index": "idx_reference",
+          "status": "created"
+        },
+        {
+          "collection": "journal_entries",
+          "index": "idx_created_at",
+          "status": "created"
+        },
+        {
+          "collection": "journal_entries",
+          "index": "idx_journal_number",
+          "status": "created"
+        },
+        {
+          "collection": "journal_lines",
+          "status": "skipped",
+          "reason": "collection does not exist"
+        },
+        {
+          "collection": "stock_movements",
+          "index": "idx_wh_prod_date",
+          "status": "created"
+        },
+        {
+          "collection": "stock_movements",
+          "index": "idx_ref_type_id",
+          "status": "created"
+        },
+        {
+          "collection": "stock_movements",
+          "index": "idx_product",
+          "status": "created"
+        },
+        {
+          "collection": "transactions",
+          "index": "idx_transaction_number",
+          "status": "created"
+        },
+        {
+          "collection": "transactions",
+          "index": "idx_status",
+          "status": "created"
+        },
+        {
+          "collection": "sales_invoices",
+          "index": "idx_branch_posted",
+          "status": "created"
+        },
+        {
+          "collection": "sales_invoices",
+          "index": "idx_invoice_number",
+          "status": "created"
+        },
+        {
+          "collection": "sales_invoices",
+          "index": "idx_customer",
+          "status": "created"
+        },
+        {
+          "collection": "sales_invoices",
+          "index": "idx_status",
+          "status": "created"
+        },
+        {
+          "collection": "purchase_invoices",
+          "status": "skipped",
+          "reason": "collection does not exist"
+        },
+        {
+          "collection": "users",
+          "index": "idx_role",
+          "status": "created"
+        },
+        {
+          "collection": "users",
+          "index": "idx_username",
+          "status": "created"
+        },
+        {
+          "collection": "products",
+          "index": "idx_code",
+          "status": "created"
+        },
+        {
+          "collection": "products",
+          "index": "idx_category",
+          "status": "created"
+        },
+        {
+          "collection": "products",
+          "index": "idx_active",
+          "status": "created"
+        },
+        {
+          "collection": "accounts",
+          "index": "idx_type",
+          "status": "created"
+        },
+        {
+          "collection": "accounts",
+          "index": "idx_parent",
+          "status": "created"
+        },
+        {
+          "collection": "shifts",
+          "status": "skipped",
+          "reason": "collection does not exist"
+        },
+        {
+          "collection": "deposits",
+          "status": "skipped",
+          "reason": "collection does not exist"
+        }
+      ]
+    },
+    "ocb_unt_1": {
+      "tenant": "ocb_unt_1",
+      "collections_processed": 7,
+      "indexes_created": 21,
+      "indexes_existed": 0,
+      "errors": [
+        {
+          "collection": "stock_movements",
+          "index": "idx_branch",
+          "error": "Index already exists with a different name: branch_id_1, full error: {'ok': 0.0, 'errmsg': 'Index already exists with a different name: branch_id_1', 'code': 85, 'codeName': 'IndexOptionsConflict'}"
+        },
+        {
+          "collection": "transactions",
+          "index": "idx_branch_date",
+          "error": "Index already exists with a different name: branch_id_1_created_at_-1, full error: {'ok': 0.0, 'errmsg': 'Index already exists with a different name: branch_id_1_created_at_-1', 'code': 85, 'codeName': 'IndexOptionsConflict'}"
+        },
+        {
+          "collection": "transactions",
+          "index": "idx_customer",
+          "error": "Index already exists with a different name: customer_id_1, full error: {'ok': 0.0, 'errmsg': 'Index already exists with a different name: customer_id_1', 'code': 85, 'codeName': 'IndexOptionsConflict'}"
+        },
+        {
+          "collection": "users",
+          "index": "idx_email",
+          "error": "Index already exists with a different name: email_1, full error: {'ok': 0.0, 'errmsg': 'Index already exists with a different name: email_1', 'code': 85, 'codeName': 'IndexOptionsConflict'}"
+        },
+        {
+          "collection": "users",
+          "index": "idx_branch",
+          "error": "Index already exists with a different name: branch_id_1, full error: {'ok': 0.0, 'errmsg': 'Index already exists with a different name: branch_id_1', 'code': 85, 'codeName': 'IndexOptionsConflict'}"
+        },
+        {
+          "collection": "products",
+          "index": "idx_name",
+          "error": "Index already exists with a different name: name_1, full error: {'ok': 0.0, 'errmsg': 'Index already exists with a different name: name_1', 'code': 85, 'codeName': 'IndexOptionsConflict'}"
+        },
+        {
+          "collection": "accounts",
+          "index": "idx_code",
+          "error": "Index already exists with a different name: code_1, full error: {'ok': 0.0, 'errmsg': 'Index already exists with a different name: code_1', 'code': 85, 'codeName': 'IndexOptionsConflict'}"
+        }
+      ],
+      "details": [
+        {
+          "collection": "journal_entries",
+          "index": "idx_status_posted",
+          "status": "created"
+        },
+        {
+          "collection": "journal_entries",
+          "index": "idx_ref_type_id",
+          "status": "created"
+        },
+        {
+          "collection": "journal_entries",
+          "index": "idx_reference",
+          "status": "created"
+        },
+        {
+          "collection": "journal_entries",
+          "index": "idx_created_at",
+          "status": "created"
+        },
+        {
+          "collection": "journal_entries",
+          "index": "idx_journal_number",
+          "status": "created"
+        },
+        {
+          "collection": "journal_lines",
+          "status": "skipped",
+          "reason": "collection does not exist"
+        },
+        {
+          "collection": "stock_movements",
+          "index": "idx_wh_prod_date",
+          "status": "created"
+        },
+        {
+          "collection": "stock_movements",
+          "index": "idx_ref_type_id",
+          "status": "created"
+        },
+        {
+          "collection": "stock_movements",
+          "index": "idx_product",
+          "status": "created"
+        },
+        {
+          "collection": "transactions",
+          "index": "idx_transaction_number",
+          "status": "created"
+        },
+        {
+          "collection": "transactions",
+          "index": "idx_status",
+          "status": "created"
+        },
+        {
+          "collection": "sales_invoices",
+          "index": "idx_branch_posted",
+          "status": "created"
+        },
+        {
+          "collection": "sales_invoices",
+          "index": "idx_invoice_number",
+          "status": "created"
+        },
+        {
+          "collection": "sales_invoices",
+          "index": "idx_customer",
+          "status": "created"
+        },
+        {
+          "collection": "sales_invoices",
+          "index": "idx_status",
+          "status": "created"
+        },
+        {
+          "collection": "purchase_invoices",
+          "status": "skipped",
+          "reason": "collection does not exist"
+        },
+        {
+          "collection": "users",
+          "index": "idx_role",
+          "status": "created"
+        },
+        {
+          "collection": "users",
+          "index": "idx_username",
+          "status": "created"
+        },
+        {
+          "collection": "products",
+          "index": "idx_code",
+          "status": "created"
+        },
+        {
+          "collection": "products",
+          "index": "idx_category",
+          "status": "created"
+        },
+        {
+          "collection": "products",
+          "index": "idx_active",
+          "status": "created"
+        },
+        {
+          "collection": "accounts",
+          "index": "idx_type",
+          "status": "created"
+        },
+        {
+          "collection": "accounts",
+          "index": "idx_parent",
+          "status": "created"
+        },
+        {
+          "collection": "shifts",
+          "status": "skipped",
+          "reason": "collection does not exist"
+        },
+        {
+          "collection": "deposits",
+          "status": "skipped",
+          "reason": "collection does not exist"
+        }
+      ]
+    }
+  },
+  "explain_plans": {
+    "tenant": "ocb_titan",
+    "explains": [
+      {
+        "query": "Ledger aggregation",
+        "uses_index": true,
+        "execution_time_ms": "N/A"
+      },
+      {
+        "query": "Stock balance aggregation",
+        "uses_index": true,
+        "execution_time_ms": "N/A"
+      },
+      {
+        "query": "Transactions by branch/date",
+        "uses_index": true,
+        "execution_time_ms": 0
+      }
+    ]
+  }
+}

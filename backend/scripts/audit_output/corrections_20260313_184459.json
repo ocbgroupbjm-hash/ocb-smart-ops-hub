@@ -1,0 +1,119 @@
+[
+  {
+    "id": "e960ae80-c1f5-4ed7-af61-b07f76ef13db",
+    "journal_number": "COR-20260313184459-1EE6",
+    "date": "2026-03-13",
+    "reference": "CORRECTION-JV-20260312-0006",
+    "reference_type": "correction",
+    "reference_id": "69b31a4461bc18fe59e0b853",
+    "description": "Koreksi selisih jurnal JV-20260312-0006: Rp 4,440,000.00",
+    "lines": [
+      {
+        "account_code": "2-9999",
+        "account_name": "Suspense - Clearing Account",
+        "debit": 4440000.0,
+        "credit": 0,
+        "description": "Clearing selisih jurnal JV-20260312-0006"
+      }
+    ],
+    "entries": [
+      {
+        "account_code": "2-9999",
+        "account_name": "Suspense - Clearing Account",
+        "debit": 4440000.0,
+        "credit": 0,
+        "description": "Clearing selisih jurnal JV-20260312-0006"
+      }
+    ],
+    "total_debit": 4440000.0,
+    "total_credit": 0,
+    "status": "draft",
+    "correction_of_journal_id": "69b31a4461bc18fe59e0b853",
+    "correction_of_journal_number": "JV-20260312-0006",
+    "correction_reason": "Selisih UNBALANCED_CRITICAL: D=2,000,000.00 C=6,440,000.00 Diff=-4,440,000.00",
+    "correction_method": "suspense_clearing",
+    "corrected_by": "system_audit",
+    "corrected_at": "2026-03-13T18:44:59.473240+00:00",
+    "created_at": "2026-03-13T18:44:59.473240+00:00",
+    "created_by": "system_audit",
+    "tenant_id": "ocb_titan"
+  },
+  {
+    "id": "19a9ef44-63f5-431b-be7b-8d1f44dd64f9",
+    "journal_number": "COR-20260313184459-94F9",
+    "date": "2026-03-13",
+    "reference": "CORRECTION-JV-20260312-0007",
+    "reference_type": "correction",
+    "reference_id": "69b31ac0c8984d77e5eb3e91",
+    "description": "Koreksi selisih jurnal JV-20260312-0007: Rp 4,440,000.00",
+    "lines": [
+      {
+        "account_code": "2-9999",
+        "account_name": "Suspense - Clearing Account",
+        "debit": 4440000.0,
+        "credit": 0,
+        "description": "Clearing selisih jurnal JV-20260312-0007"
+      }
+    ],
+    "entries": [
+      {
+        "account_code": "2-9999",
+        "account_name": "Suspense - Clearing Account",
+        "debit": 4440000.0,
+        "credit": 0,
+        "description": "Clearing selisih jurnal JV-20260312-0007"
+      }
+    ],
+    "total_debit": 4440000.0,
+    "total_credit": 0,
+    "status": "draft",
+    "correction_of_journal_id": "69b31ac0c8984d77e5eb3e91",
+    "correction_of_journal_number": "JV-20260312-0007",
+    "correction_reason": "Selisih UNBALANCED_CRITICAL: D=2,000,000.00 C=6,440,000.00 Diff=-4,440,000.00",
+    "correction_method": "suspense_clearing",
+    "corrected_by": "system_audit",
+    "corrected_at": "2026-03-13T18:44:59.473313+00:00",
+    "created_at": "2026-03-13T18:44:59.473313+00:00",
+    "created_by": "system_audit",
+    "tenant_id": "ocb_titan"
+  },
+  {
+    "id": "4dc52659-65d3-4eeb-953f-18057a22a676",
+    "journal_number": "COR-20260313184459-189A",
+    "date": "2026-03-13",
+    "reference": "CORRECTION-JV-20260312-0008",
+    "reference_type": "correction",
+    "reference_id": "69b31b1a7534858416911adb",
+    "description": "Koreksi selisih jurnal JV-20260312-0008: Rp 2,220,000.00",
+    "lines": [
+      {
+        "account_code": "2-9999",
+        "account_name": "Suspense - Clearing Account",
+        "debit": 2220000.0,
+        "credit": 0,
+        "description": "Clearing selisih jurnal JV-20260312-0008"
+      }
+    ],
+    "entries": [
+      {
+        "account_code": "2-9999",
+        "account_name": "Suspense - Clearing Account",
+        "debit": 2220000.0,
+        "credit": 0,
+        "description": "Clearing selisih jurnal JV-20260312-0008"
+      }
+    ],
+    "total_debit": 2220000.0,
+    "total_credit": 0,
+    "status": "draft",
+    "correction_of_journal_id": "69b31b1a7534858416911adb",
+    "correction_of_journal_number": "JV-20260312-0008",
+    "correction_reason": "Selisih UNBALANCED_CRITICAL: D=1,000,000.00 C=3,220,000.00 Diff=-2,220,000.00",
+    "correction_method": "suspense_clearing",
+    "corrected_by": "system_audit",
+    "corrected_at": "2026-03-13T18:44:59.473335+00:00",
+    "created_at": "2026-03-13T18:44:59.473335+00:00",
+    "created_by": "system_audit",
+    "tenant_id": "ocb_titan"
+  }
+]

@@ -652,3 +652,273 @@ async def check_tenant_health(db_name: str, user: dict = Depends(get_current_use
         "needs_migration": needs_migration,
         "issues": issues
     }
+
+
+# ==================== TENANT REGISTRATION API ====================
+# Sesuai MASTER BLUEPRINT - Governance resmi untuk pendaftaran tenant baru
+
+from pydantic import BaseModel, Field, EmailStr
+from typing import Optional
+
+class TenantRegistrationRequest(BaseModel):
+    """Request model untuk pendaftaran tenant baru"""
+    business_name: str = Field(..., min_length=3, max_length=100)
+    tenant_id: str = Field(..., min_length=3, max_length=50, pattern=r'^[a-z][a-z0-9_]*$')
+    database_name: str = Field(..., min_length=3, max_length=50, pattern=r'^[a-z][a-z0-9_]*$')
+    tenant_type: str = Field(default="retail", pattern=r'^(retail|wholesale|hybrid)$')
+    status: str = Field(default="active", pattern=r'^(active|inactive|suspended)$')
+    timezone: str = Field(default="Asia/Jakarta")
+    currency: str = Field(default="IDR")
+    default_branch_name: str = Field(default="Headquarters")
+    default_warehouse_name: str = Field(default="Gudang Utama")
+    admin_name: str = Field(..., min_length=2)
+    admin_email: str
+    admin_password: str = Field(..., min_length=6)
+
+class TenantStatusUpdate(BaseModel):
+    """Request model untuk update status tenant"""
+    status: str = Field(..., pattern=r'^(active|inactive|suspended)$')
+    notes: Optional[str] = ""
+
+
+@router.get("/system/current-tenant")
+async def get_current_tenant_info():
+    """Get current tenant info from environment"""
+    db_name = os.environ.get("DB_NAME", "unknown")
+    client = get_mongo_client()
+    db = client[db_name]
+    
+    metadata = await db["_tenant_metadata"].find_one({}, {"_id": 0})
+    company = await db["company_profile"].find_one({}, {"_id": 0})
+    
+    return {
+        "database_name": db_name,
+        "company_name": company.get("name") if company else db_name,
+        "blueprint_version": metadata.get("blueprint_version") if metadata else None,
+        "status": metadata.get("status") if metadata else "unknown"
+    }
+
+
+@router.get("/tenants")
+async def list_all_tenants(user: dict = Depends(get_current_user)):
+    """List all registered tenants from registry"""
+    # Check permission - only super_admin or owner
+    user_role = user.get("role_code") or user.get("role") or ""
+    if user_role not in ["owner", "super_admin"]:
+        raise HTTPException(status_code=403, detail="Only owner/super_admin can list tenants")
+    
+    tenants = await get_all_tenant_status()
+    return {
+        "current_blueprint_version": CURRENT_BLUEPRINT_VERSION,
+        "total_tenants": len(tenants),
+        "tenants": tenants
+    }
+
+
+@router.post("/tenants")
+async def register_new_tenant(
+    request: TenantRegistrationRequest,
+    user: dict = Depends(get_current_user)
+):
+    """
+    Register a new tenant with full governance.
+    
+    Flow:
+    1. Validate tenant_id and database_name uniqueness
+    2. Create database fisik
+    3. Create required collections
+    4. Create required indexes
+    5. Seed default data (branch, warehouse, roles, permissions, COA, config)
+    6. Create admin user
+    7. Insert tenant_registry
+    8. Smoke test
+    """
+    from utils.auth import hash_password
+    
+    # Check permission
+    user_role = user.get("role_code") or user.get("role") or ""
+    if user_role not in ["owner", "super_admin"]:
+        raise HTTPException(status_code=403, detail="Only owner/super_admin can register tenants")
+    
+    client = get_mongo_client()
+    now = datetime.now(timezone.utc).isoformat()
+    
+    # 1. Validate uniqueness
+    existing_dbs = await client.list_database_names()
+    if request.database_name in existing_dbs:
+        raise HTTPException(status_code=400, detail=f"Database '{request.database_name}' already exists")
+    
+    # Check tenant_id in all existing tenant metadata
+    for db_name in [d for d in existing_dbs if d.startswith("ocb_")]:
+        db = client[db_name]
+        existing_tenant = await db["_tenant_metadata"].find_one({"tenant_id": request.tenant_id})
+        if existing_tenant:
+            raise HTTPException(status_code=400, detail=f"Tenant ID '{request.tenant_id}' already exists")
+    
+    # 2-6. Initialize database with full blueprint
+    result = await initialize_tenant_database(request.database_name, request.business_name)
+    
+    db = client[request.database_name]
+    
+    # Update metadata with tenant registration info
+    await db["_tenant_metadata"].update_one(
+        {},
+        {"$set": {
+            "tenant_id": request.tenant_id,
+            "tenant_type": request.tenant_type,
+            "status": request.status,
+            "timezone": request.timezone,
+            "currency": request.currency,
+            "registered_at": now,
+            "registered_by": user.get("email")
+        }}
+    )
+    
+    # Update branch name
+    await db["branches"].update_one(
+        {"code": "HQ"},
+        {"$set": {
+            "name": request.default_branch_name,
+            "warehouse_name": request.default_warehouse_name
+        }}
+    )
+    
+    # Update company profile
+    await db["company_profile"].update_one(
+        {},
+        {"$set": {
+            "name": request.business_name,
+            "timezone": request.timezone,
+            "currency": request.currency
+        }}
+    )
+    
+    # Create admin user
+    owner_role = await db["roles"].find_one({"code": "owner"})
+    branch = await db["branches"].find_one({"code": "HQ"})
+    
+    admin_user = {
+        "id": str(uuid.uuid4()),
+        "email": request.admin_email,
+        "password_hash": hash_password(request.admin_password),
+        "name": request.admin_name,
+        "phone": "",
+        "role": "owner",
+        "role_code": "owner",
+        "role_id": owner_role["id"] if owner_role else None,
+        "branch_id": branch["id"] if branch else None,
+        "branch_ids": [branch["id"]] if branch else [],
+        "is_active": True,
+        "permissions": ["*"],
+        "created_at": now
+    }
+    await db["users"].insert_one(admin_user)
+    
+    # 7. Smoke test - verify critical collections
+    smoke_test = {
+        "accounts": await db["accounts"].count_documents({}) > 0,
+        "roles": await db["roles"].count_documents({}) > 0,
+        "users": await db["users"].count_documents({}) > 0,
+        "branches": await db["branches"].count_documents({}) > 0,
+        "account_settings": await db["account_settings"].count_documents({}) > 0
+    }
+    all_passed = all(smoke_test.values())
+    
+    return {
+        "status": "created" if all_passed else "partial",
+        "tenant_id": request.tenant_id,
+        "database_name": request.database_name,
+        "business_name": request.business_name,
+        "admin_email": request.admin_email,
+        "blueprint_version": CURRENT_BLUEPRINT_VERSION,
+        "smoke_test": smoke_test,
+        "changes": result["changes"] + [f"Created admin user: {request.admin_email}"]
+    }
+
+
+@router.post("/tenants/{tenant_id}/sync-blueprint")
+async def sync_tenant_blueprint(tenant_id: str, user: dict = Depends(get_current_user)):
+    """Sync a specific tenant to current blueprint version"""
+    user_role = user.get("role_code") or user.get("role") or ""
+    if user_role not in ["owner", "super_admin"]:
+        raise HTTPException(status_code=403, detail="Only owner/super_admin can sync blueprint")
+    
+    client = get_mongo_client()
+    
+    # Find the database for this tenant_id
+    all_dbs = await client.list_database_names()
+    target_db = None
+    
+    for db_name in [d for d in all_dbs if d.startswith("ocb_")]:
+        db = client[db_name]
+        metadata = await db["_tenant_metadata"].find_one({"tenant_id": tenant_id})
+        if metadata:
+            target_db = db_name
+            break
+    
+    if not target_db:
+        # Try direct database name match
+        if tenant_id in all_dbs:
+            target_db = tenant_id
+        else:
+            raise HTTPException(status_code=404, detail=f"Tenant '{tenant_id}' not found")
+    
+    result = await initialize_tenant_database(target_db)
+    
+    return {
+        "status": "synced",
+        "tenant_id": tenant_id,
+        "database": target_db,
+        "blueprint_version": CURRENT_BLUEPRINT_VERSION,
+        "changes": result["changes"]
+    }
+
+
+@router.patch("/tenants/{tenant_id}/status")
+async def update_tenant_status(
+    tenant_id: str,
+    request: TenantStatusUpdate,
+    user: dict = Depends(get_current_user)
+):
+    """Update tenant status (active/inactive/suspended)"""
+    user_role = user.get("role_code") or user.get("role") or ""
+    if user_role not in ["owner", "super_admin"]:
+        raise HTTPException(status_code=403, detail="Only owner/super_admin can update tenant status")
+    
+    client = get_mongo_client()
+    now = datetime.now(timezone.utc).isoformat()
+    
+    # Find the database for this tenant_id
+    all_dbs = await client.list_database_names()
+    target_db = None
+    
+    for db_name in [d for d in all_dbs if d.startswith("ocb_")]:
+        db = client[db_name]
+        metadata = await db["_tenant_metadata"].find_one({"tenant_id": tenant_id})
+        if metadata:
+            target_db = db_name
+            break
+    
+    if not target_db:
+        if tenant_id in all_dbs:
+            target_db = tenant_id
+        else:
+            raise HTTPException(status_code=404, detail=f"Tenant '{tenant_id}' not found")
+    
+    db = client[target_db]
+    await db["_tenant_metadata"].update_one(
+        {},
+        {"$set": {
+            "status": request.status,
+            "status_updated_at": now,
+            "status_updated_by": user.get("email"),
+            "status_notes": request.notes
+        }}
+    )
+    
+    return {
+        "status": "updated",
+        "tenant_id": tenant_id,
+        "new_status": request.status,
+        "updated_at": now
+    }

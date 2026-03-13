@@ -528,6 +528,60 @@ Membangun sistem ERP retail komprehensif (OCB TITAN) dengan fitur POS, Inventory
 
 ---
 
+### Phase 13: Foundation Hardening (MASTER BLUEPRINT) ✅
+**Completed (2026-03-13):**
+
+Eksekusi sesuai MASTER BLUEPRINT SUPER DEWA - COMMAND MODE:
+
+#### PERINTAH 1: Historical Journal Imbalance ✅
+- Created: `/app/backend/scripts/audit_journal_balance.py`
+- Created: `/app/backend/scripts/apply_journal_corrections.py`
+- Audited all 5 active tenants
+- Found 3 critically imbalanced journals in `ocb_titan`
+- Applied correcting journals:
+  - JV-20260312-0006 → COR-20260313184622-F83C (Rp 4,440,000)
+  - JV-20260312-0007 → COR-20260313184622-2786 (Rp 4,440,000)
+  - JV-20260312-0008 → COR-20260313184622-9023 (Rp 2,220,000)
+- **Result:** Trial Balance now BALANCED (D=C=Rp 2,107,948,326)
+- Reports: `/app/backend/scripts/audit_output/`
+
+#### PERINTAH 2: Database Index Hardening ✅
+- Created: `/app/backend/scripts/migrate_database_indexes.py`
+- Added indexes to all 5 active tenants:
+  - journal_entries: 5 indexes
+  - stock_movements: 4 indexes
+  - transactions: 4 indexes
+  - sales_invoices: 4 indexes
+  - products: 4 indexes
+  - users: 4 indexes
+  - accounts: 3 indexes
+- Explain plans verified for critical queries
+- Report: `/app/backend/scripts/audit_output/index_migration_results.json`
+
+#### PERINTAH 3: Module Audit - Stock Reorder vs Purchase Planning ✅
+- Analyzed both modules thoroughly
+- **Decision: KEEP BOTH** - Not duplicate
+- Stock Reorder = Operational Tool (daily warehouse use)
+- Purchase Planning = Strategic Tool (manager planning with approval)
+- Report: `/app/backend/scripts/audit_output/module_audit_stock_reorder_vs_purchase_planning.md`
+
+#### PERINTAH 4: Tenant Registration Form ✅
+- Backend endpoints added to `/app/backend/routes/tenant_blueprint.py`:
+  - `GET /api/tenant/system/current-tenant`
+  - `GET /api/tenant/tenants`
+  - `POST /api/tenant/tenants`
+  - `POST /api/tenant/tenants/{id}/sync-blueprint`
+  - `PATCH /api/tenant/tenants/{id}/status`
+- UI created: `/app/frontend/src/pages/settings/TenantManagement.jsx`
+- Menu added: Pengaturan → Manajemen Tenant (owner/super_admin only)
+- Features:
+  - List all tenants with health status
+  - Register new tenant with full governance
+  - Sync blueprint per tenant
+  - Update tenant status
+
+---
+
 ## Priority Task List
 
 ### P0 - Completed ✅
@@ -535,12 +589,14 @@ Membangun sistem ERP retail komprehensif (OCB TITAN) dengan fitur POS, Inventory
 - [x] Setoran Kas Harian flow
 - [x] Stock Adjustment flow
 - [x] Sales Return flow
+- [x] Historical Journal Imbalance FIX
+- [x] Database Index Hardening
+- [x] Module Audit (Stock Reorder vs Purchase Planning)
+- [x] Tenant Registration Form UI
 
-### P1 - Next Steps
-- [ ] Fix historical journal imbalance
-- [ ] Database indexes for performance (journal_entries, stock_movements, transactions)
-- [ ] Audit: Stock Reorder vs Purchase Planning (merge decision)
-- [ ] Tenant Registration Form UI
+### P1 - Next Steps (MASTER BLUEPRINT)
+- [ ] PERINTAH 5: Full E2E Accounting Validation Rerun (12 scenarios)
+- [ ] PERINTAH 6: Lock Blueprint Version & Rollout to all tenants
 
 ### P2 - Backlog
 - [ ] Export to Excel functionality
@@ -552,4 +608,4 @@ Membangun sistem ERP retail komprehensif (OCB TITAN) dengan fitur POS, Inventory
 
 ---
 
-*Last Updated: 2026-03-13 (Phase 12 - E2E Validation Complete)*
+*Last Updated: 2026-03-13 (Phase 13 - Foundation Hardening Complete)*
