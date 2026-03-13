@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { Plus, Search, Loader2, Check, X, FileText, Package, AlertTriangle } from 'lucide-react';
+import { Plus, Search, Loader2, Check, X, FileText, Package, AlertTriangle, Edit2, Trash2, Printer, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import ERPActionToolbar from '../../components/ERPActionToolbar';
 
 const StockOpname = () => {
   const { api } = useAuth();
@@ -14,6 +15,8 @@ const StockOpname = () => {
   const [selectedBranch, setSelectedBranch] = useState('');
   const [opnameItems, setOpnameItems] = useState([]);
   const [notes, setNotes] = useState('');
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [editingItem, setEditingItem] = useState(null);
 
   const loadOpnames = useCallback(async () => {
     setLoading(true);
@@ -139,6 +142,40 @@ const StockOpname = () => {
     return <span className={`px-2 py-1 rounded-full text-xs ${badges[status] || badges.draft}`}>{labels[status] || status}</span>;
   };
 
+  const handleRowSelect = (item) => { setSelectedItem(selectedItem?.id === item.id ? null : item); };
+
+  const handleEdit = (item) => {
+    setEditingItem(item);
+    toast.info(`Edit opname: ${item.opname_number}`);
+    // TODO: Implement edit form
+  };
+
+  const handleDelete = async (item) => {
+    if (!confirm(`Hapus opname "${item.opname_number}"?`)) return;
+    try {
+      const res = await api(`/api/inventory/opnames/${item.id}`, { method: 'DELETE' });
+      if (res.ok) {
+        toast.success('Opname berhasil dihapus');
+        setSelectedItem(null);
+        loadOpnames();
+      }
+    } catch { toast.error('Gagal menghapus'); }
+  };
+
+  const handlePrint = (item) => { toast.info(`Mencetak opname: ${item.opname_number}...`); };
+
+  const handleApprove = async (item) => {
+    if (!confirm(`Approve opname "${item.opname_number}"? Stok akan disesuaikan.`)) return;
+    try {
+      const res = await api(`/api/inventory/opnames/${item.id}/approve`, { method: 'POST' });
+      if (res.ok) {
+        toast.success('Opname berhasil diapprove dan stok disesuaikan');
+        setSelectedItem(null);
+        loadOpnames();
+      }
+    } catch { toast.error('Gagal approve'); }
+  };
+
   return (
     <div className="space-y-4" data-testid="stock-opname-page">
       {/* Header */}
@@ -147,15 +184,31 @@ const StockOpname = () => {
           <h1 className="text-2xl font-bold text-amber-100">Stok Opname</h1>
           <p className="text-gray-400 text-sm">Pencocokan stok fisik dengan sistem</p>
         </div>
-        <div className="flex gap-2">
-          {branches.slice(0, 3).map(b => (
-            <button key={b.id} onClick={() => handleStartOpname(b.id)}
-              className="px-4 py-2 bg-gradient-to-r from-red-600 to-amber-600 text-white rounded-lg flex items-center gap-2 text-sm">
-              <Plus className="h-4 w-4" /> Opname {b.name}
-            </button>
-          ))}
-        </div>
       </div>
+
+      {/* TOOLBAR STANDAR ERP */}
+      <ERPActionToolbar
+        module="stock_opname"
+        selectedItem={selectedItem}
+        onAdd={() => {}}
+        onEdit={(item) => handleEdit(item)}
+        onDelete={(item) => handleDelete(item)}
+        onPrint={(item) => handlePrint(item)}
+        onApprove={(item) => handleApprove(item)}
+        addLabel="Tambah Opname"
+        editLabel="Edit"
+        deleteLabel="Hapus"
+        customButtons={[
+          ...branches.slice(0, 3).map(b => ({
+            key: `opname-${b.id}`,
+            label: `Opname ${b.name}`,
+            icon: <Plus className="h-4 w-4" />,
+            onClick: () => handleStartOpname(b.id),
+            color: 'bg-gradient-to-r from-red-600 to-amber-600 hover:from-red-500 hover:to-amber-500 text-white',
+            requireSelection: false
+          }))
+        ]}
+      />
 
       {/* Filters */}
       <div className="bg-[#1a1214] border border-red-900/30 rounded-xl p-4">
@@ -177,21 +230,30 @@ const StockOpname = () => {
           <table className="w-full">
             <thead className="bg-red-900/20">
               <tr>
+                <th className="px-3 py-3 text-center text-xs font-semibold text-amber-200 w-10">
+                  <input type="checkbox" className="w-3 h-3" disabled />
+                </th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-amber-200">NO. OPNAME</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-amber-200">TANGGAL</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-amber-200">CABANG</th>
                 <th className="px-4 py-3 text-right text-xs font-semibold text-amber-200">TOTAL ITEM</th>
                 <th className="px-4 py-3 text-right text-xs font-semibold text-amber-200">SELISIH</th>
                 <th className="px-4 py-3 text-center text-xs font-semibold text-amber-200">STATUS</th>
+                <th className="px-4 py-3 text-center text-xs font-semibold text-amber-200">AKSI</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-red-900/20">
               {loading ? (
-                <tr><td colSpan={6} className="px-4 py-8 text-center"><Loader2 className="h-8 w-8 animate-spin mx-auto text-amber-400" /></td></tr>
+                <tr><td colSpan={8} className="px-4 py-8 text-center"><Loader2 className="h-8 w-8 animate-spin mx-auto text-amber-400" /></td></tr>
               ) : opnames.length === 0 ? (
-                <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-400">Belum ada data stok opname</td></tr>
-              ) : opnames.map(opname => (
-                <tr key={opname.id} className="hover:bg-red-900/10">
+                <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400">Belum ada data stok opname</td></tr>
+              ) : opnames.map((opname, idx) => (
+                <tr key={opname.id} onClick={() => handleRowSelect(opname)}
+                  className={`cursor-pointer transition-colors ${selectedItem?.id === opname.id ? 'bg-amber-900/30 border-l-2 border-amber-500' : 'hover:bg-red-900/10'}`}
+                  data-testid={`opname-row-${idx}`}>
+                  <td className="px-3 py-3 text-center">
+                    <input type="radio" checked={selectedItem?.id === opname.id} onChange={() => handleRowSelect(opname)} className="w-3 h-3 accent-amber-500" />
+                  </td>
                   <td className="px-4 py-3 text-sm font-mono text-amber-300">{opname.opname_number || '-'}</td>
                   <td className="px-4 py-3 text-sm text-gray-400">
                     {new Date(opname.created_at).toLocaleDateString('id-ID')}
@@ -204,6 +266,24 @@ const StockOpname = () => {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-center">{getStatusBadge(opname.status)}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center justify-center gap-1">
+                      {opname.status !== 'approved' && (
+                        <button onClick={(e) => { e.stopPropagation(); handleApprove(opname); }} className="p-1.5 hover:bg-green-600/20 rounded text-green-400" title="Approve">
+                          <CheckCircle className="h-4 w-4" />
+                        </button>
+                      )}
+                      <button onClick={(e) => { e.stopPropagation(); handlePrint(opname); }} className="p-1.5 hover:bg-blue-600/20 rounded text-blue-400">
+                        <Printer className="h-4 w-4" />
+                      </button>
+                      <button onClick={(e) => { e.stopPropagation(); handleEdit(opname); }} className="p-1.5 hover:bg-purple-600/20 rounded text-purple-400">
+                        <Edit2 className="h-4 w-4" />
+                      </button>
+                      <button onClick={(e) => { e.stopPropagation(); handleDelete(opname); }} className="p-1.5 hover:bg-red-600/20 rounded text-red-400">
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>

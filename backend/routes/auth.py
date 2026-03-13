@@ -53,6 +53,16 @@ async def login(data: LoginRequest):
     if not user.get("is_active", True):
         raise HTTPException(status_code=401, detail="Account disabled")
     
+    # INITIALIZE DATABASE IF NEEDED
+    # This ensures all master data exists before user enters the system
+    try:
+        from routes.database_init import ensure_database_initialized
+        was_init = await ensure_database_initialized()
+        if was_init:
+            print("[LOGIN] Database was initialized with default data")
+    except Exception as e:
+        print(f"[LOGIN] Database init check error (non-fatal): {e}")
+    
     # Update last login
     await users.update_one(
         {"id": user["id"]},

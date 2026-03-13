@@ -267,6 +267,11 @@ app.include_router(barcode_engine_router, prefix="/api")
 from routes.loyalty_points import router as loyalty_points_router
 app.include_router(loyalty_points_router, prefix="/api")
 
+# Database Initialization Service
+from routes.database_init import router as db_init_router
+app.include_router(db_init_router)
+
+
 # Health check
 @app.get("/api/health")
 async def health_check():

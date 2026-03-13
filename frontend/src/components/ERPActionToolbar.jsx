@@ -287,7 +287,7 @@ const ERPActionToolbar = ({
                 disabled={isDisabled}
                 data-testid={`btn-toolbar-custom-${idx}`}
               >
-                {btn.icon && <span className={iconSize}>{btn.icon}</span>}
+                {btn.icon}
                 {btn.label}
               </button>
             );

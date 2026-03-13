@@ -25,34 +25,58 @@ async def check_permission(user_id: str, module: str, action: str) -> bool:
     db = get_db()
     
     # Get user with role
-    user = await db["users"].find_one({"id": user_id}, {"_id": 0, "role_id": 1, "branch_access": 1, "role_code": 1})
-    if not user or not user.get("role_id"):
+    user = await db["users"].find_one({"id": user_id}, {"_id": 0, "role_id": 1, "branch_access": 1, "role_code": 1, "role": 1, "permissions": 1})
+    if not user:
         return False
     
-    # Get role
-    role = await db["roles"].find_one({"id": user["role_id"]}, {"_id": 0})
+    # Check user-level permissions first (e.g., owner with ["*"])
+    user_perms = user.get("permissions", [])
+    if "*" in user_perms:
+        return True
+    
+    # Get role by role_id OR role_code
+    role = None
+    if user.get("role_id"):
+        role = await db["roles"].find_one({"id": user["role_id"]}, {"_id": 0})
+    if not role:
+        role_code = user.get("role_code") or user.get("role")
+        if role_code:
+            role = await db["roles"].find_one({"code": role_code}, {"_id": 0})
+    
     if not role:
         return False
     
-    # SUPER ADMIN / PEMILIK = FULL ACCESS
-    role_code = role.get("code") or user.get("role_code")
-    if role.get("inherit_all") or role_code in ["super_admin", "pemilik", "owner", "admin"]:
+    # SUPER ADMIN / PEMILIK / OWNER = FULL ACCESS
+    role_code = role.get("code") or user.get("role_code") or user.get("role")
+    if role.get("inherit_all") or role_code in ["super_admin", "pemilik", "owner"]:
+        return True
+    
+    # Check role-level permissions
+    role_perms = role.get("permissions", [])
+    if "*" in role_perms:
+        return True
+    
+    # Check specific permission in role permissions
+    perm_key = f"{module}.{action}"
+    if perm_key in role_perms:
         return True
     
     # VIEW ONLY role
     if role.get("view_only") and action != "view":
         return False
     
-    # Check specific permission
-    permission = await db["role_permissions"].find_one({
-        "role_id": user["role_id"],
-        "module": module,
-        "action": action,
-        "allowed": True
-    }, {"_id": 0})
-    
-    if permission:
-        return True
+    # Check specific permission in role_permissions collection
+    role_id = role.get("id")
+    if role_id:
+        permission = await db["role_permissions"].find_one({
+            "role_id": role_id,
+            "module": module,
+            "action": action,
+            "allowed": True
+        }, {"_id": 0})
+        
+        if permission:
+            return True
     
     # Check inherited permissions
     inherit_from = role.get("inherit_from", [])
