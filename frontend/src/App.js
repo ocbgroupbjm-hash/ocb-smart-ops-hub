@@ -140,6 +140,7 @@ import ProductAssembly from './pages/inventory/ProductAssembly';
 import { PrinterSettings, RBACManagement } from './pages/settings';
 import NumberSettings from './pages/settings/NumberSettings';
 import TenantManagement from './pages/settings/TenantManagement';
+import BackupManager from './pages/settings/BackupManager';
 
 // Accounting Pages
 import ChartOfAccounts from './pages/accounting/ChartOfAccounts';
@@ -454,6 +455,7 @@ function App() {
             <Route path="settings/number-settings" element={<NumberSettings />} />
             <Route path="settings/printer" element={<PrinterSettings />} />
             <Route path="settings/tenants" element={<TenantManagement />} />
+            <Route path="settings/backup" element={<BackupManager />} />
             <Route path="settings/theme" element={<Settings />} />
             <Route path="settings/import" element={<Settings />} />
             <Route path="settings/export" element={<Settings />} />

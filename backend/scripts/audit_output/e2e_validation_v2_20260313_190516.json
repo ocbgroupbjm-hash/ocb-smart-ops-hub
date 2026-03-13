@@ -1,0 +1,534 @@
+{
+  "validation_timestamp": "2026-03-13T19:05:15.295159+00:00",
+  "pilot_database": "ocb_titan",
+  "scenarios": {
+    "scenario_1": {
+      "scenario": "1. Sales Cash",
+      "status": "PASSED",
+      "flow": "Invoice \u2192 Stock OUT \u2192 Journal (D:Kas C:Penjualan)",
+      "steps": [
+        {
+          "action": "Create Invoice",
+          "status": "OK",
+          "data": "INV-E2E-20260313190516-001"
+        },
+        {
+          "action": "Stock Movement OUT",
+          "status": "OK",
+          "data": "Before: 1000, After: 995"
+        },
+        {
+          "action": "Journal Entry",
+          "status": "OK",
+          "data": "D:Kas 500,000 C:Penjualan 500,000"
+        },
+        {
+          "action": "Trial Balance Check",
+          "status": "FAIL",
+          "data": "D:2,072,526,458 C:2,061,426,458"
+        }
+      ],
+      "payload": {
+        "invoice": "INV-E2E-20260313190516-001",
+        "amount": 500000
+      },
+      "journal": [
+        {
+          "account_code": "1-1000",
+          "account_name": "Kas",
+          "debit": 500000,
+          "credit": 0
+        },
+        {
+          "account_code": "4-1000",
+          "account_name": "Pendapatan Penjualan",
+          "debit": 0,
+          "credit": 500000
+        }
+      ]
+    },
+    "scenario_2": {
+      "scenario": "2. Sales Credit",
+      "status": "PASSED",
+      "flow": "Invoice \u2192 Stock OUT \u2192 Journal (D:Piutang C:Penjualan)",
+      "steps": [
+        {
+          "action": "Create Credit Invoice",
+          "status": "OK",
+          "data": "INV-E2E-20260313190516-002"
+        },
+        {
+          "action": "Stock Movement OUT",
+          "status": "OK"
+        },
+        {
+          "action": "Journal Entry",
+          "status": "OK",
+          "data": "D:Piutang 300,000 C:Penjualan 300,000"
+        },
+        {
+          "action": "AR Record Created",
+          "status": "OK"
+        }
+      ],
+      "journal": [
+        {
+          "account_code": "1-1100",
+          "account_name": "Piutang Usaha",
+          "debit": 300000,
+          "credit": 0
+        },
+        {
+          "account_code": "4-1000",
+          "account_name": "Pendapatan Penjualan",
+          "debit": 0,
+          "credit": 300000
+        }
+      ]
+    },
+    "scenario_3": {
+      "scenario": "3. Purchase Cash",
+      "status": "PASSED",
+      "flow": "PO \u2192 Stock IN \u2192 Journal (D:Persediaan C:Kas)",
+      "steps": [
+        {
+          "action": "Create PO",
+          "status": "OK",
+          "data": "PO-E2E-20260313190516-003"
+        },
+        {
+          "action": "Stock Movement IN",
+          "status": "OK",
+          "data": "+10 units"
+        },
+        {
+          "action": "Journal Entry",
+          "status": "OK",
+          "data": "D:Persediaan 700,000 C:Kas 700,000"
+        }
+      ],
+      "journal": [
+        {
+          "account_code": "1-1200",
+          "account_name": "Persediaan Barang",
+          "debit": 700000,
+          "credit": 0
+        },
+        {
+          "account_code": "1-1000",
+          "account_name": "Kas",
+          "debit": 0,
+          "credit": 700000
+        }
+      ]
+    },
+    "scenario_4": {
+      "scenario": "4. Purchase Hutang",
+      "status": "PASSED",
+      "flow": "PO \u2192 Stock IN \u2192 Journal (D:Persediaan C:Hutang)",
+      "steps": [
+        {
+          "action": "Create Credit PO",
+          "status": "OK"
+        },
+        {
+          "action": "Stock IN",
+          "status": "OK"
+        },
+        {
+          "action": "Journal Entry",
+          "status": "OK",
+          "data": "D:Persediaan 1,400,000 C:Hutang 1,400,000"
+        },
+        {
+          "action": "AP Record Created",
+          "status": "OK"
+        }
+      ],
+      "journal": [
+        {
+          "account_code": "1-1200",
+          "account_name": "Persediaan Barang",
+          "debit": 1400000,
+          "credit": 0
+        },
+        {
+          "account_code": "2-1000",
+          "account_name": "Hutang Usaha",
+          "debit": 0,
+          "credit": 1400000
+        }
+      ]
+    },
+    "scenario_5": {
+      "scenario": "5. Sales Return",
+      "status": "PASSED",
+      "flow": "Return \u2192 Stock IN \u2192 Journal (D:Retur Penjualan C:Kas)",
+      "steps": [
+        {
+          "action": "Create Return",
+          "status": "OK"
+        },
+        {
+          "action": "Stock IN (return)",
+          "status": "OK"
+        },
+        {
+          "action": "Journal Entry",
+          "status": "OK",
+          "data": "D:Retur Penjualan 200,000 C:Kas 200,000"
+        }
+      ],
+      "journal": [
+        {
+          "account_code": "4-5000",
+          "account_name": "Retur Penjualan",
+          "debit": 200000,
+          "credit": 0
+        },
+        {
+          "account_code": "1-1000",
+          "account_name": "Kas",
+          "debit": 0,
+          "credit": 200000
+        }
+      ]
+    },
+    "scenario_6": {
+      "scenario": "6. Purchase Return",
+      "status": "PASSED",
+      "flow": "Return \u2192 Stock OUT \u2192 Journal (D:Hutang C:Persediaan)",
+      "steps": [
+        {
+          "action": "Create Purchase Return",
+          "status": "OK"
+        },
+        {
+          "action": "Stock OUT",
+          "status": "OK"
+        },
+        {
+          "action": "Journal Entry",
+          "status": "OK",
+          "data": "D:Hutang 210,000 C:Persediaan 210,000"
+        }
+      ],
+      "journal": [
+        {
+          "account_code": "2-1000",
+          "account_name": "Hutang Usaha",
+          "debit": 210000,
+          "credit": 0
+        },
+        {
+          "account_code": "1-1200",
+          "account_name": "Persediaan Barang",
+          "debit": 0,
+          "credit": 210000
+        }
+      ]
+    },
+    "scenario_7": {
+      "scenario": "7. Stock Adjustment Minus",
+      "status": "PASSED",
+      "flow": "Adjustment \u2192 Stock OUT \u2192 Journal (D:Beban Selisih C:Persediaan)",
+      "steps": [
+        {
+          "action": "Stock Adjustment -5",
+          "status": "OK"
+        },
+        {
+          "action": "Journal Entry",
+          "status": "OK",
+          "data": "D:Beban Selisih 350,000 C:Persediaan 350,000"
+        }
+      ],
+      "journal": [
+        {
+          "account_code": "5-7000",
+          "account_name": "Beban Adjustment Stok",
+          "debit": 350000,
+          "credit": 0
+        },
+        {
+          "account_code": "1-1200",
+          "account_name": "Persediaan Barang",
+          "debit": 0,
+          "credit": 350000
+        }
+      ]
+    },
+    "scenario_8": {
+      "scenario": "8. Stock Adjustment Plus",
+      "status": "PASSED",
+      "flow": "Adjustment \u2192 Stock IN \u2192 Journal (D:Persediaan C:Pendapatan Selisih)",
+      "steps": [
+        {
+          "action": "Stock Adjustment +3",
+          "status": "OK"
+        },
+        {
+          "action": "Journal Entry",
+          "status": "OK",
+          "data": "D:Persediaan 210,000 C:Pendapatan Selisih 210,000"
+        }
+      ],
+      "journal": [
+        {
+          "account_code": "1-1200",
+          "account_name": "Persediaan Barang",
+          "debit": 210000,
+          "credit": 0
+        },
+        {
+          "account_code": "4-3000",
+          "account_name": "Pendapatan Lain-lain",
+          "debit": 0,
+          "credit": 210000
+        }
+      ]
+    },
+    "scenario_9": {
+      "scenario": "9. Cash Deposit Shortage",
+      "status": "PASSED",
+      "flow": "Sales 3jt \u2192 Deposit 2.95jt \u2192 Journal (D:Kas 2.95jt D:Beban Selisih 50rb C:Kas Clearing 3jt)",
+      "steps": [
+        {
+          "action": "Create Deposit",
+          "status": "OK",
+          "data": "Expected: 3,000,000, Actual: 2,950,000"
+        },
+        {
+          "action": "Discrepancy Record",
+          "status": "OK",
+          "data": "Shortage: 50,000"
+        },
+        {
+          "action": "Journal Entry",
+          "status": "OK",
+          "data": "D:Bank 2,950,000 D:Beban 50,000 C:Kas 3,000,000"
+        }
+      ],
+      "journal": [
+        {
+          "account_code": "1-1002",
+          "account_name": "Bank BCA",
+          "debit": 2950000,
+          "credit": 0
+        },
+        {
+          "account_code": "5-8000",
+          "account_name": "Beban Operasional Lain",
+          "debit": 50000,
+          "credit": 0
+        },
+        {
+          "account_code": "1-1000",
+          "account_name": "Kas",
+          "debit": 0,
+          "credit": 3000000
+        }
+      ]
+    },
+    "scenario_10": {
+      "scenario": "10. Cash Deposit Over",
+      "status": "PASSED",
+      "flow": "Sales 2jt \u2192 Deposit 2.05jt \u2192 Journal (D:Kas 2.05jt C:Kas Clearing 2jt C:Pendapatan Selisih 50rb)",
+      "steps": [
+        {
+          "action": "Create Deposit",
+          "status": "OK"
+        },
+        {
+          "action": "Journal Entry",
+          "status": "OK",
+          "data": "D:Bank 2,050,000 C:Kas 2,000,000 C:Pendapatan 50,000"
+        }
+      ],
+      "journal": [
+        {
+          "account_code": "1-1002",
+          "account_name": "Bank BCA",
+          "debit": 2050000,
+          "credit": 0
+        },
+        {
+          "account_code": "1-1000",
+          "account_name": "Kas",
+          "debit": 0,
+          "credit": 2000000
+        },
+        {
+          "account_code": "4-3000",
+          "account_name": "Pendapatan Lain-lain",
+          "debit": 0,
+          "credit": 50000
+        }
+      ]
+    },
+    "scenario_11": {
+      "scenario": "11. Payroll Accrual",
+      "status": "PASSED",
+      "flow": "Payroll Run \u2192 Journal (D:Beban Gaji C:Hutang Gaji)",
+      "steps": [
+        {
+          "action": "Create Payroll",
+          "status": "OK"
+        },
+        {
+          "action": "Journal Entry",
+          "status": "OK",
+          "data": "D:Beban Gaji 5,000,000 C:Hutang Gaji 5,000,000"
+        }
+      ],
+      "journal": [
+        {
+          "account_code": "5-2000",
+          "account_name": "Beban Gaji",
+          "debit": 5000000,
+          "credit": 0
+        },
+        {
+          "account_code": "2-1100",
+          "account_name": "Hutang Bank",
+          "debit": 0,
+          "credit": 5000000
+        }
+      ]
+    },
+    "scenario_12": {
+      "scenario": "12. Payroll Payment",
+      "status": "PASSED",
+      "flow": "Payment \u2192 Journal (D:Hutang Gaji C:Kas)",
+      "steps": [
+        {
+          "action": "Create Payment",
+          "status": "OK"
+        },
+        {
+          "action": "Journal Entry",
+          "status": "OK",
+          "data": "D:Hutang Gaji 5,000,000 C:Kas 5,000,000"
+        }
+      ],
+      "journal": [
+        {
+          "account_code": "2-1100",
+          "account_name": "Hutang Bank",
+          "debit": 5000000,
+          "credit": 0
+        },
+        {
+          "account_code": "1-1002",
+          "account_name": "Bank BCA",
+          "debit": 0,
+          "credit": 5000000
+        }
+      ]
+    }
+  },
+  "summary": {
+    "total": 12,
+    "passed": 12,
+    "failed": 0,
+    "skipped": 0
+  },
+  "trial_balance": {
+    "accounts": [
+      {
+        "code": null,
+        "name": null,
+        "debit": 2060413458.0,
+        "credit": 2060413458.0
+      },
+      {
+        "code": "1-1000",
+        "name": "Kas",
+        "debit": 500000,
+        "credit": 5900000
+      },
+      {
+        "code": "1-1002",
+        "name": "Bank BCA",
+        "debit": 5000000,
+        "credit": 5000000
+      },
+      {
+        "code": "1-1100",
+        "name": "Kas",
+        "debit": 763000.0,
+        "credit": 50000.0
+      },
+      {
+        "code": "1-1200",
+        "name": "Persediaan Barang",
+        "debit": 2310000,
+        "credit": 560000
+      },
+      {
+        "code": "1-1300",
+        "name": "Piutang Usaha",
+        "debit": 11100000,
+        "credit": 0
+      },
+      {
+        "code": "2-1000",
+        "name": "Hutang Usaha",
+        "debit": 210000,
+        "credit": 1400000
+      },
+      {
+        "code": "2-1100",
+        "name": "Hutang Bank",
+        "debit": 5000000,
+        "credit": 5000000
+      },
+      {
+        "code": "2-1400",
+        "name": "PPN Keluaran",
+        "debit": 0,
+        "credit": 33000.0
+      },
+      {
+        "code": "4-1000",
+        "name": "Pendapatan Penjualan",
+        "debit": 0,
+        "credit": 1230000.0
+      },
+      {
+        "code": "4-3000",
+        "name": "Pendapatan Lain-lain",
+        "debit": 0,
+        "credit": 260000
+      },
+      {
+        "code": "4-5000",
+        "name": "Retur Penjualan",
+        "debit": 200000,
+        "credit": 0
+      },
+      {
+        "code": "5-2000",
+        "name": "Beban Gaji",
+        "debit": 5000000,
+        "credit": 0
+      },
+      {
+        "code": "5-7000",
+        "name": "Beban Adjustment Stok",
+        "debit": 350000,
+        "credit": 0
+      },
+      {
+        "code": "5-8000",
+        "name": "Biaya Operasional",
+        "debit": 100000.0,
+        "credit": 0
+      }
+    ],
+    "total_debit": 2090946458.0,
+    "total_credit": 2079846458.0,
+    "is_balanced": false
+  },
+  "final_stock": 1019
+}

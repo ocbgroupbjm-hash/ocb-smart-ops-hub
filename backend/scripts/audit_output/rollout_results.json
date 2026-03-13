@@ -1,0 +1,135 @@
+{
+  "timestamp": "2026-03-13T19:06:53.164979+00:00",
+  "blueprint_version": "2.1.0",
+  "pilot": {
+    "tenant": "ocb_titan",
+    "blueprint_version": "2.1.0",
+    "checks": {
+      "accounts": true,
+      "metadata": true,
+      "roles": true,
+      "branches": true
+    },
+    "all_passed": true
+  },
+  "tenants": {
+    "ocb_baju": {
+      "sync": {
+        "tenant": "ocb_baju",
+        "status": "SUCCESS",
+        "changes": [
+          "Updated metadata",
+          "Added account: 1-0000",
+          "Added account: 2-0000",
+          "Added account: 3-0000",
+          "Added account: 4-0000",
+          "Added account: 5-0000",
+          "Created index: users.idx_email"
+        ],
+        "errors": [
+          "Index error: Index already exists with a different name: branch_id_1, full error: {'ok': 0.0, 'errmsg': 'Index already exists with a different name: branch_id_1', 'code': 85, 'codeName': 'IndexOptionsConflict'}",
+          "Index error: Index already exists with a different name: branch_id_1_created_at_-1, full error: {'ok': 0.0, 'errmsg': 'Index already exists with a different name: branch_id_1_created_at_-1', 'code': 85, 'codeName': 'IndexOptionsConflict'}"
+        ]
+      },
+      "smoke_test": {
+        "tenant": "ocb_baju",
+        "blueprint_version": "2.1.0",
+        "checks": {
+          "accounts": true,
+          "metadata": true,
+          "roles": true,
+          "branches": true
+        },
+        "all_passed": true
+      }
+    },
+    "ocb_counter": {
+      "sync": {
+        "tenant": "ocb_counter",
+        "status": "SUCCESS",
+        "changes": [
+          "Updated metadata",
+          "Added account: 1-0000",
+          "Added account: 2-0000",
+          "Added account: 3-0000",
+          "Added account: 4-0000",
+          "Added account: 5-0000"
+        ],
+        "errors": []
+      },
+      "smoke_test": {
+        "tenant": "ocb_counter",
+        "blueprint_version": "2.1.0",
+        "checks": {
+          "accounts": true,
+          "metadata": true,
+          "roles": true,
+          "branches": true
+        },
+        "all_passed": true
+      }
+    },
+    "ocb_unit_4": {
+      "sync": {
+        "tenant": "ocb_unit_4",
+        "status": "SUCCESS",
+        "changes": [
+          "Updated metadata",
+          "Added account: 1-0000",
+          "Added account: 2-0000",
+          "Added account: 3-0000",
+          "Added account: 4-0000",
+          "Added account: 5-0000",
+          "Created index: users.idx_email"
+        ],
+        "errors": [
+          "Index error: Index already exists with a different name: branch_id_1, full error: {'ok': 0.0, 'errmsg': 'Index already exists with a different name: branch_id_1', 'code': 85, 'codeName': 'IndexOptionsConflict'}",
+          "Index error: Index already exists with a different name: branch_id_1_created_at_-1, full error: {'ok': 0.0, 'errmsg': 'Index already exists with a different name: branch_id_1_created_at_-1', 'code': 85, 'codeName': 'IndexOptionsConflict'}"
+        ]
+      },
+      "smoke_test": {
+        "tenant": "ocb_unit_4",
+        "blueprint_version": "2.1.0",
+        "checks": {
+          "accounts": true,
+          "metadata": true,
+          "roles": true,
+          "branches": true
+        },
+        "all_passed": true
+      }
+    },
+    "ocb_unt_1": {
+      "sync": {
+        "tenant": "ocb_unt_1",
+        "status": "SUCCESS",
+        "changes": [
+          "Updated metadata",
+          "Added account: 1-0000",
+          "Added account: 2-0000",
+          "Added account: 3-0000",
+          "Added account: 4-0000",
+          "Added account: 4-5000",
+          "Added account: 5-0000",
+          "Added account: 5-8000",
+          "Created index: users.idx_email"
+        ],
+        "errors": [
+          "Index error: Index already exists with a different name: branch_id_1, full error: {'ok': 0.0, 'errmsg': 'Index already exists with a different name: branch_id_1', 'code': 85, 'codeName': 'IndexOptionsConflict'}",
+          "Index error: Index already exists with a different name: branch_id_1_created_at_-1, full error: {'ok': 0.0, 'errmsg': 'Index already exists with a different name: branch_id_1_created_at_-1', 'code': 85, 'codeName': 'IndexOptionsConflict'}"
+        ]
+      },
+      "smoke_test": {
+        "tenant": "ocb_unt_1",
+        "blueprint_version": "2.1.0",
+        "checks": {
+          "accounts": true,
+          "metadata": true,
+          "roles": true,
+          "branches": true
+        },
+        "all_passed": true
+      }
+    }
+  }
+}

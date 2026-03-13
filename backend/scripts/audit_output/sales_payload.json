@@ -1,0 +1,26 @@
+{
+  "id": "4de963f3-ad27-4100-995d-acf5c9666202",
+  "invoice_number": "INV-E2E-20260313190516-001",
+  "customer_id": "bdfec361-e835-4c85-b832-ca8518eb3548",
+  "customer_name": "E2E Test Customer",
+  "branch_id": "0acd2ffd-c2d9-4324-b860-a4626840e80e",
+  "payment_type": "cash",
+  "items": [
+    {
+      "product_id": "a009a443-2e22-4597-91a6-cfd7d763b206",
+      "product_code": "E2E-PRODUCT",
+      "product_name": "E2E Test Product",
+      "quantity": 5,
+      "unit_price": 100000,
+      "subtotal": 500000
+    }
+  ],
+  "subtotal": 500000,
+  "discount": 0,
+  "tax": 0,
+  "total": 500000,
+  "paid": 500000,
+  "status": "completed",
+  "posted_at": "2026-03-13T19:05:16.552612+00:00",
+  "created_at": "2026-03-13T19:05:16.552612+00:00"
+}

@@ -1,0 +1,267 @@
+{
+  "snapshot_type": "business",
+  "database": "ocb_titan",
+  "timestamp": "2026-03-13T19:08:02.947141+00:00",
+  "reports": {
+    "trial_balance": {
+      "accounts": [
+        {
+          "code": "1-1000",
+          "name": "Kas",
+          "debit": 500000.0,
+          "credit": 5900000.0
+        },
+        {
+          "code": "1-1002",
+          "name": "Bank BCA",
+          "debit": 5000000.0,
+          "credit": 5000000.0
+        },
+        {
+          "code": "1-1100",
+          "name": "Kas",
+          "debit": 5802800.0,
+          "credit": 550000.0
+        },
+        {
+          "code": "1-1200",
+          "name": "Persediaan Barang",
+          "debit": 2310000.0,
+          "credit": 560000.0
+        },
+        {
+          "code": "1-1300",
+          "name": "Piutang Usaha",
+          "debit": 13980450.0,
+          "credit": 4202500.0
+        },
+        {
+          "code": "1-1400",
+          "name": "Persediaan Barang",
+          "debit": 60000.0,
+          "credit": 6775000.0
+        },
+        {
+          "code": "1101",
+          "name": "Kas Kecil Pusat",
+          "debit": 9464405.0,
+          "credit": 0.0
+        },
+        {
+          "code": "1102",
+          "name": "Kas Cabang",
+          "debit": 0.0,
+          "credit": 15211617.5
+        },
+        {
+          "code": "1201",
+          "name": "Piutang Dagang",
+          "debit": 0.0,
+          "credit": 5275000.0
+        },
+        {
+          "code": "2-1000",
+          "name": "Hutang Usaha",
+          "debit": 210000.0,
+          "credit": 1400000.0
+        },
+        {
+          "code": "2-1100",
+          "name": "Hutang Dagang",
+          "debit": 5500000.0,
+          "credit": 5000000.0
+        },
+        {
+          "code": "2-1400",
+          "name": "PPN Keluaran",
+          "debit": 0.0,
+          "credit": 1515250.0
+        },
+        {
+          "code": "2101",
+          "name": "Hutang Dagang",
+          "debit": 11000000.0,
+          "credit": 0.0
+        },
+        {
+          "code": "4-1000",
+          "name": "Penjualan",
+          "debit": 0.0,
+          "credit": 14745500.0
+        },
+        {
+          "code": "4-1100",
+          "name": "Retur Penjualan",
+          "debit": 180000.0,
+          "credit": 0.0
+        },
+        {
+          "code": "4-3000",
+          "name": "Pendapatan Lain-lain",
+          "debit": 0.0,
+          "credit": 260000.0
+        },
+        {
+          "code": "4-5000",
+          "name": "Retur Penjualan",
+          "debit": 200000.0,
+          "credit": 0.0
+        },
+        {
+          "code": "4-9100",
+          "name": "Koreksi Persediaan",
+          "debit": 0.0,
+          "credit": 60000.0
+        },
+        {
+          "code": "5-1000",
+          "name": "Harga Pokok Penjualan",
+          "debit": 6275000.0,
+          "credit": 0.0
+        },
+        {
+          "code": "5-2000",
+          "name": "Beban Gaji",
+          "debit": 5000000.0,
+          "credit": 0.0
+        },
+        {
+          "code": "5-7000",
+          "name": "Beban Adjustment Stok",
+          "debit": 350000.0,
+          "credit": 0.0
+        },
+        {
+          "code": "5-8000",
+          "name": "Biaya Operasional",
+          "debit": 100000.0,
+          "credit": 0.0
+        },
+        {
+          "code": "5-9100",
+          "name": "Beban Selisih Persediaan",
+          "debit": 500000.0,
+          "credit": 0.0
+        },
+        {
+          "code": "6201",
+          "name": "Selisih Kurang Kas",
+          "debit": 22212.5,
+          "credit": 0.0
+        }
+      ],
+      "total_debit": 66454867.5,
+      "total_credit": 66454867.5,
+      "is_balanced": true
+    },
+    "balance_sheet": {
+      "assets": -6356462.5,
+      "liabilities": -8794750.0,
+      "equity": 0,
+      "net_income": 2460500.0,
+      "total_equity": 2460500.0
+    },
+    "profit_loss": {
+      "revenue": 14685500.0,
+      "expenses": 12225000.0,
+      "net_income": 2460500.0
+    },
+    "inventory": {
+      "product_count": 21,
+      "products": [
+        {
+          "product_id": null,
+          "quantity": 115
+        },
+        {
+          "product_id": "0dab5f74-cf6e-40e6-83c0-48ef5ea32c51",
+          "quantity": 40.0
+        },
+        {
+          "product_id": "26185e7b-efac-4745-8d8d-c1e114a863ed",
+          "quantity": 3750000.0
+        },
+        {
+          "product_id": "2881765d-83ab-4f9f-bd98-22bdb9c6e7b5",
+          "quantity": 17000000.0
+        },
+        {
+          "product_id": "2ad75718-76d6-4b91-8cb3-b4a310ca94a3",
+          "quantity": 286
+        },
+        {
+          "product_id": "6d1fd21f-d558-4751-b74c-b73316a03a8d",
+          "quantity": 40.0
+        },
+        {
+          "product_id": "8985a1b8-334a-49bf-8950-c2592f4020b6",
+          "quantity": 0
+        },
+        {
+          "product_id": "PRD-AUDIT-001",
+          "quantity": -19
+        },
+        {
+          "product_id": "PRD-AUDIT-002",
+          "quantity": 13
+        },
+        {
+          "product_id": "PRD-AUDIT-004",
+          "quantity": 0
+        },
+        {
+          "product_id": "PRD-AUDIT-005",
+          "quantity": 0
+        },
+        {
+          "product_id": "a009a443-2e22-4597-91a6-cfd7d763b206",
+          "quantity": 1019
+        },
+        {
+          "product_id": "a09893d5-4c52-4e5f-870c-018f1134b1df",
+          "quantity": 0
+        },
+        {
+          "product_id": "a42b820d-d311-4a24-81c8-4afb423af027",
+          "quantity": 94
+        },
+        {
+          "product_id": "b0ec8a99-5555-4c92-8639-3b4e9fa8c92d",
+          "quantity": 57
+        },
+        {
+          "product_id": "baa5a5fd-0fa2-4459-9a27-d32ec1412cf9",
+          "quantity": 50
+        },
+        {
+          "product_id": "c62a3f9c-cc19-469e-a783-3a0c0b354bf3",
+          "quantity": 50.0
+        },
+        {
+          "product_id": "c64bcb0b-6dc7-4bf8-8478-2c612706d370",
+          "quantity": 32.0
+        },
+        {
+          "product_id": "d072cb3d-dba8-47fc-925c-f4da72b99064",
+          "quantity": 44
+        },
+        {
+          "product_id": "e1cd6253-04e6-4382-9e26-4dda3ebcd362",
+          "quantity": 1
+        },
+        {
+          "product_id": "x",
+          "quantity": 0
+        }
+      ]
+    },
+    "customer_balance": {
+      "total_receivable": 300000,
+      "open_invoices": 6
+    },
+    "supplier_balance": {
+      "total_payable": 1400000,
+      "open_invoices": 1
+    }
+  }
+}

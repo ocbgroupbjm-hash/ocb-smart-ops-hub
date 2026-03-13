@@ -283,6 +283,10 @@ app.include_router(system_info_router)
 from routes.accounting_migration import router as accounting_migration_router
 app.include_router(accounting_migration_router)
 
+# Backup & Restore Manager
+from routes.backup_manager import router as backup_manager_router
+app.include_router(backup_manager_router)
+
 
 
 # Health check

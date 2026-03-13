@@ -1,0 +1,42 @@
+{
+  "id": "d592d88d-02a2-436d-8d66-6a60c8e75008",
+  "journal_number": "JV-E2E-20260313190516-001",
+  "date": "2026-03-13",
+  "reference": "INV-E2E-20260313190516-001",
+  "reference_type": "sales",
+  "reference_id": "4de963f3-ad27-4100-995d-acf5c9666202",
+  "description": "Penjualan Tunai INV-E2E-20260313190516-001",
+  "lines": [
+    {
+      "account_code": "1-1000",
+      "account_name": "Kas",
+      "debit": 500000,
+      "credit": 0
+    },
+    {
+      "account_code": "4-1000",
+      "account_name": "Pendapatan Penjualan",
+      "debit": 0,
+      "credit": 500000
+    }
+  ],
+  "entries": [
+    {
+      "account_code": "1-1000",
+      "account_name": "Kas",
+      "debit": 500000,
+      "credit": 0
+    },
+    {
+      "account_code": "4-1000",
+      "account_name": "Pendapatan Penjualan",
+      "debit": 0,
+      "credit": 500000
+    }
+  ],
+  "total_debit": 500000,
+  "total_credit": 500000,
+  "status": "posted",
+  "posted_at": "2026-03-13T19:05:16.552612+00:00",
+  "created_at": "2026-03-13T19:05:16.552612+00:00"
+}

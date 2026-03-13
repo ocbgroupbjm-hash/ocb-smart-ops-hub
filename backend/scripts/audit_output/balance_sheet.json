@@ -1,0 +1,15 @@
+{
+  "generated_at": "2026-03-13T19:05:00Z",
+  "assets": -6356462.5,
+  "liabilities": -8794750.0,
+  "equity": 0,
+  "revenue": 14685500.0,
+  "expenses": 12225000.0,
+  "net_income": 2460500.0,
+  "total_equity": 2460500.0,
+  "equation": {
+    "left": -6356462.5,
+    "right": -6334250.0,
+    "balanced": false
+  }
+}
