@@ -1,19 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Loader2, Eye, EyeOff, Sparkles, Brain, BarChart3, ShoppingCart, Lock, Building2, ChevronRight, Store, Shirt, Smartphone, Coffee, ShoppingBag, Briefcase, CheckCircle } from 'lucide-react';
+import { Loader2, Eye, EyeOff, Sparkles, Brain, BarChart3, ShoppingCart, Lock, Building2, ChevronRight, Store, Shirt, Smartphone, Coffee, ShoppingBag, Briefcase, CheckCircle, Truck, Monitor } from 'lucide-react';
 import { toast } from 'sonner';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 const iconMap = {
+  building: Building2,
   building2: Building2,
   store: Store,
   shirt: Shirt,
   smartphone: Smartphone,
   coffee: Coffee,
   shoppingbag: ShoppingBag,
-  briefcase: Briefcase
+  briefcase: Briefcase,
+  truck: Truck,
+  monitor: Monitor
 };
 
 const Login = () => {
@@ -190,13 +193,14 @@ const Login = () => {
                 </div>
               ) : (
                 <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
-                  {businesses.map((business) => {
+                  {businesses.filter(b => b.show_in_login_selector !== false && b.is_test !== true && b.is_internal !== true).map((business) => {
                     const Icon = getIcon(business.icon);
                     const isSelected = selectedBusiness?.id === business.id;
                     
                     return (
                       <button
                         key={business.id}
+                        data-testid={`business-card-${business.db_name}`}
                         onClick={() => selectBusiness(business)}
                         className={`w-full p-4 rounded-xl border transition-all text-left flex items-center gap-4 ${
                           isSelected 
@@ -212,7 +216,14 @@ const Login = () => {
                         </div>
                         
                         <div className="flex-1">
-                          <div className="font-semibold text-amber-100">{business.name}</div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-amber-100">{business.name}</span>
+                            {business.business_type && (
+                              <span className="px-2 py-0.5 text-xs rounded-full bg-amber-600/20 text-amber-400 border border-amber-600/30">
+                                {business.business_type}
+                              </span>
+                            )}
+                          </div>
                           <div className="text-xs text-gray-500 font-mono">{business.db_name}</div>
                           {business.description && (
                             <div className="text-sm text-gray-400 mt-1">{business.description}</div>

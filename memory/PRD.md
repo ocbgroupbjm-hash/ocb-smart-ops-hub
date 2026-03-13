@@ -377,4 +377,53 @@ Membangun sistem ERP retail komprehensif (OCB TITAN) dengan fitur POS, Inventory
 
 ---
 
-*Last Updated: 2026-03-13 (Phase 8 - Multi-Tenant System Fix Complete)*
+### Phase 9: Tenant Registry Sinkronisasi ✅
+**Completed (2026-03-13):**
+
+**Problem yang Diperbaiki:**
+- Di MongoDB ada 10 database fisik, tapi UI Pilih Bisnis hanya tampil 3 tenant
+- Tidak ada klasifikasi jelas antara tenant bisnis aktif, test, dan internal
+
+**Solusi yang Diterapkan:**
+
+1. **Audit & Klasifikasi Semua Database**
+
+| Database | Jenis | Tampil UI | Keputusan | Alasan |
+|----------|-------|-----------|-----------|--------|
+| ocb_titan | tenant_business_active | ✅ Ya | KEEP | Tenant utama 1965 transaksi |
+| ocb_unit_4 | tenant_business_active | ✅ Ya | KEEP | Bisnis distribusi aktif |
+| ocb_unt_1 | tenant_business_active | ✅ Ya | KEEP | Bisnis retail aktif |
+| ocb_baju | tenant_business_active | ✅ Ya | KEEP | Bisnis fashion dengan 40 branches |
+| ocb_counter | tenant_business_active | ✅ Ya | KEEP | Bisnis counter aktif |
+| ocb_test_clone | tenant_test | ❌ Tidak | HIDE | Clone untuk testing |
+| ocb_unit_test | tenant_test | ❌ Tidak | HIDE | Database unit testing |
+| test_database | tenant_test | ❌ Tidak | **DELETED** | Database dummy tanpa struktur |
+| erp_db | system_internal | ❌ Tidak | KEEP_INTERNAL | Database sistem |
+| ocb_ai_database | system_internal | ❌ Tidak | KEEP_INTERNAL | Database AI/WhatsApp |
+
+2. **Update Tenant Registry (`/app/backend/data/businesses.json`)**
+   - 5 tenant bisnis aktif dengan field lengkap:
+     - `is_active`, `show_in_login_selector`, `is_test`, `is_internal`
+     - `business_type` untuk badge di UI
+
+3. **Update API Business List**
+   - Filter: hanya return tenant dengan `show_in_login_selector: true`
+   - Hide tenant test dan internal dari UI
+
+4. **Update UI Pilih Bisnis**
+   - Badge business_type (Retail, Distribusi, Fashion, Counter)
+   - Icon berbeda per jenis bisnis
+   - Filter tenant test/internal di frontend
+
+5. **Verifikasi Kesehatan Semua Tenant Aktif**
+   - Semua 5 tenant: Blueprint 2.0.0, HEALTHY
+   - Create user berhasil di semua tenant
+
+**Bukti:**
+- Screenshot UI Pilih Bisnis menampilkan 5 tenant dengan badge
+- test_database DELETED dari MongoDB
+- ocb_unt_1 sudah bisa create user
+
+---
+
+*Last Updated: 2026-03-13 (Phase 9 - Tenant Registry Sinkronisasi Complete)*

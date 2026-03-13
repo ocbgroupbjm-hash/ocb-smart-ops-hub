@@ -72,12 +72,19 @@ def save_businesses(businesses: List[dict]):
 
 @router.get("/list")
 async def list_businesses():
-    """List all available businesses/databases"""
+    """List all available businesses/databases - Only show active tenants"""
     businesses = load_businesses()
+    # Filter: only show businesses that should appear in login selector
+    visible_businesses = [
+        b for b in businesses 
+        if b.get("show_in_login_selector", True) 
+        and not b.get("is_test", False) 
+        and not b.get("is_internal", False)
+    ]
     # Get current active database from memory
     current_db = get_active_db_name()
     return {
-        "businesses": businesses,
+        "businesses": visible_businesses,
         "current_db": current_db
     }
 
