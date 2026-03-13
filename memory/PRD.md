@@ -300,13 +300,24 @@ forbidden_modules: ['accounting', 'ap', 'ar', 'master', 'purchase',
 - [x] Fix PO Generation (Unknown Supplier, 0 Price)
 - [x] Fix PO Print Function
 
+### P1 - COMPLETED (March 13, 2026)
+- [x] P1-A: Auto-apply Diskon di POS/Sales
+  - [x] API /api/master/calculate-pricing
+  - [x] API /api/master/check-discounts
+  - [x] API /api/master/check-promotions
+- [x] P1-B: Price Level Lookup Otomatis
+  - [x] API /api/master/price-for-customer/{product}/{customer}
+  - [x] Price levels 1-5 (Umum → VIP)
+- [x] P1-C: Owner Edit Button di Frontend
+  - [x] PurchaseOrders.jsx - tombol edit amber di kolom AKSI
+  - [x] OwnerEditModal.jsx - modal edit dengan audit log
+  - [x] API /api/owner/edit/purchase-order/{id}
+
 ### P1 - PENDING
-- [ ] Auto-apply discounts in POS/Sales Invoice
-- [ ] Auto-apply promotions in POS/Sales Invoice
-- [ ] Price level auto-lookup in POS/Sales Invoice
-- [ ] Point earning on invoice completion
-- [ ] Point redemption in checkout
-- [ ] Owner Edit UI in Frontend (edit buttons in list/detail views)
+- [ ] Integrate auto-apply discount ke form Sales Invoice
+- [ ] Integrate auto-apply promo ke form POS
+- [ ] Owner Edit button di Sales Invoice list
+- [ ] Owner Edit button di Item Master list
 
 ### P2 - FUTURE
 - [ ] Phase 6 - AI Business Engine
