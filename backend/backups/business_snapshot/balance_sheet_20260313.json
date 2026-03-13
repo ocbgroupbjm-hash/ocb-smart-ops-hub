@@ -1,0 +1,122 @@
+{
+  "report_type": "balance_sheet",
+  "tenant": "ocb_titan",
+  "generated_at": "2026-03-13T20:50:24.732413+00:00",
+  "snapshot_id": "SNAP-20260313_205024",
+  "assets": {
+    "accounts": [
+      {
+        "code": "1-1000",
+        "name": "Kas",
+        "debit": 500000,
+        "credit": 5900000,
+        "balance": -5400000
+      },
+      {
+        "code": "1-1002",
+        "name": "Bank BCA",
+        "debit": 5000000,
+        "credit": 5000000,
+        "balance": 0
+      },
+      {
+        "code": "1-1100",
+        "name": "Kas",
+        "debit": 5932800.0,
+        "credit": 570000.0,
+        "balance": 5362800.0
+      },
+      {
+        "code": "1-1200",
+        "name": "Persediaan Barang",
+        "debit": 2310000,
+        "credit": 560000,
+        "balance": 1750000
+      },
+      {
+        "code": "1-1300",
+        "name": "Piutang Usaha",
+        "debit": 13980450.0,
+        "credit": 4202500.0,
+        "balance": 9777950.0
+      },
+      {
+        "code": "1-1400",
+        "name": "Persediaan Barang",
+        "debit": 1960000.0,
+        "credit": 6775000.0,
+        "balance": -4815000.0
+      },
+      {
+        "code": "1101",
+        "name": "Kas Kecil Pusat",
+        "debit": 9464405.0,
+        "credit": 0,
+        "balance": 9464405.0
+      },
+      {
+        "code": "1102",
+        "name": "Kas Cabang",
+        "debit": 0,
+        "credit": 15211617.5,
+        "balance": -15211617.5
+      },
+      {
+        "code": "1201",
+        "name": "Piutang Dagang",
+        "debit": 0,
+        "credit": 5275000.0,
+        "balance": -5275000.0
+      }
+    ],
+    "total": -4346462.5
+  },
+  "liabilities": {
+    "accounts": [
+      {
+        "code": "2-1000",
+        "name": "Hutang Usaha",
+        "debit": 210000,
+        "credit": 1400000,
+        "balance": 1190000
+      },
+      {
+        "code": "2-1100",
+        "name": "Hutang Dagang",
+        "debit": 5500000.0,
+        "credit": 6900000.0,
+        "balance": 1400000.0
+      },
+      {
+        "code": "2-1400",
+        "name": "PPN Keluaran",
+        "debit": 0,
+        "credit": 1515250.0,
+        "balance": 1515250.0
+      },
+      {
+        "code": "2101",
+        "name": "Hutang Dagang",
+        "debit": 11000000.0,
+        "credit": 0,
+        "balance": -11000000.0
+      }
+    ],
+    "total": -6894750.0
+  },
+  "equity": {
+    "accounts": [],
+    "total": 0,
+    "retained_earnings": 2548287.5
+  },
+  "income_statement": {
+    "revenue": 14815500.0,
+    "expenses": 12267212.5,
+    "net_income": 2548287.5
+  },
+  "equation": {
+    "assets": -4346462.5,
+    "liabilities_equity": -4346462.5,
+    "balanced": true
+  }
+}

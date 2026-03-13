@@ -317,6 +317,9 @@ app.include_router(backup_manager_router)
 from routes.backup_restore_api import router as backup_restore_api_router
 app.include_router(backup_restore_api_router, prefix="/api")
 
+# Phase 20: Reconciliation Monitor Dashboard
+from routes.reconciliation_monitor import router as reconciliation_monitor_router
+app.include_router(reconciliation_monitor_router, prefix="/api")
 
 
 # Health check

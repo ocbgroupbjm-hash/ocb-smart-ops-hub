@@ -1,0 +1,150 @@
+{
+  "report_id": "STOCKREC-20260313_205019",
+  "timestamp": "2026-03-13T20:50:19.127261+00:00",
+  "scheduler": "daily_02:00",
+  "tenants_processed": 1,
+  "total_discrepancies": 13,
+  "alerts_generated": 13,
+  "overall_status": "ALERT",
+  "tenant_results": [
+    {
+      "tenant": "ocb_titan",
+      "timestamp": "2026-03-13T20:50:19.134089+00:00",
+      "total_products_checked": 570,
+      "discrepancies_found": 13,
+      "discrepancies": [
+        {
+          "product_id": "47e5b3f2-14ba-4d58-aa47-3a1cdf613e73",
+          "product_name": "",
+          "branch_id": "4d1fd665-caa1-4b93-b5b5-1c78647cca9f",
+          "branch_name": null,
+          "movement_qty": 10,
+          "cached_qty": 0,
+          "difference": 10,
+          "status": "DISCREPANCY"
+        },
+        {
+          "product_id": "None",
+          "product_name": "",
+          "branch_id": "0acd2ffd-c2d9-4324-b860-a4626840e80e",
+          "branch_name": "",
+          "movement_qty": 0,
+          "cached_qty": 100,
+          "difference": -100,
+          "status": "DISCREPANCY"
+        },
+        {
+          "product_id": "None",
+          "product_name": "",
+          "branch_id": "911c5363-74c8-47de-802c-37b1d4aa765a",
+          "branch_name": "",
+          "movement_qty": 0,
+          "cached_qty": 5,
+          "difference": -5,
+          "status": "DISCREPANCY"
+        },
+        {
+          "product_id": "2ad75718-76d6-4b91-8cb3-b4a310ca94a3",
+          "product_name": "",
+          "branch_id": "911c5363-74c8-47de-802c-37b1d4aa765a",
+          "branch_name": null,
+          "movement_qty": 4,
+          "cached_qty": 0,
+          "difference": 4,
+          "status": "DISCREPANCY"
+        },
+        {
+          "product_id": "397edcd5-d0ab-4982-ba6b-79889ff3d798",
+          "product_name": "",
+          "branch_id": "0acd2ffd-c2d9-4324-b860-a4626840e80e",
+          "branch_name": null,
+          "movement_qty": 100,
+          "cached_qty": 0,
+          "difference": 100,
+          "status": "DISCREPANCY"
+        },
+        {
+          "product_id": "47e5b3f2-14ba-4d58-aa47-3a1cdf613e73",
+          "product_name": "",
+          "branch_id": "911c5363-74c8-47de-802c-37b1d4aa765a",
+          "branch_name": null,
+          "movement_qty": 5,
+          "cached_qty": 0,
+          "difference": 5,
+          "status": "DISCREPANCY"
+        },
+        {
+          "product_id": "None",
+          "product_name": "",
+          "branch_id": "4d1fd665-caa1-4b93-b5b5-1c78647cca9f",
+          "branch_name": "",
+          "movement_qty": 0,
+          "cached_qty": 10,
+          "difference": -10,
+          "status": "DISCREPANCY"
+        },
+        {
+          "product_id": "2ad75718-76d6-4b91-8cb3-b4a310ca94a3",
+          "product_name": "",
+          "branch_id": "0acd2ffd-c2d9-4324-b860-a4626840e80e",
+          "branch_name": null,
+          "movement_qty": 218,
+          "cached_qty": 196,
+          "difference": 22,
+          "status": "DISCREPANCY"
+        },
+        {
+          "product_id": "PRD-AUDIT-001",
+          "product_name": "",
+          "branch_id": null,
+          "branch_name": null,
+          "movement_qty": -35,
+          "cached_qty": 0,
+          "difference": -35,
+          "status": "DISCREPANCY"
+        },
+        {
+          "product_id": "0dab5f74-cf6e-40e6-83c0-48ef5ea32c51",
+          "product_name": "",
+          "branch_id": null,
+          "branch_name": null,
+          "movement_qty": -18,
+          "cached_qty": 0,
+          "difference": -18,
+          "status": "DISCREPANCY"
+        },
+        {
+          "product_id": "a009a443-2e22-4597-91a6-cfd7d763b206",
+          "product_name": "",
+          "branch_id": null,
+          "branch_name": null,
+          "movement_qty": 24,
+          "cached_qty": 0,
+          "difference": 24,
+          "status": "DISCREPANCY"
+        },
+        {
+          "product_id": "c64bcb0b-6dc7-4bf8-8478-2c612706d370",
+          "product_name": "",
+          "branch_id": null,
+          "branch_name": null,
+          "movement_qty": -15,
+          "cached_qty": 0,
+          "difference": -15,
+          "status": "DISCREPANCY"
+        },
+        {
+          "product_id": "b0ec8a99-5555-4c92-8639-3b4e9fa8c92d",
+          "product_name": "",
+          "branch_id": null,
+          "branch_name": null,
+          "movement_qty": -20,
+          "cached_qty": 0,
+          "difference": -20,
+          "status": "DISCREPANCY"
+        }
+      ],
+      "status": "ALERT"
+    }
+  ]
+}

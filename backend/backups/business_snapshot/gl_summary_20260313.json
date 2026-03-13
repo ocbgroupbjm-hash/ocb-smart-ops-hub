@@ -1,0 +1,634 @@
+{
+  "report_type": "gl_summary",
+  "tenant": "ocb_titan",
+  "generated_at": "2026-03-13T20:50:24.732413+00:00",
+  "snapshot_id": "SNAP-20260313_205024",
+  "total_journals": 2065,
+  "recent_journals": 100,
+  "by_type": {
+    "other": 100
+  },
+  "journals": [
+    {
+      "id": "d592d88d-02a2-436d-8d66-6a60c8e75008",
+      "journal_number": "JV-E2E-20260313190516-001",
+      "date": "2026-03-13",
+      "reference": "INV-E2E-20260313190516-001",
+      "reference_type": "sales",
+      "reference_id": "4de963f3-ad27-4100-995d-acf5c9666202",
+      "description": "Penjualan Tunai INV-E2E-20260313190516-001",
+      "lines": [
+        {
+          "account_code": "1-1000",
+          "account_name": "Kas",
+          "debit": 500000,
+          "credit": 0
+        },
+        {
+          "account_code": "4-1000",
+          "account_name": "Pendapatan Penjualan",
+          "debit": 0,
+          "credit": 500000
+        }
+      ],
+      "entries": [
+        {
+          "account_code": "1-1000",
+          "account_name": "Kas",
+          "debit": 500000,
+          "credit": 0
+        },
+        {
+          "account_code": "4-1000",
+          "account_name": "Pendapatan Penjualan",
+          "debit": 0,
+          "credit": 500000
+        }
+      ],
+      "total_debit": 500000,
+      "total_credit": 500000,
+      "status": "posted",
+      "posted_at": "2026-03-13T19:05:16.552612+00:00",
+      "created_at": "2026-03-13T19:05:16.552612+00:00"
+    },
+    {
+      "id": "a7e73c01-0068-42a0-b8bb-d5a52c26c482",
+      "journal_number": "JV-PO-PO000023",
+      "date": "2026-03-13T17:55:02.400866+00:00",
+      "description": "Pembelian PO000023",
+      "reference_type": "purchase",
+      "reference_id": "b91dbcfb-e84a-4330-b153-459877a08b0a",
+      "lines": [
+        {
+          "id": "fb78836f-6eed-49c7-bf62-efb0c3ded149",
+          "account_id": "1a7922e3-98ee-49e1-bb7d-e120fde0abdf",
+          "description": "Pembelian - PO000023",
+          "debit": 4500000.0,
+          "credit": 0
+        },
+        {
+          "id": "f57e91f2-a396-4d2b-9873-3ed7fed34864",
+          "account_id": "05519d81-4ebb-406f-a5e9-29f697ecef9e",
+          "description": "Pembelian - PO000023",
+          "debit": 0,
+          "credit": 4500000.0
+        }
+      ],
+      "total_debit": 4500000.0,
+      "total_credit": 4500000.0,
+      "status": "posted",
+      "created_by": "system_migration",
+      "created_at": "2026-03-13T17:55:50.364209+00:00",
+      "posted_at": "2026-03-13T17:55:50.364209+00:00"
+    },
+    {
+      "id": "e75ba0cb-4fed-42ca-aa67-f2a04c074fb8",
+      "journal_number": "JV-SALES-INV000020",
+      "date": "2026-03-13T17:54:02.075410+00:00",
+      "description": "Penjualan INV000020",
+      "reference_type": "sales",
+      "reference_id": "7e136268-0919-44fe-b94f-4e2483498002",
+      "lines": [
+        {
+          "id": "75e08ed2-935f-400d-8214-059fb15f5435",
+          "account_id": "14a3c899-8f10-4740-9bcd-0bc61101ffec",
+          "description": "Penjualan - INV000020",
+          "debit": 125000.0,
+          "credit": 0
+        },
+        {
+          "id": "61c5335d-6635-45d6-8176-ce741cca81c4",
+          "account_id": "82d3d109-5399-4e2f-945d-4f3b3e05a50c",
+          "description": "Penjualan - INV000020",
+          "debit": 0,
+          "credit": 125000.0
+        }
+      ],
+      "total_debit": 125000.0,
+      "total_credit": 125000.0,
+      "status": "posted",
+      "created_by": "system_migration",
+      "created_at": "2026-03-13T17:55:50.359874+00:00",
+      "posted_at": "2026-03-13T17:55:50.359874+00:00"
+    },
+    {
+      "id": "e4acd53d-1bfd-4e51-8fbf-f31df8791a7b",
+      "journal_number": "JV-SALES-INV000019",
+      "date": "2026-03-13T17:53:35.854634+00:00",
+      "description": "Penjualan INV000019",
+      "reference_type": "sales",
+      "reference_id": "bfe45524-12a2-4060-a8c7-8429e5e87721",
+      "lines": [
+        {
+          "id": "99fa3088-6204-4e90-8b40-7ce64278c8d4",
+          "account_id": "14a3c899-8f10-4740-9bcd-0bc61101ffec",
+          "description": "Penjualan - INV000019",
+          "debit": 125000.0,
+          "credit": 0
+        },
+        {
+          "id": "1181aa30-64de-46ac-9ba9-c1386246696e",
+          "account_id": "82d3d109-5399-4e2f-945d-4f3b3e05a50c",
+          "description": "Penjualan - INV000019",
+          "debit": 0,
+          "credit": 125000.0
+        }
+      ],
+      "total_debit": 125000.0,
+      "total_credit": 125000.0,
+      "status": "posted",
+      "created_by": "system_migration",
+      "created_at": "2026-03-13T17:55:50.353227+00:00",
+      "posted_at": "2026-03-13T17:55:50.353227+00:00"
+    },
+    {
+      "id": "3704faec-bda9-4fbd-8228-41986a3e3064",
+      "journal_number": "JV-SALES-INV000017",
+      "date": "2026-03-13T17:51:49.690866+00:00",
+      "description": "Penjualan INV000017",
+      "reference_type": "sales",
+      "reference_id": "466f91c9-f04c-4d5c-95df-8d2533bda5a4",
+      "lines": [
+        {
+          "id": "88234a10-2144-4413-82ec-86180daa9d3a",
+          "account_id": "e146ea83-b0e3-407f-9766-e397109193a7",
+          "description": "Penjualan - INV000017",
+          "debit": 65000.0,
+          "credit": 0
+        },
+        {
+          "id": "f0d5e01e-86d8-4c7e-97e1-7ae9602de671",
+          "account_id": "82d3d109-5399-4e2f-945d-4f3b3e05a50c",
+          "description": "Penjualan - INV000017",
+          "debit": 0,
+          "credit": 65000.0
+        }
+      ],
+      "total_debit": 65000.0,
+      "total_credit": 65000.0,
+      "status": "posted",
+      "created_by": "system_migration",
+      "created_at": "2026-03-13T17:55:50.346614+00:00",
+      "posted_at": "2026-03-13T17:55:50.346614+00:00"
+    },
+    {
+      "id": "975279f2-e753-4148-a80c-1227686d219d",
+      "journal_number": "JV-SALES-INV000018",
+      "journal_no": "JV-SALES-INV000018",
+      "date": "2026-03-13T17:53:08.548227+00:00",
+      "journal_date": "2026-03-13T17:53:08.548238+00:00",
+      "reference_type": "sales",
+      "reference_id": "f9d260c7-9375-43da-ac0f-38d0dcbab45b",
+      "source_type": "sales_cash",
+      "source_id": "f9d260c7-9375-43da-ac0f-38d0dcbab45b",
+      "description": "Penjualan tunai INV000018",
+      "lines": [
+        {
+          "id": "a367c582-abf5-4401-9533-34bdbe793546",
+          "account_id": null,
+          "account_code": "1-1100",
+          "account_name": "Kas",
+          "description": "Kas penjualan INV000018",
+          "debit": 130000.0,
+          "credit": 0
+        },
+        {
+          "id": "c5b3c010-00b3-4ef1-a7ef-3077e771a016",
+          "account_id": "82d3d109-5399-4e2f-945d-4f3b3e05a50c",
+          "account_code": "4-1000",
+          "account_name": "Pendapatan Penjualan",
+          "description": "Penjualan tunai INV000018",
+          "debit": 0,
+          "credit": 130000.0
+        }
+      ],
+      "total_debit": 130000.0,
+      "total_credit": 130000.0,
+      "status": "posted",
+      "branch_id": "0acd2ffd-c2d9-4324-b860-a4626840e80e",
+      "created_by": "21e37a5c-3ebd-4182-bd6e-61f7dcf5d105",
+      "created_at": "2026-03-13T17:53:08.548268+00:00",
+      "posted_at": "2026-03-13T17:53:08.548270+00:00"
+    },
+    {
+      "id": "e3d96454-460f-48a0-b1aa-8ce06bed512f",
+      "journal_number": "JV-SALES-INV000016",
+      "date": "2026-03-12T23:53:08.049762+00:00",
+      "description": "Penjualan INV000016",
+      "reference_type": "sales",
+      "reference_id": "cddc09b7-6f37-4d84-bced-ed6b6d851257",
+      "lines": [
+        {
+          "id": "8230fdc3-66c4-41a4-8989-9c8dc7be8aba",
+          "account_id": "e146ea83-b0e3-407f-9766-e397109193a7",
+          "description": "Penjualan - INV000016",
+          "debit": 0.0,
+          "credit": 0
+        },
+        {
+          "id": "f3d1de76-f29f-4347-a31e-7f8aa8768032",
+          "account_id": "82d3d109-5399-4e2f-945d-4f3b3e05a50c",
+          "description": "Penjualan - INV000016",
+          "debit": 0,
+          "credit": 0.0
+        }
+      ],
+      "total_debit": 0.0,
+      "total_credit": 0.0,
+      "status": "posted",
+      "created_by": "system_migration",
+      "created_at": "2026-03-13T17:43:03.732076+00:00",
+      "posted_at": "2026-03-13T17:43:03.732076+00:00"
+    },
+    {
+      "id": "65c7fced-21d9-4470-a441-6d7d7f581d6f",
+      "journal_number": "JV-SALES-INV000015",
+      "date": "2026-03-11T20:34:06.430726+00:00",
+      "description": "Penjualan INV000015",
+      "reference_type": "sales",
+      "reference_id": "4a9b2910-062f-471d-932d-a3912b8a65ce",
+      "lines": [
+        {
+          "id": "9fe059c8-8f86-4673-8709-77b66ebc4ee7",
+          "account_id": "14a3c899-8f10-4740-9bcd-0bc61101ffec",
+          "description": "Penjualan - INV000015",
+          "debit": 45000.0,
+          "credit": 0
+        },
+        {
+          "id": "5304717f-8fa5-4da3-ac77-d7f8c2a018e2",
+          "account_id": "82d3d109-5399-4e2f-945d-4f3b3e05a50c",
+          "description": "Penjualan - INV000015",
+          "debit": 0,
+          "credit": 45000.0
+        }
+      ],
+      "total_debit": 45000.0,
+      "total_credit": 45000.0,
+      "status": "posted",
+      "created_by": "system_migration",
+      "created_at": "2026-03-13T17:43:03.729131+00:00",
+      "posted_at": "2026-03-13T17:43:03.729131+00:00"
+    },
+    {
+      "id": "c9568bc1-a52c-4bec-9c3a-d0eb8a893ae7",
+      "journal_number": "JV-SALES-INV000014",
+      "date": "2026-03-11T20:31:00.908498+00:00",
+      "description": "Penjualan INV000014",
+      "reference_type": "sales",
+      "reference_id": "2a7f0d9a-1de5-4b9e-9ea6-6bba030c08be",
+      "lines": [
+        {
+          "id": "f65e9ed6-8a6a-4a34-b02b-6334b8c230d9",
+          "account_id": "14a3c899-8f10-4740-9bcd-0bc61101ffec",
+          "description": "Penjualan - INV000014",
+          "debit": 65000.0,
+          "credit": 0
+        },
+        {
+          "id": "89f97fca-18d1-4c3d-8005-9683c539c62c",
+          "account_id": "82d3d109-5399-4e2f-945d-4f3b3e05a50c",
+          "description": "Penjualan - INV000014",
+          "debit": 0,
+          "credit": 65000.0
+        }
+      ],
+      "total_debit": 65000.0,
+      "total_credit": 65000.0,
+      "status": "posted",
+      "created_by": "system_migration",
+      "created_at": "2026-03-13T17:43:03.726468+00:00",
+      "posted_at": "2026-03-13T17:43:03.726468+00:00"
+    },
+    {
+      "id": "08124b42-9367-488a-9c4d-f8adc2d85303",
+      "journal_number": "JV-SALES-INV000013",
+      "date": "2026-03-11T20:29:49.065900+00:00",
+      "description": "Penjualan INV000013",
+      "reference_type": "sales",
+      "reference_id": "43cb4f7d-780d-4181-a714-1fb43547cd8b",
+      "lines": [
+        {
+          "id": "831acd90-530d-427c-981e-a74309ce1e4d",
+          "account_id": "e146ea83-b0e3-407f-9766-e397109193a7",
+          "description": "Penjualan - INV000013",
+          "debit": 65000.0,
+          "credit": 0
+        },
+        {
+          "id": "9218987c-19f4-4b63-b374-7f2397e00b46",
+          "account_id": "82d3d109-5399-4e2f-945d-4f3b3e05a50c",
+          "description": "Penjualan - INV000013",
+          "debit": 0,
+          "credit": 65000.0
+        }
+      ],
+      "total_debit": 65000.0,
+      "total_credit": 65000.0,
+      "status": "posted",
+      "created_by": "system_migration",
+      "created_at": "2026-03-13T17:43:03.723565+00:00",
+      "posted_at": "2026-03-13T17:43:03.723565+00:00"
+    },
+    {
+      "id": "e90b6c55-ba97-4c97-b488-019caefd3297",
+      "journal_number": "JV-SALES-INV000012",
+      "date": "2026-03-11T17:50:19.659518+00:00",
+      "description": "Penjualan INV000012",
+      "reference_type": "sales",
+      "reference_id": "d3c55220-d593-4ca4-9478-91541019c078",
+      "lines": [
+        {
+          "id": "e5b60568-2f7e-4113-b3fc-53eec4c971eb",
+          "account_id": "e146ea83-b0e3-407f-9766-e397109193a7",
+          "description": "Penjualan - INV000012",
+          "debit": 325000.0,
+          "credit": 0
+        },
+        {
+          "id": "7478b036-b870-4157-99e4-bf29a4b0e63c",
+          "account_id": "82d3d109-5399-4e2f-945d-4f3b3e05a50c",
+          "description": "Penjualan - INV000012",
+          "debit": 0,
+          "credit": 325000.0
+        }
+      ],
+      "total_debit": 325000.0,
+      "total_credit": 325000.0,
+      "status": "posted",
+      "created_by": "system_migration",
+      "created_at": "2026-03-13T17:43:03.720892+00:00",
+      "posted_at": "2026-03-13T17:43:03.720892+00:00"
+    },
+    {
+      "id": "45cc5bd8-4195-4637-872b-b8c32e5fc9a4",
+      "journal_number": "JV-SALES-INV000011",
+      "date": "2026-03-11T16:50:35.912489+00:00",
+      "description": "Penjualan INV000011",
+      "reference_type": "sales",
+      "reference_id": "551a9238-579c-49f1-964f-343faef99d77",
+      "lines": [
+        {
+          "id": "00dfa25d-8009-4cd8-9823-872c2b625f4a",
+          "account_id": "e146ea83-b0e3-407f-9766-e397109193a7",
+          "description": "Penjualan - INV000011",
+          "debit": 25000.0,
+          "credit": 0
+        },
+        {
+          "id": "f83f98c5-88df-4063-9093-b2faca0791fd",
+          "account_id": "82d3d109-5399-4e2f-945d-4f3b3e05a50c",
+          "description": "Penjualan - INV000011",
+          "debit": 0,
+          "credit": 25000.0
+        }
+      ],
+      "total_debit": 25000.0,
+      "total_credit": 25000.0,
+      "status": "posted",
+      "created_by": "system_migration",
+      "created_at": "2026-03-13T17:43:03.718066+00:00",
+      "posted_at": "2026-03-13T17:43:03.718066+00:00"
+    },
+    {
+      "id": "52d4cc60-73cc-4612-afe7-c085d9c1af6c",
+      "journal_number": "JV-SALES-INV000010",
+      "date": "2026-03-11T12:24:16.719312+00:00",
+      "description": "Penjualan INV000010",
+      "reference_type": "sales",
+      "reference_id": "3fbf33dd-532a-4d5f-8483-ccfa4c7e2246",
+      "lines": [
+        {
+          "id": "3a7424b8-2d52-4ab1-a17e-8c3ba08d29bd",
+          "account_id": "e146ea83-b0e3-407f-9766-e397109193a7",
+          "description": "Penjualan - INV000010",
+          "debit": 65000.0,
+          "credit": 0
+        },
+        {
+          "id": "1694b09e-480f-4753-aea4-64070256e92f",
+          "account_id": "82d3d109-5399-4e2f-945d-4f3b3e05a50c",
+          "description": "Penjualan - INV000010",
+          "debit": 0,
+          "credit": 65000.0
+        }
+      ],
+      "total_debit": 65000.0,
+      "total_credit": 65000.0,
+      "status": "posted",
+      "created_by": "system_migration",
+      "created_at": "2026-03-13T17:43:03.715312+00:00",
+      "posted_at": "2026-03-13T17:43:03.715312+00:00"
+    },
+    {
+      "id": "5a981771-4751-4470-89df-bd2409a51f67",
+      "journal_number": "JV-SALES-INV000009",
+      "date": "2026-03-11T12:23:56.635440+00:00",
+      "description": "Penjualan INV000009",
+      "reference_type": "sales",
+      "reference_id": "92c537a0-8c18-4b60-a304-9720446753a8",
+      "lines": [
+        {
+          "id": "dcff2b38-c976-4d81-b939-a26b4cec1de9",
+          "account_id": "e146ea83-b0e3-407f-9766-e397109193a7",
+          "description": "Penjualan - INV000009",
+          "debit": 25000.0,
+          "credit": 0
+        },
+        {
+          "id": "0f43c707-f8cd-4de7-b2db-da61e6399927",
+          "account_id": "82d3d109-5399-4e2f-945d-4f3b3e05a50c",
+          "description": "Penjualan - INV000009",
+          "debit": 0,
+          "credit": 25000.0
+        }
+      ],
+      "total_debit": 25000.0,
+      "total_credit": 25000.0,
+      "status": "posted",
+      "created_by": "system_migration",
+      "created_at": "2026-03-13T17:43:03.712350+00:00",
+      "posted_at": "2026-03-13T17:43:03.712350+00:00"
+    },
+    {
+      "id": "91ce49b0-31db-4de4-a035-600d9e8f1334",
+      "journal_number": "JV-SALES-INV000008",
+      "date": "2026-03-11T12:23:22.314928+00:00",
+      "description": "Penjualan INV000008",
+      "reference_type": "sales",
+      "reference_id": "c8f1c9e0-0d0c-4c6a-a71f-681c0f577e89",
+      "lines": [
+        {
+          "id": "766ad609-5a7a-4bd9-aba6-e8adb0b27638",
+          "account_id": "e146ea83-b0e3-407f-9766-e397109193a7",
+          "description": "Penjualan - INV000008",
+          "debit": 25000.0,
+          "credit": 0
+        },
+        {
+          "id": "f504b94c-0a2b-40c5-befc-d1ff0716d574",
+          "account_id": "82d3d109-5399-4e2f-945d-4f3b3e05a50c",
+          "description": "Penjualan - INV000008",
+          "debit": 0,
+          "credit": 25000.0
+        }
+      ],
+      "total_debit": 25000.0,
+      "total_credit": 25000.0,
+      "status": "posted",
+      "created_by": "system_migration",
+      "created_at": "2026-03-13T17:43:03.709514+00:00",
+      "posted_at": "2026-03-13T17:43:03.709514+00:00"
+    },
+    {
+      "id": "8131f5d9-e38a-4d37-ad74-b1b744a8f352",
+      "journal_number": "JV-SALES-INV000007",
+      "date": "2026-03-11T12:22:57.791594+00:00",
+      "description": "Penjualan INV000007",
+      "reference_type": "sales",
+      "reference_id": "5f11bba9-87c2-4b64-b665-b45b1af5e615",
+      "lines": [
+        {
+          "id": "12a744a7-78b7-4b93-8ec6-7cf8ff5739d4",
+          "account_id": "e146ea83-b0e3-407f-9766-e397109193a7",
+          "description": "Penjualan - INV000007",
+          "debit": 65000.0,
+          "credit": 0
+        },
+        {
+          "id": "74f70829-8b67-4208-ac46-20be8c24516a",
+          "account_id": "82d3d109-5399-4e2f-945d-4f3b3e05a50c",
+          "description": "Penjualan - INV000007",
+          "debit": 0,
+          "credit": 65000.0
+        }
+      ],
+      "total_debit": 65000.0,
+      "total_credit": 65000.0,
+      "status": "posted",
+      "created_by": "system_migration",
+      "created_at": "2026-03-13T17:43:03.706614+00:00",
+      "posted_at": "2026-03-13T17:43:03.706614+00:00"
+    },
+    {
+      "id": "eda93bc8-0144-42fe-9637-5a54351b97ad",
+      "journal_number": "JV-SALES-INV000006",
+      "date": "2026-03-11T12:22:24.661955+00:00",
+      "description": "Penjualan INV000006",
+      "reference_type": "sales",
+      "reference_id": "ca4c8ca7-e414-432f-ae6d-e964979c0d0e",
+      "lines": [
+        {
+          "id": "561d21ea-fa3b-40fe-a269-e5c185e06f32",
+          "account_id": "e146ea83-b0e3-407f-9766-e397109193a7",
+          "description": "Penjualan - INV000006",
+          "debit": 25000.0,
+          "credit": 0
+        },
+        {
+          "id": "bfb0bc80-b701-4d37-af41-91cdc2136937",
+          "account_id": "82d3d109-5399-4e2f-945d-4f3b3e05a50c",
+          "description": "Penjualan - INV000006",
+          "debit": 0,
+          "credit": 25000.0
+        }
+      ],
+      "total_debit": 25000.0,
+      "total_credit": 25000.0,
+      "status": "posted",
+      "created_by": "system_migration",
+      "created_at": "2026-03-13T17:43:03.703708+00:00",
+      "posted_at": "2026-03-13T17:43:03.703708+00:00"
+    },
+    {
+      "id": "849cde57-2622-4e0f-9345-055de1d31dbc",
+      "journal_number": "JV-SALES-INV000005",
+      "date": "2026-03-11T12:21:31.324295+00:00",
+      "description": "Penjualan INV000005",
+      "reference_type": "sales",
+      "reference_id": "f5f82177-799f-4972-a859-1d207f9bdeba",
+      "lines": [
+        {
+          "id": "34ab42c6-1e64-49b8-a1fa-3f45fdaacd21",
+          "account_id": "e146ea83-b0e3-407f-9766-e397109193a7",
+          "description": "Penjualan - INV000005",
+          "debit": 25000.0,
+          "credit": 0
+        },
+        {
+          "id": "260acdba-d533-4c6c-9974-5f522714b786",
+          "account_id": "82d3d109-5399-4e2f-945d-4f3b3e05a50c",
+          "description": "Penjualan - INV000005",
+          "debit": 0,
+          "credit": 25000.0
+        }
+      ],
+      "total_debit": 25000.0,
+      "total_credit": 25000.0,
+      "status": "posted",
+      "created_by": "system_migration",
+      "created_at": "2026-03-13T17:43:03.700904+00:00",
+      "posted_at": "2026-03-13T17:43:03.700904+00:00"
+    },
+    {
+      "id": "1de01692-d25e-4249-a6fc-0cfeb7c18ac5",
+      "journal_number": "JV-SALES-INV000004",
+      "date": "2026-03-11T12:19:42.609749+00:00",
+      "description": "Penjualan INV000004",
+      "reference_type": "sales",
+      "reference_id": "49070fd4-ebb9-4050-a864-ba3d62015893",
+      "lines": [
+        {
+          "id": "bda8284a-809e-4ea5-9512-19bae4ec6264",
+          "account_id": "e146ea83-b0e3-407f-9766-e397109193a7",
+          "description": "Penjualan - INV000004",
+          "debit": 25000.0,
+          "credit": 0
+        },
+        {
+          "id": "9a5d327c-8ef3-49d4-8cb8-614d06f5f3a7",
+          "account_id": "82d3d109-5399-4e2f-945d-4f3b3e05a50c",
+          "description": "Penjualan - INV000004",
+          "debit": 0,
+          "credit": 25000.0
+        }
+      ],
+      "total_debit": 25000.0,
+      "total_credit": 25000.0,
+      "status": "posted",
+      "created_by": "system_migration",
+      "created_at": "2026-03-13T17:43:03.698150+00:00",
+      "posted_at": "2026-03-13T17:43:03.698150+00:00"
+    },
+    {
+      "id": "6a7d7fe9-42e5-43f2-b39f-250503d4813e",
+      "journal_number": "JV-SALES-INV000003",
+      "date": "2026-03-11T12:17:00.522623+00:00",
+      "description": "Penjualan INV000003",
+      "reference_type": "sales",
+      "reference_id": "8bba7236-7ff2-4046-a381-5c962b369024",
+      "lines": [
+        {
+          "id": "2f70caf8-018a-44b3-b0c4-d1343d45c5d3",
+          "account_id": "e146ea83-b0e3-407f-9766-e397109193a7",
+          "description": "Penjualan - INV000003",
+          "debit": 65000.0,
+          "credit": 0
+        },
+        {
+          "id": "d517fa89-ea06-48af-a295-450fc78eed46",
+          "account_id": "82d3d109-5399-4e2f-945d-4f3b3e05a50c",
+          "description": "Penjualan - INV000003",
+          "debit": 0,
+          "credit": 65000.0
+        }
+      ],
+      "total_debit": 65000.0,
+      "total_credit": 65000.0,
+      "status": "posted",
+      "created_by": "system_migration",
+      "created_at": "2026-03-13T17:43:03.695340+00:00",
+      "posted_at": "2026-03-13T17:43:03.695340+00:00"
+    }
+  ]
+}

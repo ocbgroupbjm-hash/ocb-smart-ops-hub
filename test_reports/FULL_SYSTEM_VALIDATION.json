@@ -1,0 +1,139 @@
+{
+  "validation_id": "VAL-20260313_205030",
+  "timestamp": "2026-03-13T20:50:30.290653+00:00",
+  "database": "ocb_titan",
+  "total_tests": 13,
+  "passed": 12,
+  "failed": 1,
+  "pass_rate": "92.3%",
+  "status": "FAIL",
+  "results": [
+    {
+      "category": "Accounting",
+      "test": "Sales \u2192 Journal Entry",
+      "passed": true,
+      "details": {
+        "sales_checked": 0,
+        "all_have_journals": true
+      },
+      "timestamp": "2026-03-13T20:50:30.212556+00:00"
+    },
+    {
+      "category": "Accounting",
+      "test": "Purchase \u2192 Journal Entry",
+      "passed": true,
+      "details": {
+        "purchases_checked": 1
+      },
+      "timestamp": "2026-03-13T20:50:30.214421+00:00"
+    },
+    {
+      "category": "Accounting",
+      "test": "Returns Accounting",
+      "passed": true,
+      "details": {
+        "sales_returns": 6,
+        "purchase_returns": 5
+      },
+      "timestamp": "2026-03-13T20:50:30.215820+00:00"
+    },
+    {
+      "category": "Accounting",
+      "test": "Adjustment Accounting",
+      "passed": true,
+      "details": {
+        "adjustments_count": 2
+      },
+      "timestamp": "2026-03-13T20:50:30.216236+00:00"
+    },
+    {
+      "category": "Accounting",
+      "test": "Payroll Accounting",
+      "passed": true,
+      "details": {
+        "payroll_records": 0
+      },
+      "timestamp": "2026-03-13T20:50:30.216571+00:00"
+    },
+    {
+      "category": "Accounting",
+      "test": "Cash Variance \u2192 Journal Entry",
+      "passed": true,
+      "details": {
+        "discrepancy_shifts": 6,
+        "variance_journals": 0
+      },
+      "timestamp": "2026-03-13T20:50:30.223970+00:00"
+    },
+    {
+      "category": "Accounting",
+      "test": "Trial Balance Balanced",
+      "passed": true,
+      "details": {
+        "debit": 68504867.5,
+        "credit": 68504867.5,
+        "difference": 0.0
+      },
+      "timestamp": "2026-03-13T20:50:30.227477+00:00"
+    },
+    {
+      "category": "Inventory",
+      "test": "Stock Opname Records",
+      "passed": true,
+      "details": {
+        "opname_count": 12
+      },
+      "timestamp": "2026-03-13T20:50:30.228033+00:00"
+    },
+    {
+      "category": "Inventory",
+      "test": "Stock Transfer",
+      "passed": true,
+      "details": {
+        "transfers": 3,
+        "transfer_movements": 4
+      },
+      "timestamp": "2026-03-13T20:50:30.228904+00:00"
+    },
+    {
+      "category": "Inventory",
+      "test": "Purchase Receive \u2192 Stock IN",
+      "passed": true,
+      "details": {
+        "receive_movements": 5
+      },
+      "timestamp": "2026-03-13T20:50:30.229457+00:00"
+    },
+    {
+      "category": "Inventory",
+      "test": "Sales \u2192 Stock OUT",
+      "passed": true,
+      "details": {
+        "out_movements": 23
+      },
+      "timestamp": "2026-03-13T20:50:30.229915+00:00"
+    },
+    {
+      "category": "Inventory",
+      "test": "SSOT Integrity",
+      "passed": false,
+      "details": {
+        "products_checked": 10,
+        "discrepancies": 3
+      },
+      "timestamp": "2026-03-13T20:50:30.235808+00:00"
+    },
+    {
+      "category": "Multi-Tenant",
+      "test": "Tenant Data Isolation",
+      "passed": true,
+      "details": {
+        "tenant_a": "ocb_titan",
+        "tenant_b": "ocb_unit_4",
+        "users_checked": 10,
+        "leaked_users": 0
+      },
+      "timestamp": "2026-03-13T20:50:30.256675+00:00"
+    }
+  ]
+}

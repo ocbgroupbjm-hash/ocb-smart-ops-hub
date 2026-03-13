@@ -1,0 +1,20 @@
+{
+  "snapshot_id": "SNAP-20260313_205024",
+  "tenant": "ocb_titan",
+  "generated_at": "2026-03-13T20:50:24.732413+00:00",
+  "output_directory": "/app/backend/backups/business_snapshot",
+  "files_generated": {
+    "trial_balance_json": "/app/backend/backups/business_snapshot/trial_balance_20260313.json",
+    "trial_balance_pdf": "/app/backend/backups/business_snapshot/trial_balance_20260313.pdf",
+    "balance_sheet_json": "/app/backend/backups/business_snapshot/balance_sheet_20260313.json",
+    "balance_sheet_pdf": "/app/backend/backups/business_snapshot/balance_sheet_20260313.pdf",
+    "inventory_json": "/app/backend/backups/business_snapshot/inventory_snapshot_20260313.json",
+    "inventory_pdf": "/app/backend/backups/business_snapshot/inventory_snapshot_20260313.pdf",
+    "gl_summary_json": "/app/backend/backups/business_snapshot/gl_summary_20260313.json",
+    "gl_summary_pdf": "/app/backend/backups/business_snapshot/gl_summary_20260313.pdf"
+  },
+  "status": {
+    "trial_balance_balanced": true,
+    "balance_sheet_balanced": true
+  }
+}

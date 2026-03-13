@@ -1,0 +1,16 @@
+{
+  "report_id": "STOCKREC-20260313_204953",
+  "timestamp": "2026-03-13T20:49:53.594120+00:00",
+  "scheduler": "daily_02:00",
+  "tenants_processed": 1,
+  "total_discrepancies": 0,
+  "alerts_generated": 0,
+  "overall_status": "OK",
+  "tenant_results": [
+    {
+      "tenant": "ocb_titan",
+      "status": "ERROR",
+      "error": "'product_id'"
+    }
+  ]
+}

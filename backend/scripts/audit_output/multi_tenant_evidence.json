@@ -1,0 +1,35 @@
+{
+  "tenants": [
+    {
+      "name": "OCB GROUP",
+      "db_name": "ocb_titan",
+      "users": 13,
+      "products": 63
+    },
+    {
+      "name": "OCB UNIT 4 MPC & MP3",
+      "db_name": "ocb_unit_4",
+      "users": 7,
+      "products": 0
+    },
+    {
+      "name": "OCB UNIT 1 RETAIL",
+      "db_name": "ocb_unt_1",
+      "users": 5,
+      "products": 1
+    },
+    {
+      "name": "OCB BAJU",
+      "db_name": "ocb_baju",
+      "users": 3,
+      "products": 0
+    },
+    {
+      "name": "OCB COUNTER",
+      "db_name": "ocb_counter",
+      "users": 3,
+      "products": 0
+    }
+  ],
+  "isolation_verified": true
+}
