@@ -136,6 +136,7 @@ journal_entries = _DynamicCollection('journal_entries')
 daily_summaries = _DynamicCollection('daily_summaries')
 branch_summaries = _DynamicCollection('branch_summaries')
 sequences = _DynamicCollection('sequences')
+roles = _DynamicCollection('roles')
 
 # Aliases for different naming conventions used in some routes
 customers_collection = customers

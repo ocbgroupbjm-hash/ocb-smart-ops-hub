@@ -2,7 +2,7 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Optional
-from database import users, branches, audit_logs
+from database import users, branches, audit_logs, roles
 from utils.auth import hash_password, verify_password, create_token, get_current_user
 from models.titan_models import User, UserRole, AuditLog
 from fastapi import Depends
@@ -62,6 +62,18 @@ async def login(data: LoginRequest):
             print("[LOGIN] Database was initialized with default data")
     except Exception as e:
         print(f"[LOGIN] Database init check error (non-fatal): {e}")
+    
+    # Ensure user has role_id - fix data integrity
+    if not user.get("role_id"):
+        role_code = user.get("role_code") or user.get("role", "cashier")
+        role = await roles.find_one({"code": role_code}, {"_id": 0, "id": 1})
+        if role:
+            await users.update_one(
+                {"id": user["id"]},
+                {"$set": {"role_id": role["id"], "role_code": role_code}}
+            )
+            user["role_id"] = role["id"]
+            print(f"[LOGIN] Fixed role_id for user {user['email']}")
     
     # Update last login
     await users.update_one(
