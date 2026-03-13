@@ -598,12 +598,60 @@ Eksekusi sesuai MASTER BLUEPRINT SUPER DEWA - COMMAND MODE:
 - [x] **Backup & Restore System** - 3 Levels implemented
 
 ### P1 - Next Steps (ROADMAP)
+- [ ] User Management Fix (UI scroll + soft delete)
 - [ ] Export to Excel functionality
 - [ ] Import Excel for master data
 - [ ] Standardized Print Engine
 
 ### P2 - Backlog
-- [ ] AI Business Engine
+- [ ] Dashboard Intelligence (AI-driven insights)
+- [ ] Cash Control Engine
+- [ ] Audit System
+- [ ] AI Business Engine (ON HOLD)
+
+---
+
+### Phase 15: Foundation Hardening (Accounting & Inventory SSOT) ✅
+**Completed (2026-03-13):**
+
+#### PRIORITAS 1: Balance Sheet Audit & Fix
+- Created: `/app/backend/scripts/audit_balance_sheet.py`
+- Fixed 3 incomplete journal entries (JV-20260312-0006, 0007, 0008)
+- Merged correcting entries into original journals
+- Deleted redundant standalone correction journals
+- **Result:** Balance Sheet BALANCED (Assets = Liabilities + Equity + Net Income)
+
+| Komponen | Saldo |
+|----------|------:|
+| Total Assets | Rp 65,126,026.50 |
+| Total Liabilities | Rp 62,330,239.00 |
+| Net Income | Rp 2,795,787.50 |
+| **BALANCED** | ✅ |
+
+#### PRIORITAS 2: Inventory SSOT Verification & Fix
+- Created: `/app/backend/scripts/verify_inventory_ssot.py`
+- Found and fixed 6 discrepancies between `product_stocks` (cache) and `stock_movements` (SSOT)
+- **Result:** All 561 stock records now in sync
+
+| Status | Value |
+|--------|-------|
+| Total Records Checked | 561 |
+| Discrepancies Found | 0 |
+| SSOT Valid | ✅ |
+
+#### PRIORITAS 3: Purchase Order Accounting Flow Fix
+- Created: `/app/backend/scripts/test_purchase_flow.py`
+- Fixed journal entry format in `/app/backend/routes/purchase.py` (line 610-668)
+- Changed from separate `journal_entry_lines` to embedded `entries` format
+- Added `journal_number` field (was only `journal_no`)
+- **Result:** PO → Stock Movement → AP → Journal Entry flow working correctly
+
+| Component | Status |
+|-----------|--------|
+| PO → Stock Movement | ✅ |
+| PO → Accounts Payable | ✅ |
+| PO → Journal Entry | ✅ |
+| Journal Balanced | ✅ |
 
 ---
 
@@ -653,6 +701,12 @@ All 12 scenarios PASSED:
 
 | File | Location |
 |------|----------|
+| balance_sheet_audit_report.md | `/app/backend/scripts/audit_output/` |
+| balance_sheet_audit_report.json | `/app/backend/scripts/audit_output/` |
+| inventory_ssot_verification.md | `/app/backend/scripts/audit_output/` |
+| inventory_ssot_verification.json | `/app/backend/scripts/audit_output/` |
+| purchase_test_result.md | `/app/backend/scripts/audit_output/` |
+| purchase_test_result.json | `/app/backend/scripts/audit_output/` |
 | sales_payload.json | `/app/backend/scripts/audit_output/` |
 | journal_entry.json | `/app/backend/scripts/audit_output/` |
 | ledger_output.json | `/app/backend/scripts/audit_output/` |
@@ -666,4 +720,4 @@ All 12 scenarios PASSED:
 
 ---
 
-*Last Updated: 2026-03-13 (Phase 14 - Full E2E Validation & Blueprint Rollout Complete)*
+*Last Updated: 2026-03-13 (Phase 15 - Foundation Hardening Complete)*

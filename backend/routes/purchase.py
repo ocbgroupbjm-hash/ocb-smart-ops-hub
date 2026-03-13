@@ -609,8 +609,12 @@ async def receive_purchase_order(po_id: str, data: ReceivePO, request: Request, 
         
         # Create journal entry for purchase (Debit: Inventory, Credit: AP)
         # Using Account Derivation Engine from Setting Akun ERP
+        # STANDARD FORMAT: journal_number + embedded entries
         journal_id = str(uuid.uuid4())
-        journal_no = f"JV-AP-{po.get('po_number')}"
+        
+        # Generate standard journal number
+        from utils.number_generator import generate_transaction_number
+        journal_number = await generate_transaction_number(db, "JV-PUR")
         
         # Get warehouse info for category lookup
         warehouse_id = po.get("warehouse_id")
@@ -627,27 +631,9 @@ async def receive_purchase_order(po_id: str, data: ReceivePO, request: Request, 
             warehouse_id=warehouse_id
         )
         
-        journal_entry = {
-            "id": journal_id,
-            "journal_no": journal_no,
-            "journal_date": datetime.now(timezone.utc).isoformat(),
-            "source_type": "purchase_credit",
-            "source_id": po_id,
-            "description": f"Pembelian kredit {po.get('po_number')} dari {po.get('supplier_name')}",
-            "total_debit": po_total,
-            "total_credit": po_total,
-            "status": "posted",
-            "branch_id": branch_id,
-            "created_by": user.get("user_id", ""),
-            "created_at": datetime.now(timezone.utc).isoformat()
-        }
-        await db["journal_entries"].insert_one(journal_entry)
-        
-        # Journal lines using derived accounts
-        journal_lines = [
+        # Build embedded entries (STANDARD FORMAT)
+        journal_entries_list = [
             {
-                "id": str(uuid.uuid4()),
-                "journal_id": journal_id,
                 "account_code": inventory_account["code"],
                 "account_name": inventory_account["name"],
                 "debit": po_total,
@@ -655,8 +641,6 @@ async def receive_purchase_order(po_id: str, data: ReceivePO, request: Request, 
                 "description": f"Persediaan dari {po.get('po_number')}"
             },
             {
-                "id": str(uuid.uuid4()),
-                "journal_id": journal_id,
                 "account_code": ap_account["code"],
                 "account_name": ap_account["name"],
                 "debit": 0,
@@ -664,7 +648,26 @@ async def receive_purchase_order(po_id: str, data: ReceivePO, request: Request, 
                 "description": f"Hutang ke {po.get('supplier_name')}"
             }
         ]
-        await db["journal_entry_lines"].insert_many(journal_lines)
+        
+        journal_entry = {
+            "id": journal_id,
+            "journal_number": journal_number,
+            "journal_date": datetime.now(timezone.utc).isoformat(),
+            "reference_type": "purchase_credit",
+            "reference_id": po_id,
+            "reference_number": po.get('po_number'),
+            "description": f"Pembelian kredit {po.get('po_number')} dari {po.get('supplier_name')}",
+            "entries": journal_entries_list,
+            "total_debit": po_total,
+            "total_credit": po_total,
+            "is_balanced": True,
+            "status": "posted",
+            "branch_id": branch_id,
+            "created_by": user.get("user_id", ""),
+            "created_by_name": user.get("name", ""),
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db["journal_entries"].insert_one(journal_entry)
     
     # Audit log
     db = get_db()

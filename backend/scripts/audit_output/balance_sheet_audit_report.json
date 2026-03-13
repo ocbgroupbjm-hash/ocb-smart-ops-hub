@@ -1,0 +1,289 @@
+{
+  "audit_timestamp": "2026-03-13T19:31:45.449663+00:00",
+  "database": "ocb_titan",
+  "total_journals": 2059,
+  "unbalanced_journals": {
+    "count": 0,
+    "items": []
+  },
+  "balance_sheet": {
+    "assets": {
+      "items": [
+        {
+          "code": "1-1000",
+          "name": "Kas",
+          "debit": 500000,
+          "credit": 5900000,
+          "balance": -5400000,
+          "type": "asset",
+          "normal_balance": "debit"
+        },
+        {
+          "code": "1-1100",
+          "name": "Kas",
+          "debit": 5672800.0,
+          "credit": 550000.0,
+          "balance": 5122800.0,
+          "type": "asset",
+          "normal_balance": "debit"
+        },
+        {
+          "code": "1-1200",
+          "name": "Persediaan Barang",
+          "debit": 2310000,
+          "credit": 560000,
+          "balance": 1750000,
+          "type": "asset",
+          "normal_balance": "debit"
+        },
+        {
+          "code": "1-1300",
+          "name": "Piutang Usaha",
+          "debit": 14192950.0,
+          "credit": 4202500.0,
+          "balance": 9990450.0,
+          "type": "asset",
+          "normal_balance": "debit"
+        },
+        {
+          "code": "1-1400",
+          "name": "Persediaan Barang",
+          "debit": 67499000.0,
+          "credit": 6775000.0,
+          "balance": 60724000.0,
+          "type": "asset",
+          "normal_balance": "debit"
+        },
+        {
+          "code": "1101",
+          "name": "Kas Kecil Pusat",
+          "debit": 9464405.0,
+          "credit": 0,
+          "balance": 9464405.0,
+          "type": "asset",
+          "normal_balance": "debit"
+        },
+        {
+          "code": "1102",
+          "name": "Kas Cabang",
+          "debit": 0,
+          "credit": 15211617.5,
+          "balance": -15211617.5,
+          "type": "asset",
+          "normal_balance": "debit"
+        },
+        {
+          "code": "1201",
+          "name": "Piutang Dagang",
+          "debit": 275000.0,
+          "credit": 5275000.0,
+          "balance": -5000000.0,
+          "type": "asset",
+          "normal_balance": "debit"
+        },
+        {
+          "code": "1301",
+          "name": "Persediaan Barang Dagang",
+          "debit": 3685989.0,
+          "credit": 0,
+          "balance": 3685989.0,
+          "type": "asset",
+          "normal_balance": "debit"
+        }
+      ],
+      "total": 65126026.5
+    },
+    "liabilities": {
+      "items": [
+        {
+          "code": "2-1000",
+          "name": "Hutang Usaha",
+          "debit": 210000,
+          "credit": 1400000,
+          "balance": 1190000,
+          "type": "liability",
+          "normal_balance": "credit"
+        },
+        {
+          "code": "2-1100",
+          "name": "Hutang Dagang",
+          "debit": 5500000.0,
+          "credit": 72439000.0,
+          "balance": 66939000.0,
+          "type": "liability",
+          "normal_balance": "credit"
+        },
+        {
+          "code": "2-1400",
+          "name": "PPN Keluaran",
+          "debit": 0,
+          "credit": 1515250.0,
+          "balance": 1515250.0,
+          "type": "liability",
+          "normal_balance": "credit"
+        },
+        {
+          "code": "2101",
+          "name": "Hutang Dagang",
+          "debit": 11000000.0,
+          "credit": 3685989.0,
+          "balance": -7314011.0,
+          "type": "liability",
+          "normal_balance": "credit"
+        }
+      ],
+      "total": 62330239.0
+    },
+    "equity": {
+      "items": [],
+      "total_recorded": 0,
+      "net_income": 2795787.5,
+      "total_with_net_income": 2795787.5
+    },
+    "income_statement": {
+      "revenue": {
+        "items": [
+          {
+            "code": "4-1000",
+            "name": "Penjualan",
+            "debit": 0,
+            "credit": 14828000.0,
+            "balance": 14828000.0,
+            "type": "revenue",
+            "normal_balance": "credit"
+          },
+          {
+            "code": "4-1100",
+            "name": "Retur Penjualan",
+            "debit": 180000,
+            "credit": 0,
+            "balance": -180000,
+            "type": "revenue",
+            "normal_balance": "credit"
+          },
+          {
+            "code": "4-3000",
+            "name": "Pendapatan Lain-lain",
+            "debit": 0,
+            "credit": 260000,
+            "balance": 260000,
+            "type": "revenue",
+            "normal_balance": "credit"
+          },
+          {
+            "code": "4-5000",
+            "name": "Retur Penjualan",
+            "debit": 200000,
+            "credit": 0,
+            "balance": -200000,
+            "type": "revenue",
+            "normal_balance": "credit"
+          },
+          {
+            "code": "4-9100",
+            "name": "Koreksi Persediaan",
+            "debit": 0,
+            "credit": 60000,
+            "balance": 60000,
+            "type": "revenue",
+            "normal_balance": "credit"
+          },
+          {
+            "code": "4101",
+            "name": "Penjualan",
+            "debit": 0,
+            "credit": 275000.0,
+            "balance": 275000.0,
+            "type": "revenue",
+            "normal_balance": "credit"
+          }
+        ],
+        "total": 15043000.0
+      },
+      "expenses": {
+        "items": [
+          {
+            "code": "5-1000",
+            "name": "Harga Pokok Penjualan",
+            "debit": 6275000.0,
+            "credit": 0,
+            "balance": 6275000.0,
+            "type": "expense",
+            "normal_balance": "debit"
+          },
+          {
+            "code": "5-2000",
+            "name": "Beban Gaji",
+            "debit": 5000000,
+            "credit": 0,
+            "balance": 5000000,
+            "type": "expense",
+            "normal_balance": "debit"
+          },
+          {
+            "code": "5-7000",
+            "name": "Beban Adjustment Stok",
+            "debit": 350000,
+            "credit": 0,
+            "balance": 350000,
+            "type": "expense",
+            "normal_balance": "debit"
+          },
+          {
+            "code": "5-8000",
+            "name": "Biaya Operasional",
+            "debit": 100000.0,
+            "credit": 0,
+            "balance": 100000.0,
+            "type": "expense",
+            "normal_balance": "debit"
+          },
+          {
+            "code": "5-9100",
+            "name": "Beban Selisih Persediaan",
+            "debit": 500000.0,
+            "credit": 0,
+            "balance": 500000.0,
+            "type": "expense",
+            "normal_balance": "debit"
+          },
+          {
+            "code": "6201",
+            "name": "Selisih Kurang Kas",
+            "debit": 22212.5,
+            "credit": 0,
+            "balance": 22212.5,
+            "type": "expense",
+            "normal_balance": "debit"
+          }
+        ],
+        "total": 12247212.5
+      },
+      "net_income": 2795787.5
+    }
+  },
+  "accounting_equation": {
+    "left_side": {
+      "description": "Total Assets",
+      "value": 65126026.5
+    },
+    "right_side": {
+      "description": "Liabilities + Equity + Net Income",
+      "value": 65126026.5,
+      "breakdown": {
+        "liabilities": 62330239.0,
+        "equity_recorded": 0,
+        "net_income": 2795787.5
+      }
+    },
+    "difference": 0.0,
+    "is_balanced": true
+  },
+  "unknown_accounts": [],
+  "validation": {
+    "all_journals_balanced": true,
+    "balance_sheet_balanced": true,
+    "no_unknown_accounts": true,
+    "overall_status": "PASS"
+  }
+}
