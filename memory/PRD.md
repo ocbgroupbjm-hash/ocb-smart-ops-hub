@@ -60,13 +60,19 @@ Membangun sistem ERP retail komprehensif (OCB TITAN) dengan fitur POS, Inventory
 - SalesReturnList - 4 tombol (Tambah Retur, Edit, Hapus, Print)
 - SalesPriceHistory - Read-Only (Export, Print, Refresh)
 
+**Accounting Modules (Batch 3 - 2026-03-13):**
+- CashTransactions - 4 tombol (Tambah Transaksi, Edit, Hapus, Print)
+- JournalEntries - 4 tombol (Tambah Jurnal, Edit, Hapus, Print)
+- ChartOfAccounts - 4 tombol (Tambah Akun, Edit, Hapus, Print)
+
 **Inventory Modules:**
 - Stock Transfers - 3 tombol toolbar
 
+**Bug Fixes (Batch 3 - 2026-03-13):**
+- Fixed: AR Payment dropdown akun kas/bank kosong (endpoint /api/accounting/coa → /api/accounting/accounts)
+
 **Remaining:**
-- Stock Opname / Inventory Adjustment
-- Kas / Bank transactions
-- Jurnal Akuntansi
+- Stock Opname / Inventory Adjustment toolbar
 
 ---
 
@@ -133,6 +139,7 @@ Membangun sistem ERP retail komprehensif (OCB TITAN) dengan fitur POS, Inventory
 - `/app/test_reports/iteration_51.json` - Full integration tests
 - `/app/test_reports/iteration_52.json` - ERP Toolbar Batch 1 (100% PASS)
 - `/app/test_reports/iteration_53.json` - ERP Toolbar Batch 2 - Purchase & Sales Sub-Modules (100% PASS)
+- `/app/test_reports/iteration_54.json` - ERP Toolbar Batch 3 - Accounting + AR Payment Fix (100% PASS)
 
 ---
 
@@ -141,14 +148,15 @@ Membangun sistem ERP retail komprehensif (OCB TITAN) dengan fitur POS, Inventory
 ### P0 - Critical
 - [x] Kartu Stok Modal - Sudah terimplementasi di Master Items
 - [x] Standard Toolbar di semua modul Purchase & Sales
+- [x] Standard Toolbar di modul Accounting (Kas, Jurnal, COA)
+- [x] Fix dropdown Akun Kas/Bank di AR Payment
 
 ### P1 - High Priority  
 - [ ] Stock Opname toolbar
-- [ ] Kas / Bank toolbar
-- [ ] Validasi RBAC komprehensif dengan berbagai role
+- [ ] Validasi RBAC komprehensif dengan berbagai role (Owner vs Kasir)
+- [ ] Test jurnal pembayaran piutang (journal entry untuk AR payment)
 
 ### P2 - Medium Priority
-- [ ] Jurnal Akuntansi toolbar
 - [ ] Print functionality implementation
 - [ ] Import/Export Excel implementation
 
@@ -188,4 +196,4 @@ Membangun sistem ERP retail komprehensif (OCB TITAN) dengan fitur POS, Inventory
 
 ---
 
-*Last Updated: 2026-03-13 (Iteration 53)*
+*Last Updated: 2026-03-13 (Iteration 54)*
