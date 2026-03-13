@@ -1,0 +1,98 @@
+{
+  "timestamp": "2026-03-13T20:29:28.581846+00:00",
+  "api_url": "https://smart-ops-hub-6.preview.emergentagent.com/api",
+  "total_tests": 7,
+  "passed": 4,
+  "failed": 3,
+  "pass_rate": "57.1%",
+  "status": "FAIL",
+  "results": [
+    {
+      "test": "test_audit_access_owner",
+      "passed": false,
+      "expected": "Login success",
+      "actual": "Login failed",
+      "details": {
+        "expected": "Login success",
+        "actual": "Login failed"
+      },
+      "timestamp": "2026-03-13T20:29:25.669636+00:00"
+    },
+    {
+      "test": "test_audit_access_admin",
+      "passed": false,
+      "expected": "200 OK",
+      "actual": "403",
+      "details": {
+        "expected": "200 OK",
+        "actual": "403",
+        "endpoint": "/audit/logs"
+      },
+      "timestamp": "2026-03-13T20:29:26.285490+00:00"
+    },
+    {
+      "test": "test_audit_access_kasir",
+      "passed": true,
+      "expected": "403 Forbidden",
+      "actual": "403",
+      "details": {
+        "expected": "403 Forbidden",
+        "actual": "403",
+        "endpoint": "/audit/logs",
+        "note": "Kasir should NOT have access to audit logs"
+      },
+      "timestamp": "2026-03-13T20:29:26.875019+00:00"
+    },
+    {
+      "test": "test_audit_access_spv",
+      "passed": true,
+      "expected": "403 Forbidden",
+      "actual": "403",
+      "details": {
+        "expected": "403 Forbidden",
+        "actual": "403",
+        "endpoint": "/audit/logs",
+        "note": "SPV/Warehouse should NOT have access to audit logs"
+      },
+      "timestamp": "2026-03-13T20:29:27.458783+00:00"
+    },
+    {
+      "test": "test_backup_access_kasir",
+      "passed": true,
+      "expected": "403 Forbidden",
+      "actual": "403",
+      "details": {
+        "expected": "403 Forbidden",
+        "actual": "403",
+        "endpoint": "/system/backup/status",
+        "note": "Kasir should NOT have access to backup/restore"
+      },
+      "timestamp": "2026-03-13T20:29:27.811606+00:00"
+    },
+    {
+      "test": "test_user_delete_access_kasir",
+      "passed": true,
+      "expected": "403 Forbidden",
+      "actual": "403",
+      "details": {
+        "expected": "403 Forbidden",
+        "actual": "403",
+        "endpoint": "DELETE /users/{id}",
+        "note": "Kasir should NOT be able to delete users"
+      },
+      "timestamp": "2026-03-13T20:29:28.218110+00:00"
+    },
+    {
+      "test": "test_password_reset_access",
+      "passed": false,
+      "expected": "403 or 404",
+      "actual": "422",
+      "details": {
+        "expected": "403 or 404",
+        "actual": "422",
+        "endpoint": "POST /users/{id}/change-password"
+      },
+      "timestamp": "2026-03-13T20:29:28.579336+00:00"
+    }
+  ]
+}

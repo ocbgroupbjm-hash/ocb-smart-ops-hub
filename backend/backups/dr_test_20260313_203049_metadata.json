@@ -1,0 +1,49 @@
+{
+  "backup_id": "BKP-20260313_203049",
+  "backup_type": "full_dump",
+  "timestamp": "2026-03-13T20:30:49.355174+00:00",
+  "timestamp_unix": 1773433849,
+  "created_by": "DR_TEST_SCRIPT",
+  "tenant_list": [
+    {
+      "id": "ocb_titan",
+      "name": "OCB GROUP",
+      "db_name": "ocb_titan"
+    },
+    {
+      "id": "ocb_unit_4",
+      "name": "OCB UNIT 4 MPC & MP3",
+      "db_name": "ocb_unit_4"
+    },
+    {
+      "id": "ocb_unt_1",
+      "name": "OCB UNIT 1 RETAIL",
+      "db_name": "ocb_unt_1"
+    },
+    {
+      "id": "ocb_baju",
+      "name": "OCB BAJU",
+      "db_name": "ocb_baju"
+    },
+    {
+      "id": "ocb_counter",
+      "name": "OCB COUNTER",
+      "db_name": "ocb_counter"
+    }
+  ],
+  "databases_backed_up": [
+    "ocb_titan"
+  ],
+  "blueprint_versions": {
+    "ocb_titan": "unknown"
+  },
+  "db_version": "7.0.30",
+  "file_name": "dr_test_20260313_203049.gz",
+  "file_path": "/app/backend/backups/dr_test_20260313_203049.gz",
+  "file_size_bytes": 3443625,
+  "file_size_mb": 3.28,
+  "checksum_sha256": "2979046af3ea99dafd0d365b73a899170db2a34305d489f7069de9489a04c8a3",
+  "duration_seconds": 0.4,
+  "mongodump_output": "2026-03-13T20:30:49.394+0000\twriting ocb_titan.journal_entries to archive '/app/backend/backups/dr_test_20260313_203049.gz'\n2026-03-13T20:30:49.395+0000\twriting ocb_titan.role_permissions to archive '/app/backend/backups/dr_test_20260313_203049.gz'\n2026-03-13T20:30:49.395+0000\twriting ocb_titan.transactions to archive '/app/backend/backups/dr_test_20260313_203049.gz'\n2026-03-13T20:30:49.395+0000\twriting ocb_titan.item_branch_stock to archive '/app/backend/backups/dr_test_20260313_203049.gz'\n2026-03-13T20:30:49.478+0000\tdone dumping ocb_titan.role_permissions (11341 documents)\n2026-03-13T20:30:49.478+0000\twriting ocb_titan.product_stocks to archive '/app/backend/backups/dr_test_20260313_203049.gz'\n2026-03-13T20:30:49.478+0000\tdone dumping ocb_titan.item_branch_stock (1627 documents)\n2026-03-13T20:30:49.478+0000\twriting ocb_titan.audit_logs to archive '/app/backend/backups/dr_test_20260313_203049.gz'\n2026-03-13T20:30:49.480+0000\tdone dumping ocb_titan.transactions (1969 documents)\n2026-0",
+  "status": "completed"
+}

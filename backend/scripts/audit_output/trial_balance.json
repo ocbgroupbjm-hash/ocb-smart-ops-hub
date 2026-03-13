@@ -1,133 +1,155 @@
 {
-  "generated_at": "2026-03-13T19:05:00Z",
-  "pilot_database": "ocb_titan",
-  "total_journals": 2061,
+  "generated_at": "2026-03-13",
+  "tenant": "ocb_titan",
   "accounts": [
     {
-      "account_code": "1-1000",
-      "account_name": "Kas",
-      "debit": 500000.0,
-      "credit": 5900000.0
+      "code": "1-1000",
+      "name": "Kas",
+      "debit": 500000,
+      "credit": 5900000
     },
     {
-      "account_code": "1-1002",
-      "account_name": "Bank BCA",
-      "debit": 5000000.0,
-      "credit": 5000000.0
+      "code": "1-1002",
+      "name": "Bank BCA",
+      "debit": 5000000,
+      "credit": 5000000
     },
     {
-      "account_code": "1-1100",
-      "account_name": "Kas",
-      "debit": 5802800.0,
-      "credit": 550000.0
+      "code": "1-1100",
+      "name": "Kas",
+      "debit": 5932800.0,
+      "credit": 570000.0
     },
     {
-      "account_code": "1-1200",
-      "account_name": "Persediaan Barang",
-      "debit": 2310000.0,
-      "credit": 560000.0
+      "code": "1-1200",
+      "name": "Persediaan Barang",
+      "debit": 2310000,
+      "credit": 560000
     },
     {
-      "account_code": "1-1300",
-      "account_name": "Piutang Usaha",
+      "code": "1-1300",
+      "name": "Piutang Usaha",
       "debit": 13980450.0,
       "credit": 4202500.0
     },
     {
-      "account_code": "1-1400",
-      "account_name": "Persediaan Barang",
-      "debit": 60000.0,
+      "code": "1-1400",
+      "name": "Persediaan Barang",
+      "debit": 1960000.0,
       "credit": 6775000.0
     },
     {
-      "account_code": "1101",
-      "account_name": "Kas Kecil Pusat",
+      "code": "1101",
+      "name": "Kas Kecil Pusat",
       "debit": 9464405.0,
-      "credit": 0.0
+      "credit": 0
     },
     {
-      "account_code": "1102",
-      "account_name": "Kas Cabang",
-      "debit": 0.0,
+      "code": "1102",
+      "name": "Kas Cabang",
+      "debit": 0,
       "credit": 15211617.5
     },
     {
-      "account_code": "1201",
-      "account_name": "Piutang Dagang",
-      "debit": 0.0,
+      "code": "1201",
+      "name": "Piutang Dagang",
+      "debit": 0,
       "credit": 5275000.0
     },
     {
-      "account_code": "2-1000",
-      "account_name": "Hutang Usaha",
-      "debit": 210000.0,
-      "credit": 1400000.0
+      "code": "2-1000",
+      "name": "Hutang Usaha",
+      "debit": 210000,
+      "credit": 1400000
     },
     {
-      "account_code": "2-1100",
-      "account_name": "Hutang Dagang",
+      "code": "2-1100",
+      "name": "Hutang Dagang",
       "debit": 5500000.0,
-      "credit": 5000000.0
+      "credit": 6900000.0
     },
     {
-      "account_code": "2-1400",
-      "account_name": "PPN Keluaran",
-      "debit": 0.0,
+      "code": "2-1400",
+      "name": "PPN Keluaran",
+      "debit": 0,
       "credit": 1515250.0
     },
     {
-      "account_code": "2101",
-      "account_name": "Hutang Dagang",
+      "code": "2101",
+      "name": "Hutang Dagang",
       "debit": 11000000.0,
-      "credit": 0.0
+      "credit": 0
     },
     {
-      "account_code": "4-1000",
-      "account_name": "Penjualan",
-      "debit": 0.0,
-      "credit": 14745500.0
+      "code": "4-1000",
+      "name": "Penjualan",
+      "debit": 0,
+      "credit": 14875500.0
     },
     {
-      "account_code": "4-1100",
-      "account_name": "Retur Penjualan",
-      "debit": 180000.0,
-      "credit": 0.0
+      "code": "4-1100",
+      "name": "Retur Penjualan",
+      "debit": 180000,
+      "credit": 0
     },
     {
-      "account_code": "4-3000",
-      "account_name": "Pendapatan Lain-lain",
-      "debit": 0.0,
-      "credit": 260000.0
+      "code": "4-3000",
+      "name": "Pendapatan Lain-lain",
+      "debit": 0,
+      "credit": 260000
     },
     {
-      "account_code": "4-5000",
-      "account_name": "Retur Penjualan",
-      "debit": 200000.0,
-      "credit": 0.0
+      "code": "4-5000",
+      "name": "Retur Penjualan",
+      "debit": 200000,
+      "credit": 0
     },
     {
-      "account_code": "4-9100",
-      "account_name": "Koreksi Persediaan",
-      "debit": 0.0,
-      "credit": 60000.0
+      "code": "4-9100",
+      "name": "Koreksi Persediaan",
+      "debit": 0,
+      "credit": 60000
     },
     {
-      "account_code": "5-1000",
-      "account_name": "Harga Pokok Penjualan",
+      "code": "5-1000",
+      "name": "Harga Pokok Penjualan",
       "debit": 6275000.0,
-      "credit": 0.0
+      "credit": 0
     },
     {
-      "account_code": "5-2000",
-      "account_name": "Beban Gaji",
-      "debit": 5000000.0,
-      "credit": 0.0
+      "code": "5-2000",
+      "name": "Beban Gaji",
+      "debit": 5000000,
+      "credit": 0
+    },
+    {
+      "code": "5-7000",
+      "name": "Beban Adjustment Stok",
+      "debit": 350000,
+      "credit": 0
+    },
+    {
+      "code": "5-8000",
+      "name": "Biaya Operasional",
+      "debit": 100000.0,
+      "credit": 0
+    },
+    {
+      "code": "5-9100",
+      "name": "Beban Selisih Persediaan",
+      "debit": 500000.0,
+      "credit": 0
+    },
+    {
+      "code": "6201",
+      "name": "Selisih Kurang Kas",
+      "debit": 42212.5,
+      "credit": 0
     }
   ],
-  "summary": {
-    "total_debit": 66454867.5,
-    "total_credit": 66454867.5,
-    "difference": 0.0,
-    "is_balanced": true
+  "totals": {
+    "debit": 68504867.5,
+    "credit": 68504867.5,
+    "balanced": true
   }
 }

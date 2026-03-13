@@ -1,6 +1,7 @@
 # OCB TITAN ERP - Centralized Audit System
 # APPEND-ONLY audit logs - tidak boleh diubah atau dihapus
 # MASTER BLUEPRINT: Every module must log to this system
+# RBAC: Only OWNER, SUPER_ADMIN, AUDITOR can access
 
 from fastapi import APIRouter, HTTPException, Depends, Request
 from pydantic import BaseModel, Field
@@ -14,6 +15,35 @@ import hashlib
 import json
 
 router = APIRouter(prefix="/audit", tags=["Audit System"])
+
+# ==================== RBAC FOR AUDIT ====================
+
+AUDIT_ALLOWED_ROLES = ["owner", "super_admin", "auditor"]
+
+def require_audit_role():
+    """
+    Middleware to check if user has audit access permission.
+    Only OWNER, SUPER_ADMIN, AUDITOR can access audit logs.
+    """
+    async def check_audit_role(request: Request, user: dict = Depends(get_current_user)):
+        user_role = (user.get("role", "") or "").lower()
+        user_role_code = (user.get("role_code", "") or "").lower()
+        
+        # Check if user has allowed role
+        has_role = user_role in AUDIT_ALLOWED_ROLES or user_role_code in AUDIT_ALLOWED_ROLES
+        
+        # Also check permissions array for wildcard
+        permissions = user.get("permissions", [])
+        has_wildcard = "*" in permissions
+        has_audit_perm = "audit_log.view" in permissions or "audit" in permissions
+        
+        if not (has_role or has_wildcard or has_audit_perm):
+            raise HTTPException(
+                status_code=403,
+                detail="AKSES DITOLAK: Hanya OWNER, SUPER_ADMIN, atau AUDITOR yang dapat mengakses audit logs"
+            )
+        return user
+    return check_audit_role
 
 # ==================== CONSTANTS ====================
 
@@ -179,23 +209,20 @@ async def get_audit_logs(
     ip_address: Optional[str] = None,
     skip: int = 0,
     limit: int = 100,
-    user: dict = Depends(require_permission("audit_log", "view"))
+    user: dict = Depends(require_audit_role())
 ):
     """
     Query audit logs with filters
     
-    Only owner/admin can view all logs.
-    Other users can only view their own actions.
+    RBAC: Only OWNER, SUPER_ADMIN, AUDITOR can view audit logs.
     """
     db = get_db()
     
     # Build query
     query = {}
     
-    # Non-admin users can only see their own logs
-    if user.get("role") not in ["owner", "admin"]:
-        query["user_id"] = user.get("user_id")
-    elif user_id:
+    # Filter by specific criteria
+    if user_id:
         query["user_id"] = user_id
     
     if module:
@@ -238,12 +265,14 @@ async def get_audit_logs(
 @router.get("/logs/{entity_id}/history")
 async def get_entity_history(
     entity_id: str,
-    user: dict = Depends(get_current_user)
+    user: dict = Depends(require_audit_role())
 ):
     """
     Get complete audit history for a specific entity
     
     Shows all changes made to an entity over time.
+    
+    RBAC: Only OWNER, SUPER_ADMIN, AUDITOR can access.
     """
     db = get_db()
     
@@ -268,10 +297,12 @@ async def get_entity_history(
 async def get_audit_summary(
     date_from: Optional[str] = None,
     date_to: Optional[str] = None,
-    user: dict = Depends(require_permission("audit_log", "view"))
+    user: dict = Depends(require_audit_role())
 ):
     """
     Get audit log summary statistics
+    
+    RBAC: Only OWNER, SUPER_ADMIN, AUDITOR can access.
     """
     db = get_db()
     
@@ -326,13 +357,15 @@ async def get_audit_summary(
 @router.get("/verify/{audit_id}")
 async def verify_audit_integrity(
     audit_id: str,
-    user: dict = Depends(require_permission("audit_log", "view"))
+    user: dict = Depends(require_audit_role())
 ):
     """
     Verify integrity of an audit log entry
     
     Recalculates the hash and compares with stored hash
     to detect any tampering.
+    
+    RBAC: Only OWNER, SUPER_ADMIN, AUDITOR can access.
     """
     db = get_db()
     

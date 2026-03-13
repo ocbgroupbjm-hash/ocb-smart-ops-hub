@@ -1,0 +1,75 @@
+{
+  "database": "ocb_dr_test",
+  "timestamp": "2026-03-13T20:30:58.204316+00:00",
+  "all_tests_passed": false,
+  "critical_passed": true,
+  "status": "PARTIAL_FAIL",
+  "trial_balance": {
+    "balanced": true,
+    "debit": 67914867.5,
+    "credit": 67914867.5,
+    "difference": 0.0
+  },
+  "tests": [
+    {
+      "test": "Tenant Registry",
+      "passed": true,
+      "details": "company_profile exists, 0 settings found",
+      "data": {
+        "profile_name": "",
+        "settings_count": 0
+      },
+      "timestamp": "2026-03-13T20:30:58.170881+00:00"
+    },
+    {
+      "test": "Users",
+      "passed": true,
+      "details": "Total: 13, Active: 12, Without role_id: 0",
+      "data": {
+        "total_users": 13,
+        "active_users": 12,
+        "users_without_role_id": 0
+      },
+      "timestamp": "2026-03-13T20:30:58.174836+00:00"
+    },
+    {
+      "test": "Journal Entries",
+      "passed": true,
+      "details": "Total: 2062, Unbalanced: 0",
+      "data": {
+        "total_journals": 2062,
+        "unbalanced_count": 0,
+        "unbalanced_samples": []
+      },
+      "timestamp": "2026-03-13T20:30:58.196545+00:00"
+    },
+    {
+      "test": "Stock Movements (SSOT)",
+      "passed": false,
+      "details": "Total: 137, Products: 21, Invalid: 49",
+      "data": {
+        "total_movements": 137,
+        "unique_products": 21,
+        "invalid_movements": 49
+      },
+      "timestamp": "2026-03-13T20:30:58.199765+00:00"
+    },
+    {
+      "test": "Trial Balance (CRITICAL)",
+      "passed": true,
+      "details": "Debit: Rp 67,914,868 | Credit: Rp 67,914,868 | Diff: Rp 0",
+      "data": {
+        "total_debit": 67914867.5,
+        "total_credit": 67914867.5,
+        "difference": 0.0,
+        "balanced": true
+      },
+      "timestamp": "2026-03-13T20:30:58.203958+00:00"
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 1,
+    "total": 5
+  }
+}

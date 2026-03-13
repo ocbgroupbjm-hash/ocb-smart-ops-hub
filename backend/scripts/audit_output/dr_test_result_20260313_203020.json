@@ -1,0 +1,51 @@
+{
+  "test_id": "DR-20260313_203007",
+  "timestamp": "2026-03-13T20:30:07.793782+00:00",
+  "steps": [
+    {
+      "step": "Backup Database",
+      "status": "PASS",
+      "timestamp": "2026-03-13T20:30:08.166419+00:00",
+      "details": {
+        "file": "/app/backend/backups/dr_test_20260313_203007.gz",
+        "size_mb": 3.28,
+        "checksum": "2dc6f511153a870e..."
+      }
+    },
+    {
+      "step": "Simulate Disaster",
+      "status": "PASS",
+      "timestamp": "2026-03-13T20:30:08.254458+00:00",
+      "details": {
+        "test_db": "ocb_dr_test",
+        "records_copied": 176,
+        "note": "Test database created for DR test"
+      }
+    },
+    {
+      "step": "Restore Database",
+      "status": "FAIL",
+      "timestamp": "2026-03-13T20:30:14.240786+00:00",
+      "details": {
+        "error": "2026-03-13T20:30:08.268+0000\tpreparing collections to restore from\n2026-03-13T20:30:08.273+0000\treading metadata for ocb_dr_test.master_lokasi_absensi from archive '/app/backend/backups/dr_test_20260313_203007.gz'\n2026-03-13T20:30:08.273+0000\treading metadata for ocb_dr_test.item_types from archive '/app/backend/backups/dr_test_20260313_203007.gz'\n2026-03-13T20:30:08.273+0000\treading metadata for ocb_dr_test.purchase_payments from archive '/app/backend/backups/dr_test_20260313_203007.gz'\n2026-03-13T20:30:08.273+0000\treading metadata for ocb_dr_test.chart_of_accounts from archive '/app/backend/backups/dr_test_20260313_203007.gz'\n2026-03-13T20:30:08.273+0000\treading metadata for ocb_dr_test.roles from archive '/app/backend/backups/dr_test_20260313_203007.gz'\n2026-03-13T20:30:08.273+0000\treading metadata for ocb_dr_test.employee_performance from archive '/app/backend/backups/dr_test_20260313_203007.gz'\n2026-03-13T20:30:08.273+0000\treading metadata for ocb_dr_test.master_shifts from archiv"
+      }
+    },
+    {
+      "step": "Validate Restore",
+      "status": "SKIPPED",
+      "timestamp": "2026-03-13T20:30:14.240823+00:00",
+      "details": {
+        "reason": "Restore failed"
+      }
+    },
+    {
+      "step": "E2E Smoke Test",
+      "status": "SKIPPED",
+      "timestamp": "2026-03-13T20:30:14.240834+00:00",
+      "details": {
+        "reason": "Validation failed"
+      }
+    }
+  ],
+  "overall_status": "FAIL"
+}

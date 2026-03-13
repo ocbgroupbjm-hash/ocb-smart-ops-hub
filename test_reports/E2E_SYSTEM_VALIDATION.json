@@ -1,5 +1,5 @@
 {
-  "validation_timestamp": "2026-03-13T20:10:36.416792+00:00",
+  "validation_timestamp": "2026-03-13T20:31:13.373277+00:00",
   "database": "ocb_titan",
   "total_tests": 22,
   "passed": 22,
@@ -11,19 +11,19 @@
       "scenario": 1,
       "name": "Create Sale",
       "passed": true,
-      "details": "Invoice INV-TEST-20260313201025 created",
+      "details": "Invoice INV-TEST-20260313203105 created",
       "data": {
-        "invoice_id": "e9493b3f-1c04-4e10-87ff-b73c5171e7e6"
+        "invoice_id": "220dd79c-3868-434a-b46f-10fdaafc2ae8"
       },
-      "timestamp": "2026-03-13T20:10:25.679962+00:00"
+      "timestamp": "2026-03-13T20:31:05.789734+00:00"
     },
     {
       "scenario": 2,
       "name": "Sale Journal Entry",
       "passed": true,
-      "details": "Journal JV-SALE-20260313201025 created, balanced: True",
+      "details": "Journal JV-SALE-20260313203105 created, balanced: True",
       "data": null,
-      "timestamp": "2026-03-13T20:10:25.683991+00:00"
+      "timestamp": "2026-03-13T20:31:05.803614+00:00"
     },
     {
       "scenario": 3,
@@ -31,7 +31,7 @@
       "passed": true,
       "details": "1 stock movements created",
       "data": null,
-      "timestamp": "2026-03-13T20:10:25.686677+00:00"
+      "timestamp": "2026-03-13T20:31:05.817736+00:00"
     },
     {
       "scenario": 4,
@@ -39,7 +39,7 @@
       "passed": true,
       "details": "Payment: cash, Status: completed",
       "data": null,
-      "timestamp": "2026-03-13T20:10:25.687082+00:00"
+      "timestamp": "2026-03-13T20:31:05.819149+00:00"
     },
     {
       "scenario": 5,
@@ -47,15 +47,15 @@
       "passed": true,
       "details": "KPI data retrieved: ['period', 'sales', 'purchase', 'cash_variance', 'inventory']",
       "data": null,
-      "timestamp": "2026-03-13T20:10:25.723923+00:00"
+      "timestamp": "2026-03-13T20:31:05.864043+00:00"
     },
     {
       "scenario": 6,
       "name": "Create PO",
       "passed": true,
-      "details": "PO PO-TEST-20260313201025 created",
+      "details": "PO PO-TEST-20260313203105 created",
       "data": null,
-      "timestamp": "2026-03-13T20:10:25.726133+00:00"
+      "timestamp": "2026-03-13T20:31:05.868819+00:00"
     },
     {
       "scenario": 7,
@@ -63,7 +63,7 @@
       "passed": true,
       "details": "1 stock IN movements created",
       "data": null,
-      "timestamp": "2026-03-13T20:10:25.727835+00:00"
+      "timestamp": "2026-03-13T20:31:05.871336+00:00"
     },
     {
       "scenario": 8,
@@ -71,79 +71,79 @@
       "passed": true,
       "details": "AP created, amount: 450000.0",
       "data": null,
-      "timestamp": "2026-03-13T20:10:25.729695+00:00"
+      "timestamp": "2026-03-13T20:31:05.883684+00:00"
     },
     {
       "scenario": 9,
       "name": "Purchase Journal",
       "passed": true,
-      "details": "Journal JV-PUR-20260313201025, D=450000.0 C=450000.0",
+      "details": "Journal JV-PUR-20260313203105, D=450000.0 C=450000.0",
       "data": null,
-      "timestamp": "2026-03-13T20:10:25.730383+00:00"
+      "timestamp": "2026-03-13T20:31:05.884961+00:00"
     },
     {
       "scenario": 10,
       "name": "Inventory Update",
       "passed": true,
-      "details": "Stock from SSOT: 204 units",
+      "details": "Stock from SSOT: 215 units",
       "data": null,
-      "timestamp": "2026-03-13T20:10:25.731350+00:00"
+      "timestamp": "2026-03-13T20:31:05.887522+00:00"
     },
     {
       "scenario": 11,
       "name": "Sales Return",
       "passed": true,
-      "details": "Return SR-TEST-20260313201025 created",
+      "details": "Return SR-TEST-20260313203105 created",
       "data": null,
-      "timestamp": "2026-03-13T20:10:25.731942+00:00"
+      "timestamp": "2026-03-13T20:31:05.890907+00:00"
     },
     {
       "scenario": 12,
       "name": "Purchase Return",
       "passed": true,
-      "details": "Return PR-TEST-20260313201025 created",
+      "details": "Return PR-TEST-20260313203105 created",
       "data": null,
-      "timestamp": "2026-03-13T20:10:25.732384+00:00"
+      "timestamp": "2026-03-13T20:31:05.894481+00:00"
     },
     {
       "scenario": 13,
       "name": "Stock Adjustment",
       "passed": true,
-      "details": "Adjustment ADJ-TEST-20260313201025: +5 units",
+      "details": "Adjustment ADJ-TEST-20260313203105: +5 units",
       "data": null,
-      "timestamp": "2026-03-13T20:10:25.757420+00:00"
+      "timestamp": "2026-03-13T20:31:05.895953+00:00"
     },
     {
       "scenario": 14,
       "name": "Stock Transfer",
       "passed": true,
-      "details": "Transfer TRF-TEST-20260313201025: 2 units moved",
+      "details": "Transfer TRF-TEST-20260313203105: 2 units moved",
       "data": null,
-      "timestamp": "2026-03-13T20:10:25.765568+00:00"
+      "timestamp": "2026-03-13T20:31:05.898636+00:00"
     },
     {
       "scenario": 15,
       "name": "Stock Opname",
       "passed": true,
-      "details": "Opname SOP-TEST-20260313201025: System=207, Physical=207",
+      "details": "Opname SOP-TEST-20260313203105: System=218, Physical=218",
       "data": null,
-      "timestamp": "2026-03-13T20:10:25.773660+00:00"
+      "timestamp": "2026-03-13T20:31:05.900977+00:00"
     },
     {
       "scenario": 16,
       "name": "Open Shift",
       "passed": true,
-      "details": "Shift SFT-TEST-20260313201025 opened with Rp 500,000",
+      "details": "Shift SFT-TEST-20260313203105 opened with Rp 500,000",
       "data": null,
-      "timestamp": "2026-03-13T20:10:25.781779+00:00"
+      "timestamp": "2026-03-13T20:31:05.903015+00:00"
     },
     {
       "scenario": 17,
       "name": "Shift Transaction",
       "passed": true,
-      "details": "Sale transaction exists: INV-TEST-20260313201025",
+      "details": "Sale transaction exists: INV-TEST-20260313203105",
       "data": null,
-      "timestamp": "2026-03-13T20:10:25.782849+00:00"
+      "timestamp": "2026-03-13T20:31:05.904343+00:00"
     },
     {
       "scenario": 18,
@@ -151,7 +151,7 @@
       "passed": true,
       "details": "Expected: 700000, Actual: 690000, Variance: -10000",
       "data": null,
-      "timestamp": "2026-03-13T20:10:25.783512+00:00"
+      "timestamp": "2026-03-13T20:31:05.905643+00:00"
     },
     {
       "scenario": 19,
@@ -159,7 +159,7 @@
       "passed": true,
       "details": "Auto journal created: D/C = 10000",
       "data": null,
-      "timestamp": "2026-03-13T20:10:25.785157+00:00"
+      "timestamp": "2026-03-13T20:31:05.909673+00:00"
     },
     {
       "scenario": 20,
@@ -167,23 +167,23 @@
       "passed": true,
       "details": "AI tools accessible: 3/3, Read-only: True",
       "data": null,
-      "timestamp": "2026-03-13T20:10:36.414107+00:00"
+      "timestamp": "2026-03-13T20:31:13.370123+00:00"
     },
     {
       "scenario": 21,
       "name": "Multi-Tenant Isolation",
       "passed": true,
-      "details": "Current tenant: ocb_titan, Total tenants: 8",
+      "details": "Current tenant: ocb_titan, Total tenants: 9",
       "data": null,
-      "timestamp": "2026-03-13T20:10:36.414952+00:00"
+      "timestamp": "2026-03-13T20:31:13.371035+00:00"
     },
     {
       "scenario": 22,
       "name": "Audit Log Complete",
       "passed": true,
-      "details": "Total audit logs: 467",
+      "details": "Total audit logs: 468",
       "data": null,
-      "timestamp": "2026-03-13T20:10:36.416332+00:00"
+      "timestamp": "2026-03-13T20:31:13.372828+00:00"
     }
   ]
 }

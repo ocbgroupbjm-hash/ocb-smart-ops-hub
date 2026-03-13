@@ -313,6 +313,10 @@ app.include_router(accounting_migration_router)
 from routes.backup_manager import router as backup_manager_router
 app.include_router(backup_manager_router)
 
+# Backup & Restore API (Official - MASTER BLUEPRINT)
+from routes.backup_restore_api import router as backup_restore_api_router
+app.include_router(backup_restore_api_router, prefix="/api")
+
 
 
 # Health check
