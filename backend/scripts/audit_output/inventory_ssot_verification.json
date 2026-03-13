@@ -1,7 +1,7 @@
 {
-  "audit_timestamp": "2026-03-13T19:31:55.725964+00:00",
+  "audit_timestamp": "2026-03-13T20:01:58.298140+00:00",
   "database": "ocb_titan",
-  "mode": "AUDIT",
+  "mode": "FIX",
   "summary": {
     "total_branches": 56,
     "total_products": 61,

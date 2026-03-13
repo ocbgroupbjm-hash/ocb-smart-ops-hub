@@ -124,6 +124,11 @@ from routes.export_service import router as export_service_router
 from routes.import_service import router as import_service_router
 from routes.print_service import router as print_service_router
 
+# Import Control + Intelligence Layer - Phase 17
+from routes.audit_system import router as audit_system_router
+from routes.dashboard_intel import router as dashboard_intel_router
+from routes.ai_insight_engine import router as ai_insight_engine_router
+
 # Mount all routers under /api - Core ERP
 app.include_router(auth_router, prefix="/api")
 app.include_router(products_router, prefix="/api")
@@ -216,6 +221,11 @@ app.include_router(owner_control_router, prefix="/api")
 app.include_router(export_service_router, prefix="/api")
 app.include_router(import_service_router, prefix="/api")
 app.include_router(print_service_router, prefix="/api")
+
+# Mount Control + Intelligence Layer - Phase 17
+app.include_router(audit_system_router, prefix="/api")
+app.include_router(dashboard_intel_router, prefix="/api")
+app.include_router(ai_insight_engine_router, prefix="/api")
 
 # Mount Account Settings Module - iPOS Style
 app.include_router(account_settings_router)

@@ -342,10 +342,13 @@ async def close_shift(
     
     await db.cashier_shifts.update_one({"id": shift_id}, {"$set": update_data})
     
-    # If discrepancy, create discrepancy record
+    journal_id = None
+    
+    # If discrepancy, create discrepancy record AND auto journal
     if discrepancy_type != "none":
+        discrepancy_id = str(uuid.uuid4())
         discrepancy_record = {
-            "id": str(uuid.uuid4()),
+            "id": discrepancy_id,
             "shift_id": shift_id,
             "shift_no": shift["shift_no"],
             "branch_id": shift["branch_id"],
@@ -359,6 +362,76 @@ async def close_shift(
             "created_at": datetime.now(timezone.utc).isoformat()
         }
         await db.cash_discrepancies.insert_one(discrepancy_record)
+        
+        # AUTO CREATE JOURNAL ENTRY FOR CASH VARIANCE
+        # SSOT: This creates accounting entry in journal_entries
+        journal_id = str(uuid.uuid4())
+        journal_number = f"JV-CASH-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}"
+        
+        if discrepancy_type == "shortage":
+            # Shortage: Debit Beban Selisih Kas, Credit Kas
+            journal_entries = [
+                {
+                    "account_code": "6201",
+                    "account_name": "Beban Selisih Kas",
+                    "debit": abs(discrepancy),
+                    "credit": 0,
+                    "description": f"Selisih kurang kas shift {shift['shift_no']}"
+                },
+                {
+                    "account_code": "1-1100",
+                    "account_name": "Kas",
+                    "debit": 0,
+                    "credit": abs(discrepancy),
+                    "description": f"Selisih kurang kas shift {shift['shift_no']}"
+                }
+            ]
+        else:
+            # Overage: Debit Kas, Credit Pendapatan Selisih Kas
+            journal_entries = [
+                {
+                    "account_code": "1-1100",
+                    "account_name": "Kas",
+                    "debit": abs(discrepancy),
+                    "credit": 0,
+                    "description": f"Selisih lebih kas shift {shift['shift_no']}"
+                },
+                {
+                    "account_code": "4-3100",
+                    "account_name": "Pendapatan Selisih Kas",
+                    "debit": 0,
+                    "credit": abs(discrepancy),
+                    "description": f"Selisih lebih kas shift {shift['shift_no']}"
+                }
+            ]
+        
+        journal_entry = {
+            "id": journal_id,
+            "journal_number": journal_number,
+            "journal_date": datetime.now(timezone.utc).isoformat(),
+            "reference_type": "cash_variance",
+            "reference_id": discrepancy_id,
+            "reference_number": shift["shift_no"],
+            "description": f"Auto journal untuk {discrepancy_type} kas - {shift['shift_no']} - Kasir: {shift['cashier_name']}",
+            "entries": journal_entries,
+            "total_debit": abs(discrepancy),
+            "total_credit": abs(discrepancy),
+            "is_balanced": True,
+            "status": "posted",
+            "branch_id": shift["branch_id"],
+            "auto_generated": True,
+            "source_module": "cash_control",
+            "created_by": user.get("user_id", ""),
+            "created_by_name": user.get("name", ""),
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.journal_entries.insert_one(journal_entry)
+        
+        # Update discrepancy with journal reference
+        await db.cash_discrepancies.update_one(
+            {"id": discrepancy_id},
+            {"$set": {"journal_id": journal_id, "journal_number": journal_number}}
+        )
     
     # Audit log
     await db.audit_logs.insert_one({
@@ -366,7 +439,7 @@ async def close_shift(
         "action": "shift_close",
         "module": "cash_control",
         "target_id": shift_id,
-        "description": f"Shift closed. Expected: Rp {expected_cash:,.0f}, Actual: Rp {actual_cash:,.0f}, Discrepancy: Rp {discrepancy:,.0f} ({discrepancy_type})",
+        "description": f"Shift closed. Expected: Rp {expected_cash:,.0f}, Actual: Rp {actual_cash:,.0f}, Discrepancy: Rp {discrepancy:,.0f} ({discrepancy_type})" + (f" - Auto journal {journal_id[:8]}..." if journal_id else ""),
         "user_id": user.get("user_id"),
         "user_name": user.get("name"),
         "timestamp": datetime.now(timezone.utc).isoformat()
@@ -380,7 +453,9 @@ async def close_shift(
         "discrepancy": discrepancy,
         "discrepancy_type": discrepancy_type,
         "status": status,
-        "message": "Shift closed" + (f" with {discrepancy_type}" if discrepancy_type != "none" else "")
+        "journal_created": journal_id is not None,
+        "journal_id": journal_id,
+        "message": "Shift closed" + (f" with {discrepancy_type} - Auto journal created" if discrepancy_type != "none" else "")
     }
 
 @router.get("/shifts")

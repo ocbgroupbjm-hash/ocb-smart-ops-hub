@@ -604,10 +604,82 @@ Eksekusi sesuai MASTER BLUEPRINT SUPER DEWA - COMMAND MODE:
 - [x] Standardized Print Engine ✅
 
 ### P2 - Backlog
-- [ ] Dashboard Intelligence (AI-driven insights)
-- [ ] Cash Control Engine
-- [ ] Audit System
+- [x] Dashboard Intelligence (AI-driven insights) ✅
+- [x] Cash Control Engine (auto journal variance) ✅
+- [x] Audit System (append-only) ✅
 - [ ] AI Business Engine (ON HOLD)
+
+### P3 - Future
+- [ ] AI Business Engine (read/analyze/recommend only - ON HOLD)
+- [ ] Mobile App API
+- [ ] Multi-currency advanced
+
+---
+
+### Phase 17: Control + Intelligence Layer ✅
+**Completed (2026-03-13):**
+
+#### PRIORITAS 1: Cash Control Engine Enhancement
+- Enhanced auto journal creation for cash variance
+- When shift closes with discrepancy:
+  - **Shortage:** Debit 6201 (Beban Selisih Kas), Credit 1-1100 (Kas)
+  - **Overage:** Debit 1-1100 (Kas), Credit 4-3100 (Pendapatan Selisih Kas)
+- File: `/app/backend/routes/cash_control.py` (line 343-428)
+
+#### PRIORITAS 2: Audit System (Centralized, Append-Only)
+- Created: `/app/backend/routes/audit_system.py`
+- **APPEND-ONLY** - Updates and deletes explicitly blocked with 403 error
+- Integrity hash for tamper detection
+- Endpoints:
+  | Endpoint | Method | Description |
+  |----------|--------|-------------|
+  | `/api/audit/log` | POST | Create audit entry |
+  | `/api/audit/logs` | GET | Query with filters |
+  | `/api/audit/logs/{entity_id}/history` | GET | Entity change history |
+  | `/api/audit/summary` | GET | Statistics by module/action/user |
+  | `/api/audit/verify/{audit_id}` | GET | Verify integrity hash |
+
+#### PRIORITAS 3: Dashboard Intelligence
+- Created: `/app/backend/routes/dashboard_intel.py`
+- All data from SSOT (journal_entries, stock_movements, sales_invoices, cash_discrepancies)
+- Endpoints:
+  | Endpoint | Description | Data Source |
+  |----------|-------------|-------------|
+  | `/api/dashboard-intel/top-selling` | Top products | sales_invoices |
+  | `/api/dashboard-intel/dead-stock` | Products with no sales | stock_movements |
+  | `/api/dashboard-intel/outlet-performance` | Profit/loss per branch | journal_entries |
+  | `/api/dashboard-intel/cash-variance-ranking` | Cashier variance rank | cash_discrepancies |
+  | `/api/dashboard-intel/stock-turnover` | Inventory turnover | stock_movements |
+  | `/api/dashboard-intel/best-salesperson` | Sales performance | sales_invoices |
+  | `/api/dashboard-intel/low-margin-alert` | Below threshold margin | sales_invoices + products |
+  | `/api/dashboard-intel/kpi-summary` | Comprehensive KPIs | All SSOT |
+
+#### PRIORITAS 4: AI Insight Engine
+- Created: `/app/backend/routes/ai_insight_engine.py`
+- **READ-ONLY** - AI never writes to database
+- Uses OpenAI GPT-4o via Emergent LLM Key
+- AI Tools (read-only):
+  - `get_trial_balance` - Account balances
+  - `get_sales_summary` - Sales data
+  - `get_stock_status` - Inventory from SSOT
+  - `get_cash_variance` - Cash discrepancy data
+  - `get_kpi_summary` - Combined KPIs
+- Endpoints:
+  | Endpoint | Description |
+  |----------|-------------|
+  | `POST /api/ai/insights` | Get AI analysis & recommendations |
+  | `GET /api/ai/tools/*` | Individual data retrieval endpoints |
+
+#### PRIORITAS 5: Production Hardening
+- Created: `/app/backend/scripts/production_hardening.py`
+- 31 performance indexes created:
+  - `journal_entries`: tenant_id+posted_at, status+date, branch+date
+  - `stock_movements`: tenant+product+date, product+branch
+  - `sales_invoices`: tenant+branch+date, status+date, cashier+date
+  - `audit_logs`: tenant+date, module+date, user+date, entity
+  - `cash_discrepancies`, `cashier_shifts`, `accounts_receivable`, `accounts_payable`
+- SSOT integrity validation
+- All indexed verified working
 
 ---
 
