@@ -497,4 +497,59 @@ Membangun sistem ERP retail komprehensif (OCB TITAN) dengan fitur POS, Inventory
 
 ---
 
-*Last Updated: 2026-03-13 (Phase 11 - Pilot & Accounting Migration Complete)*
+### Phase 12: End-to-End Accounting Validation ✅
+**Completed (2026-03-13):**
+
+**Tujuan:** Validasi menyeluruh business logic dengan simulasi transaksi real-world di `ocb_titan`.
+
+**Test Results:**
+
+| Test | Skenario | Status | Keterangan |
+|------|----------|--------|------------|
+| Test 1 | Penjualan Tunai | ✅ PASS | Transaction → Stock → Journal |
+| Test 2 | Penjualan Kredit | ✅ PASS | Transaction → AR → Journal |
+| Test 3 | Pembelian | ✅ PASS | PO → Stock → AP |
+| Test 4 | Retur Penjualan | ✅ PASS | Stock +5, Journal (D:Retur, C:Kas) |
+| Test 5 | Stock Adjustment | ✅ PASS | Movement created, SSOT = 100 units |
+| Test 6 | Setoran Kas Harian | ✅ PASS | Shift, Deposit, Discrepancy detected |
+
+**Phase Validation:**
+
+| Phase | Validation | Status | Notes |
+|-------|------------|--------|-------|
+| Phase 2 | General Ledger | ⚠️ | Historical data imbalance detected |
+| Phase 3 | Balance Sheet | ⚠️ | Affected by Phase 2 |
+| Phase 4 | Inventory SSOT | ✅ PASS | stock_movements is SSOT |
+| Phase 5 | Multi-Tenant Isolation | ✅ PASS | Physical DB separation |
+
+**Known Issue:** Historical journal entries have imbalanced totals (D: Rp 36.4M vs C: Rp 47.5M). This is from legacy data, not new transactions.
+
+**Dokumen:** `/app/memory/E2E_VALIDATION_RESULTS.md`
+
+---
+
+## Priority Task List
+
+### P0 - Completed ✅
+- [x] E2E Accounting Validation
+- [x] Setoran Kas Harian flow
+- [x] Stock Adjustment flow
+- [x] Sales Return flow
+
+### P1 - Next Steps
+- [ ] Fix historical journal imbalance
+- [ ] Database indexes for performance (journal_entries, stock_movements, transactions)
+- [ ] Audit: Stock Reorder vs Purchase Planning (merge decision)
+- [ ] Tenant Registration Form UI
+
+### P2 - Backlog
+- [ ] Export to Excel functionality
+- [ ] Import Excel for master data
+- [ ] Standardized print template
+
+### P3 - On Hold
+- [ ] Phase 6: AI Business Engine
+
+---
+
+*Last Updated: 2026-03-13 (Phase 12 - E2E Validation Complete)*
