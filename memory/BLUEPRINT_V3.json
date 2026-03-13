@@ -1,0 +1,86 @@
+{
+  "version": "3.0.0",
+  "release_date": "2026-03-13T20:14:22.565284+00:00",
+  "components": {
+    "core_accounting": {
+      "version": "3.0.0",
+      "features": [
+        "double_entry",
+        "auto_journal",
+        "trial_balance",
+        "balance_sheet"
+      ],
+      "ssot_collection": "journal_entries"
+    },
+    "inventory": {
+      "version": "3.0.0",
+      "features": [
+        "stock_movements",
+        "ssot_calculation",
+        "dead_stock",
+        "turnover"
+      ],
+      "ssot_collection": "stock_movements"
+    },
+    "cash_control": {
+      "version": "3.0.0",
+      "features": [
+        "shift_management",
+        "variance_detection",
+        "auto_journal"
+      ],
+      "ssot_collection": "cashier_shifts"
+    },
+    "dashboard_intel": {
+      "version": "3.0.0",
+      "features": [
+        "kpi_summary",
+        "top_selling",
+        "outlet_performance",
+        "cash_ranking"
+      ]
+    },
+    "ai_engine": {
+      "version": "3.0.0",
+      "features": [
+        "read_only",
+        "insights",
+        "recommendations"
+      ],
+      "access_level": "read_only"
+    },
+    "audit_system": {
+      "version": "3.0.0",
+      "features": [
+        "append_only",
+        "integrity_hash",
+        "tamper_detection"
+      ]
+    },
+    "export_import": {
+      "version": "3.0.0",
+      "features": [
+        "excel_export",
+        "excel_import",
+        "pdf_reports"
+      ]
+    },
+    "print_engine": {
+      "version": "3.0.0",
+      "features": [
+        "invoice_pdf",
+        "po_pdf",
+        "thermal_receipt"
+      ]
+    }
+  },
+  "rules": {
+    "ssot_mandatory": true,
+    "accounting_first": true,
+    "tenant_isolation": true,
+    "ai_read_only": true,
+    "audit_append_only": true
+  },
+  "locked_at": "2026-03-13T20:14:22.565291+00:00",
+  "locked_by": "system_validation"
+}

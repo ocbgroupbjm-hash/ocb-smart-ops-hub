@@ -1,0 +1,92 @@
+{
+  "validation_timestamp": "2026-03-13T20:12:38.713093+00:00",
+  "database": "ocb_titan",
+  "total_tests": 5,
+  "passed": 5,
+  "failed": 0,
+  "pass_rate": "100.0%",
+  "results": [
+    {
+      "test": "DR Backup Available",
+      "passed": true,
+      "details": "Using existing: /app/backend/backups/tenant_backup_20260313_201131.dump",
+      "data": null,
+      "timestamp": "2026-03-13T20:12:29.002613+00:00"
+    },
+    {
+      "test": "DR Restore Time",
+      "passed": true,
+      "details": "Restored in 8.0s (target: <300s), 129 collections",
+      "data": {
+        "restore_time_seconds": 8.000242948532104,
+        "collections": 129
+      },
+      "timestamp": "2026-03-13T20:12:37.015035+00:00"
+    },
+    {
+      "test": "API Latency",
+      "passed": true,
+      "details": "Avg: 39ms, Max: 58ms (target: <500ms)",
+      "data": {
+        "avg_ms": 38.803672790527344,
+        "max_ms": 57.975053787231445,
+        "details": [
+          {
+            "endpoint": "/dashboard-intel/kpi-summary?days=30",
+            "method": "GET",
+            "latency_ms": 23.15521240234375,
+            "status": 200
+          },
+          {
+            "endpoint": "/products?limit=50",
+            "method": "GET",
+            "latency_ms": 8.003473281860352,
+            "status": 200
+          },
+          {
+            "endpoint": "/sales/invoices?limit=20",
+            "method": "GET",
+            "latency_ms": 46.92649841308594,
+            "status": 200
+          },
+          {
+            "endpoint": "/audit/summary",
+            "method": "GET",
+            "latency_ms": 57.975053787231445,
+            "status": 200
+          },
+          {
+            "endpoint": "/ai/tools/trial-balance",
+            "method": "GET",
+            "latency_ms": 57.958126068115234,
+            "status": 200
+          }
+        ]
+      },
+      "timestamp": "2026-03-13T20:12:37.228212+00:00"
+    },
+    {
+      "test": "Concurrent Users (50)",
+      "passed": true,
+      "details": "Success: 100%, Avg latency: 957ms",
+      "data": {
+        "success_rate": 100.0,
+        "successful": 50,
+        "failed": 0,
+        "avg_latency_ms": 956.512508392334
+      },
+      "timestamp": "2026-03-13T20:12:38.680243+00:00"
+    },
+    {
+      "test": "Transaction Throughput",
+      "passed": true,
+      "details": "Created 100 in 0.0s (3087.0 TPS). 1000/day needs ~0.7 TPS",
+      "data": {
+        "created": 100,
+        "elapsed_seconds": 0.0323941707611084,
+        "tps": 3086.975145542463
+      },
+      "timestamp": "2026-03-13T20:12:38.712679+00:00"
+    }
+  ]
+}

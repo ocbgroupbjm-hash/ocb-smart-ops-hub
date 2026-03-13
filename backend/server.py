@@ -129,6 +129,9 @@ from routes.audit_system import router as audit_system_router
 from routes.dashboard_intel import router as dashboard_intel_router
 from routes.ai_insight_engine import router as ai_insight_engine_router
 
+# Import Mobile API Layer - Phase 17 PERINTAH 7
+from routes.mobile_api import router as mobile_api_router
+
 # Mount all routers under /api - Core ERP
 app.include_router(auth_router, prefix="/api")
 app.include_router(products_router, prefix="/api")
@@ -226,6 +229,9 @@ app.include_router(print_service_router, prefix="/api")
 app.include_router(audit_system_router, prefix="/api")
 app.include_router(dashboard_intel_router, prefix="/api")
 app.include_router(ai_insight_engine_router, prefix="/api")
+
+# Mount Mobile API Layer - Phase 17 PERINTAH 7
+app.include_router(mobile_api_router, prefix="/api")
 
 # Mount Account Settings Module - iPOS Style
 app.include_router(account_settings_router)

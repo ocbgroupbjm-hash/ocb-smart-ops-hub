@@ -1,0 +1,66 @@
+{
+  "validation_timestamp": "2026-03-13T20:11:39.610727+00:00",
+  "database": "ocb_titan",
+  "total_tests": 5,
+  "passed": 4,
+  "failed": 1,
+  "pass_rate": "80.0%",
+  "backup_files": [
+    "/app/backend/backups/tenant_backup_20260313_201131.dump",
+    "/app/backend/backups/backup_portable_20260313_201135.zip"
+  ],
+  "results": [
+    {
+      "test": "Backup Full Dump",
+      "passed": true,
+      "details": "Created: /app/backend/backups/tenant_backup_20260313_201131.dump (3358.3 KB)",
+      "data": {
+        "path": "/app/backend/backups/tenant_backup_20260313_201131.dump",
+        "size_kb": 3358.33984375
+      },
+      "timestamp": "2026-03-13T20:11:31.980351+00:00"
+    },
+    {
+      "test": "Restore Full Dump",
+      "passed": false,
+      "details": "mongorestore failed: 2026-03-13T20:11:32.111+0000\tpreparing collections to restore from\n2026-03-13T20:11:32.117+0000\tread",
+      "data": null,
+      "timestamp": "2026-03-13T20:11:35.887893+00:00"
+    },
+    {
+      "test": "Backup Portable JSON/ZIP",
+      "passed": true,
+      "details": "Exported 10 collections, 2480 records, ZIP: 336.1 KB",
+      "data": {
+        "collections": 10,
+        "records": 2480,
+        "zip_path": "/app/backend/backups/backup_portable_20260313_201135.zip",
+        "size_kb": 336.111328125
+      },
+      "timestamp": "2026-03-13T20:11:39.538729+00:00"
+    },
+    {
+      "test": "Restore Portable JSON",
+      "passed": true,
+      "details": "Extracted 10 JSON files, 2480 records verified",
+      "data": {
+        "json_files": 10,
+        "total_records": 2480
+      },
+      "timestamp": "2026-03-13T20:11:39.557402+00:00"
+    },
+    {
+      "test": "Backup PDF Reports",
+      "passed": true,
+      "details": "Created 2 PDF reports in /app/backend/backups/reports_20260313_201139",
+      "data": {
+        "reports": [
+          "trial_balance.pdf",
+          "inventory.pdf"
+        ],
+        "path": "/app/backend/backups/reports_20260313_201139"
+      },
+      "timestamp": "2026-03-13T20:11:39.609203+00:00"
+    }
+  ]
+}
