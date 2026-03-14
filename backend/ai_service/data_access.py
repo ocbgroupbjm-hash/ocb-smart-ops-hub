@@ -34,7 +34,10 @@ AI_ENGINE_CONFIG = {
 class AIKillSwitch:
     """
     AI Kill Switch - Emergency disable untuk AI Engine
-    Set AI_ENGINE_ENABLED=false untuk disable
+    
+    Two levels:
+    1. GLOBAL: Set AI_ENGINE_ENABLED=false di environment
+    2. TENANT: Set ai_enabled=false di _tenant_metadata
     """
     
     @staticmethod
@@ -44,7 +47,30 @@ class AIKillSwitch:
     @staticmethod
     def check_or_raise():
         if not AIKillSwitch.is_enabled():
-            raise AIEngineDisabledException("AI Engine is disabled via kill switch")
+            raise AIEngineDisabledException("AI Engine is disabled via GLOBAL kill switch (AI_ENGINE_ENABLED=false)")
+    
+    @staticmethod
+    async def check_tenant_enabled(db) -> bool:
+        """Check if AI is enabled for current tenant"""
+        metadata = await db["_tenant_metadata"].find_one({}, {"_id": 0, "ai_enabled": 1})
+        if metadata and metadata.get("ai_enabled") == False:
+            return False
+        return True
+    
+    @staticmethod
+    async def check_tenant_or_raise(db):
+        """Check tenant-level kill switch"""
+        if not await AIKillSwitch.check_tenant_enabled(db):
+            raise AIEngineDisabledException("AI Engine is disabled for this tenant (ai_enabled=false)")
+    
+    @staticmethod
+    async def set_tenant_enabled(db, enabled: bool):
+        """Set tenant-level AI enabled status"""
+        await db["_tenant_metadata"].update_one(
+            {},
+            {"$set": {"ai_enabled": enabled, "ai_updated_at": datetime.now(timezone.utc).isoformat()}}
+        )
+        return enabled
 
 
 class AIEngineDisabledException(Exception):

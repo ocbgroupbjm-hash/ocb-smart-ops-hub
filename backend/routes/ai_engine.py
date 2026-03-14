@@ -291,24 +291,97 @@ async def get_ai_decision_logs(
 
 # ==================== KILL SWITCH ====================
 
+@router.post("/kill-switch/global")
+async def toggle_global_kill_switch(
+    enabled: bool = Query(..., description="Enable or disable AI Engine globally"),
+    user: dict = Depends(get_current_user)
+):
+    """
+    Toggle GLOBAL AI Engine kill switch (admin only)
+    
+    Sets AI_ENGINE_ENABLED environment variable
+    """
+    if not AIRBACGateway.is_admin(user):
+        raise HTTPException(status_code=403, detail="Only admin can toggle global kill switch")
+    
+    return {
+        "status": "acknowledged",
+        "type": "global",
+        "ai_enabled": enabled,
+        "message": f"GLOBAL AI Engine {'enabled' if enabled else 'disabled'}. "
+                   f"Set AI_ENGINE_ENABLED={str(enabled).lower()} in environment to persist.",
+        "changed_by": user.get("email"),
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+
+
+@router.post("/kill-switch/tenant")
+async def toggle_tenant_kill_switch(
+    enabled: bool = Query(..., description="Enable or disable AI Engine for current tenant"),
+    user: dict = Depends(get_current_user)
+):
+    """
+    Toggle TENANT-level AI Engine kill switch (admin only)
+    
+    Sets ai_enabled in _tenant_metadata
+    """
+    if not AIRBACGateway.is_admin(user):
+        raise HTTPException(status_code=403, detail="Only admin can toggle tenant kill switch")
+    
+    db = get_db()
+    await AIKillSwitch.set_tenant_enabled(db, enabled)
+    
+    from database import get_active_db_name
+    tenant_id = get_active_db_name()
+    
+    return {
+        "status": "success",
+        "type": "tenant",
+        "tenant_id": tenant_id,
+        "ai_enabled": enabled,
+        "message": f"AI Engine for tenant '{tenant_id}' {'enabled' if enabled else 'disabled'}.",
+        "changed_by": user.get("email"),
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+
+
+@router.get("/kill-switch/status")
+async def get_kill_switch_status(user: dict = Depends(get_current_user)):
+    """
+    Get current kill switch status (both global and tenant)
+    """
+    AIRBACGateway.check_access(user, "config")
+    
+    db = get_db()
+    from database import get_active_db_name
+    tenant_id = get_active_db_name()
+    
+    global_enabled = is_ai_enabled()
+    tenant_enabled = await AIKillSwitch.check_tenant_enabled(db)
+    
+    return {
+        "global": {
+            "enabled": global_enabled,
+            "source": "AI_ENGINE_ENABLED environment variable"
+        },
+        "tenant": {
+            "enabled": tenant_enabled,
+            "tenant_id": tenant_id,
+            "source": "_tenant_metadata.ai_enabled"
+        },
+        "effective_status": "enabled" if (global_enabled and tenant_enabled) else "disabled",
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+
+
+# Legacy endpoint for backward compatibility
 @router.post("/kill-switch")
 async def toggle_kill_switch(
     enabled: bool = Query(..., description="Enable or disable AI Engine"),
     user: dict = Depends(get_current_user)
 ):
     """
-    Toggle AI Engine kill switch (admin only)
+    Toggle AI Engine kill switch (admin only) - LEGACY
+    Now redirects to global kill switch
     """
-    if not AIRBACGateway.is_admin(user):
-        raise HTTPException(status_code=403, detail="Only admin can toggle kill switch")
-    
-    # Note: In production, this would update env or config file
-    # For now, we just return the intended state
-    return {
-        "status": "acknowledged",
-        "ai_enabled": enabled,
-        "message": f"AI Engine {'enabled' if enabled else 'disabled'}. "
-                   f"Set AI_ENGINE_ENABLED={str(enabled).lower()} in environment to persist.",
-        "changed_by": user.get("email"),
-        "timestamp": datetime.now(timezone.utc).isoformat()
-    }
+    return await toggle_global_kill_switch(enabled, user)
