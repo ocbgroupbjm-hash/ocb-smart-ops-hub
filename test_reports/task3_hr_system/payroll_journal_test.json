@@ -1,0 +1,62 @@
+{
+  "test_name": "Payroll Journal Integration Test",
+  "test_date": "2026-03-14",
+  "tenant": "ocb_titan",
+  "status": "PASSED",
+  "payroll_batch": {
+    "batch_no": "PAY-20260314-0007",
+    "period": "2026-03 (March 2026)",
+    "employee_count": 21,
+    "total_gross": 115500000,
+    "total_deductions": 1155000,
+    "total_tax": 992250,
+    "total_net": 113352750
+  },
+  "journal_entry": {
+    "journal_no": "JV-20260314-0014",
+    "reference_type": "payroll",
+    "reference_no": "PAY-20260314-0007",
+    "description": "Pembayaran Gaji March 2026",
+    "total_debit": 115500000,
+    "total_credit": 115500000,
+    "is_balanced": true,
+    "entries": [
+      {
+        "account_code": "6-1100",
+        "account_name": "Beban Gaji",
+        "debit": 115500000,
+        "credit": 0,
+        "description": "Gaji March 2026 - 21 karyawan"
+      },
+      {
+        "account_code": "2-1500",
+        "account_name": "Hutang PPh 21",
+        "debit": 0,
+        "credit": 992250,
+        "description": "PPh 21 March 2026"
+      },
+      {
+        "account_code": "1-1100",
+        "account_name": "Kas/Bank",
+        "debit": 0,
+        "credit": 114507750,
+        "description": "Pembayaran Gaji March 2026"
+      }
+    ]
+  },
+  "business_rules_validated": {
+    "salary_ssot": "PASS - salary_base from Employee Master",
+    "journal_balanced": "PASS - Debit = Credit",
+    "journal_auto_created": "PASS - Journal created on post",
+    "tax_calculated": "PASS - PPh 21 calculated",
+    "status_updated": "PASS - Payroll status = posted"
+  },
+  "accounting_integration": {
+    "debit_account": "6-1100 Beban Gaji",
+    "credit_accounts": [
+      "2-1500 Hutang PPh 21",
+      "1-1100 Kas/Bank"
+    ],
+    "integration_status": "SUCCESSFUL"
+  }
+}

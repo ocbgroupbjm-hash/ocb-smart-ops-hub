@@ -1,0 +1,1 @@
+{"status":"passed","total_payments":1,"issues_found":0,"issues":[],"rule":"SUM(allocation.amount) = payment.amount"}

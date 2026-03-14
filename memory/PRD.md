@@ -1,7 +1,7 @@
 # OCB TITAN AI - ERP System PRD
 
 ## Original Problem Statement
-Membangun sistem ERP retail komprehensif (OCB TITAN) dengan fitur POS, Inventory, Keuangan, dan Akuntansi. Sistem harus mengikuti standar ERP retail seperti iPOS/SAP B1/Odoo.
+Membangun sistem ERP retail komprehensif (OCB TITAN) dengan fitur POS, Inventory, Keuangan, Akuntansi, dan HR Enterprise System. Sistem harus mengikuti standar ERP enterprise seperti SAP/Oracle dengan blueprint SUPER DUPER DEWA.
 
 ## Core Requirements
 1. **Multi-tenant Architecture** - Support untuk multiple business units
@@ -9,10 +9,72 @@ Membangun sistem ERP retail komprehensif (OCB TITAN) dengan fitur POS, Inventory
 3. **Stock Single Source of Truth** - `stock_movements` sebagai satu-satunya sumber data stok
 4. **Audit Trail** - Logging semua perubahan data penting
 5. **Standard ERP UI** - Toolbar konsisten di semua modul
+6. **HR Enterprise System** - Employee Master, Attendance, Leave, Payroll dengan integrasi Accounting
 
 ---
 
 ## What's Been Implemented
+
+### Latest Updates (2026-03-14)
+
+#### AP/AR Enterprise Architecture ✅
+**Payment Allocation Engine - Multi-Invoice Payment Support**
+- `payment_allocation_engine.py` - New enterprise module
+- **Collections Created:**
+  - `ap_payment_allocations` - Detail alokasi per invoice
+  - `ar_payment_allocations` - Detail alokasi AR per invoice
+- **Business Rules:**
+  - `SUM(allocation.amount) = payment.amount`
+  - Tenant isolation enforced
+  - Outstanding non-negative
+  - Auto journal creation (balanced)
+  - Posted immutable
+- **API Endpoints:**
+  - `POST /api/payment-allocation/ap/create` - Multi-invoice AP payment
+  - `POST /api/payment-allocation/ar/create` - Multi-invoice AR payment
+  - `GET /api/payment-allocation/integrity/ap` - Integrity check
+  - `GET /api/payment-allocation/integrity/ar` - AR integrity check
+
+#### HR Enterprise System (SUPER DUPER DEWA Blueprint) ✅
+**Implemented Modules:**
+1. **Employee Master (SSOT)**
+   - `hr_employees.py` - Full CRUD for employees
+   - Department & Position management
+   - Leave balance tracking
+   - Payroll info (salary_base as SSOT)
+
+2. **Attendance System**
+   - `hr_attendance.py` - Check-in/Check-out
+   - Shift management
+   - Late tracking
+   - Work hours calculation
+   - GPS/Location support
+
+3. **Leave Management**
+   - `hr_leave.py` - Leave request workflow
+   - Multiple leave types
+   - Approval workflow
+   - Auto balance deduction
+
+4. **Payroll Engine**
+   - `hr_payroll.py` - Payroll calculation
+   - Allowance/Deduction components
+   - PPh 21 calculation
+   - **ACCOUNTING INTEGRATION:**
+     - Auto journal on post: Dr. Beban Gaji, Cr. Kas/Bank, Cr. Hutang PPh 21
+   - Payslip generation
+
+**Test Results (2026-03-14):**
+- Payroll Batch: PAY-20260314-0007
+- Employees: 21
+- Total Gross: Rp 115,500,000
+- Total Net: Rp 113,352,750
+- Journal Created: JV-20260314-0014 (BALANCED)
+
+#### UI Dark Theme Validation ✅
+- 84 violations fixed
+- 0 violations remaining
+- All modules compliant with enterprise dark theme tokens
 
 ### Phase 1: System Architecture Control ✅
 - **Stock SSOT**: `stock_movements` collection sebagai single source of truth
@@ -156,6 +218,14 @@ Membangun sistem ERP retail komprehensif (OCB TITAN) dengan fitur POS, Inventory
 | `/api/owner/edit/{module}/{id}` | POST | Owner edit with audit trail |
 | `/api/cash-control/check-shift` | GET | Check cashier active shift |
 | `/api/inventory/stock-card-modal` | GET | Stock card data for modal |
+| `/api/payment-allocation/ap/create` | POST | Multi-invoice AP payment |
+| `/api/payment-allocation/ar/create` | POST | Multi-invoice AR payment |
+| `/api/hr/employees` | GET/POST | Employee Master CRUD |
+| `/api/hr/attendance/checkin` | POST | Check-in attendance |
+| `/api/hr/attendance/checkout` | POST | Check-out attendance |
+| `/api/hr/leave/requests` | GET/POST | Leave management |
+| `/api/hr/payroll/run` | POST | Run payroll calculation |
+| `/api/hr/payroll/post/{batch_id}` | POST | Post payroll + create journal |
 
 ---
 
@@ -166,6 +236,13 @@ Membangun sistem ERP retail komprehensif (OCB TITAN) dengan fitur POS, Inventory
 - `audit_log` - Edit history with old/new values
 - `products` - Item master data
 - `suppliers`, `customers` - Partner data
+- `employees` - **SSOT** for HR employee data
+- `attendance_logs` - Check-in/Check-out records
+- `leave_requests` - Leave request workflow
+- `payroll` - Payroll header per employee
+- `payroll_items` - Payroll detail components
+- `ap_payment_allocations` - AP payment detail allocation
+- `ar_payment_allocations` - AR payment detail allocation
 - `purchase_orders`, `sales_invoices` - Transactions
 
 ---
@@ -179,6 +256,10 @@ Membangun sistem ERP retail komprehensif (OCB TITAN) dengan fitur POS, Inventory
 - `/app/test_reports/iteration_57.json` - Inventory Backend (100% PASS)
 - `/app/test_reports/iteration_58.json` - Inventory Frontend Toolbar Fix (100% PASS)
 - `/app/test_reports/iteration_59.json` - Multi-Tenant Blueprint System (100% PASS)
+- `/app/test_reports/phase1_ui_dark_theme/` - UI Dark Theme Validation (2026-03-14)
+- `/app/test_reports/phase2_ap_ar_validation/` - AP/AR Architecture Validation (2026-03-14)
+- `/app/test_reports/task2_accounting_validation/` - Accounting & Inventory Validation (2026-03-14)
+- `/app/test_reports/task3_hr_system/` - HR Enterprise System Evidence (2026-03-14)
 
 ---
 
@@ -192,17 +273,26 @@ Membangun sistem ERP retail komprehensif (OCB TITAN) dengan fitur POS, Inventory
 - [x] Stock Opname dengan ERPActionToolbar
 - [x] Database Initialization Service
 - [x] RBAC validation (Owner, Kasir)
+- [x] UI Dark Theme Validation (2026-03-14)
+- [x] AP/AR Enterprise Architecture - Payment Allocation (2026-03-14)
+- [x] HR Enterprise System - Employee, Attendance, Leave, Payroll (2026-03-14)
 
 ### P1 - High Priority  
+- [ ] HR Frontend UI Pages (Employee List, Attendance Dashboard, Payroll Dashboard)
+- [ ] KPI Engine
+- [ ] HR Analytics Dashboard
+- [ ] AI HR Intelligence
+
+### P2 - Medium Priority
 - [ ] Test jurnal AR Payment (double-entry Debit Kas, Credit Piutang)
 - [ ] Export Excel implementation
 - [ ] Print functionality implementation
-
-### P2 - Medium Priority
 - [ ] Import Excel untuk master data
 
 ### P3 - Future
-- Phase 6: AI Business Engine (ON HOLD)
+- [ ] Phase 4: Blueprint Sync to all tenants
+- [ ] Phase 6: Command Center Integration with HR metrics
+- [ ] Phase 6: AI Business Engine (ON HOLD)
 
 ---
 

@@ -123,6 +123,12 @@ from routes.number_settings import router as number_settings_router
 # Import Owner Control Module - Owner Edit Control with Audit Trail
 from routes.owner_control import router as owner_control_router
 
+# Import HR Enterprise System - SUPER DUPER DEWA Blueprint
+from routes.hr_employees import router as hr_employees_router
+from routes.hr_attendance import router as hr_attendance_router
+from routes.hr_leave import router as hr_leave_router
+from routes.hr_payroll import router as hr_payroll_router
+
 # Import Operational Tools Layer - Export, Import, Print
 from routes.export_service import router as export_service_router
 from routes.import_service import router as import_service_router
@@ -156,6 +162,9 @@ from routes.integrity_monitor import router as integrity_monitor_router
 
 # AI Business Engine - Phase AI
 from routes.ai_engine import router as ai_engine_router
+
+# Payment Allocation Engine - Enterprise AP/AR Architecture
+from routes.payment_allocation_engine import router as payment_allocation_router
 
 # Mount all routers under /api - Core ERP
 app.include_router(auth_router, prefix="/api")
@@ -411,6 +420,19 @@ app.include_router(ai_business_engine_router, prefix="/api")
 
 # AI Engine v2 - New modular AI
 app.include_router(ai_engine_router)
+
+# =============================================================
+# PAYMENT ALLOCATION ENGINE - Enterprise AP/AR Architecture
+# =============================================================
+app.include_router(payment_allocation_router)
+
+# =============================================================
+# HR ENTERPRISE SYSTEM - SUPER DUPER DEWA Blueprint
+# =============================================================
+app.include_router(hr_employees_router)
+app.include_router(hr_attendance_router)
+app.include_router(hr_leave_router)
+app.include_router(hr_payroll_router)
 
 
 # Health check
