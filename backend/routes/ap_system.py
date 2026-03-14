@@ -512,6 +512,446 @@ async def get_ap_due_soon(
     }
 
 
+
+# ==================== AP PAYMENT MANAGEMENT ====================
+# Business Rule: DRAFT dapat Edit/Delete, POSTED harus Reversal
+# NOTE: These routes MUST be defined BEFORE /{ap_id} to avoid route conflicts
+
+class APPaymentUpdate(BaseModel):
+    amount: Optional[float] = None
+    payment_method: Optional[str] = None
+    bank_account_id: Optional[str] = None
+    reference_no: Optional[str] = None
+    notes: Optional[str] = None
+
+
+@router.get("/payments")
+async def list_ap_payments(
+    search: str = "",
+    supplier_id: str = "",
+    start_date: str = "",
+    end_date: str = "",
+    status: str = "",
+    skip: int = 0,
+    limit: int = 50,
+    user: dict = Depends(get_current_user)
+):
+    """List all AP payments with filters"""
+    scope = await get_user_ap_scope(user)
+    
+    if not scope["can_view"]:
+        raise HTTPException(status_code=403, detail="AKSES DITOLAK")
+    
+    # Build query with AND conditions
+    conditions = []
+    
+    # Exclude soft-deleted
+    conditions.append({
+        "$or": [
+            {"is_deleted": {"$exists": False}},
+            {"is_deleted": False}
+        ]
+    })
+    
+    if scope["filter"]:
+        conditions.append(scope["filter"])
+    
+    if search:
+        conditions.append({
+            "$or": [
+                {"payment_no": {"$regex": search, "$options": "i"}},
+                {"ap_no": {"$regex": search, "$options": "i"}},
+                {"reference_no": {"$regex": search, "$options": "i"}}
+            ]
+        })
+    
+    if supplier_id:
+        conditions.append({"supplier_id": supplier_id})
+    
+    if start_date:
+        conditions.append({"payment_date": {"$gte": start_date}})
+    if end_date:
+        conditions.append({"payment_date": {"$lte": end_date}})
+    
+    if status:
+        conditions.append({"status": status})
+    
+    # Combine all conditions
+    query = {"$and": conditions} if conditions else {}
+    
+    total = await ap_payments.count_documents(query)
+    
+    # Get payments with supplier info
+    payments_list = await ap_payments.find(query, {"_id": 0}).sort("created_at", -1).skip(skip).limit(limit).to_list(limit)
+    
+    # Enrich with supplier name if not present
+    for payment in payments_list:
+        if not payment.get("supplier_name") and payment.get("supplier_id"):
+            supplier = await suppliers_collection.find_one({"id": payment["supplier_id"]}, {"_id": 0, "name": 1})
+            if supplier:
+                payment["supplier_name"] = supplier.get("name", "")
+        
+        # Add status if not present (default = posted for backward compat)
+        if not payment.get("status"):
+            payment["status"] = "posted"
+    
+    return {
+        "items": payments_list,
+        "total": total,
+        "summary": {
+            "total_amount": sum(p.get("amount", 0) for p in payments_list)
+        }
+    }
+
+
+@router.get("/payments/{payment_id}")
+async def get_ap_payment_detail(
+    payment_id: str,
+    user: dict = Depends(get_current_user)
+):
+    """Get AP payment detail"""
+    scope = await get_user_ap_scope(user)
+    
+    if not scope["can_view"]:
+        raise HTTPException(status_code=403, detail="AKSES DITOLAK")
+    
+    payment = await ap_payments.find_one({"id": payment_id}, {"_id": 0})
+    if not payment:
+        raise HTTPException(status_code=404, detail="Pembayaran tidak ditemukan")
+    
+    if scope["filter"].get("branch_id") and payment.get("branch_id") != scope["filter"]["branch_id"]:
+        raise HTTPException(status_code=403, detail="AKSES DITOLAK")
+    
+    # Get related AP info
+    if payment.get("ap_id"):
+        ap = await ap_collection.find_one({"id": payment["ap_id"]}, {"_id": 0})
+        if ap:
+            payment["ap_info"] = {
+                "ap_no": ap.get("ap_no"),
+                "supplier_name": ap.get("supplier_name"),
+                "original_amount": ap.get("original_amount"),
+                "outstanding_amount": ap.get("outstanding_amount")
+            }
+    
+    return payment
+
+
+@router.put("/payments/{payment_id}")
+async def update_ap_payment(
+    payment_id: str,
+    data: APPaymentUpdate,
+    request: Request,
+    user: dict = Depends(get_current_user)
+):
+    """
+    Update AP payment - Only allowed for DRAFT status
+    
+    BUSINESS RULE ENGINE:
+    - DRAFT: boleh Edit & Delete
+    - POSTED: tidak boleh Edit, harus Reversal
+    """
+    scope = await get_user_ap_scope(user)
+    
+    if not scope["can_payment"]:
+        raise HTTPException(status_code=403, detail="AKSES DITOLAK")
+    
+    payment = await ap_payments.find_one({"id": payment_id}, {"_id": 0})
+    if not payment:
+        raise HTTPException(status_code=404, detail="Pembayaran tidak ditemukan")
+    
+    if scope["filter"].get("branch_id") and payment.get("branch_id") != scope["filter"]["branch_id"]:
+        raise HTTPException(status_code=403, detail="AKSES DITOLAK")
+    
+    # Check status - only DRAFT can be edited
+    current_status = payment.get("status", "posted")
+    if current_status == "posted":
+        raise HTTPException(
+            status_code=400, 
+            detail="Pembayaran dengan status POSTED tidak dapat diedit. Gunakan fitur Reversal."
+        )
+    
+    if current_status == "reversed":
+        raise HTTPException(status_code=400, detail="Pembayaran yang sudah di-reverse tidak dapat diedit")
+    
+    user_id = scope["user_id"]
+    user_name = user.get("name", "")
+    
+    # Prepare update data
+    update_data = {}
+    old_amount = payment.get("amount", 0)
+    new_amount = data.amount if data.amount is not None else old_amount
+    
+    if data.amount is not None:
+        # Validate new amount against AP outstanding
+        ap = await ap_collection.find_one({"id": payment.get("ap_id")}, {"_id": 0})
+        if ap:
+            # Current outstanding + old payment amount = available for new payment
+            available = ap.get("outstanding_amount", 0) + old_amount
+            if new_amount > available:
+                raise HTTPException(
+                    status_code=400, 
+                    detail=f"Jumlah pembayaran melebihi sisa hutang (Max: Rp {available:,.0f})"
+                )
+        update_data["amount"] = new_amount
+    
+    if data.payment_method is not None:
+        update_data["payment_method"] = data.payment_method
+    if data.bank_account_id is not None:
+        update_data["bank_account_id"] = data.bank_account_id
+    if data.reference_no is not None:
+        update_data["reference_no"] = data.reference_no
+    if data.notes is not None:
+        update_data["notes"] = data.notes
+    
+    update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    update_data["updated_by"] = user_id
+    update_data["updated_by_name"] = user_name
+    
+    await ap_payments.update_one({"id": payment_id}, {"$set": update_data})
+    
+    # Update AP amounts if payment amount changed
+    if data.amount is not None and new_amount != old_amount:
+        ap_id = payment.get("ap_id")
+        if ap_id:
+            ap = await ap_collection.find_one({"id": ap_id}, {"_id": 0})
+            if ap:
+                amount_diff = new_amount - old_amount
+                new_paid = ap.get("paid_amount", 0) + amount_diff
+                new_outstanding = ap.get("original_amount", 0) - new_paid
+                
+                await ap_collection.update_one(
+                    {"id": ap_id},
+                    {"$set": {
+                        "paid_amount": new_paid,
+                        "outstanding_amount": new_outstanding,
+                        "updated_at": datetime.now(timezone.utc).isoformat()
+                    }}
+                )
+                await update_ap_status(ap_id)
+    
+    await log_activity(
+        db, user_id, user_name,
+        "update", "ap_payment",
+        f"Update pembayaran {payment.get('payment_no')} - {data.model_dump(exclude_none=True)}",
+        request.client.host if request.client else "",
+        payment.get("branch_id")
+    )
+    
+    return {
+        "message": "Pembayaran berhasil diupdate",
+        "payment_no": payment.get("payment_no")
+    }
+
+
+@router.delete("/payments/{payment_id}")
+async def delete_ap_payment(
+    payment_id: str,
+    request: Request,
+    user: dict = Depends(get_current_user)
+):
+    """
+    Delete AP payment - Only allowed for DRAFT status (soft delete)
+    
+    BUSINESS RULE ENGINE:
+    - DRAFT: boleh Delete
+    - POSTED: tidak boleh Delete, harus Reversal
+    """
+    scope = await get_user_ap_scope(user)
+    
+    if not scope["can_payment"]:
+        raise HTTPException(status_code=403, detail="AKSES DITOLAK")
+    
+    payment = await ap_payments.find_one({"id": payment_id}, {"_id": 0})
+    if not payment:
+        raise HTTPException(status_code=404, detail="Pembayaran tidak ditemukan")
+    
+    if scope["filter"].get("branch_id") and payment.get("branch_id") != scope["filter"]["branch_id"]:
+        raise HTTPException(status_code=403, detail="AKSES DITOLAK")
+    
+    # Check status - only DRAFT can be deleted
+    current_status = payment.get("status", "posted")
+    if current_status == "posted":
+        raise HTTPException(
+            status_code=400, 
+            detail="Pembayaran dengan status POSTED tidak dapat dihapus. Gunakan fitur Reversal."
+        )
+    
+    if current_status == "reversed":
+        raise HTTPException(status_code=400, detail="Pembayaran sudah di-reverse")
+    
+    user_id = scope["user_id"]
+    user_name = user.get("name", "")
+    payment_amount = payment.get("amount", 0)
+    ap_id = payment.get("ap_id")
+    
+    # Soft delete payment
+    await ap_payments.update_one(
+        {"id": payment_id},
+        {"$set": {
+            "status": "deleted",
+            "is_deleted": True,
+            "deleted_at": datetime.now(timezone.utc).isoformat(),
+            "deleted_by": user_id,
+            "deleted_by_name": user_name
+        }}
+    )
+    
+    # Reverse AP amounts
+    if ap_id:
+        ap = await ap_collection.find_one({"id": ap_id}, {"_id": 0})
+        if ap:
+            new_paid = max(0, ap.get("paid_amount", 0) - payment_amount)
+            new_outstanding = ap.get("original_amount", 0) - new_paid
+            
+            await ap_collection.update_one(
+                {"id": ap_id},
+                {"$set": {
+                    "paid_amount": new_paid,
+                    "outstanding_amount": new_outstanding,
+                    "updated_at": datetime.now(timezone.utc).isoformat()
+                }}
+            )
+            await update_ap_status(ap_id)
+    
+    await log_activity(
+        db, user_id, user_name,
+        "delete", "ap_payment",
+        f"Hapus pembayaran {payment.get('payment_no')} senilai Rp {payment_amount:,.0f}",
+        request.client.host if request.client else "",
+        payment.get("branch_id")
+    )
+    
+    return {
+        "message": "Pembayaran berhasil dihapus",
+        "payment_no": payment.get("payment_no")
+    }
+
+
+@router.post("/payments/{payment_id}/reversal")
+async def reverse_ap_payment(
+    payment_id: str,
+    request: Request,
+    user: dict = Depends(get_current_user)
+):
+    """
+    Reverse a POSTED payment - creates reversal journal entry
+    
+    BUSINESS RULE ENGINE:
+    - POSTED payment yang sudah memiliki jurnal harus di-reverse
+    - Reversal membuat jurnal pembalik
+    """
+    scope = await get_user_ap_scope(user)
+    
+    if not scope["can_payment"]:
+        raise HTTPException(status_code=403, detail="AKSES DITOLAK")
+    
+    payment = await ap_payments.find_one({"id": payment_id}, {"_id": 0})
+    if not payment:
+        raise HTTPException(status_code=404, detail="Pembayaran tidak ditemukan")
+    
+    if scope["filter"].get("branch_id") and payment.get("branch_id") != scope["filter"]["branch_id"]:
+        raise HTTPException(status_code=403, detail="AKSES DITOLAK")
+    
+    current_status = payment.get("status", "posted")
+    if current_status != "posted":
+        raise HTTPException(status_code=400, detail="Hanya pembayaran POSTED yang dapat di-reverse")
+    
+    user_id = scope["user_id"]
+    user_name = user.get("name", "")
+    payment_amount = payment.get("amount", 0)
+    ap_id = payment.get("ap_id")
+    
+    # Create reversal journal entry
+    from utils.number_generator import generate_transaction_number
+    reversal_journal_no = await generate_transaction_number(db, "JV")
+    
+    ap = await ap_collection.find_one({"id": ap_id}, {"_id": 0}) if ap_id else None
+    
+    # Derive accounts
+    debit_account = await derive_ap_account("pembayaran_tunai_pembelian", branch_id=payment.get("branch_id"))
+    credit_account = await derive_ap_account("pembayaran_kredit_pembelian", branch_id=payment.get("branch_id"))
+    
+    reversal_entries = [
+        {
+            "account_code": debit_account.get("code"),
+            "account_name": debit_account.get("name"),
+            "debit": payment_amount,
+            "credit": 0,
+            "description": f"Reversal pembayaran {payment.get('payment_no')}"
+        },
+        {
+            "account_code": credit_account.get("code"),
+            "account_name": credit_account.get("name"),
+            "debit": 0,
+            "credit": payment_amount,
+            "description": f"Reversal pembayaran {payment.get('payment_no')}"
+        }
+    ]
+    
+    reversal_journal = {
+        "id": str(uuid.uuid4()),
+        "journal_number": reversal_journal_no,
+        "journal_date": datetime.now(timezone.utc).isoformat(),
+        "reference_type": "ap_payment_reversal",
+        "reference_id": payment_id,
+        "reference_number": payment.get("payment_no"),
+        "description": f"Reversal Pembayaran Hutang {payment.get('payment_no')} - {ap.get('supplier_name') if ap else ''}",
+        "branch_id": payment.get("branch_id"),
+        "entries": reversal_entries,
+        "total_debit": payment_amount,
+        "total_credit": payment_amount,
+        "is_balanced": True,
+        "status": "posted",
+        "created_by": user_id,
+        "created_by_name": user_name,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await journal_entries.insert_one(reversal_journal)
+    
+    # Update payment status to reversed
+    await ap_payments.update_one(
+        {"id": payment_id},
+        {"$set": {
+            "status": "reversed",
+            "reversed_at": datetime.now(timezone.utc).isoformat(),
+            "reversed_by": user_id,
+            "reversal_journal_id": reversal_journal_no
+        }}
+    )
+    
+    # Update AP amounts
+    if ap_id and ap:
+        new_paid = max(0, ap.get("paid_amount", 0) - payment_amount)
+        new_outstanding = ap.get("original_amount", 0) - new_paid
+        
+        await ap_collection.update_one(
+            {"id": ap_id},
+            {"$set": {
+                "paid_amount": new_paid,
+                "outstanding_amount": new_outstanding,
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }}
+        )
+        await update_ap_status(ap_id)
+    
+    await log_activity(
+        db, user_id, user_name,
+        "reversal", "ap_payment",
+        f"Reversal pembayaran {payment.get('payment_no')} senilai Rp {payment_amount:,.0f}",
+        request.client.host if request.client else "",
+        payment.get("branch_id")
+    )
+    
+    return {
+        "message": "Pembayaran berhasil di-reverse",
+        "payment_no": payment.get("payment_no"),
+        "reversal_journal_no": reversal_journal_no
+    }
+
+
+# ==================== AP DETAIL (must be AFTER /payments/*) ====================
+
 @router.get("/{ap_id}")
 async def get_ap_detail(
     ap_id: str,
@@ -875,8 +1315,11 @@ async def initialize_ap_system(user: dict = Depends(get_current_user)):
     await ap_collection.create_index("due_date")
     await ap_payments.create_index("ap_id")
     await ap_payments.create_index("payment_date")
+    await ap_payments.create_index("payment_no")
+    await ap_payments.create_index("status")
     
     return {
         "message": "AP system initialized",
         "indexes_created": True
     }
+

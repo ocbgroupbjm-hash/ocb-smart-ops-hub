@@ -2460,6 +2460,57 @@ Tombol delete user berhasil tetapi user tidak terhapus dari list.
 
 ---
 
-*Last Updated: 2026-03-14 (ENTERPRISE HARDENING COMPLETE)*
-*Blueprint Version: 4.4.0 (ENTERPRISE PRODUCTION READY)*
+## AP PAYMENT MODULE FIX (2026-03-14) ✅
+
+### Bug 1: AP Payment Module Incomplete - FIXED
+**Problem**: Halaman Pembayaran Hutang hanya memiliki tombol Tambah, tidak ada Edit dan Hapus
+
+**Solution**:
+- Added new backend endpoints:
+  - `GET /api/ap/payments` - List all payments
+  - `GET /api/ap/payments/{id}` - Get payment detail
+  - `PUT /api/ap/payments/{id}` - Edit payment (DRAFT only)
+  - `DELETE /api/ap/payments/{id}` - Delete payment (DRAFT only)
+  - `POST /api/ap/payments/{id}/reversal` - Reverse posted payment
+- Updated frontend `PurchasePayments.jsx` with Edit, Delete, Reversal buttons
+- Implemented Business Rule Engine compliance:
+  - DRAFT: Edit dan Delete allowed
+  - POSTED: Harus menggunakan Reversal
+
+### Bug 2: Bank/Kas Account Not Loading - FIXED
+**Problem**: Dropdown Bank/Kas tidak menampilkan daftar akun
+
+**Root Cause**: Frontend memanggil endpoint yang salah `/api/accounting/coa?type=kas`
+
+**Solution**:
+- Fixed API call to correct endpoint `/api/accounts/cash-bank`
+- Added fallback logic untuk multiple API sources
+- Now displays all Cash/Bank accounts:
+  - 1-1001 - Kas
+  - 1-1002 - Bank BCA
+  - 1-1003 - Bank BRI
+  - etc.
+
+### Files Modified:
+- `/app/backend/routes/ap_system.py` - Added payment CRUD endpoints
+- `/app/frontend/src/pages/purchase/PurchasePayments.jsx` - Full rewrite with Edit/Delete/Reversal
+- `/app/frontend/src/components/accounting/APPaymentModal.jsx` - Fixed API call
+
+### Evidence Files:
+- `/app/test_reports/ap_payment/ap_payment_create_test.md`
+- `/app/test_reports/ap_payment/ap_payment_edit_test.md`
+- `/app/test_reports/ap_payment/ap_payment_delete_test.md`
+- `/app/test_reports/ap_payment/bank_account_dropdown_test.md`
+- `/app/test_reports/ap_payment/ap_payment_journal_test.md`
+
+### Test Results: PASSED
+- API endpoints all functioning
+- Bank/Kas dropdown shows accounts
+- Business Rule Engine compliant
+- Journal auto-generation working
+
+---
+
+*Last Updated: 2026-03-14 (AP PAYMENT BUG FIX COMPLETE)*
+*Blueprint Version: 4.5.0 (AP PAYMENT HARDENING)*
 

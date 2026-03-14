@@ -22,19 +22,58 @@ export default function APPaymentModal({ ap, onClose }) {
   
   const token = localStorage.getItem('token');
 
-  // Fetch Cash/Bank accounts
+  // Fetch Cash/Bank accounts - FIX: Use correct API endpoint
   const fetchCashBankAccounts = useCallback(async () => {
     setLoadingAccounts(true);
     try {
-      const res = await fetch(`${API}/api/accounts/cash-bank`, {
+      // Try primary endpoint
+      let res = await fetch(`${API}/api/accounts/cash-bank`, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      
       if (res.ok) {
         const data = await res.json();
-        setCashBankAccounts(data.accounts || []);
-        // Set default account if available
-        if (data.accounts?.length > 0) {
-          setBankAccountId(data.accounts[0].id);
+        const accounts = data.accounts || [];
+        if (accounts.length > 0) {
+          setCashBankAccounts(accounts);
+          setBankAccountId(accounts[0].id);
+          return;
+        }
+      }
+      
+      // Fallback to accounting endpoint
+      res = await fetch(`${API}/api/accounting/accounts/cash-bank`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (res.ok) {
+        const data = await res.json();
+        const accounts = data.accounts || [];
+        if (accounts.length > 0) {
+          setCashBankAccounts(accounts);
+          setBankAccountId(accounts[0].id);
+          return;
+        }
+      }
+      
+      // Final fallback: get from chart of accounts
+      res = await fetch(`${API}/api/accounting/accounts?category=asset`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (res.ok) {
+        const data = await res.json();
+        const items = data.items || [];
+        // Filter for cash/bank accounts
+        const cashBankAccounts = items.filter(a => 
+          a.code?.startsWith('1-11') || 
+          a.code?.startsWith('1-12') ||
+          a.name?.toLowerCase().includes('kas') ||
+          a.name?.toLowerCase().includes('bank')
+        );
+        if (cashBankAccounts.length > 0) {
+          setCashBankAccounts(cashBankAccounts);
+          setBankAccountId(cashBankAccounts[0].id);
         }
       }
     } catch (err) {
