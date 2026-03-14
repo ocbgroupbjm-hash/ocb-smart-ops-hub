@@ -159,10 +159,67 @@ async def get_system_info():
     """Get system information (public)"""
     return {
         "app": "OCB TITAN ERP",
-        "version": "3.7.0",
+        "version": "4.0.0",
         "status": "PRODUCTION READY",
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "environment": os.environ.get("ENV", "production")
+    }
+
+
+@router.get("/dashboard")
+async def get_observability_dashboard(
+    user: dict = Depends(get_current_user)
+):
+    """
+    Observability dashboard showing:
+    - API latency
+    - Error rate
+    - Request volume
+    - Slow query detection
+    """
+    metrics = get_metrics()
+    
+    # System stats
+    try:
+        cpu = psutil.cpu_percent()
+        memory = psutil.virtual_memory()
+        disk = psutil.disk_usage('/')
+        system_stats = {
+            "cpu_percent": cpu,
+            "memory_used_percent": memory.percent,
+            "memory_available_gb": round(memory.available / (1024**3), 2),
+            "disk_used_percent": disk.percent,
+            "disk_free_gb": round(disk.free / (1024**3), 2)
+        }
+    except Exception:
+        system_stats = {"error": "Unable to fetch"}
+    
+    # Database stats
+    try:
+        db = get_db()
+        db_stats = await db.command('dbStats')
+        database_stats = {
+            "collections": db_stats.get("collections", 0),
+            "total_documents": db_stats.get("objects", 0),
+            "data_size_mb": round(db_stats.get("dataSize", 0) / (1024**2), 2),
+            "index_size_mb": round(db_stats.get("indexSize", 0) / (1024**2), 2)
+        }
+    except Exception:
+        database_stats = {"error": "Unable to fetch"}
+    
+    return {
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "api_metrics": {
+            "total_requests": metrics.get("request_count", 0),
+            "error_count": metrics.get("error_count", 0),
+            "error_rate_percent": metrics.get("error_rate", 0),
+            "avg_latency_ms": metrics.get("avg_latency_ms", 0),
+            "slow_queries": metrics.get("slow_queries", 0)
+        },
+        "top_endpoints": metrics.get("top_endpoints", [])[:5],
+        "system": system_stats,
+        "database": database_stats,
+        "last_metrics_reset": metrics.get("last_reset")
     }
 
 

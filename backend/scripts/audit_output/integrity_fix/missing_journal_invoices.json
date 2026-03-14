@@ -1,7 +1,7 @@
 {
-  "timestamp": "2026-03-14T18:45:25.742339+00:00",
-  "total_sales": 129,
-  "total_with_journal": 129,
+  "timestamp": "2026-03-14T18:51:14.540368+00:00",
+  "total_sales": 0,
+  "total_with_journal": 0,
   "total_missing_journal": 0,
   "missing_invoices": []
 }

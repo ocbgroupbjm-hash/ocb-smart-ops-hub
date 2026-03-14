@@ -151,6 +151,9 @@ from routes.maintenance_mode import router as maintenance_mode_router
 # Integrity Fix Engine - Phase E Data Integrity
 from routes.integrity_fix_engine import router as integrity_fix_router
 
+# Integrity Monitor - Nightly Scheduled Checks
+from routes.integrity_monitor import router as integrity_monitor_router
+
 # Mount all routers under /api - Core ERP
 app.include_router(auth_router, prefix="/api")
 app.include_router(products_router, prefix="/api")

@@ -1,32 +1,32 @@
 {
-  "timestamp": "2026-03-14T18:45:25.713519+00:00",
+  "timestamp": "2026-03-14T18:51:14.167720+00:00",
   "checks": {
     "journal_balance": {
-      "total_debit": 91492017.5,
-      "total_credit": 91492017.5,
+      "total_debit": 250000,
+      "total_credit": 250000.0,
       "difference": 0.0,
       "status": "PASS"
     },
     "inventory_vs_gl": {
-      "ssot_value": 225006322512004.0,
-      "gl_value": -2670000.0,
-      "variance": 225006325182004.0,
-      "status": "WARN"
+      "ssot_value": 0.0,
+      "gl_value": 0,
+      "variance": 0.0,
+      "status": "PASS"
     },
     "missing_journals": {
-      "total_sales": 129,
+      "total_sales": 0,
       "missing_count": 0,
       "status": "PASS"
     },
     "trial_balance": {
-      "debit": 91492017.5,
-      "credit": 91492017.5,
+      "debit": 250000,
+      "credit": 250000.0,
       "balanced": true,
       "status": "PASS"
     },
     "balance_sheet": {
-      "assets": 12930687.5,
-      "liabilities_equity": 12930687.5,
+      "assets": -250000.0,
+      "liabilities_equity": -250000,
       "difference": 0.0,
       "status": "PASS"
     }

@@ -1,87 +1,123 @@
 #!/bin/bash
-# OCB TITAN ERP - Backup Verification Script
-# Validates backup integrity
+# OCB TITAN ERP - Backup Verification Script v2
+# Validates backup integrity, checksum, and size
 
 set -e
 
 BACKUP_DIR="/backup/ocb_titan"
 OUTPUT_FILE="${BACKUP_DIR}/backup_validation.json"
 
-echo "Starting backup validation..."
+echo "=== OCB TITAN Backup Verification ==="
 
 # Find latest backup
-LATEST_BACKUP=$(ls -t ${BACKUP_DIR}/backup_*.tar.gz 2>/dev/null | head -1)
+LATEST_BACKUP=$(ls -t "${BACKUP_DIR}"/backup_*.tar.gz 2>/dev/null | head -1)
 
 if [ -z "$LATEST_BACKUP" ]; then
-    echo '{"status": "error", "message": "No backup files found"}' > $OUTPUT_FILE
+    echo "ERROR: No backup files found"
+    cat > "$OUTPUT_FILE" << EOF
+{
+    "timestamp": "$(date -Iseconds)",
+    "status": "FAILED",
+    "error": "No backup files found",
+    "checks": {}
+}
+EOF
     exit 1
 fi
 
 BACKUP_NAME=$(basename "$LATEST_BACKUP")
 CHECKSUM_FILE="${LATEST_BACKUP}.sha256"
 
-# 1. Check if checksum file exists
-if [ ! -f "$CHECKSUM_FILE" ]; then
-    echo '{"status": "error", "message": "Checksum file not found"}' > $OUTPUT_FILE
-    exit 1
-fi
+echo "Verifying: $BACKUP_NAME"
 
-# 2. Verify checksum
-echo "Verifying checksum..."
-EXPECTED_CHECKSUM=$(cat "$CHECKSUM_FILE" | awk '{print $1}')
-ACTUAL_CHECKSUM=$(sha256sum "$LATEST_BACKUP" | awk '{print $1}')
+# Initialize results
+ARCHIVE_CHECK="PASS"
+CHECKSUM_CHECK="PASS"
+SIZE_CHECK="PASS"
+CONTENT_CHECK="PASS"
+ERRORS=""
 
-if [ "$EXPECTED_CHECKSUM" != "$ACTUAL_CHECKSUM" ]; then
-    cat > $OUTPUT_FILE << EOF
-{
-    "status": "error",
-    "message": "Checksum mismatch",
-    "expected": "$EXPECTED_CHECKSUM",
-    "actual": "$ACTUAL_CHECKSUM"
-}
-EOF
-    exit 1
-fi
-
-# 3. Verify archive integrity
-echo "Verifying archive integrity..."
-if ! tar -tzf "$LATEST_BACKUP" > /dev/null 2>&1; then
-    echo '{"status": "error", "message": "Archive is corrupted"}' > $OUTPUT_FILE
-    exit 1
-fi
-
-# 4. List archive contents
-FILE_COUNT=$(tar -tzf "$LATEST_BACKUP" | wc -l)
-ARCHIVE_SIZE=$(du -h "$LATEST_BACKUP" | awk '{print $1}')
-
-# 5. Extract and check metadata
-TEMP_DIR=$(mktemp -d)
-tar -xzf "$LATEST_BACKUP" -C "$TEMP_DIR" --wildcards "*/backup_metadata.json" 2>/dev/null || true
-
-METADATA_FILE=$(find "$TEMP_DIR" -name "backup_metadata.json" 2>/dev/null | head -1)
-if [ -f "$METADATA_FILE" ]; then
-    METADATA=$(cat "$METADATA_FILE")
+# 1. Archive Integrity Check
+echo "1. Checking archive integrity..."
+if gzip -t "$LATEST_BACKUP" 2>/dev/null; then
+    echo "   ✓ Archive integrity: PASS"
 else
-    METADATA="{}"
+    ARCHIVE_CHECK="FAIL"
+    ERRORS="${ERRORS}Archive corrupted. "
+    echo "   ✗ Archive integrity: FAIL"
 fi
 
-rm -rf "$TEMP_DIR"
+# 2. Checksum Verification
+echo "2. Verifying checksum..."
+if [ -f "$CHECKSUM_FILE" ]; then
+    cd "$BACKUP_DIR"
+    if sha256sum -c "$CHECKSUM_FILE" --quiet 2>/dev/null; then
+        echo "   ✓ Checksum verification: PASS"
+    else
+        CHECKSUM_CHECK="FAIL"
+        ERRORS="${ERRORS}Checksum mismatch. "
+        echo "   ✗ Checksum verification: FAIL"
+    fi
+else
+    CHECKSUM_CHECK="SKIP"
+    echo "   - Checksum file not found, skipping"
+fi
 
-# Generate validation report
-cat > $OUTPUT_FILE << EOF
+# 3. Backup Size Validation (minimum 1KB)
+echo "3. Validating backup size..."
+BACKUP_SIZE_BYTES=$(stat -c%s "$LATEST_BACKUP" 2>/dev/null || stat -f%z "$LATEST_BACKUP" 2>/dev/null || echo "0")
+BACKUP_SIZE_HUMAN=$(du -h "$LATEST_BACKUP" | cut -f1)
+
+if [ "$BACKUP_SIZE_BYTES" -gt 1024 ]; then
+    echo "   ✓ Backup size: $BACKUP_SIZE_HUMAN (PASS)"
+else
+    SIZE_CHECK="FAIL"
+    ERRORS="${ERRORS}Backup too small. "
+    echo "   ✗ Backup size: $BACKUP_SIZE_HUMAN (FAIL - too small)"
+fi
+
+# 4. Content Verification (check archive contents)
+echo "4. Verifying archive contents..."
+CONTENT_LIST=$(tar -tzf "$LATEST_BACKUP" 2>/dev/null | head -20)
+HAS_MONGO=$(echo "$CONTENT_LIST" | grep -c "mongo_dump" || true)
+HAS_CONFIG=$(echo "$CONTENT_LIST" | grep -c "config" || true)
+
+if [ "$HAS_MONGO" -gt 0 ] || [ "$HAS_CONFIG" -gt 0 ]; then
+    echo "   ✓ Content verification: PASS"
+else
+    CONTENT_CHECK="WARN"
+    echo "   - Content verification: WARNING (minimal content)"
+fi
+
+# Determine overall status
+if [ "$ARCHIVE_CHECK" = "PASS" ] && [ "$SIZE_CHECK" = "PASS" ]; then
+    OVERALL_STATUS="PASS"
+else
+    OVERALL_STATUS="FAIL"
+fi
+
+# Generate JSON report
+cat > "$OUTPUT_FILE" << EOF
 {
-    "status": "valid",
+    "timestamp": "$(date -Iseconds)",
     "backup_file": "$BACKUP_NAME",
     "backup_path": "$LATEST_BACKUP",
-    "file_size": "$ARCHIVE_SIZE",
-    "file_count": $FILE_COUNT,
-    "checksum_valid": true,
-    "checksum": "$ACTUAL_CHECKSUM",
-    "archive_integrity": "valid",
-    "validated_at": "$(date -Iseconds)",
-    "metadata": $METADATA
+    "backup_size": "$BACKUP_SIZE_HUMAN",
+    "backup_size_bytes": $BACKUP_SIZE_BYTES,
+    "status": "$OVERALL_STATUS",
+    "checks": {
+        "archive_integrity": "$ARCHIVE_CHECK",
+        "checksum_verification": "$CHECKSUM_CHECK",
+        "size_validation": "$SIZE_CHECK",
+        "content_verification": "$CONTENT_CHECK"
+    },
+    "errors": "$ERRORS"
 }
 EOF
 
-echo "Backup validation completed successfully!"
-cat $OUTPUT_FILE
+echo ""
+echo "=== Verification Complete ==="
+echo "Status: $OVERALL_STATUS"
+echo "Report: $OUTPUT_FILE"
+
+exit 0

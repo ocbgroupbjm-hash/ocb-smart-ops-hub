@@ -1,0 +1,128 @@
+{
+  "timestamp": "2026-03-14T18:51:46.606069",
+  "config": {
+    "concurrent_users": 100,
+    "transactions_per_minute": 50,
+    "test_duration_seconds": 30
+  },
+  "endpoints": {
+    "/api/system/health": {
+      "total_requests": 100,
+      "successful": 100,
+      "failed": 0,
+      "avg_ms": 407.06,
+      "min_ms": 260.82,
+      "max_ms": 524.44,
+      "p95_ms": 487.25,
+      "error_rate": 0.0
+    },
+    "/api/products": {
+      "total_requests": 100,
+      "successful": 100,
+      "failed": 0,
+      "avg_ms": 236.92,
+      "min_ms": 81.37,
+      "max_ms": 389.32,
+      "p95_ms": 375.05,
+      "error_rate": 0.0
+    },
+    "/api/branches": {
+      "total_requests": 100,
+      "successful": 100,
+      "failed": 0,
+      "avg_ms": 216.2,
+      "min_ms": 56.17,
+      "max_ms": 499.49,
+      "p95_ms": 337.06,
+      "error_rate": 0.0
+    },
+    "/api/pos/transactions": {
+      "total_requests": 100,
+      "successful": 100,
+      "failed": 0,
+      "avg_ms": 176.1,
+      "min_ms": 59.1,
+      "max_ms": 554.48,
+      "p95_ms": 232.7,
+      "error_rate": 0.0
+    },
+    "/api/sales/invoices": {
+      "total_requests": 100,
+      "successful": 100,
+      "failed": 0,
+      "avg_ms": 181.04,
+      "min_ms": 54.89,
+      "max_ms": 584.35,
+      "p95_ms": 447.78,
+      "error_rate": 0.0
+    },
+    "/api/inventory/stock": {
+      "total_requests": 100,
+      "successful": 100,
+      "failed": 0,
+      "avg_ms": 147.1,
+      "min_ms": 58.24,
+      "max_ms": 306.08,
+      "p95_ms": 219.79,
+      "error_rate": 0.0
+    },
+    "/api/accounting/journals": {
+      "total_requests": 100,
+      "successful": 100,
+      "failed": 0,
+      "avg_ms": 114.52,
+      "min_ms": 54.42,
+      "max_ms": 191.39,
+      "p95_ms": 158.07,
+      "error_rate": 0.0
+    },
+    "/api/accounting/financial/trial-balance": {
+      "total_requests": 100,
+      "successful": 100,
+      "failed": 0,
+      "avg_ms": 114.16,
+      "min_ms": 56.56,
+      "max_ms": 335.91,
+      "p95_ms": 153.75,
+      "error_rate": 0.0
+    },
+    "/api/dashboard/owner": {
+      "total_requests": 100,
+      "successful": 100,
+      "failed": 0,
+      "avg_ms": 295.74,
+      "min_ms": 103.12,
+      "max_ms": 407.09,
+      "p95_ms": 361.75,
+      "error_rate": 0.0
+    },
+    "/api/ar/list": {
+      "total_requests": 100,
+      "successful": 91,
+      "failed": 9,
+      "avg_ms": 140.82,
+      "min_ms": 19.95,
+      "max_ms": 206.19,
+      "p95_ms": 190.16,
+      "error_rate": 9.0
+    }
+  },
+  "summary": {
+    "total_requests": 1000,
+    "successful_requests": 991,
+    "failed_requests": 9,
+    "error_rate_percent": 0.9,
+    "avg_response_ms": 202.96,
+    "min_response_ms": 19.95,
+    "max_response_ms": 584.35,
+    "p95_response_ms": 453.36,
+    "p99_response_ms": 487.97,
+    "requests_per_second": 300.16,
+    "test_duration_seconds": 3.33
+  },
+  "performance_check": {
+    "avg_under_300ms": true,
+    "error_rate_under_1pct": true,
+    "overall_status": "PASS"
+  }
+}
