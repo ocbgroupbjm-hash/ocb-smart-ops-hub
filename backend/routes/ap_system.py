@@ -200,8 +200,6 @@ async def create_ap_payment_journal(
     branch_id = ap.get("branch_id")
     payment_method = payment.get("payment_method", "cash")
     
-    today = datetime.now(timezone.utc).strftime("%Y%m%d")
-    
     # Use central number generator for journal
     from utils.number_generator import generate_transaction_number
     journal_number = await generate_transaction_number(db, "JV")
@@ -300,6 +298,7 @@ async def list_ap(
     start_date: str = "",
     end_date: str = "",
     overdue_only: str = "",
+    include_deleted: str = "",
     skip: int = 0,
     limit: int = 50,
     user: dict = Depends(get_current_user)
@@ -311,6 +310,13 @@ async def list_ap(
         raise HTTPException(status_code=403, detail="AKSES DITOLAK")
     
     query = {}
+    
+    # Exclude soft-deleted by default
+    if include_deleted != "yes":
+        query["$or"] = [
+            {"is_deleted": {"$exists": False}},
+            {"is_deleted": False}
+        ]
     
     if scope["filter"]:
         query.update(scope["filter"])
@@ -724,6 +730,74 @@ async def get_ap_summary(
             summary["due_this_week_amount"] += ap.get("outstanding_amount", 0)
     
     return summary
+
+
+@router.put("/{ap_id}/soft-delete")
+async def soft_delete_ap(
+    ap_id: str,
+    request: Request,
+    user: dict = Depends(get_current_user)
+):
+    """
+    Soft delete AP - sets status to 'deleted' instead of hard delete.
+    Only allowed for AP without any payments.
+    
+    ARSITEKTUR AP/AR Enterprise:
+    - Soft delete only for payments without journal/audit trail
+    - Hard delete NEVER allowed for posted transactions
+    """
+    scope = await get_user_ap_scope(user)
+    
+    if not scope["can_create"]:
+        raise HTTPException(status_code=403, detail="AKSES DITOLAK")
+    
+    ap = await ap_collection.find_one({"id": ap_id}, {"_id": 0})
+    if not ap:
+        raise HTTPException(status_code=404, detail="Hutang tidak ditemukan")
+    
+    if scope["filter"].get("branch_id") and ap.get("branch_id") != scope["filter"]["branch_id"]:
+        raise HTTPException(status_code=403, detail="AKSES DITOLAK")
+    
+    # Validation: Cannot delete if has payments
+    if ap.get("paid_amount", 0) > 0:
+        raise HTTPException(status_code=400, detail="Tidak dapat menghapus hutang yang sudah ada pembayaran")
+    
+    if ap.get("status") == "paid":
+        raise HTTPException(status_code=400, detail="Tidak dapat menghapus hutang yang sudah lunas")
+    
+    # Check if has any payments recorded
+    payment_count = await ap_payments.count_documents({"ap_id": ap_id})
+    if payment_count > 0:
+        raise HTTPException(status_code=400, detail="Tidak dapat menghapus hutang yang sudah ada catatan pembayaran")
+    
+    user_id = scope["user_id"]
+    user_name = user.get("name", "")
+    
+    # Soft delete - mark as deleted
+    await ap_collection.update_one(
+        {"id": ap_id},
+        {"$set": {
+            "status": "deleted",
+            "is_deleted": True,
+            "deleted_at": datetime.now(timezone.utc).isoformat(),
+            "deleted_by": user_id,
+            "deleted_by_name": user_name,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    await log_activity(
+        db, user_id, user_name,
+        "soft_delete", "accounts_payable",
+        f"Menghapus hutang {ap.get('ap_no')} supplier {ap.get('supplier_name')}",
+        request.client.host if request.client else "",
+        ap.get("branch_id")
+    )
+    
+    return {
+        "message": "Hutang berhasil dihapus (soft delete)",
+        "ap_no": ap.get("ap_no")
+    }
 
 
 # ==================== AUTO-CREATE FROM PURCHASE ====================

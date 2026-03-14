@@ -6,10 +6,11 @@ import { Badge } from '../../components/ui/badge';
 import { 
   Search, Eye, DollarSign, AlertTriangle, RefreshCw, 
   Filter, Download, Calendar, Building2, Clock,
-  TrendingUp, TrendingDown, FileText, Wallet
+  TrendingUp, TrendingDown, FileText, Wallet, Edit, Trash2, Printer, Plus
 } from 'lucide-react';
 import APDetailModal from '../../components/accounting/APDetailModal';
 import APPaymentModal from '../../components/accounting/APPaymentModal';
+import { toast } from 'sonner';
 
 const API = process.env.REACT_APP_BACKEND_URL;
 
@@ -36,6 +37,8 @@ export default function AccountsPayable() {
   const [selectedAP, setSelectedAP] = useState(null);
   const [showDetail, setShowDetail] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   
   const token = localStorage.getItem('token');
 
@@ -120,9 +123,147 @@ export default function AccountsPayable() {
     setShowPayment(true);
   };
 
+  const handleEdit = (ap) => {
+    // Only allow edit for draft/open status that hasn't been paid yet
+    if (ap.status === 'paid') {
+      toast.error('Hutang lunas tidak bisa diedit. Gunakan jurnal koreksi.');
+      return;
+    }
+    if (ap.paid_amount > 0) {
+      toast.error('Hutang yang sudah ada pembayaran tidak bisa diedit langsung. Gunakan jurnal koreksi.');
+      return;
+    }
+    setSelectedAP(ap);
+    setShowEditModal(true);
+  };
+
+  const handleSoftDelete = async (ap) => {
+    // Validation: cannot delete if has payments or journal
+    if (ap.status === 'paid' || ap.paid_amount > 0) {
+      toast.error('Tidak dapat menghapus hutang yang sudah ada pembayaran');
+      return;
+    }
+    
+    if (!window.confirm(`Yakin ingin menghapus hutang ${ap.ap_no}? Data akan di-soft delete.`)) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API}/api/ap/${ap.id}/soft-delete`, {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (res.ok) {
+        toast.success('Hutang berhasil dihapus');
+        fetchAPList();
+        fetchSummary();
+      } else {
+        const data = await res.json();
+        toast.error(data.detail || 'Gagal menghapus hutang');
+      }
+    } catch (err) {
+      console.error('Delete error:', err);
+      toast.error('Terjadi kesalahan saat menghapus');
+    }
+  };
+
+  const handlePrint = (ap) => {
+    // Open print modal or generate PDF
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Bukti Hutang - ${ap.ap_no}</title>
+        <style>
+          body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }
+          .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 15px; margin-bottom: 20px; }
+          .company { font-size: 18px; font-weight: bold; }
+          .title { font-size: 16px; margin-top: 10px; }
+          .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+          .info-item { padding: 10px; background: #f5f5f5; border-radius: 4px; }
+          .label { font-size: 12px; color: #666; margin-bottom: 4px; }
+          .value { font-size: 14px; font-weight: 500; }
+          .amount-section { background: #f0f9ff; padding: 20px; border-radius: 8px; margin: 20px 0; }
+          .amount { font-size: 24px; font-weight: bold; color: #dc2626; }
+          .footer { margin-top: 40px; display: flex; justify-content: space-between; }
+          .signature { text-align: center; width: 200px; }
+          .signature-line { border-top: 1px solid #333; margin-top: 60px; padding-top: 10px; }
+          @media print { body { padding: 0; } }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div class="company">OCB TITAN ERP</div>
+          <div class="title">BUKTI HUTANG DAGANG</div>
+        </div>
+        
+        <div class="info-grid">
+          <div class="info-item">
+            <div class="label">No. Hutang</div>
+            <div class="value">${ap.ap_no || '-'}</div>
+          </div>
+          <div class="info-item">
+            <div class="label">Tanggal</div>
+            <div class="value">${ap.ap_date || '-'}</div>
+          </div>
+          <div class="info-item">
+            <div class="label">Supplier</div>
+            <div class="value">${ap.supplier_name || '-'}</div>
+          </div>
+          <div class="info-item">
+            <div class="label">Jatuh Tempo</div>
+            <div class="value">${ap.due_date || '-'}</div>
+          </div>
+          <div class="info-item">
+            <div class="label">No. Invoice Supplier</div>
+            <div class="value">${ap.supplier_invoice_no || '-'}</div>
+          </div>
+          <div class="info-item">
+            <div class="label">Status</div>
+            <div class="value">${ap.status?.toUpperCase() || 'OPEN'}</div>
+          </div>
+        </div>
+        
+        <div class="amount-section">
+          <div class="label">Total Hutang</div>
+          <div class="amount">Rp ${(ap.original_amount || 0).toLocaleString('id-ID')}</div>
+          <div style="margin-top: 10px;">
+            <span>Terbayar: Rp ${(ap.paid_amount || 0).toLocaleString('id-ID')}</span>
+            <span style="margin-left: 20px;">Outstanding: Rp ${(ap.outstanding_amount || 0).toLocaleString('id-ID')}</span>
+          </div>
+        </div>
+        
+        ${ap.notes ? `<div style="margin: 20px 0;"><strong>Catatan:</strong> ${ap.notes}</div>` : ''}
+        
+        <div class="footer">
+          <div class="signature">
+            <div>Dibuat oleh</div>
+            <div class="signature-line">${ap.created_by_name || ''}</div>
+          </div>
+          <div class="signature">
+            <div>Disetujui oleh</div>
+            <div class="signature-line">________________</div>
+          </div>
+        </div>
+        
+        <div style="text-align: center; margin-top: 30px; font-size: 11px; color: #666;">
+          Dicetak pada: ${new Date().toLocaleString('id-ID')}
+        </div>
+        
+        <script>window.onload = function() { window.print(); }</script>
+      </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
   const handleModalClose = (refresh = false) => {
     setShowDetail(false);
     setShowPayment(false);
+    setShowCreateModal(false);
+    setShowEditModal(false);
     setSelectedAP(null);
     if (refresh) {
       fetchAPList();
@@ -183,10 +324,16 @@ export default function AccountsPayable() {
           <h1 className="text-2xl font-bold text-gray-900">Hutang Dagang (AP)</h1>
           <p className="text-gray-500 text-sm mt-1">Kelola hutang ke supplier</p>
         </div>
-        <Button onClick={exportToCSV} variant="outline" data-testid="btn-export">
-          <Download className="w-4 h-4 mr-2" />
-          Export CSV
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={() => setShowCreateModal(true)} className="bg-purple-600 hover:bg-purple-700" data-testid="btn-add-ap">
+            <Plus className="w-4 h-4 mr-2" />
+            Tambah Hutang
+          </Button>
+          <Button onClick={exportToCSV} variant="outline" data-testid="btn-export">
+            <Download className="w-4 h-4 mr-2" />
+            Export CSV
+          </Button>
+        </div>
       </div>
 
       {/* Summary Cards */}
@@ -436,24 +583,69 @@ export default function AccountsPayable() {
                           </Badge>
                         </td>
                         <td className="px-4 py-3 text-center">
-                          <div className="flex items-center justify-center gap-1">
+                          <div className="flex items-center justify-center gap-0.5">
+                            {/* Detail Button */}
                             <Button 
                               variant="ghost" 
                               size="sm"
                               onClick={() => handleViewDetail(ap)}
+                              title="Lihat Detail"
                               data-testid={`btn-view-${ap.id}`}
                             >
                               <Eye className="w-4 h-4" />
                             </Button>
+                            
+                            {/* Edit Button - Only for draft/open without payments */}
+                            {ap.status !== 'paid' && (ap.paid_amount || 0) === 0 && (
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={() => handleEdit(ap)}
+                                title="Edit"
+                                className="text-blue-600"
+                                data-testid={`btn-edit-${ap.id}`}
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                            )}
+                            
+                            {/* Pay Button */}
                             {ap.status !== 'paid' && (
                               <Button 
                                 variant="ghost" 
                                 size="sm"
                                 onClick={() => handlePayment(ap)}
+                                title="Bayar"
                                 className="text-green-600"
                                 data-testid={`btn-pay-${ap.id}`}
                               >
                                 <DollarSign className="w-4 h-4" />
+                              </Button>
+                            )}
+                            
+                            {/* Print Button */}
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => handlePrint(ap)}
+                              title="Cetak"
+                              className="text-gray-600"
+                              data-testid={`btn-print-${ap.id}`}
+                            >
+                              <Printer className="w-4 h-4" />
+                            </Button>
+                            
+                            {/* Delete Button - Soft delete only for unpaid */}
+                            {ap.status !== 'paid' && (ap.paid_amount || 0) === 0 && (
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={() => handleSoftDelete(ap)}
+                                title="Hapus"
+                                className="text-red-600"
+                                data-testid={`btn-delete-${ap.id}`}
+                              >
+                                <Trash2 className="w-4 h-4" />
                               </Button>
                             )}
                           </div>
