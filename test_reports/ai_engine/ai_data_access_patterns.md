@@ -1,0 +1,199 @@
+# OCB TITAN ERP - AI Data Access Patterns
+**Generated:** 2026-03-14T19:47:58.394996+00:00
+**Target Tenant:** ocb_titan
+**AI Engine Version:** 1.0.0
+
+---
+
+## OVERVIEW
+
+This document describes the data access patterns used by the AI Business Engine
+to ensure compliance with read-only requirements and SSOT integrity.
+
+---
+
+## DATA ACCESS ARCHITECTURE
+
+```
+┌─────────────────────────────────────────┐
+│         AI Business Engine              │
+│                                         │
+│  ┌───────────────────────────────────┐  │
+│  │         AI API Endpoints          │  │
+│  │  (GET /api/ai/sales/insights)     │  │
+│  └────────────────┬──────────────────┘  │
+│                   │                     │
+│                   ↓                     │
+│  ┌───────────────────────────────────┐  │
+│  │       AIInsightsEngine            │  │
+│  │  (Compute insights from data)     │  │
+│  └────────────────┬──────────────────┘  │
+│                   │                     │
+│                   ↓                     │
+│  ┌───────────────────────────────────┐  │
+│  │       AIFeatureBuilder            │  │
+│  │  (Build features from raw data)   │  │
+│  └────────────────┬──────────────────┘  │
+│                   │                     │
+│                   ↓                     │
+│  ┌───────────────────────────────────┐  │
+│  │      AIDataAccessLayer            │  │
+│  │  (READ-ONLY database access)      │  │
+│  └────────────────┬──────────────────┘  │
+│                   │                     │
+└───────────────────┼─────────────────────┘
+                    │
+                    ↓ READ-ONLY
+┌─────────────────────────────────────────┐
+│            MongoDB Database             │
+│         (Tenant: ocb_titan)             │
+└─────────────────────────────────────────┘
+```
+
+---
+
+## QUERY PATTERNS
+
+### 1. Sales Data Query
+
+```python
+# Collection: sales_invoices
+# Purpose: Analyze sales trends and top products
+
+await data.read_collection(
+    collection="sales_invoices",
+    query={"created_at": {"$gte": since_date}},
+    projection={"_id": 0},  # Always exclude _id
+    limit=5000,
+    sort=[("created_at", -1)]
+)
+```
+
+### 2. Inventory Data Query
+
+```python
+# Collection: stock_movements (SSOT)
+# Purpose: Analyze inventory patterns
+
+await data.read_collection(
+    collection="stock_movements",
+    query={},
+    projection={"_id": 0},
+    limit=5000
+)
+```
+
+### 3. Finance Data Query
+
+```python
+# Collection: journal_entries (SSOT)
+# Purpose: Analyze financial health
+
+await data.read_collection(
+    collection="journal_entries",
+    query={"status": "posted"},
+    projection={"_id": 0},
+    limit=5000
+)
+```
+
+### 4. Aggregation Pattern
+
+```python
+# Used for: Statistics, grouping, summation
+
+await data.aggregate(
+    collection="sales_invoices",
+    pipeline=[
+        {"$match": {"created_at": {"$gte": since}}},
+        {"$group": {
+            "_id": "$product_id",
+            "total_qty": {"$sum": "$qty"},
+            "total_revenue": {"$sum": "$subtotal"}
+        }},
+        {"$limit": 100}
+    ]
+)
+```
+
+---
+
+## COLLECTION ACCESS MATRIX
+
+| Collection | Read | Aggregate | Count | Insert | Update | Delete |
+|------------|------|-----------|-------|--------|--------|--------|
+| sales_invoices | ✅ | ✅ | ✅ | ⛔ | ⛔ | ⛔ |
+| products | ✅ | ✅ | ✅ | ⛔ | ⛔ | ⛔ |
+| stock_movements | ✅ | ✅ | ✅ | ⛔ | ⛔ | ⛔ |
+| stock | ✅ | ✅ | ✅ | ⛔ | ⛔ | ⛔ |
+| journal_entries | ✅ | ✅ | ✅ | ⛔ | ⛔ | ⛔ |
+| chart_of_accounts | ✅ | ✅ | ✅ | ⛔ | ⛔ | ⛔ |
+| cash_transactions | ✅ | ✅ | ✅ | ⛔ | ⛔ | ⛔ |
+| branches | ✅ | ✅ | ✅ | ⛔ | ⛔ | ⛔ |
+
+---
+
+## QUERY SAFETY FEATURES
+
+### 1. _id Exclusion
+```python
+# Always exclude MongoDB _id from projections
+projection["_id"] = 0
+```
+
+### 2. Query Limits
+```python
+# Default limit prevents resource exhaustion
+cursor = cursor.limit(limit)  # Default: 1000
+```
+
+### 3. Kill Switch Check
+```python
+# Every query checks kill switch first
+AIKillSwitch.check_or_raise()
+```
+
+### 4. Tenant Isolation
+```python
+# Database context is tenant-specific
+self.db = db  # Already scoped to tenant
+```
+
+---
+
+## PERFORMANCE CONSIDERATIONS
+
+| Optimization | Implementation |
+|--------------|----------------|
+| Query limits | 1000 default, max 5000 |
+| Projection | Only needed fields |
+| Indexing | Uses existing indexes |
+| Aggregation limits | $limit in pipeline |
+
+---
+
+## SSOT COMPLIANCE
+
+| SSOT Source | Purpose | AI Access |
+|-------------|---------|-----------|
+| stock_movements | Inventory truth | READ-ONLY |
+| journal_entries | Accounting truth | READ-ONLY |
+
+⚠️ AI NEVER modifies SSOT sources. All analysis is based on
+read-only snapshots of these collections.
+
+---
+
+## CONCLUSION
+
+**AI DATA ACCESS PATTERNS: DOCUMENTED ✅**
+
+The AI Business Engine uses strictly read-only data access patterns:
+- SELECT/AGGREGATE only operations
+- No write operations possible
+- SSOT sources are protected
+- All queries are tenant-isolated and limited
+
+---
+
+*Evidence generated by OCB TITAN AI Validation Suite*

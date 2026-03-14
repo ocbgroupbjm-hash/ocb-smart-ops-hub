@@ -272,17 +272,17 @@ const Users = () => {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex justify-center gap-1">
-                        <button onClick={() => openModal(user)} className="p-2 text-blue-400 hover:bg-blue-900/20 rounded" title="Edit">
+                        <button onClick={() => openModal(user)} className="p-2 text-blue-400 hover:bg-blue-900/20 rounded" title="Edit" data-testid={`edit-user-${user.id}`}>
                           <Edit className="h-4 w-4" />
                         </button>
-                        <button onClick={() => openResetModal(user)} className="p-2 text-amber-400 hover:bg-amber-900/20 rounded" title="Reset Password">
+                        <button onClick={() => openResetModal(user)} className="p-2 text-amber-400 hover:bg-amber-900/20 rounded" title="Reset Password" data-testid={`reset-password-${user.id}`}>
                           <Key className="h-4 w-4" />
                         </button>
-                        <button onClick={() => toggleStatus(user.id, user.is_active !== false)} className={`p-2 rounded ${user.is_active !== false ? 'text-red-400 hover:bg-red-900/20' : 'text-green-400 hover:bg-green-900/20'}`} title={user.is_active !== false ? 'Nonaktifkan' : 'Aktifkan'}>
+                        <button onClick={() => toggleStatus(user.id, user.is_active !== false)} className={`p-2 rounded ${user.is_active !== false ? 'text-red-400 hover:bg-red-900/20' : 'text-green-400 hover:bg-green-900/20'}`} title={user.is_active !== false ? 'Nonaktifkan' : 'Aktifkan'} data-testid={`toggle-status-${user.id}`}>
                           <Shield className="h-4 w-4" />
                         </button>
-                        {currentUser?.role === 'owner' && user.id !== currentUser?.id && (
-                          <button onClick={() => deleteUser(user.id)} className="p-2 text-red-400 hover:bg-red-900/20 rounded" title="Hapus">
+                        {(currentUser?.role === 'owner' || currentUser?.role === 'super_admin') && user.id !== currentUser?.id && (
+                          <button onClick={() => deleteUser(user.id)} className="p-2 text-red-400 hover:bg-red-900/20 rounded" title="Hapus" data-testid={`delete-user-${user.id}`}>
                             <Trash2 className="h-4 w-4" />
                           </button>
                         )}
