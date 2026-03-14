@@ -2511,6 +2511,49 @@ Tombol delete user berhasil tetapi user tidak terhapus dari list.
 
 ---
 
-*Last Updated: 2026-03-14 (AP PAYMENT BUG FIX COMPLETE)*
-*Blueprint Version: 4.5.0 (AP PAYMENT HARDENING)*
+## UI CONTRAST FIX (2026-03-14) ✅
+
+### Bug 3: UI Contrast Issues - FIXED
+**Problem**: UI tidak sesuai design guideline (text kuning terang, background putih)
+
+**Design Tokens Implemented**:
+```javascript
+const DESIGN = {
+  text: {
+    primary: '#E5E7EB',   // Main content
+    secondary: '#9CA3AF', // Labels, hints
+    accent: '#F97316',    // Highlights
+  },
+  bg: {
+    page: '#0F172A',      // Background
+    card: '#1E293B',      // Cards/panels
+  },
+  border: '#334155',      // Borders
+};
+```
+
+### Changes Applied:
+- Page title: `text-amber-100` → `text-[#E5E7EB]`
+- Table background: `bg-[#1a1214]` → `bg-[#1E293B]`
+- Table headers: `text-amber-200` → `text-[#9CA3AF]`
+- Input borders: Red-tinted → `border-[#334155]`
+- Buttons: Gradient → Solid `bg-[#F97316]`
+- Modals: Consistent dark theme
+- Dropdowns: Dark backgrounds, no white
+
+### Design Reference:
+Following enterprise standards like:
+- Stripe Dashboard
+- Linear.app
+- Notion Dark UI
+
+### Evidence Files:
+- `/app/test_reports/ap_payment/ui_contrast_validation.md`
+- `/tmp/ap_payment_ui_fix.png` (screenshot)
+- `/tmp/modal_ui_fix.png` (screenshot)
+
+---
+
+*Last Updated: 2026-03-14 (UI CONTRAST FIX COMPLETE)*
+*Blueprint Version: 4.5.1 (ENTERPRISE UI STANDARD)*
 
