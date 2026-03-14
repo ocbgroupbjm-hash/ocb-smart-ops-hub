@@ -101,7 +101,14 @@ async def create_user(data: UserCreate, request: Request, user: dict = Depends(r
     
     # Get current database and find role
     db = get_db()
-    role_code = data.role if data.role in [r.value for r in UserRole] else "cashier"
+    
+    # Validate role code exists
+    valid_roles = ["owner", "admin", "finance", "warehouse", "cashier", "super_admin"]
+    role_code = data.role.lower() if data.role else "cashier"
+    
+    if role_code not in valid_roles:
+        raise HTTPException(status_code=400, detail=f"Role '{data.role}' tidak valid. Role yang tersedia: {', '.join(valid_roles)}")
+    
     role_doc = await db["roles"].find_one({"code": role_code})
     if not role_doc:
         raise HTTPException(status_code=400, detail=f"Role '{role_code}' tidak ditemukan. Role valid: owner, admin, finance, warehouse, cashier")

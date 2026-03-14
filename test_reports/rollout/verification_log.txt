@@ -1,0 +1,25 @@
+=== POST-ROLLOUT VERIFICATION ===
+
+--- Checking ocb_titan ---
+  Health: unknown
+  Blueprint: v2.0.0
+  Collections: 0
+  Issues: None ✓
+
+--- Checking ocb_unit_4 ---
+  Health: unknown
+  Blueprint: v2.0.0
+  Collections: 0
+  Issues: None ✓
+
+--- Checking ocb_unt_1 ---
+  Health: unknown
+  Blueprint: v2.0.0
+  Collections: 0
+  Issues: None ✓
+
+--- Checking erp_db ---
+  Health: unknown
+  Blueprint: v2.0.0
+  Collections: 0
+  Issues: None ✓

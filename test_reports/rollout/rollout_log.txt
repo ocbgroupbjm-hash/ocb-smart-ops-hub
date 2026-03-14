@@ -1,0 +1,15 @@
+=== BLUEPRINT ROLLOUT ===
+
+--- Syncing ocb_unit_4 ---
+  Status: synced
+  Version: 2.0.0
+
+--- Syncing ocb_unt_1 ---
+  Status: synced
+  Version: 2.0.0
+
+--- Syncing erp_db ---
+  Status: synced
+  Version: 2.0.0
+
+=== ROLLOUT COMPLETE ===
