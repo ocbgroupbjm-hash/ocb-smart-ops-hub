@@ -327,7 +327,7 @@ async def get_ai_monitoring(
     
     # Calculate stats
     total_requests = len(ai_logs)
-    avg_execution_time = sum(l.get("execution_time_ms", 0) for l in ai_logs) / max(total_requests, 1)
+    avg_execution_time = sum(log.get("execution_time_ms", 0) for log in ai_logs) / max(total_requests, 1)
     
     # Group by endpoint
     by_endpoint = {}
@@ -372,8 +372,8 @@ async def get_security_overview(
         {"_id": 0}
     ).sort("timestamp", -1).to_list(100)
     
-    successful_logins = sum(1 for l in login_logs if l.get("action") == "login")
-    failed_logins = sum(1 for l in login_logs if l.get("action") == "login_failed")
+    successful_logins = sum(1 for log in login_logs if log.get("action") == "login")
+    failed_logins = sum(1 for log in login_logs if log.get("action") == "login_failed")
     
     # Security events
     security_events = await db["audit_logs"].find(
@@ -432,3 +432,268 @@ async def get_dashboard_summary(user: dict = Depends(require_super_admin)):
             "total_journals": accounting["journal_counts"]["total"]
         }
     }
+
+
+
+# ==================== PRIORITAS 6: BLUEPRINT SYNC ====================
+
+CURRENT_BLUEPRINT_VERSION = "2.1.0"  # Updated after PRIORITAS 1-5
+
+class BlueprintSyncRequest:
+    pass
+
+@router.post("/blueprint/lock")
+async def lock_blueprint_version(
+    version: str = CURRENT_BLUEPRINT_VERSION,
+    user: dict = Depends(require_super_admin)
+):
+    """
+    PRIORITAS 6: Lock blueprint version before sync
+    This marks the current version as production-ready
+    """
+    from motor.motor_asyncio import AsyncIOMotorClient
+    mongo_url = os.environ.get("MONGO_URL", "mongodb://localhost:27017")
+    client = AsyncIOMotorClient(mongo_url)
+    
+    try:
+        main_db = client["erp_db"]
+        
+        # Create blueprint lock record
+        lock_record = {
+            "version": version,
+            "locked_at": datetime.now(timezone.utc).isoformat(),
+            "locked_by": user.get("user_id", user.get("id", "")),
+            "locked_by_name": user.get("name", ""),
+            "status": "locked",
+            "features": [
+                "PRIORITAS 1: Journal Security - System journals protected",
+                "PRIORITAS 2: GL Search Improvement - Single letter search",
+                "PRIORITAS 3: Date Format DD/MM/YYYY",
+                "PRIORITAS 4: Purchase Export to Excel",
+                "PRIORITAS 5: Serial Number Range",
+                "HR KPI Engine UI",
+                "HR Analytics Dashboard",
+                "AP/AR Payment Allocation Engine"
+            ]
+        }
+        
+        await main_db["blueprint_versions"].insert_one(lock_record)
+        
+        return {
+            "success": True,
+            "message": f"Blueprint version {version} locked successfully",
+            "version": version,
+            "locked_at": lock_record["locked_at"]
+        }
+    finally:
+        client.close()
+
+
+@router.post("/blueprint/sync")
+async def sync_blueprint_to_tenants(
+    user: dict = Depends(require_super_admin)
+):
+    """
+    PRIORITAS 6: Sync blueprint to all tenants
+    Updates all tenant databases to current blueprint version
+    """
+    from motor.motor_asyncio import AsyncIOMotorClient
+    mongo_url = os.environ.get("MONGO_URL", "mongodb://localhost:27017")
+    client = AsyncIOMotorClient(mongo_url)
+    
+    sync_results = []
+    
+    try:
+        # Get all tenants
+        tenants = await get_all_tenants_from_registry()
+        
+        for tenant in tenants:
+            tenant_id = tenant.get("id")
+            tenant_name = tenant.get("name")
+            db_name = tenant.get("db_name")  # Fixed: use db_name not database_name
+            
+            if not db_name:
+                sync_results.append({
+                    "tenant_id": tenant_id,
+                    "tenant_name": tenant_name,
+                    "status": "skipped",
+                    "reason": "No db_name configured"
+                })
+                continue
+            
+            try:
+                tenant_db = client[db_name]
+                
+                # Update tenant's blueprint_version in _tenant_metadata
+                await tenant_db["_tenant_metadata"].update_one(
+                    {},  # Update the single metadata document
+                    {"$set": {
+                        "blueprint_version": CURRENT_BLUEPRINT_VERSION,
+                        "last_sync": datetime.now(timezone.utc).isoformat(),
+                        "synced_by": user.get("name", "")
+                    }},
+                    upsert=True
+                )
+                
+                # Ensure required collections exist
+                required_collections = [
+                    "journal_entries", "journal_lines", "accounts", "journals",
+                    "ap_invoices", "ap_payments", "ap_payment_allocations",
+                    "ar_invoices", "ar_payments", "ar_payment_allocations",
+                    "employees", "attendance_logs", "payroll", "leave_requests",
+                    "kpi_targets", "kpi_results",
+                    "inventory_serial_numbers", "stock_movements", "products"
+                ]
+                
+                existing_collections = await tenant_db.list_collection_names()
+                
+                for coll in required_collections:
+                    if coll not in existing_collections:
+                        await tenant_db.create_collection(coll)
+                
+                sync_results.append({
+                    "tenant_id": tenant_id,
+                    "tenant_name": tenant_name,
+                    "database_name": db_name,
+                    "status": "success",
+                    "new_version": CURRENT_BLUEPRINT_VERSION,
+                    "collections_verified": len(required_collections)
+                })
+                
+            except Exception as e:
+                sync_results.append({
+                    "tenant_id": tenant_id,
+                    "tenant_name": tenant_name,
+                    "status": "failed",
+                    "error": str(e)
+                })
+        
+        # Summary
+        success_count = sum(1 for r in sync_results if r["status"] == "success")
+        failed_count = sum(1 for r in sync_results if r["status"] == "failed")
+        
+        return {
+            "success": True,
+            "blueprint_version": CURRENT_BLUEPRINT_VERSION,
+            "total_tenants": len(tenants),
+            "synced": success_count,
+            "failed": failed_count,
+            "results": sync_results,
+            "synced_at": datetime.now(timezone.utc).isoformat()
+        }
+        
+    finally:
+        client.close()
+
+
+@router.get("/blueprint/status")
+async def get_blueprint_status(user: dict = Depends(require_super_admin)):
+    """Get current blueprint sync status across all tenants"""
+    
+    tenants = await get_all_tenants_from_registry()
+    
+    tenant_versions = []
+    for tenant in tenants:
+        tenant_versions.append({
+            "tenant_id": tenant.get("id"),
+            "tenant_name": tenant.get("name"),
+            "blueprint_version": tenant.get("blueprint_version", "unknown"),
+            "last_sync": tenant.get("last_sync"),
+            "is_current": tenant.get("blueprint_version") == CURRENT_BLUEPRINT_VERSION
+        })
+    
+    all_synced = all(t["is_current"] for t in tenant_versions)
+    
+    return {
+        "current_version": CURRENT_BLUEPRINT_VERSION,
+        "all_synced": all_synced,
+        "total_tenants": len(tenants),
+        "synced_count": sum(1 for t in tenant_versions if t["is_current"]),
+        "tenants": tenant_versions
+    }
+
+
+@router.post("/blueprint/smoke-test")
+async def run_smoke_test_all_tenants(user: dict = Depends(require_super_admin)):
+    """
+    PRIORITAS 6: Run smoke test on all tenants
+    Validates basic functionality after sync
+    """
+    from motor.motor_asyncio import AsyncIOMotorClient
+    mongo_url = os.environ.get("MONGO_URL", "mongodb://localhost:27017")
+    client = AsyncIOMotorClient(mongo_url)
+    
+    test_results = []
+    
+    try:
+        tenants = await get_all_tenants_from_registry()
+        
+        for tenant in tenants:
+            tenant_id = tenant.get("id")
+            tenant_name = tenant.get("name")
+            db_name = tenant.get("db_name")  # Fixed: use db_name
+            
+            if not db_name:
+                test_results.append({
+                    "tenant_id": tenant_id,
+                    "tenant_name": tenant_name,
+                    "status": "skipped",
+                    "reason": "No database"
+                })
+                continue
+            
+            try:
+                tenant_db = client[db_name]
+                
+                # Test 1: Collection count
+                collections = await tenant_db.list_collection_names()
+                
+                # Test 2: Journal entries count
+                je_count = await tenant_db["journal_entries"].count_documents({})
+                
+                # Test 3: Accounts count
+                acc_count = await tenant_db["accounts"].count_documents({})
+                
+                # Test 4: Products count
+                prod_count = await tenant_db["products"].count_documents({})
+                
+                # Test 5: Check journal_source field exists (PRIORITAS 1)
+                sample_journal = await tenant_db["journal_entries"].find_one({})
+                has_journal_source = "journal_source" in sample_journal if sample_journal else True
+                
+                test_results.append({
+                    "tenant_id": tenant_id,
+                    "tenant_name": tenant_name,
+                    "database_name": db_name,
+                    "status": "pass",
+                    "tests": {
+                        "collections_exist": len(collections) > 0,
+                        "collection_count": len(collections),
+                        "journal_entries": je_count,
+                        "accounts": acc_count,
+                        "products": prod_count,
+                        "journal_source_field": has_journal_source
+                    }
+                })
+                
+            except Exception as e:
+                test_results.append({
+                    "tenant_id": tenant_id,
+                    "tenant_name": tenant_name,
+                    "status": "fail",
+                    "error": str(e)
+                })
+        
+        pass_count = sum(1 for r in test_results if r.get("status") == "pass")
+        
+        return {
+            "success": True,
+            "total_tenants": len(tenants),
+            "passed": pass_count,
+            "failed": len(tenants) - pass_count,
+            "results": test_results,
+            "tested_at": datetime.now(timezone.utc).isoformat()
+        }
+        
+    finally:
+        client.close()

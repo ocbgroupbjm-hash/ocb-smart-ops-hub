@@ -1,0 +1,71 @@
+{
+  "timestamp": "2026-03-14T23:40:00+00:00",
+  "blueprint_version": "2.1.0",
+  "validation_status": "PASSED",
+  "tenants": [
+    {
+      "tenant_id": "ocb_titan",
+      "tenant_name": "OCB GROUP",
+      "database_name": "ocb_titan",
+      "structure": {
+        "collections_count": 149,
+        "journal_entries": 2208,
+        "accounts": "present",
+        "products": 63,
+        "employees": "present",
+        "ap_invoices": "present",
+        "ar_invoices": "present"
+      },
+      "blueprint_version": "2.1.0",
+      "status": "valid"
+    },
+    {
+      "tenant_id": "ocb_unit_4",
+      "tenant_name": "OCB UNIT 4 MPC & MP3",
+      "database_name": "ocb_unit_4",
+      "structure": {
+        "collections_count": 56,
+        "journal_entries": 0,
+        "accounts": "present",
+        "products": 0
+      },
+      "blueprint_version": "2.1.0",
+      "status": "valid"
+    },
+    {
+      "tenant_id": "ocb_unt_1",
+      "tenant_name": "OCB UNIT 1 RETAIL",
+      "database_name": "ocb_unt_1",
+      "structure": {
+        "collections_count": 58,
+        "journal_entries": 1,
+        "accounts": "present",
+        "products": 21
+      },
+      "blueprint_version": "2.1.0",
+      "status": "valid"
+    }
+  ],
+  "required_collections": [
+    "journal_entries",
+    "journal_lines",
+    "accounts",
+    "journals",
+    "ap_invoices",
+    "ap_payments",
+    "ap_payment_allocations",
+    "ar_invoices",
+    "ar_payments",
+    "ar_payment_allocations",
+    "employees",
+    "attendance_logs",
+    "payroll",
+    "leave_requests",
+    "kpi_targets",
+    "kpi_results",
+    "inventory_serial_numbers",
+    "stock_movements",
+    "products"
+  ],
+  "all_tenants_valid": true
+}
