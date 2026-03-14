@@ -17,11 +17,11 @@ import { formatDateDisplay, isOverdue as checkOverdue } from '../../utils/dateUt
 const API = process.env.REACT_APP_BACKEND_URL;
 
 const STATUS_CONFIG = {
-  open: { label: 'Terbuka', color: 'bg-blue-100 text-blue-800' },
-  partial: { label: 'Sebagian', color: 'bg-yellow-100 text-yellow-800' },
-  paid: { label: 'Lunas', color: 'bg-green-100 text-green-800' },
-  overdue: { label: 'Jatuh Tempo', color: 'bg-red-100 text-red-800' },
-  written_off: { label: 'Dihapuskan', color: 'bg-gray-100 text-gray-800' }
+  open: { label: 'Terbuka', color: 'bg-blue-500/20 text-blue-400 border border-blue-500/30' },
+  partial: { label: 'Sebagian', color: 'bg-amber-500/20 text-amber-400 border border-amber-500/30' },
+  paid: { label: 'Lunas', color: 'bg-green-500/20 text-green-400 border border-green-500/30' },
+  overdue: { label: 'Jatuh Tempo', color: 'bg-red-500/20 text-red-400 border border-red-500/30' },
+  written_off: { label: 'Dihapuskan', color: 'bg-slate-500/20 text-slate-400 border border-slate-500/30' }
 };
 
 export default function AccountsReceivable() {
@@ -397,25 +397,25 @@ export default function AccountsReceivable() {
                 <p className="font-bold text-green-700">{aging.current?.count || 0}</p>
                 <p className="text-xs text-green-600">{formatCurrency(aging.current?.amount || 0)}</p>
               </div>
-              <div className="text-center p-3 bg-yellow-50 rounded-lg">
-                <p className="text-xs text-gray-500 mb-1">1-30 Hari</p>
-                <p className="font-bold text-yellow-700">{aging['1_30']?.count || 0}</p>
-                <p className="text-xs text-yellow-600">{formatCurrency(aging['1_30']?.amount || 0)}</p>
+              <div className="text-center p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+                <p className="text-xs text-slate-400 mb-1">1-30 Hari</p>
+                <p className="font-bold text-amber-400">{aging['1_30']?.count || 0}</p>
+                <p className="text-xs text-amber-500">{formatCurrency(aging['1_30']?.amount || 0)}</p>
               </div>
-              <div className="text-center p-3 bg-orange-50 rounded-lg">
-                <p className="text-xs text-gray-500 mb-1">31-60 Hari</p>
-                <p className="font-bold text-orange-700">{aging['31_60']?.count || 0}</p>
-                <p className="text-xs text-orange-600">{formatCurrency(aging['31_60']?.amount || 0)}</p>
+              <div className="text-center p-3 bg-orange-500/10 border border-orange-500/30 rounded-lg">
+                <p className="text-xs text-slate-400 mb-1">31-60 Hari</p>
+                <p className="font-bold text-orange-400">{aging['31_60']?.count || 0}</p>
+                <p className="text-xs text-orange-500">{formatCurrency(aging['31_60']?.amount || 0)}</p>
               </div>
-              <div className="text-center p-3 bg-red-50 rounded-lg">
-                <p className="text-xs text-gray-500 mb-1">61-90 Hari</p>
-                <p className="font-bold text-red-700">{aging['61_90']?.count || 0}</p>
-                <p className="text-xs text-red-600">{formatCurrency(aging['61_90']?.amount || 0)}</p>
+              <div className="text-center p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
+                <p className="text-xs text-slate-400 mb-1">61-90 Hari</p>
+                <p className="font-bold text-red-400">{aging['61_90']?.count || 0}</p>
+                <p className="text-xs text-red-500">{formatCurrency(aging['61_90']?.amount || 0)}</p>
               </div>
-              <div className="text-center p-3 bg-gray-100 rounded-lg">
-                <p className="text-xs text-gray-500 mb-1">&gt;90 Hari</p>
-                <p className="font-bold text-gray-700">{aging.over_90?.count || 0}</p>
-                <p className="text-xs text-gray-600">{formatCurrency(aging.over_90?.amount || 0)}</p>
+              <div className="text-center p-3 bg-slate-700/50 border border-slate-600/30 rounded-lg">
+                <p className="text-xs text-slate-400 mb-1">&gt;90 Hari</p>
+                <p className="font-bold text-slate-300">{aging.over_90?.count || 0}</p>
+                <p className="text-xs text-slate-400">{formatCurrency(aging.over_90?.amount || 0)}</p>
               </div>
             </div>
           </CardContent>
@@ -511,19 +511,19 @@ export default function AccountsReceivable() {
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-gray-50">
+                <thead className="bg-slate-800/50 border-b border-slate-700">
                   <tr>
-                    <th className="px-4 py-3 text-left font-medium text-gray-600">No. Piutang</th>
-                    <th className="px-4 py-3 text-left font-medium text-gray-600">Tanggal</th>
-                    <th className="px-4 py-3 text-left font-medium text-gray-600">Jatuh Tempo</th>
-                    <th className="px-4 py-3 text-left font-medium text-gray-600">Customer</th>
-                    <th className="px-4 py-3 text-right font-medium text-gray-600">Original</th>
-                    <th className="px-4 py-3 text-right font-medium text-gray-600">Outstanding</th>
-                    <th className="px-4 py-3 text-center font-medium text-gray-600">Status</th>
-                    <th className="px-4 py-3 text-center font-medium text-gray-600">Aksi</th>
+                    <th className="px-4 py-3 text-left font-medium text-slate-300">No. Piutang</th>
+                    <th className="px-4 py-3 text-left font-medium text-slate-300">Tanggal</th>
+                    <th className="px-4 py-3 text-left font-medium text-slate-300">Jatuh Tempo</th>
+                    <th className="px-4 py-3 text-left font-medium text-slate-300">Customer</th>
+                    <th className="px-4 py-3 text-right font-medium text-slate-300">Original</th>
+                    <th className="px-4 py-3 text-right font-medium text-slate-300">Outstanding</th>
+                    <th className="px-4 py-3 text-center font-medium text-slate-300">Status</th>
+                    <th className="px-4 py-3 text-center font-medium text-slate-300">Aksi</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y">
+                <tbody className="divide-y divide-slate-700/50">
                   {arList.map((ar) => {
                     const statusCfg = STATUS_CONFIG[ar.status] || STATUS_CONFIG.open;
                     const overdue = isOverdue(ar.due_date) && ar.status !== 'paid';
@@ -531,7 +531,7 @@ export default function AccountsReceivable() {
                     return (
                       <tr 
                         key={ar.id} 
-                        className={`hover:bg-gray-50 ${overdue ? 'bg-red-50' : ''}`}
+                        className={`hover:bg-slate-800/50 transition-colors ${overdue ? 'bg-red-900/20' : ''}`}
                         data-testid={`ar-row-${ar.id}`}
                       >
                         <td className="px-4 py-3">

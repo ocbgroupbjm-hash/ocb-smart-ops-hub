@@ -77,7 +77,7 @@ const IntegrityMonitorDashboard = () => {
       'CRITICAL': 'bg-red-100 text-red-800 border-red-200'
     };
     return (
-      <Badge className={`${variants[status] || 'bg-gray-100 text-gray-800'}`}>
+      <Badge className={`${variants[status] || 'bg-slate-700/50 text-slate-300'}`}>
         {status}
       </Badge>
     );
@@ -178,15 +178,15 @@ const IntegrityMonitorDashboard = () => {
                 </div>
               </div>
               <div className="flex gap-4 text-center">
-                <div className="px-4 py-2 bg-white rounded-lg shadow-sm">
+                <div className="px-4 py-2 bg-slate-800 rounded-lg shadow-sm">
                   <div className="text-2xl font-bold text-green-600">{dashboardData.summary?.passed || 0}</div>
                   <div className="text-xs text-gray-500">Passed</div>
                 </div>
-                <div className="px-4 py-2 bg-white rounded-lg shadow-sm">
+                <div className="px-4 py-2 bg-slate-800 rounded-lg shadow-sm">
                   <div className="text-2xl font-bold text-yellow-600">{dashboardData.summary?.warnings || 0}</div>
                   <div className="text-xs text-gray-500">Warnings</div>
                 </div>
-                <div className="px-4 py-2 bg-white rounded-lg shadow-sm">
+                <div className="px-4 py-2 bg-slate-800 rounded-lg shadow-sm">
                   <div className="text-2xl font-bold text-red-600">{dashboardData.summary?.failed || 0}</div>
                   <div className="text-xs text-gray-500">Failed</div>
                 </div>

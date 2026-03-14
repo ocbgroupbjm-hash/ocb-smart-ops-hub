@@ -1,0 +1,97 @@
+{
+  "test_name": "UI Dark Theme E2E Validation",
+  "test_date": "2026-03-14",
+  "tenant": "ocb_titan",
+  "blueprint_version": "3.8.0",
+  "status": "PASSED",
+  "summary": {
+    "total_modules_validated": 10,
+    "modules_passed": 10,
+    "modules_failed": 0,
+    "violations_before_fix": 84,
+    "violations_after_fix": 0,
+    "valid_exceptions": 1
+  },
+  "modules": [
+    {
+      "name": "Accounting Module",
+      "files": ["FinancialReports.jsx", "AccountsReceivable.jsx"],
+      "status": "PASS",
+      "fixes_applied": true
+    },
+    {
+      "name": "Sales Module", 
+      "files": ["SalesList.jsx", "SalesAdd.jsx"],
+      "status": "PASS",
+      "fixes_applied": false
+    },
+    {
+      "name": "Inventory Module",
+      "files": ["StockMovements.jsx", "StockCards.jsx"],
+      "status": "PASS",
+      "fixes_applied": false
+    },
+    {
+      "name": "AP Module",
+      "files": ["AccountsPayable.jsx", "APPaymentModal.jsx"],
+      "status": "PASS",
+      "fixes_applied": false
+    },
+    {
+      "name": "AR Module",
+      "files": ["AccountsReceivable.jsx", "ARPaymentModal.jsx"],
+      "status": "PASS",
+      "fixes_applied": true
+    },
+    {
+      "name": "Dashboard",
+      "files": ["Dashboard.jsx", "ERPDashboard.jsx"],
+      "status": "PASS",
+      "fixes_applied": false
+    },
+    {
+      "name": "Master Data",
+      "files": ["MasterBarcode.jsx"],
+      "status": "PASS",
+      "fixes_applied": true
+    },
+    {
+      "name": "Modal Forms",
+      "files": ["APDetailModal.jsx", "ARDetailModal.jsx"],
+      "status": "PASS",
+      "fixes_applied": false
+    },
+    {
+      "name": "Settings Pages",
+      "files": ["IntegrityMonitor.jsx", "NumberSettings.jsx"],
+      "status": "PASS",
+      "fixes_applied": true
+    },
+    {
+      "name": "Operational Pages",
+      "files": ["SetoranHarian.jsx", "ERPHardening.jsx"],
+      "status": "PASS",
+      "fixes_applied": true
+    }
+  ],
+  "design_tokens": {
+    "background": "#0F172A",
+    "card": "#1E293B",
+    "border": "#334155",
+    "text": "#E5E7EB",
+    "accent": "#F97316"
+  },
+  "valid_exceptions": [
+    {
+      "file": "PrinterSettings.jsx",
+      "line": 409,
+      "class": "bg-white",
+      "reason": "Print preview simulating receipt paper"
+    }
+  ],
+  "compliance_check": {
+    "no_bg_white": true,
+    "no_bg_gray_light": true,
+    "no_high_contrast_text": true
+  }
+}

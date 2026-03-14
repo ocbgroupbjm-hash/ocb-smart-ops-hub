@@ -456,7 +456,7 @@ const ERPHardening = () => {
                 ) : (
                   <div className="space-y-3">
                     {Object.entries(currentRates).map(([code, data]) => (
-                      <div key={code} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg" data-testid={`rate-${code}`}>
+                      <div key={code} className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg" data-testid={`rate-${code}`}>
                         <div className="flex items-center gap-3">
                           <span className="font-mono font-bold text-lg">{data.symbol || code}</span>
                           <div>

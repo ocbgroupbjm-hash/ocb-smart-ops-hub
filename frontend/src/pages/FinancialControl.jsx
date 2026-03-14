@@ -364,7 +364,7 @@ const FinancialControl = () => {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                  <div className="flex items-center justify-between p-4 bg-slate-800/50 rounded-lg">
                     <div>
                       <p className="text-sm text-gray-500">Status Keseluruhan</p>
                       <p className="text-lg font-bold">{getStatusBadge(consistencyReport.overall_status)}</p>
@@ -466,7 +466,7 @@ const FinancialControl = () => {
                 </Button>
 
                 {journalPreview && (
-                  <div className="mt-4 p-4 bg-gray-50 rounded-lg" data-testid="journal-preview">
+                  <div className="mt-4 p-4 bg-slate-800/50 rounded-lg" data-testid="journal-preview">
                     <p className="font-medium mb-2">{journalPreview.template_name}</p>
                     <Table>
                       <TableHeader>
@@ -487,7 +487,7 @@ const FinancialControl = () => {
                             <TableCell className="text-right font-mono">{e.credit > 0 ? formatCurrency(e.credit) : '-'}</TableCell>
                           </TableRow>
                         ))}
-                        <TableRow className="font-bold bg-gray-100">
+                        <TableRow className="font-bold bg-slate-700/50">
                           <TableCell>TOTAL</TableCell>
                           <TableCell className="text-right font-mono">{formatCurrency(journalPreview.total_debit)}</TableCell>
                           <TableCell className="text-right font-mono">{formatCurrency(journalPreview.total_credit)}</TableCell>
@@ -517,7 +517,7 @@ const FinancialControl = () => {
                       <h4 className="font-medium text-sm text-gray-500 uppercase mb-2">{cat.replace('_', ' / ')}</h4>
                       <div className="space-y-1">
                         {journalTemplates.filter(t => t.code.startsWith(cat.split('_')[0])).map(t => (
-                          <div key={t.code} className="p-2 bg-gray-50 rounded text-sm">
+                          <div key={t.code} className="p-2 bg-slate-800/50 rounded text-sm">
                             <span className="font-mono text-xs text-gray-500">{t.code}</span>
                             <span className="ml-2">{t.name}</span>
                           </div>

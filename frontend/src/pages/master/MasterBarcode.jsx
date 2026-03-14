@@ -542,7 +542,7 @@ const MasterBarcode = () => {
                       />
                     </div>
                     {/* Preview */}
-                    <div className="mt-2 p-2 bg-white rounded">
+                    <div className="mt-2 p-2 bg-slate-900 rounded">
                       <svg ref={el => previewRefs.current[item.id] = el} className="w-full" />
                     </div>
                   </div>

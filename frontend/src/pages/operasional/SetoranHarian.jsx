@@ -20,7 +20,7 @@ const STATUS_CONFIG = {
   approved: { label: 'Approved', color: 'bg-teal-100 text-teal-800', icon: CheckCircle },
   posted: { label: 'Posted', color: 'bg-purple-100 text-purple-800', icon: FileText },
   rejected: { label: 'Ditolak', color: 'bg-red-100 text-red-800', icon: XCircle },
-  cancelled: { label: 'Dibatalkan', color: 'bg-gray-100 text-gray-800', icon: XCircle }
+  cancelled: { label: 'Dibatalkan', color: 'bg-slate-700/50 text-slate-300', icon: XCircle }
 };
 
 const DIFF_STATUS_CONFIG = {
@@ -335,7 +335,7 @@ export default function SetoranHarian() {
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-gray-50">
+                <thead className="bg-slate-800/50">
                   <tr>
                     <th className="px-4 py-3 text-left font-medium text-gray-600">No. Setoran</th>
                     <th className="px-4 py-3 text-left font-medium text-gray-600">Tanggal</th>
@@ -357,7 +357,7 @@ export default function SetoranHarian() {
                     return (
                       <tr 
                         key={dep.id} 
-                        className="hover:bg-gray-50 cursor-pointer"
+                        className="hover:bg-slate-800/50 cursor-pointer"
                         onClick={() => handleView(dep)}
                         data-testid={`deposit-row-${dep.id}`}
                       >

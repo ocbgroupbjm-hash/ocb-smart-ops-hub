@@ -217,7 +217,7 @@ export default function NumberSettings() {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b bg-gray-50">
+                    <tr className="border-b bg-slate-800/50">
                       <th className="text-left p-3">Modul</th>
                       <th className="text-left p-3">Nama</th>
                       <th className="text-left p-3">Format</th>
@@ -229,7 +229,7 @@ export default function NumberSettings() {
                   </thead>
                   <tbody>
                     {transactionSettings.map((setting) => (
-                      <tr key={setting.module_code} className="border-b hover:bg-gray-50">
+                      <tr key={setting.module_code} className="border-b hover:bg-slate-800/50">
                         <td className="p-3">
                           <Badge variant="outline">{setting.module_code}</Badge>
                         </td>
@@ -309,7 +309,7 @@ export default function NumberSettings() {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b bg-gray-50">
+                    <tr className="border-b bg-slate-800/50">
                       <th className="text-left p-3">Entity</th>
                       <th className="text-left p-3">Nama</th>
                       <th className="text-left p-3">Prefix</th>
@@ -321,7 +321,7 @@ export default function NumberSettings() {
                   </thead>
                   <tbody>
                     {masterSettings.map((setting) => (
-                      <tr key={setting.entity_type} className="border-b hover:bg-gray-50">
+                      <tr key={setting.entity_type} className="border-b hover:bg-slate-800/50">
                         <td className="p-3">
                           <Badge variant="outline">{setting.entity_type}</Badge>
                         </td>
@@ -681,7 +681,7 @@ export default function NumberSettings() {
           </DialogHeader>
           {previewDialog.data && (
             <div className="py-4 text-center">
-              <div className="p-6 bg-gray-100 rounded-lg">
+              <div className="p-6 bg-slate-700/50 rounded-lg">
                 <div className="text-3xl font-mono font-bold text-gray-900">
                   {previewDialog.data.preview}
                 </div>

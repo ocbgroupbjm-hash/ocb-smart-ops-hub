@@ -69,7 +69,7 @@ const CEODashboardAI = () => {
       'ATTENTION': 'bg-yellow-100 text-yellow-800',
       'CRITICAL': 'bg-red-100 text-red-800'
     };
-    return <Badge className={colors[health] || 'bg-gray-100'}>{health}</Badge>;
+    return <Badge className={colors[health] || 'bg-slate-700/50'}>{health}</Badge>;
   };
 
   const formatCurrency = (val) => {

@@ -275,7 +275,7 @@ export default function BackupManager() {
                 <div 
                   key={backup.filename}
                   data-testid={`backup-item-${backup.filename}`}
-                  className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50"
+                  className="flex items-center justify-between p-3 border rounded-lg hover:bg-slate-800/50"
                 >
                   <div className="flex items-center gap-3">
                     {getBackupIcon(backup.type)}

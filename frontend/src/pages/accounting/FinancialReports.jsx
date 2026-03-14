@@ -119,7 +119,7 @@ export default function FinancialReports() {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Laporan Keuangan</h1>
-          <p className="text-gray-500 text-sm mt-1">Trial Balance, Neraca, Laba Rugi</p>
+          <p className="text-slate-400 text-sm mt-1">Trial Balance, Neraca, Laba Rugi</p>
         </div>
         <Button onClick={exportToCSV} variant="outline" data-testid="btn-export">
           <Download className="w-4 h-4 mr-2" />
@@ -146,11 +146,11 @@ export default function FinancialReports() {
             >
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
-                  <div className={`p-3 rounded-lg ${isActive ? `bg-${report.color}-100` : 'bg-gray-100'}`}>
-                    <Icon className={`w-6 h-6 ${isActive ? `text-${report.color}-600` : 'text-gray-600'}`} />
+                  <div className={`p-3 rounded-lg ${isActive ? `bg-${report.color}-100` : 'bg-slate-700/50'}`}>
+                    <Icon className={`w-6 h-6 ${isActive ? `text-${report.color}-600` : 'text-slate-300'}`} />
                   </div>
                   <div>
-                    <p className={`font-medium ${isActive ? `text-${report.color}-700` : 'text-gray-700'}`}>
+                    <p className={`font-medium ${isActive ? `text-${report.color}-700` : 'text-slate-200'}`}>
                       {report.label}
                     </p>
                   </div>
@@ -167,7 +167,7 @@ export default function FinancialReports() {
           <div className="flex items-end gap-4">
             {(activeReport === 'trial-balance' || activeReport === 'balance-sheet') ? (
               <div>
-                <label className="text-sm font-medium text-gray-700 mb-1 block">
+                <label className="text-sm font-medium text-slate-200 mb-1 block">
                   Per Tanggal
                 </label>
                 <Input
@@ -181,7 +181,7 @@ export default function FinancialReports() {
             ) : (
               <>
                 <div>
-                  <label className="text-sm font-medium text-gray-700 mb-1 block">
+                  <label className="text-sm font-medium text-slate-200 mb-1 block">
                     Dari Tanggal
                   </label>
                   <Input
@@ -193,7 +193,7 @@ export default function FinancialReports() {
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-700 mb-1 block">
+                  <label className="text-sm font-medium text-slate-200 mb-1 block">
                     Sampai Tanggal
                   </label>
                   <Input
@@ -218,7 +218,7 @@ export default function FinancialReports() {
       {loading ? (
         <div className="flex items-center justify-center py-12">
           <RefreshCw className="w-6 h-6 animate-spin text-gray-400" />
-          <span className="ml-2 text-gray-500">Memuat laporan...</span>
+          <span className="ml-2 text-slate-400">Memuat laporan...</span>
         </div>
       ) : reportData ? (
         <>
@@ -232,7 +232,7 @@ export default function FinancialReports() {
                     Trial Balance
                   </CardTitle>
                   <div className="flex items-center gap-2">
-                    <Badge className={reportData.is_balanced ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
+                    <Badge className={reportData.is_balanced ? 'bg-green-500/20 text-green-800' : 'bg-red-500/20 text-red-800'}>
                       {reportData.is_balanced ? (
                         <><CheckCircle className="w-3 h-3 mr-1" /> Balanced</>
                       ) : (
@@ -241,23 +241,23 @@ export default function FinancialReports() {
                     </Badge>
                   </div>
                 </div>
-                <p className="text-sm text-gray-500">Per {asOfDate}</p>
+                <p className="text-sm text-slate-400">Per {asOfDate}</p>
               </CardHeader>
               <CardContent>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
-                    <thead className="bg-gray-50">
+                    <thead className="bg-slate-800/50">
                       <tr>
-                        <th className="px-4 py-3 text-left font-medium text-gray-600">Kode</th>
-                        <th className="px-4 py-3 text-left font-medium text-gray-600">Nama Akun</th>
-                        <th className="px-4 py-3 text-center font-medium text-gray-600">Kategori</th>
-                        <th className="px-4 py-3 text-right font-medium text-gray-600">Debit</th>
-                        <th className="px-4 py-3 text-right font-medium text-gray-600">Credit</th>
+                        <th className="px-4 py-3 text-left font-medium text-slate-300">Kode</th>
+                        <th className="px-4 py-3 text-left font-medium text-slate-300">Nama Akun</th>
+                        <th className="px-4 py-3 text-center font-medium text-slate-300">Kategori</th>
+                        <th className="px-4 py-3 text-right font-medium text-slate-300">Debit</th>
+                        <th className="px-4 py-3 text-right font-medium text-slate-300">Credit</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y">
                       {reportData.items?.map((acc, idx) => (
-                        <tr key={idx} className="hover:bg-gray-50">
+                        <tr key={idx} className="hover:bg-slate-800/50">
                           <td className="px-4 py-3 font-mono">{acc.account_code}</td>
                           <td className="px-4 py-3">{acc.account_name}</td>
                           <td className="px-4 py-3 text-center">
@@ -272,7 +272,7 @@ export default function FinancialReports() {
                         </tr>
                       ))}
                     </tbody>
-                    <tfoot className="bg-gray-100 font-bold">
+                    <tfoot className="bg-slate-700/50 font-bold">
                       <tr>
                         <td colSpan="3" className="px-4 py-3 text-right">TOTAL</td>
                         <td className="px-4 py-3 text-right font-mono text-blue-600">
@@ -294,8 +294,8 @@ export default function FinancialReports() {
             <div className="grid grid-cols-2 gap-6">
               {/* Assets */}
               <Card>
-                <CardHeader className="bg-blue-50">
-                  <CardTitle className="text-lg flex items-center gap-2 text-blue-700">
+                <CardHeader className="bg-blue-500/10 border border-blue-500/30">
+                  <CardTitle className="text-lg flex items-center gap-2 text-blue-400">
                     <Wallet className="w-5 h-5" />
                     AKTIVA (Assets)
                   </CardTitle>
@@ -304,7 +304,7 @@ export default function FinancialReports() {
                   <table className="w-full text-sm">
                     <tbody className="divide-y">
                       {reportData.assets?.items?.map((acc, idx) => (
-                        <tr key={idx} className="hover:bg-gray-50">
+                        <tr key={idx} className="hover:bg-slate-800/50">
                           <td className="px-4 py-2 font-mono text-xs">{acc.code}</td>
                           <td className="px-4 py-2">{acc.name}</td>
                           <td className="px-4 py-2 text-right font-mono">
@@ -313,10 +313,10 @@ export default function FinancialReports() {
                         </tr>
                       ))}
                     </tbody>
-                    <tfoot className="bg-blue-100">
+                    <tfoot className="bg-blue-500/20">
                       <tr className="font-bold">
                         <td colSpan="2" className="px-4 py-3">Total Aktiva</td>
-                        <td className="px-4 py-3 text-right font-mono text-blue-700">
+                        <td className="px-4 py-3 text-right font-mono text-blue-400">
                           {formatCurrency(reportData.assets?.total)}
                         </td>
                       </tr>
@@ -329,8 +329,8 @@ export default function FinancialReports() {
               <div className="space-y-6">
                 {/* Liabilities */}
                 <Card>
-                  <CardHeader className="bg-red-50">
-                    <CardTitle className="text-lg flex items-center gap-2 text-red-700">
+                  <CardHeader className="bg-red-500/10 border border-red-500/30">
+                    <CardTitle className="text-lg flex items-center gap-2 text-red-400">
                       <TrendingDown className="w-5 h-5" />
                       KEWAJIBAN (Liabilities)
                     </CardTitle>
@@ -339,7 +339,7 @@ export default function FinancialReports() {
                     <table className="w-full text-sm">
                       <tbody className="divide-y">
                         {reportData.liabilities?.items?.map((acc, idx) => (
-                          <tr key={idx} className="hover:bg-gray-50">
+                          <tr key={idx} className="hover:bg-slate-800/50">
                             <td className="px-4 py-2 font-mono text-xs">{acc.code}</td>
                             <td className="px-4 py-2">{acc.name}</td>
                             <td className="px-4 py-2 text-right font-mono">
@@ -348,10 +348,10 @@ export default function FinancialReports() {
                           </tr>
                         ))}
                       </tbody>
-                      <tfoot className="bg-red-100">
+                      <tfoot className="bg-red-500/20">
                         <tr className="font-bold">
                           <td colSpan="2" className="px-4 py-3">Total Kewajiban</td>
-                          <td className="px-4 py-3 text-right font-mono text-red-700">
+                          <td className="px-4 py-3 text-right font-mono text-red-400">
                             {formatCurrency(reportData.liabilities?.total)}
                           </td>
                         </tr>
@@ -362,8 +362,8 @@ export default function FinancialReports() {
 
                 {/* Equity */}
                 <Card>
-                  <CardHeader className="bg-green-50">
-                    <CardTitle className="text-lg flex items-center gap-2 text-green-700">
+                  <CardHeader className="bg-green-500/10 border border-green-500/30">
+                    <CardTitle className="text-lg flex items-center gap-2 text-green-400">
                       <DollarSign className="w-5 h-5" />
                       EKUITAS (Equity)
                     </CardTitle>
@@ -372,7 +372,7 @@ export default function FinancialReports() {
                     <table className="w-full text-sm">
                       <tbody className="divide-y">
                         {reportData.equity?.items?.map((acc, idx) => (
-                          <tr key={idx} className="hover:bg-gray-50">
+                          <tr key={idx} className="hover:bg-slate-800/50">
                             <td className="px-4 py-2 font-mono text-xs">{acc.code}</td>
                             <td className="px-4 py-2">{acc.name}</td>
                             <td className="px-4 py-2 text-right font-mono">
@@ -381,10 +381,10 @@ export default function FinancialReports() {
                           </tr>
                         ))}
                       </tbody>
-                      <tfoot className="bg-green-100">
+                      <tfoot className="bg-green-500/20">
                         <tr className="font-bold">
                           <td colSpan="2" className="px-4 py-3">Total Ekuitas</td>
-                          <td className="px-4 py-3 text-right font-mono text-green-700">
+                          <td className="px-4 py-3 text-right font-mono text-green-400">
                             {formatCurrency(reportData.equity?.total)}
                           </td>
                         </tr>
@@ -400,20 +400,20 @@ export default function FinancialReports() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
                       <div className="text-center">
-                        <p className="text-sm text-gray-500">Total Aktiva</p>
+                        <p className="text-sm text-slate-400">Total Aktiva</p>
                         <p className="text-xl font-mono font-bold text-blue-600">
                           {formatCurrency(reportData.assets?.total)}
                         </p>
                       </div>
                       <ArrowRight className="w-6 h-6 text-gray-400" />
                       <div className="text-center">
-                        <p className="text-sm text-gray-500">Kewajiban + Ekuitas</p>
+                        <p className="text-sm text-slate-400">Kewajiban + Ekuitas</p>
                         <p className="text-xl font-mono font-bold text-green-600">
                           {formatCurrency((reportData.liabilities?.total || 0) + (reportData.equity?.total || 0))}
                         </p>
                       </div>
                     </div>
-                    <Badge className={reportData.is_balanced ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
+                    <Badge className={reportData.is_balanced ? 'bg-green-500/20 text-green-800' : 'bg-red-500/20 text-red-800'}>
                       {reportData.is_balanced ? 'BALANCED' : 'NOT BALANCED'}
                     </Badge>
                   </div>
@@ -426,12 +426,12 @@ export default function FinancialReports() {
           {activeReport === 'income-statement' && (
             <div className="space-y-6">
               <Card>
-                <CardHeader className="bg-green-50">
-                  <CardTitle className="text-lg flex items-center gap-2 text-green-700">
+                <CardHeader className="bg-green-500/10 border border-green-500/30">
+                  <CardTitle className="text-lg flex items-center gap-2 text-green-400">
                     <TrendingUp className="w-5 h-5" />
                     PENDAPATAN (Revenue)
                   </CardTitle>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-slate-400">
                     Periode: {startDate} s/d {endDate}
                   </p>
                 </CardHeader>
@@ -439,7 +439,7 @@ export default function FinancialReports() {
                   <table className="w-full text-sm">
                     <tbody className="divide-y">
                       {reportData.revenues?.items?.map((acc, idx) => (
-                        <tr key={idx} className="hover:bg-gray-50">
+                        <tr key={idx} className="hover:bg-slate-800/50">
                           <td className="px-4 py-2 font-mono text-xs">{acc.code}</td>
                           <td className="px-4 py-2">{acc.name}</td>
                           <td className="px-4 py-2 text-right font-mono text-green-600">
@@ -448,10 +448,10 @@ export default function FinancialReports() {
                         </tr>
                       ))}
                     </tbody>
-                    <tfoot className="bg-green-100">
+                    <tfoot className="bg-green-500/20">
                       <tr className="font-bold">
                         <td colSpan="2" className="px-4 py-3">Total Pendapatan</td>
-                        <td className="px-4 py-3 text-right font-mono text-green-700">
+                        <td className="px-4 py-3 text-right font-mono text-green-400">
                           {formatCurrency(reportData.revenues?.total)}
                         </td>
                       </tr>
@@ -461,8 +461,8 @@ export default function FinancialReports() {
               </Card>
 
               <Card>
-                <CardHeader className="bg-red-50">
-                  <CardTitle className="text-lg flex items-center gap-2 text-red-700">
+                <CardHeader className="bg-red-500/10 border border-red-500/30">
+                  <CardTitle className="text-lg flex items-center gap-2 text-red-400">
                     <TrendingDown className="w-5 h-5" />
                     BEBAN (Expenses)
                   </CardTitle>
@@ -471,7 +471,7 @@ export default function FinancialReports() {
                   <table className="w-full text-sm">
                     <tbody className="divide-y">
                       {reportData.expenses?.items?.map((acc, idx) => (
-                        <tr key={idx} className="hover:bg-gray-50">
+                        <tr key={idx} className="hover:bg-slate-800/50">
                           <td className="px-4 py-2 font-mono text-xs">{acc.code}</td>
                           <td className="px-4 py-2">{acc.name}</td>
                           <td className="px-4 py-2 text-right font-mono text-red-600">
@@ -480,10 +480,10 @@ export default function FinancialReports() {
                         </tr>
                       ))}
                     </tbody>
-                    <tfoot className="bg-red-100">
+                    <tfoot className="bg-red-500/20">
                       <tr className="font-bold">
                         <td colSpan="2" className="px-4 py-3">Total Beban</td>
-                        <td className="px-4 py-3 text-right font-mono text-red-700">
+                        <td className="px-4 py-3 text-right font-mono text-red-400">
                           {formatCurrency(reportData.expenses?.total)}
                         </td>
                       </tr>
@@ -497,10 +497,10 @@ export default function FinancialReports() {
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-lg font-medium text-gray-700">
+                      <p className="text-lg font-medium text-slate-200">
                         {reportData.is_profit ? 'LABA BERSIH' : 'RUGI BERSIH'}
                       </p>
-                      <p className="text-sm text-gray-500">
+                      <p className="text-sm text-slate-400">
                         Pendapatan - Beban
                       </p>
                     </div>
@@ -518,7 +518,7 @@ export default function FinancialReports() {
       ) : (
         <div className="text-center py-12">
           <FileText className="w-12 h-12 mx-auto text-gray-300 mb-4" />
-          <p className="text-gray-500">Pilih laporan dan klik Generate</p>
+          <p className="text-slate-400">Pilih laporan dan klik Generate</p>
         </div>
       )}
     </div>
