@@ -1,17 +1,30 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { Download, Printer, Loader2, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { Download, Printer, Loader2, TrendingUp, TrendingDown, Minus, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 const IncomeStatement = () => {
   const { api } = useAuth();
-  const [data, setData] = useState({ revenues: [], expenses: [], total_revenue: 0, total_expense: 0, net_income: 0 });
+  // TASK 4: Safe default state dengan proper array initialization
+  const [data, setData] = useState({ 
+    revenues: [], 
+    expenses: [], 
+    cost_of_goods_sold: [],
+    operating_expenses: [],
+    total_revenue: 0, 
+    total_expense: 0, 
+    total_cogs: 0,
+    gross_profit: 0,
+    net_income: 0 
+  });
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [dateFrom, setDateFrom] = useState(new Date().getFullYear() + '-01-01');
   const [dateTo, setDateTo] = useState(new Date().toISOString().split('T')[0]);
 
   const loadData = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       const params = new URLSearchParams({
         date_from: dateFrom,
@@ -19,13 +32,35 @@ const IncomeStatement = () => {
       });
       const res = await api(`/api/accounting/financial/income-statement?${params}`);
       if (res.ok) {
-        setData(await res.json());
+        const responseData = await res.json();
+        // TASK 4: Safeguard - ensure all arrays exist
+        setData({
+          revenues: Array.isArray(responseData.revenues) ? responseData.revenues : [],
+          expenses: Array.isArray(responseData.expenses) ? responseData.expenses : 
+                   Array.isArray(responseData.operating_expenses) ? responseData.operating_expenses : [],
+          cost_of_goods_sold: Array.isArray(responseData.cost_of_goods_sold) ? responseData.cost_of_goods_sold : [],
+          operating_expenses: Array.isArray(responseData.operating_expenses) ? responseData.operating_expenses : [],
+          total_revenue: responseData.total_revenue || 0,
+          total_expense: responseData.total_expense || 0,
+          total_cogs: responseData.total_cogs || 0,
+          gross_profit: responseData.gross_profit || 0,
+          net_income: responseData.net_income || 0
+        });
+      } else {
+        setError('Gagal memuat data dari server');
       }
-    } catch (err) { toast.error('Gagal memuat data'); }
+    } catch (err) { 
+      console.error('Error loading income statement:', err);
+      setError('Gagal memuat data');
+      toast.error('Gagal memuat data'); 
+    }
     finally { setLoading(false); }
   }, [api, dateFrom, dateTo]);
 
   useEffect(() => { loadData(); }, [loadData]);
+
+  // TASK 4: Safe array length check helper
+  const safeLength = (arr) => Array.isArray(arr) ? arr.length : 0;
 
   return (
     <div className="space-y-4" data-testid="income-statement-page">
@@ -51,22 +86,22 @@ const IncomeStatement = () => {
             <TrendingUp className="h-5 w-5 text-green-400" />
             <p className="text-gray-400 text-sm">Total Pendapatan</p>
           </div>
-          <p className="text-2xl font-bold text-green-400">Rp {data.total_revenue.toLocaleString('id-ID')}</p>
+          <p className="text-2xl font-bold text-green-400">Rp {(data.total_revenue || 0).toLocaleString('id-ID')}</p>
         </div>
         <div className="bg-[#1a1214] border border-red-600/30 rounded-xl p-4">
           <div className="flex items-center gap-2 mb-2">
             <TrendingDown className="h-5 w-5 text-red-400" />
             <p className="text-gray-400 text-sm">Total Beban</p>
           </div>
-          <p className="text-2xl font-bold text-red-400">Rp {data.total_expense.toLocaleString('id-ID')}</p>
+          <p className="text-2xl font-bold text-red-400">Rp {(data.total_expense || 0).toLocaleString('id-ID')}</p>
         </div>
-        <div className={`bg-[#1a1214] border rounded-xl p-4 ${data.net_income >= 0 ? 'border-amber-600/30' : 'border-red-600/30'}`}>
+        <div className={`bg-[#1a1214] border rounded-xl p-4 ${(data.net_income || 0) >= 0 ? 'border-amber-600/30' : 'border-red-600/30'}`}>
           <div className="flex items-center gap-2 mb-2">
-            {data.net_income >= 0 ? <TrendingUp className="h-5 w-5 text-amber-400" /> : <TrendingDown className="h-5 w-5 text-red-400" />}
-            <p className="text-gray-400 text-sm">{data.net_income >= 0 ? 'Laba Bersih' : 'Rugi Bersih'}</p>
+            {(data.net_income || 0) >= 0 ? <TrendingUp className="h-5 w-5 text-amber-400" /> : <TrendingDown className="h-5 w-5 text-red-400" />}
+            <p className="text-gray-400 text-sm">{(data.net_income || 0) >= 0 ? 'Laba Bersih' : 'Rugi Bersih'}</p>
           </div>
-          <p className={`text-2xl font-bold ${data.net_income >= 0 ? 'text-amber-400' : 'text-red-400'}`}>
-            Rp {Math.abs(data.net_income).toLocaleString('id-ID')}
+          <p className={`text-2xl font-bold ${(data.net_income || 0) >= 0 ? 'text-amber-400' : 'text-red-400'}`}>
+            Rp {Math.abs(data.net_income || 0).toLocaleString('id-ID')}
           </p>
         </div>
       </div>
@@ -92,6 +127,18 @@ const IncomeStatement = () => {
         <div className="bg-[#1a1214] border border-red-900/30 rounded-xl p-8 text-center">
           <Loader2 className="h-8 w-8 animate-spin mx-auto text-amber-400" />
         </div>
+      ) : error ? (
+        // TASK 4: Error state fallback
+        <div className="bg-[#1a1214] border border-red-900/30 rounded-xl p-8 text-center">
+          <AlertCircle className="h-8 w-8 mx-auto text-red-400 mb-2" />
+          <p className="text-red-400">{error}</p>
+          <button 
+            onClick={loadData}
+            className="mt-4 px-4 py-2 bg-amber-600/20 text-amber-400 rounded-lg"
+          >
+            Coba Lagi
+          </button>
+        </div>
       ) : (
         <div className="bg-[#1a1214] border border-red-900/30 rounded-xl overflow-hidden">
           {/* Revenues */}
@@ -99,38 +146,65 @@ const IncomeStatement = () => {
             <h3 className="text-lg font-semibold text-green-400 mb-4">PENDAPATAN</h3>
             <table className="w-full">
               <tbody>
-                {data.revenues.length === 0 ? (
+                {/* TASK 4: Safe array check */}
+                {safeLength(data.revenues) === 0 ? (
                   <tr><td className="py-2 text-gray-400">Belum ada data pendapatan</td></tr>
                 ) : data.revenues.map((item, idx) => (
                   <tr key={idx} className="border-b border-red-900/10">
                     <td className="py-2 text-gray-300 pl-4">{item.account_code} - {item.account_name}</td>
-                    <td className="py-2 text-right text-green-400">Rp {item.amount.toLocaleString('id-ID')}</td>
+                    <td className="py-2 text-right text-green-400">Rp {(item.amount || 0).toLocaleString('id-ID')}</td>
                   </tr>
                 ))}
                 <tr className="font-bold">
                   <td className="py-3 text-amber-200">Total Pendapatan</td>
-                  <td className="py-3 text-right text-green-400">Rp {data.total_revenue.toLocaleString('id-ID')}</td>
+                  <td className="py-3 text-right text-green-400">Rp {(data.total_revenue || 0).toLocaleString('id-ID')}</td>
                 </tr>
               </tbody>
             </table>
           </div>
 
-          {/* Expenses */}
+          {/* Cost of Goods Sold (HPP) */}
+          {safeLength(data.cost_of_goods_sold) > 0 && (
+            <div className="p-4 border-b border-red-900/30">
+              <h3 className="text-lg font-semibold text-orange-400 mb-4">HARGA POKOK PENJUALAN</h3>
+              <table className="w-full">
+                <tbody>
+                  {data.cost_of_goods_sold.map((item, idx) => (
+                    <tr key={idx} className="border-b border-red-900/10">
+                      <td className="py-2 text-gray-300 pl-4">{item.account_code} - {item.account_name}</td>
+                      <td className="py-2 text-right text-orange-400">Rp {(item.amount || 0).toLocaleString('id-ID')}</td>
+                    </tr>
+                  ))}
+                  <tr className="font-bold">
+                    <td className="py-3 text-amber-200">Total HPP</td>
+                    <td className="py-3 text-right text-orange-400">Rp {(data.total_cogs || 0).toLocaleString('id-ID')}</td>
+                  </tr>
+                  <tr className="font-bold bg-green-900/20">
+                    <td className="py-3 text-green-300">LABA KOTOR</td>
+                    <td className="py-3 text-right text-green-400">Rp {(data.gross_profit || 0).toLocaleString('id-ID')}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* Operating Expenses */}
           <div className="p-4 border-b border-red-900/30">
-            <h3 className="text-lg font-semibold text-red-400 mb-4">BEBAN</h3>
+            <h3 className="text-lg font-semibold text-red-400 mb-4">BEBAN OPERASIONAL</h3>
             <table className="w-full">
               <tbody>
-                {data.expenses.length === 0 ? (
+                {/* TASK 4: Safe array check for expenses */}
+                {safeLength(data.expenses) === 0 && safeLength(data.operating_expenses) === 0 ? (
                   <tr><td className="py-2 text-gray-400">Belum ada data beban</td></tr>
-                ) : data.expenses.map((item, idx) => (
+                ) : (data.operating_expenses || data.expenses || []).map((item, idx) => (
                   <tr key={idx} className="border-b border-red-900/10">
                     <td className="py-2 text-gray-300 pl-4">{item.account_code} - {item.account_name}</td>
-                    <td className="py-2 text-right text-red-400">Rp {item.amount.toLocaleString('id-ID')}</td>
+                    <td className="py-2 text-right text-red-400">Rp {(item.amount || 0).toLocaleString('id-ID')}</td>
                   </tr>
                 ))}
                 <tr className="font-bold">
                   <td className="py-3 text-amber-200">Total Beban</td>
-                  <td className="py-3 text-right text-red-400">Rp {data.total_expense.toLocaleString('id-ID')}</td>
+                  <td className="py-3 text-right text-red-400">Rp {(data.total_expense || 0).toLocaleString('id-ID')}</td>
                 </tr>
               </tbody>
             </table>
@@ -141,9 +215,9 @@ const IncomeStatement = () => {
             <table className="w-full">
               <tbody>
                 <tr className="font-bold text-xl">
-                  <td className="py-3 text-amber-100">{data.net_income >= 0 ? 'LABA BERSIH' : 'RUGI BERSIH'}</td>
-                  <td className={`py-3 text-right ${data.net_income >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                    Rp {Math.abs(data.net_income).toLocaleString('id-ID')}
+                  <td className="py-3 text-amber-100">{(data.net_income || 0) >= 0 ? 'LABA BERSIH' : 'RUGI BERSIH'}</td>
+                  <td className={`py-3 text-right ${(data.net_income || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                    Rp {Math.abs(data.net_income || 0).toLocaleString('id-ID')}
                   </td>
                 </tr>
               </tbody>

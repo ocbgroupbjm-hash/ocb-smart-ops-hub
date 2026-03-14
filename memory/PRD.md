@@ -15,7 +15,67 @@ Membangun sistem ERP retail komprehensif (OCB TITAN) dengan fitur POS, Inventory
 
 ## What's Been Implemented
 
-### Latest Updates (2026-03-14)
+### Latest Updates (2026-03-14 Session 2)
+
+#### AP/AR Bug Fix - TASK 1-5 ✅
+**TASK 1: Fix AP Invoice Delete Flow**
+- Invoice delete → status = VOID (bukan PAID)
+- Invoice dengan payment TIDAK BOLEH di-delete
+- Must reverse payment first atau create credit note
+- New statuses: `void`, `cancelled`, `reversed`
+- Endpoint: `PUT /api/ap/{id}/void`
+
+**TASK 2: Invoice Reversal for PAID Invoices**
+- PAID invoice tidak bisa edit langsung
+- Flow: PAID → create reversal → create correction
+- Endpoint: `POST /api/ap/{id}/reversal`
+- Creates reversal journal dan correction invoice
+
+**TASK 3: Payment VOID/REVERSE**
+- Endpoint: `POST /api/ap/payments/{id}/void`
+- Creates reversal journal
+- Restores invoice outstanding
+- Updates invoice status
+
+**TASK 4: Income Statement Bug Fix**
+- Fixed `Cannot read properties of undefined (reading 'length')`
+- Added safeguards: Array.isArray(), safeLength() helper
+- Error state fallback UI
+- Null-safe number display
+
+**TASK 5: Accounting Validation After Fix**
+- Trial Balance: BALANCED ✅
+- Balance Sheet: BALANCED ✅
+- Income Statement: WORKING ✅
+- VOID Journal Integrity: VERIFIED ✅
+
+#### HR Frontend UI - TASK 6 ✅
+**Implemented Pages:**
+1. **HREmployees.jsx** (760 lines)
+   - Full CRUD operations
+   - Employee list table with pagination
+   - Modal forms for add/edit
+   - Status badges, filters
+
+2. **HRAttendance.jsx** (634 lines)
+   - Today's attendance dashboard
+   - Check-in/Check-out modals
+   - Shift display
+   - Work hours calculation
+
+3. **HRLeave.jsx** (651 lines)
+   - Leave request modal
+   - Approval workflow modal
+   - Leave types display
+   - Status filtering
+
+4. **HRPayroll.jsx** (628 lines)
+   - Run payroll modal
+   - Post payroll (journal integration)
+   - Payroll slip modal
+   - Period filtering
+
+### Previous Updates (2026-03-14)
 
 #### AP/AR Enterprise Architecture ✅
 **Payment Allocation Engine - Multi-Invoice Payment Support**

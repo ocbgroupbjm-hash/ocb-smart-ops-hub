@@ -40,6 +40,10 @@ const STATUS_CONFIG = {
   paid: { label: 'Lunas', bg: 'bg-emerald-500/20', text: 'text-emerald-400' },
   overdue: { label: 'Jatuh Tempo', bg: 'bg-rose-500/20', text: 'text-rose-400' },
   draft: { label: 'Draft', bg: 'bg-slate-500/20', text: 'text-slate-400' },
+  // TASK 1: New enterprise statuses
+  void: { label: 'Void', bg: 'bg-gray-500/20', text: 'text-gray-400' },
+  cancelled: { label: 'Dibatalkan', bg: 'bg-gray-500/20', text: 'text-gray-400' },
+  reversed: { label: 'Dibalik', bg: 'bg-purple-500/20', text: 'text-purple-400' },
 };
 
 const formatCurrency = (num) => `Rp ${(num || 0).toLocaleString('id-ID')}`;
@@ -191,13 +195,15 @@ export default function AccountsPayable() {
     
     setActionLoading(true);
     try {
-      const res = await fetch(`${API}/api/ap/${selectedAP.id}/soft-delete`, {
+      // TASK 1: Use VOID endpoint (enterprise flow)
+      const res = await fetch(`${API}/api/ap/${selectedAP.id}/void`, {
         method: 'PUT',
         headers: { Authorization: `Bearer ${token}` }
       });
 
       if (res.ok) {
-        toast.success('Hutang berhasil dihapus');
+        const data = await res.json();
+        toast.success(data.message || 'Hutang berhasil di-VOID');
         setShowDeleteConfirm(false);
         setSelectedAP(null);
         fetchAPList();
@@ -387,6 +393,8 @@ export default function AccountsPayable() {
             <option value="partial">Sebagian</option>
             <option value="paid">Lunas</option>
             <option value="overdue">Jatuh Tempo</option>
+            <option value="void">Void</option>
+            <option value="reversed">Reversed</option>
           </select>
           <Button
             onClick={fetchAPList}

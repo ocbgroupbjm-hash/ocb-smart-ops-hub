@@ -1,0 +1,29 @@
+{
+  "task": "TASK 1 - AP Invoice VOID Flow",
+  "date": "2026-03-14",
+  "tenant": "ocb_titan",
+  "status": "PASSED",
+  "tests": [
+    {
+      "name": "VOID invoice with payment",
+      "endpoint": "PUT /api/ap/{id}/void",
+      "expected": "Reject with error message",
+      "actual": {
+        "status_code": 400,
+        "detail": "Tidak dapat menghapus hutang yang sudah ada pembayaran. Reverse payment terlebih dahulu."
+      },
+      "result": "PASS"
+    },
+    {
+      "name": "Invoice status values",
+      "expected_statuses": ["open", "partial", "paid", "overdue", "void", "cancelled"],
+      "implemented": true,
+      "result": "PASS"
+    }
+  ],
+  "business_rules": {
+    "delete_without_payment": "→ status = VOID",
+    "delete_with_payment": "→ REJECTED (must reverse first)",
+    "audit_log": "Recorded with action='void'"
+  }
+}

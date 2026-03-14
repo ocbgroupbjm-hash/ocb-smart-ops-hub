@@ -1,0 +1,25 @@
+{
+  "task": "TASK 3 - Payment VOID",
+  "date": "2026-03-14",
+  "tenant": "ocb_titan",
+  "test_case": "VOID posted payment",
+  "endpoint": "POST /api/ap/payments/{id}/void",
+  "test_payment": {
+    "payment_no": "PAY-20260314-0006",
+    "amount": 4650000,
+    "status_before": "posted"
+  },
+  "result": {
+    "status_code": 200,
+    "message": "Pembayaran berhasil di-void",
+    "payment_no": "PAY-20260314-0006",
+    "reversal_journal_no": "JV-20260314-0015",
+    "restored_outstanding": 4650000.0
+  },
+  "validation": {
+    "reversal_journal_created": true,
+    "invoice_outstanding_restored": true,
+    "payment_status_void": true
+  },
+  "test_status": "PASSED"
+}

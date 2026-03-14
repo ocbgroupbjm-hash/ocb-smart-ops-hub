@@ -1,0 +1,24 @@
+{
+  "task": "TASK 2 - Invoice Reversal for PAID invoices",
+  "date": "2026-03-14",
+  "tenant": "ocb_titan",
+  "status": "IMPLEMENTED",
+  "endpoint": "POST /api/ap/{ap_id}/reversal",
+  "request_schema": {
+    "reason": "string",
+    "create_correction": "boolean",
+    "correction_amount": "float (optional)"
+  },
+  "flow": [
+    "1. Validate invoice is PAID",
+    "2. Get all payments for invoice",
+    "3. Create reversal journal for each payment",
+    "4. Mark all payments as reversed",
+    "5. Update invoice status to reversed",
+    "6. Optionally create correction invoice"
+  ],
+  "journal_entry": {
+    "debit_account": "Kas/Bank (restore)",
+    "credit_account": "Hutang Dagang (restore)"
+  }
+}

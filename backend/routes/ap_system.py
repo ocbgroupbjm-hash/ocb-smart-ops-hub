@@ -39,11 +39,15 @@ account_mappings = db["account_mapping_settings"]
 purchases_collection = db["purchases"]
 
 # ==================== AP STATUS ====================
+# ENTERPRISE INVOICE STATUS FLOW
+# TASK 1: DELETE INVOICE → status = VOID (bukan PAID)
 AP_STATUS = {
     "open": {"name": "Terbuka", "color": "blue"},
     "partial": {"name": "Sebagian", "color": "yellow"},
     "paid": {"name": "Lunas", "color": "green"},
-    "overdue": {"name": "Jatuh Tempo", "color": "red"}
+    "overdue": {"name": "Jatuh Tempo", "color": "red"},
+    "void": {"name": "Void", "color": "gray"},           # TASK 1: Soft delete status
+    "cancelled": {"name": "Dibatalkan", "color": "gray"} # TASK 1: Alternative cancel status
 }
 
 # ==================== DEFAULT ACCOUNTS ====================
@@ -1134,6 +1138,336 @@ async def record_ap_payment(
     }
 
 
+# ==================== TASK 2: INVOICE REVERSAL FOR PAID INVOICES ====================
+
+class APReversalRequest(BaseModel):
+    reason: str = "Invoice correction"
+    create_correction: bool = False
+    correction_amount: Optional[float] = None
+
+@router.post("/{ap_id}/reversal")
+async def create_invoice_reversal(
+    ap_id: str,
+    data: APReversalRequest,
+    request: Request,
+    user: dict = Depends(get_current_user)
+):
+    """
+    TASK 2: PERBAIKI EDIT INVOICE YANG SUDAH LUNAS
+    
+    Invoice yang sudah PAID tidak boleh diedit langsung.
+    Flow yang benar:
+    PAID → create reversal → create correction invoice
+    
+    Steps:
+    1. Create reversal journal (reverse all payments)
+    2. Update invoice status to "reversed"
+    3. Optionally create correction invoice
+    4. Link ke invoice lama
+    """
+    scope = await get_user_ap_scope(user)
+    
+    if not scope["can_payment"]:
+        raise HTTPException(status_code=403, detail="AKSES DITOLAK")
+    
+    ap = await ap_collection.find_one({"id": ap_id}, {"_id": 0})
+    if not ap:
+        raise HTTPException(status_code=404, detail="Hutang tidak ditemukan")
+    
+    if scope["filter"].get("branch_id") and ap.get("branch_id") != scope["filter"]["branch_id"]:
+        raise HTTPException(status_code=403, detail="AKSES DITOLAK")
+    
+    # Only PAID invoices can be reversed via this flow
+    if ap.get("status") != "paid" and ap.get("outstanding_amount", 0) > 0:
+        raise HTTPException(
+            status_code=400, 
+            detail="Hanya invoice yang sudah LUNAS yang perlu reversal. Invoice belum lunas bisa diedit langsung."
+        )
+    
+    user_id = scope["user_id"]
+    user_name = user.get("name", "")
+    branch_id = ap.get("branch_id")
+    
+    # 1. Get all payments for this invoice
+    payments = await ap_payments.find(
+        {"ap_id": ap_id, "status": {"$nin": ["reversed", "deleted"]}}, 
+        {"_id": 0}
+    ).to_list(100)
+    
+    # 2. Create reversal journal for each payment
+    from utils.number_generator import generate_transaction_number
+    
+    reversed_payments = []
+    total_reversed = 0
+    
+    for payment in payments:
+        reversal_journal_no = await generate_transaction_number(db, "JV")
+        payment_amount = payment.get("amount", 0)
+        
+        # Derive accounts for reversal (opposite of original)
+        debit_account = await derive_ap_account("pembayaran_tunai_pembelian", branch_id=branch_id)
+        credit_account = await derive_ap_account("pembayaran_kredit_pembelian", branch_id=branch_id)
+        
+        reversal_entries = [
+            {
+                "account_code": debit_account.get("code"),
+                "account_name": debit_account.get("name"),
+                "debit": payment_amount,
+                "credit": 0,
+                "description": f"REVERSAL - Pembayaran {payment.get('payment_no')}"
+            },
+            {
+                "account_code": credit_account.get("code"),
+                "account_name": credit_account.get("name"),
+                "debit": 0,
+                "credit": payment_amount,
+                "description": f"REVERSAL - Pembayaran {payment.get('payment_no')}"
+            }
+        ]
+        
+        reversal_journal = {
+            "id": str(uuid.uuid4()),
+            "journal_number": reversal_journal_no,
+            "journal_date": datetime.now(timezone.utc).isoformat(),
+            "reference_type": "ap_invoice_reversal",
+            "reference_id": ap_id,
+            "reference_number": ap.get("ap_no"),
+            "original_payment_id": payment.get("id"),
+            "original_payment_no": payment.get("payment_no"),
+            "description": f"REVERSAL Invoice {ap.get('ap_no')} - {data.reason}",
+            "branch_id": branch_id,
+            "entries": reversal_entries,
+            "total_debit": payment_amount,
+            "total_credit": payment_amount,
+            "is_balanced": True,
+            "status": "posted",
+            "created_by": user_id,
+            "created_by_name": user_name,
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        
+        await journal_entries.insert_one(reversal_journal)
+        
+        # Mark payment as reversed
+        await ap_payments.update_one(
+            {"id": payment.get("id")},
+            {"$set": {
+                "status": "reversed",
+                "reversed_at": datetime.now(timezone.utc).isoformat(),
+                "reversed_by": user_id,
+                "reversal_journal_id": reversal_journal_no,
+                "reversal_reason": data.reason
+            }}
+        )
+        
+        reversed_payments.append({
+            "payment_no": payment.get("payment_no"),
+            "amount": payment_amount,
+            "reversal_journal_no": reversal_journal_no
+        })
+        total_reversed += payment_amount
+    
+    # 3. Update invoice status to reversed
+    await ap_collection.update_one(
+        {"id": ap_id},
+        {"$set": {
+            "status": "reversed",
+            "invoice_status": "reversed",
+            "paid_amount": 0,
+            "outstanding_amount": ap.get("original_amount", 0),
+            "reversed_at": datetime.now(timezone.utc).isoformat(),
+            "reversed_by": user_id,
+            "reversed_by_name": user_name,
+            "reversal_reason": data.reason,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    # 4. Create correction invoice if requested
+    correction_invoice_no = None
+    if data.create_correction and data.correction_amount:
+        correction_ap_no = await generate_ap_number("CORR")
+        
+        correction_ap = {
+            "id": str(uuid.uuid4()),
+            "ap_no": correction_ap_no,
+            "ap_date": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+            "due_date": ap.get("due_date"),
+            "supplier_id": ap.get("supplier_id"),
+            "supplier_name": ap.get("supplier_name"),
+            "supplier_invoice_no": f"CORR-{ap.get('supplier_invoice_no', '')}",
+            "branch_id": branch_id,
+            "source_type": "correction",
+            "source_id": ap_id,
+            "source_no": ap.get("ap_no"),
+            "currency": "IDR",
+            "original_amount": data.correction_amount,
+            "paid_amount": 0,
+            "outstanding_amount": data.correction_amount,
+            "status": "open",
+            "notes": f"Koreksi dari {ap.get('ap_no')} - {data.reason}",
+            "original_invoice_id": ap_id,
+            "original_invoice_no": ap.get("ap_no"),
+            "created_by": user_id,
+            "created_by_name": user_name,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }
+        
+        await ap_collection.insert_one(correction_ap)
+        correction_invoice_no = correction_ap_no
+    
+    await log_activity(
+        db, user_id, user_name,
+        "reversal", "accounts_payable",
+        f"REVERSAL invoice {ap.get('ap_no')} - {len(reversed_payments)} pembayaran dibatalkan - Total: Rp {total_reversed:,.0f}",
+        request.client.host if request.client else "",
+        branch_id
+    )
+    
+    return {
+        "message": "Invoice berhasil di-reverse",
+        "ap_no": ap.get("ap_no"),
+        "new_status": "reversed",
+        "reversed_payments": reversed_payments,
+        "total_reversed": total_reversed,
+        "correction_invoice_no": correction_invoice_no
+    }
+
+
+# ==================== TASK 3: PAYMENT VOID/REVERSE ENDPOINTS ====================
+
+@router.post("/payments/{payment_id}/void")
+async def void_ap_payment(
+    payment_id: str,
+    request: Request,
+    user: dict = Depends(get_current_user)
+):
+    """
+    TASK 3: VOID PAYMENT
+    
+    Rule:
+    - Jika sudah posted: gunakan VOID dengan reversal journal
+    - Jika masih draft: soft delete
+    
+    Flow void:
+    1. Create reversal journal
+    2. Restore outstanding invoice
+    3. Update invoice status
+    """
+    scope = await get_user_ap_scope(user)
+    
+    if not scope["can_payment"]:
+        raise HTTPException(status_code=403, detail="AKSES DITOLAK")
+    
+    payment = await ap_payments.find_one({"id": payment_id}, {"_id": 0})
+    if not payment:
+        raise HTTPException(status_code=404, detail="Pembayaran tidak ditemukan")
+    
+    if scope["filter"].get("branch_id") and payment.get("branch_id") != scope["filter"]["branch_id"]:
+        raise HTTPException(status_code=403, detail="AKSES DITOLAK")
+    
+    current_status = payment.get("status", "posted")
+    if current_status in ["reversed", "void", "deleted"]:
+        raise HTTPException(status_code=400, detail=f"Pembayaran sudah {current_status}")
+    
+    user_id = scope["user_id"]
+    user_name = user.get("name", "")
+    payment_amount = payment.get("amount", 0)
+    ap_id = payment.get("ap_id")
+    branch_id = payment.get("branch_id")
+    
+    # Create reversal journal
+    from utils.number_generator import generate_transaction_number
+    reversal_journal_no = await generate_transaction_number(db, "JV")
+    
+    ap = await ap_collection.find_one({"id": ap_id}, {"_id": 0}) if ap_id else None
+    
+    # Derive accounts for reversal (opposite of payment)
+    debit_account = await derive_ap_account("pembayaran_tunai_pembelian", branch_id=branch_id)
+    credit_account = await derive_ap_account("pembayaran_kredit_pembelian", branch_id=branch_id)
+    
+    reversal_entries = [
+        {
+            "account_code": debit_account.get("code"),
+            "account_name": debit_account.get("name"),
+            "debit": payment_amount,
+            "credit": 0,
+            "description": f"VOID Payment {payment.get('payment_no')}"
+        },
+        {
+            "account_code": credit_account.get("code"),
+            "account_name": credit_account.get("name"),
+            "debit": 0,
+            "credit": payment_amount,
+            "description": f"VOID Payment {payment.get('payment_no')}"
+        }
+    ]
+    
+    reversal_journal = {
+        "id": str(uuid.uuid4()),
+        "journal_number": reversal_journal_no,
+        "journal_date": datetime.now(timezone.utc).isoformat(),
+        "reference_type": "ap_payment_void",
+        "reference_id": payment_id,
+        "reference_number": payment.get("payment_no"),
+        "description": f"VOID Payment {payment.get('payment_no')} - {ap.get('supplier_name') if ap else ''}",
+        "branch_id": branch_id,
+        "entries": reversal_entries,
+        "total_debit": payment_amount,
+        "total_credit": payment_amount,
+        "is_balanced": True,
+        "status": "posted",
+        "created_by": user_id,
+        "created_by_name": user_name,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await journal_entries.insert_one(reversal_journal)
+    
+    # Update payment status to void
+    await ap_payments.update_one(
+        {"id": payment_id},
+        {"$set": {
+            "status": "void",
+            "voided_at": datetime.now(timezone.utc).isoformat(),
+            "voided_by": user_id,
+            "voided_by_name": user_name,
+            "reversal_journal_id": reversal_journal_no
+        }}
+    )
+    
+    # Restore AP outstanding
+    if ap_id and ap:
+        new_paid = max(0, ap.get("paid_amount", 0) - payment_amount)
+        new_outstanding = ap.get("original_amount", 0) - new_paid
+        
+        await ap_collection.update_one(
+            {"id": ap_id},
+            {"$set": {
+                "paid_amount": new_paid,
+                "outstanding_amount": new_outstanding,
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }}
+        )
+        await update_ap_status(ap_id)
+    
+    await log_activity(
+        db, user_id, user_name,
+        "void", "ap_payment",
+        f"VOID payment {payment.get('payment_no')} senilai Rp {payment_amount:,.0f}",
+        request.client.host if request.client else "",
+        branch_id
+    )
+    
+    return {
+        "message": "Pembayaran berhasil di-void",
+        "payment_no": payment.get("payment_no"),
+        "reversal_journal_no": reversal_journal_no,
+        "restored_outstanding": ap.get("original_amount", 0) - max(0, ap.get("paid_amount", 0) - payment_amount) if ap else 0
+    }
+
+
 @router.get("/summary/dashboard")
 async def get_ap_summary(
     user: dict = Depends(get_current_user)
@@ -1172,19 +1506,23 @@ async def get_ap_summary(
     return summary
 
 
-@router.put("/{ap_id}/soft-delete")
-async def soft_delete_ap(
+@router.put("/{ap_id}/void")
+async def void_ap_invoice(
     ap_id: str,
     request: Request,
     user: dict = Depends(get_current_user)
 ):
     """
-    Soft delete AP - sets status to 'deleted' instead of hard delete.
-    Only allowed for AP without any payments.
+    TASK 1: VOID AP Invoice - Enterprise Delete Flow
     
-    ARSITEKTUR AP/AR Enterprise:
-    - Soft delete only for payments without journal/audit trail
-    - Hard delete NEVER allowed for posted transactions
+    BUSINESS RULE ENGINE:
+    - DELETE button sets status = VOID (bukan PAID atau DELETE)
+    - Invoice dengan payment TIDAK BOLEH di-delete
+    - Harus reverse payment dulu atau create credit note
+    
+    Flow:
+    - Tanpa payment → langsung VOID
+    - Dengan payment → TOLAK, harus reverse payment dulu
     """
     scope = await get_user_ap_scope(user)
     
@@ -1198,46 +1536,75 @@ async def soft_delete_ap(
     if scope["filter"].get("branch_id") and ap.get("branch_id") != scope["filter"]["branch_id"]:
         raise HTTPException(status_code=403, detail="AKSES DITOLAK")
     
-    # Validation: Cannot delete if has payments
+    # TASK 1 RULE: Invoice yang sudah ada payment TIDAK BOLEH di-delete
     if ap.get("paid_amount", 0) > 0:
-        raise HTTPException(status_code=400, detail="Tidak dapat menghapus hutang yang sudah ada pembayaran")
+        raise HTTPException(
+            status_code=400, 
+            detail="Tidak dapat menghapus hutang yang sudah ada pembayaran. Reverse payment terlebih dahulu."
+        )
     
     if ap.get("status") == "paid":
-        raise HTTPException(status_code=400, detail="Tidak dapat menghapus hutang yang sudah lunas")
+        raise HTTPException(
+            status_code=400, 
+            detail="Tidak dapat menghapus hutang yang sudah lunas. Buat credit note jika diperlukan."
+        )
+    
+    if ap.get("status") == "void":
+        raise HTTPException(status_code=400, detail="Invoice sudah di-void")
     
     # Check if has any payments recorded
-    payment_count = await ap_payments.count_documents({"ap_id": ap_id})
+    payment_count = await ap_payments.count_documents({"ap_id": ap_id, "status": {"$ne": "reversed"}})
     if payment_count > 0:
-        raise HTTPException(status_code=400, detail="Tidak dapat menghapus hutang yang sudah ada catatan pembayaran")
+        raise HTTPException(
+            status_code=400, 
+            detail="Tidak dapat menghapus hutang yang sudah ada catatan pembayaran. Reverse payment terlebih dahulu."
+        )
     
     user_id = scope["user_id"]
     user_name = user.get("name", "")
     
-    # Soft delete - mark as deleted
+    # TASK 1: Set status = VOID (bukan deleted atau paid)
     await ap_collection.update_one(
         {"id": ap_id},
         {"$set": {
-            "status": "deleted",
+            "status": "void",
+            "invoice_status": "void",
             "is_deleted": True,
-            "deleted_at": datetime.now(timezone.utc).isoformat(),
-            "deleted_by": user_id,
-            "deleted_by_name": user_name,
+            "voided_at": datetime.now(timezone.utc).isoformat(),
+            "voided_by": user_id,
+            "voided_by_name": user_name,
+            "void_reason": "Deleted by user",
             "updated_at": datetime.now(timezone.utc).isoformat()
         }}
     )
     
     await log_activity(
         db, user_id, user_name,
-        "soft_delete", "accounts_payable",
-        f"Menghapus hutang {ap.get('ap_no')} supplier {ap.get('supplier_name')}",
+        "void", "accounts_payable",
+        f"VOID hutang {ap.get('ap_no')} supplier {ap.get('supplier_name')} - Enterprise Delete Flow",
         request.client.host if request.client else "",
         ap.get("branch_id")
     )
     
     return {
-        "message": "Hutang berhasil dihapus (soft delete)",
-        "ap_no": ap.get("ap_no")
+        "message": "Hutang berhasil di-VOID",
+        "ap_no": ap.get("ap_no"),
+        "new_status": "void"
     }
+
+
+@router.put("/{ap_id}/soft-delete")
+async def soft_delete_ap(
+    ap_id: str,
+    request: Request,
+    user: dict = Depends(get_current_user)
+):
+    """
+    Backward compatibility - redirects to void endpoint
+    DEPRECATED: Use /void endpoint instead
+    """
+    # Call the void function for backward compatibility
+    return await void_ap_invoice(ap_id, request, user)
 
 
 # ==================== AUTO-CREATE FROM PURCHASE ====================
