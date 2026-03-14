@@ -1,12 +1,14 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { Search, Download, Printer, Loader2, FileText, ChevronDown, ChevronRight, RefreshCw } from 'lucide-react';
+import { Search, Download, Printer, Loader2, FileText, ChevronDown, ChevronRight, RefreshCw, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { getDefaultFilterDates, formatDateDisplay } from '../../utils/dateUtils';
 
 const GeneralLedger = () => {
   const { api } = useAuth();
   const [ledgerData, setLedgerData] = useState([]);  // Array of account summaries
+  const [filteredData, setFilteredData] = useState([]);  // PRIORITAS 2: Filtered results
+  const [searchTerm, setSearchTerm] = useState('');  // PRIORITAS 2: Search term
   const [accountDetails, setAccountDetails] = useState({});  // Details per account
   const [loading, setLoading] = useState(true);
   const [loadingDetails, setLoadingDetails] = useState({});
@@ -14,6 +16,42 @@ const GeneralLedger = () => {
   const [dateFrom, setDateFrom] = useState(defaultFrom);
   const [dateTo, setDateTo] = useState(defaultTo);
   const [expandedAccounts, setExpandedAccounts] = useState({});
+  const searchTimeoutRef = useRef(null);  // PRIORITAS 2: Debounce ref
+
+  // PRIORITAS 2: Filter accounts based on search term (LIKE %keyword%)
+  const filterAccounts = useCallback((accounts, term) => {
+    if (!term || term.trim() === '') {
+      return accounts;
+    }
+    const searchLower = term.toLowerCase().trim();
+    return accounts.filter(acc => {
+      const code = (acc.account_code || '').toLowerCase();
+      const name = (acc.account_name || '').toLowerCase();
+      // LIKE %keyword% - search anywhere in code or name
+      return code.includes(searchLower) || name.includes(searchLower);
+    });
+  }, []);
+
+  // PRIORITAS 2: Handle search with 300ms debounce
+  const handleSearch = useCallback((term) => {
+    setSearchTerm(term);
+    
+    // Clear previous timeout
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    
+    // Debounce 300ms
+    searchTimeoutRef.current = setTimeout(() => {
+      const filtered = filterAccounts(ledgerData, term);
+      setFilteredData(filtered);
+    }, 300);
+  }, [ledgerData, filterAccounts]);
+
+  // Update filtered data when ledgerData changes
+  useEffect(() => {
+    setFilteredData(filterAccounts(ledgerData, searchTerm));
+  }, [ledgerData, searchTerm, filterAccounts]);
 
   // Load all account summaries from Trial Balance
   const loadLedger = useCallback(async () => {
@@ -127,7 +165,33 @@ const GeneralLedger = () => {
 
       {/* Filters */}
       <div className="bg-[#1a1214] border border-red-900/30 rounded-xl p-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* PRIORITAS 2: Search with debounce */}
+          <div>
+            <label className="block text-xs text-gray-400 mb-1">Cari Akun</label>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <input 
+                type="text" 
+                value={searchTerm} 
+                onChange={(e) => handleSearch(e.target.value)}
+                placeholder="Ketik untuk mencari... (contoh: p = Piutang, Pendapatan)"
+                className="w-full pl-10 pr-10 py-2 bg-[#0a0608] border border-red-900/30 rounded-lg text-gray-200"
+                data-testid="gl-search-input"
+              />
+              {searchTerm && (
+                <button 
+                  onClick={() => handleSearch('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+            <p className="text-xs text-gray-500 mt-1">
+              {searchTerm && `Ditemukan ${filteredData.length} akun`}
+            </p>
+          </div>
           <div>
             <label className="block text-xs text-gray-400 mb-1">Dari Tanggal</label>
             <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)}
@@ -150,11 +214,11 @@ const GeneralLedger = () => {
             <Loader2 className="h-8 w-8 animate-spin mx-auto text-amber-400" />
             <p className="text-gray-400 mt-2">Memuat data buku besar...</p>
           </div>
-        ) : ledgerData.length === 0 ? (
+        ) : filteredData.length === 0 ? (
           <div className="bg-[#1a1214] border border-red-900/30 rounded-xl p-8 text-center text-gray-400">
-            Belum ada data buku besar
+            {searchTerm ? `Tidak ditemukan akun dengan kata kunci "${searchTerm}"` : 'Belum ada data buku besar'}
           </div>
-        ) : ledgerData.map(account => (
+        ) : filteredData.map(account => (
           <div key={account.account_code} className="bg-[#1a1214] border border-red-900/30 rounded-xl overflow-hidden" data-testid={`ledger-account-${account.account_code}`}>
             <button
               onClick={() => toggleExpand(account.account_code)}
@@ -243,21 +307,24 @@ const GeneralLedger = () => {
       </div>
       
       {/* Summary */}
-      {!loading && ledgerData.length > 0 && (
+      {/* Summary */}
+      {!loading && filteredData.length > 0 && (
         <div className="bg-[#1a1214] border border-amber-600/30 rounded-xl p-4">
           <div className="flex justify-between items-center">
-            <span className="text-gray-400">Total Akun: {ledgerData.length}</span>
+            <span className="text-gray-400">
+              {searchTerm ? `Menampilkan ${filteredData.length} dari ${ledgerData.length} akun` : `Total Akun: ${ledgerData.length}`}
+            </span>
             <div className="flex gap-8">
               <div className="text-right">
                 <span className="text-xs text-gray-400">Total Debit</span>
                 <p className="font-bold text-blue-400">
-                  Rp {ledgerData.reduce((sum, a) => sum + (a.total_debit || 0), 0).toLocaleString('id-ID')}
+                  Rp {filteredData.reduce((sum, a) => sum + (a.total_debit || 0), 0).toLocaleString('id-ID')}
                 </p>
               </div>
               <div className="text-right">
                 <span className="text-xs text-gray-400">Total Kredit</span>
                 <p className="font-bold text-green-400">
-                  Rp {ledgerData.reduce((sum, a) => sum + (a.total_credit || 0), 0).toLocaleString('id-ID')}
+                  Rp {filteredData.reduce((sum, a) => sum + (a.total_credit || 0), 0).toLocaleString('id-ID')}
                 </p>
               </div>
             </div>

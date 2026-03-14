@@ -28,7 +28,7 @@ const PurchaseOrders = () => {
   const [formData, setFormData] = useState({
     supplier_id: '',
     notes: '',
-    items: [{ product_id: '', quantity: 1, unit_cost: 0, discount_percent: 0 }]
+    items: [{ product_id: '', quantity: 1, unit_cost: 0, discount_percent: 0, sn_start: '', sn_end: '' }]
   });
 
   const loadOrders = useCallback(async () => {
@@ -224,7 +224,7 @@ const PurchaseOrders = () => {
   const addItem = () => {
     setFormData(prev => ({
       ...prev,
-      items: [...prev.items, { product_id: '', quantity: 1, unit_cost: 0, discount_percent: 0 }]
+      items: [...prev.items, { product_id: '', quantity: 1, unit_cost: 0, discount_percent: 0, sn_start: '', sn_end: '' }]
     }));
   };
 
@@ -491,6 +491,9 @@ const PurchaseOrders = () => {
                       <th className="px-4 py-2 text-center text-xs text-gray-400 w-24">QTY</th>
                       <th className="px-4 py-2 text-right text-xs text-gray-400 w-32">HARGA</th>
                       <th className="px-4 py-2 text-center text-xs text-gray-400 w-20">DISK %</th>
+                      {/* PRIORITAS 5: Serial Number Range */}
+                      <th className="px-4 py-2 text-center text-xs text-gray-400 w-28">SN AWAL</th>
+                      <th className="px-4 py-2 text-center text-xs text-gray-400 w-28">SN AKHIR</th>
                       <th className="px-4 py-2 text-right text-xs text-gray-400 w-36">SUBTOTAL</th>
                       <th className="px-4 py-2 w-12"></th>
                     </tr>
@@ -498,6 +501,9 @@ const PurchaseOrders = () => {
                   <tbody className="divide-y divide-red-900/20">
                     {formData.items.map((item, idx) => {
                       const subtotal = item.quantity * item.unit_cost * (1 - item.discount_percent/100);
+                      // PRIORITAS 5: Calculate SN count
+                      const snCount = (item.sn_start && item.sn_end) ? 
+                        Math.max(0, parseInt(item.sn_end) - parseInt(item.sn_start) + 1) : 0;
                       return (
                         <tr key={idx}>
                           <td className="px-4 py-2">
@@ -539,6 +545,33 @@ const PurchaseOrders = () => {
                               onChange={(e) => updateItem(idx, 'discount_percent', Number(e.target.value))}
                               className="w-full px-2 py-1 bg-[#0a0608] border border-red-900/30 rounded text-sm text-center"
                             />
+                          </td>
+                          {/* PRIORITAS 5: SN Awal */}
+                          <td className="px-4 py-2">
+                            <input
+                              type="text"
+                              value={item.sn_start || ''}
+                              onChange={(e) => updateItem(idx, 'sn_start', e.target.value)}
+                              className="w-full px-2 py-1 bg-[#0a0608] border border-red-900/30 rounded text-sm text-center"
+                              placeholder="10001"
+                              data-testid={`sn-start-${idx}`}
+                            />
+                          </td>
+                          {/* PRIORITAS 5: SN Akhir */}
+                          <td className="px-4 py-2">
+                            <div>
+                              <input
+                                type="text"
+                                value={item.sn_end || ''}
+                                onChange={(e) => updateItem(idx, 'sn_end', e.target.value)}
+                                className="w-full px-2 py-1 bg-[#0a0608] border border-red-900/30 rounded text-sm text-center"
+                                placeholder="10010"
+                                data-testid={`sn-end-${idx}`}
+                              />
+                              {snCount > 0 && (
+                                <p className="text-xs text-gray-500 text-center mt-0.5">{snCount} unit</p>
+                              )}
+                            </div>
                           </td>
                           <td className="px-4 py-2 text-right text-sm text-green-400">
                             Rp {subtotal.toLocaleString('id-ID')}

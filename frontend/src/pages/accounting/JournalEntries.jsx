@@ -146,16 +146,36 @@ const JournalEntries = () => {
   };
 
   const handleDelete = async (journal) => {
+    // PRIORITAS 1: Check if journal can be deleted (system journals cannot)
+    const journalSource = (journal.journal_source || journal.reference_type || journal.source || 'manual').toLowerCase();
+    const protectedSources = ['purchase', 'pembelian', 'payment', 'pembayaran', 'ap', 'ar', 'inventory', 'payroll', 'sales', 'penjualan', 'cash', 'bank', 'pos'];
+    const isSystemJournal = protectedSources.some(s => journalSource.includes(s)) || (journal.reference_id && journalSource !== 'manual');
+    
+    if (isSystemJournal) {
+      toast.error('Jurnal sistem tidak dapat dihapus. Gunakan fitur reversal/void jika diperlukan.');
+      return;
+    }
+    
     if (!confirm(`Hapus jurnal "${journal.journal_number}"?`)) return;
     try {
       const res = await api(`/api/accounting/journals/${journal.id}`, { method: 'DELETE' });
       if (res.ok) {
-        toast.success('Jurnal berhasil dihapus');
+        toast.success('Jurnal manual berhasil dihapus');
         setSelectedItem(null);
         loadJournals();
         loadUnbalanced();
+      } else {
+        const err = await res.json();
+        toast.error(err.detail || 'Gagal menghapus jurnal');
       }
     } catch { toast.error('Gagal menghapus'); }
+  };
+
+  // PRIORITAS 1: Check if journal is deletable
+  const isJournalDeletable = (journal) => {
+    const journalSource = (journal.journal_source || journal.reference_type || journal.source || 'manual').toLowerCase();
+    const protectedSources = ['purchase', 'pembelian', 'payment', 'pembayaran', 'ap', 'ar', 'inventory', 'payroll', 'sales', 'penjualan', 'cash', 'bank', 'pos'];
+    return !protectedSources.some(s => journalSource.includes(s)) && !(journal.reference_id && journalSource !== 'manual');
   };
 
   const handlePrint = (item) => { toast.info(`Mencetak ${item.journal_number}...`); };
@@ -279,20 +299,26 @@ const JournalEntries = () => {
                   </td>
                   <td className="px-4 py-3 text-center">
                     <span className={`px-2 py-1 rounded text-xs ${
-                      journal.source === 'manual' ? 'bg-gray-600/20 text-gray-400' : 'bg-blue-600/20 text-blue-400'
+                      (journal.journal_source || journal.source) === 'manual' ? 'bg-gray-600/20 text-gray-400' : 'bg-blue-600/20 text-blue-400'
                     }`}>
-                      {journal.source === 'manual' ? 'Manual' : journal.source}
+                      {(journal.journal_source || journal.reference_type || journal.source || 'manual').toUpperCase()}
                     </span>
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-center gap-1">
-                      <button onClick={(e) => { e.stopPropagation(); handlePrint(journal); }} className="p-1.5 hover:bg-blue-600/20 rounded text-blue-400">
+                      <button onClick={(e) => { e.stopPropagation(); handlePrint(journal); }} className="p-1.5 hover:bg-blue-600/20 rounded text-blue-400" title="Cetak">
                         <Printer className="h-4 w-4" />
                       </button>
-                      <button onClick={(e) => { e.stopPropagation(); handleEdit(journal); }} className="p-1.5 hover:bg-purple-600/20 rounded text-purple-400">
+                      <button onClick={(e) => { e.stopPropagation(); handleEdit(journal); }} className="p-1.5 hover:bg-purple-600/20 rounded text-purple-400" title="Edit">
                         <Edit2 className="h-4 w-4" />
                       </button>
-                      <button onClick={(e) => { e.stopPropagation(); handleDelete(journal); }} className="p-1.5 hover:bg-red-600/20 rounded text-red-400">
+                      {/* PRIORITAS 1: Disable delete for system journals */}
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); handleDelete(journal); }} 
+                        className={`p-1.5 rounded ${isJournalDeletable(journal) ? 'hover:bg-red-600/20 text-red-400' : 'text-gray-600 cursor-not-allowed'}`}
+                        disabled={!isJournalDeletable(journal)}
+                        title={isJournalDeletable(journal) ? 'Hapus' : 'Jurnal sistem tidak dapat dihapus'}
+                      >
                         <Trash2 className="h-4 w-4" />
                       </button>
                     </div>

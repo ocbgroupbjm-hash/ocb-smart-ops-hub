@@ -466,7 +466,8 @@ async def create_journal(
         "id": str(uuid.uuid4()),
         "journal_number": journal_number,
         "journal_date": data.journal_date,
-        "reference_type": data.reference_type,
+        "journal_source": "manual",  # PRIORITAS 1: Track journal source for delete protection
+        "reference_type": data.reference_type or "manual",
         "reference_id": data.reference_id,
         "reference_number": data.reference_number,
         "description": data.description,

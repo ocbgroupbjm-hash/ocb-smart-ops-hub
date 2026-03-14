@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from typing import Optional, List, Dict
 from database import (
     purchase_orders, suppliers, products, product_stocks, 
-    stock_movements, branches, get_next_sequence, get_db
+    stock_movements, branches, get_next_sequence, get_db, db
 )
 from utils.auth import get_current_user
 from models.titan_models import PurchaseOrder, PurchaseOrderItem, PurchaseStatus, StockMovement, StockMovementType, ProductStock
@@ -16,6 +16,9 @@ from datetime import datetime, timezone
 import uuid
 
 router = APIRouter(prefix="/purchase", tags=["Purchase"])
+
+# PRIORITAS 5: Serial Number Collection
+serial_numbers = db.inventory_serial_numbers
 
 # ==================== FISCAL PERIOD & MULTI-CURRENCY IMPORTS ====================
 async def enforce_fiscal_period(transaction_date: str, action: str = "create"):
@@ -876,3 +879,142 @@ async def list_price_history(
     
     history = await price_history.find(query, {"_id": 0}).sort("created_at", -1).to_list(100)
     return {"items": history}
+
+
+
+# ==================== PRIORITAS 5: SERIAL NUMBER RANGE ====================
+
+class SerialNumberRangeInput(BaseModel):
+    item_id: str
+    product_id: str
+    sn_start: str
+    sn_end: str
+    purchase_id: Optional[str] = None
+
+async def generate_serial_numbers(item_id: str, product_id: str, sn_start: str, sn_end: str, purchase_id: str = None):
+    """
+    PRIORITAS 5: Generate serial numbers from range
+    Input: SN Awal = 10001, SN Akhir = 10010
+    Output: [10001, 10002, 10003, ..., 10010]
+    """
+    try:
+        start_num = int(sn_start)
+        end_num = int(sn_end)
+    except ValueError:
+        # If not numeric, generate as string sequence
+        generated = [sn_start]  # Just use as single SN
+        return generated
+    
+    if end_num < start_num:
+        raise ValueError("SN Akhir harus lebih besar dari SN Awal")
+    
+    if end_num - start_num > 1000:
+        raise ValueError("Maksimal 1000 serial number per batch")
+    
+    generated_sns = []
+    now = datetime.now(timezone.utc).isoformat()
+    
+    for num in range(start_num, end_num + 1):
+        sn = str(num).zfill(len(sn_start))  # Maintain leading zeros
+        sn_doc = {
+            "id": str(uuid.uuid4()),
+            "item_id": item_id,
+            "product_id": product_id,
+            "serial_number": sn,
+            "purchase_id": purchase_id,
+            "status": "available",  # available, sold, damaged, returned
+            "created_at": now
+        }
+        generated_sns.append(sn_doc)
+    
+    # Insert all serial numbers
+    if generated_sns:
+        await serial_numbers.insert_many(generated_sns)
+    
+    return [sn["serial_number"] for sn in generated_sns]
+
+
+@router.post("/serial-numbers/generate")
+async def api_generate_serial_numbers(
+    data: SerialNumberRangeInput,
+    user: dict = Depends(require_permission("purchase", "create"))
+):
+    """
+    PRIORITAS 5: Generate serial numbers from range
+    
+    Input:
+    - sn_start: "10001"
+    - sn_end: "10010"
+    
+    Output:
+    - Generates serial numbers 10001, 10002, ..., 10010
+    - Saves to inventory_serial_numbers collection
+    """
+    try:
+        generated = await generate_serial_numbers(
+            item_id=data.item_id,
+            product_id=data.product_id,
+            sn_start=data.sn_start,
+            sn_end=data.sn_end,
+            purchase_id=data.purchase_id
+        )
+        
+        return {
+            "success": True,
+            "message": f"Berhasil generate {len(generated)} serial number",
+            "count": len(generated),
+            "serial_numbers": generated[:20],  # Return first 20 for display
+            "sn_start": data.sn_start,
+            "sn_end": data.sn_end
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get("/serial-numbers")
+async def list_serial_numbers(
+    product_id: str = "",
+    purchase_id: str = "",
+    status: str = "",
+    limit: int = 100,
+    user: dict = Depends(require_permission("purchase", "view"))
+):
+    """List serial numbers with filters"""
+    query = {}
+    if product_id:
+        query["product_id"] = product_id
+    if purchase_id:
+        query["purchase_id"] = purchase_id
+    if status:
+        query["status"] = status
+    
+    sns = await serial_numbers.find(query, {"_id": 0}).sort("serial_number", 1).to_list(limit)
+    total = await serial_numbers.count_documents(query)
+    
+    return {
+        "items": sns,
+        "total": total,
+        "limit": limit
+    }
+
+
+@router.put("/serial-numbers/{sn_id}/status")
+async def update_serial_number_status(
+    sn_id: str,
+    status: str,
+    user: dict = Depends(require_permission("purchase", "edit"))
+):
+    """Update serial number status (sold, damaged, returned)"""
+    valid_statuses = ["available", "sold", "damaged", "returned"]
+    if status not in valid_statuses:
+        raise HTTPException(status_code=400, detail=f"Status harus salah satu dari: {valid_statuses}")
+    
+    result = await serial_numbers.update_one(
+        {"id": sn_id},
+        {"$set": {"status": status, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Serial number tidak ditemukan")
+    
+    return {"success": True, "message": f"Status diupdate ke {status}"}

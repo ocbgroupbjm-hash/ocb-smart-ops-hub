@@ -163,6 +163,43 @@ export const formatDateCompact = (dateInput, fallback = '-') => {
 };
 
 /**
+ * PRIORITAS 3: Format date as DD/MM/YYYY (ERP Standard)
+ * Standar format tanggal untuk semua modul ERP
+ * @param {any} dateInput - Date in any format
+ * @param {string} fallback - Fallback text (default: '-')
+ * @returns {string} - Date in DD/MM/YYYY format
+ */
+export const formatDateDDMMYYYY = (dateInput, fallback = '-') => {
+  const date = parseDate(dateInput);
+  if (!date) return fallback;
+  
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  
+  return `${day}/${month}/${year}`;
+};
+
+/**
+ * PRIORITAS 3: Format datetime as DD/MM/YYYY HH:mm (ERP Standard)
+ * @param {any} dateInput - Date in any format
+ * @param {string} fallback - Fallback text
+ * @returns {string} - DateTime in DD/MM/YYYY HH:mm format
+ */
+export const formatDateTimeDDMMYYYY = (dateInput, fallback = '-') => {
+  const date = parseDate(dateInput);
+  if (!date) return fallback;
+  
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  
+  return `${day}/${month}/${year} ${hours}:${minutes}`;
+};
+
+/**
  * Format date for aging calculations (days ago/from now)
  * @param {any} dateInput - Date in any format
  * @returns {number} - Days difference (positive = past, negative = future)
@@ -268,6 +305,8 @@ export default {
   formatDateInput,
   formatDateAPI,
   formatDateCompact,
+  formatDateDDMMYYYY,       // PRIORITAS 3: DD/MM/YYYY format
+  formatDateTimeDDMMYYYY,   // PRIORITAS 3: DD/MM/YYYY HH:mm format
   getDaysFromToday,
   isOverdue,
   getDateRangePreset,

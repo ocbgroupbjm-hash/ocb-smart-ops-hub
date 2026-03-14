@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from database import db, get_db
 from utils.auth import get_current_user
 from routes.rbac_middleware import require_permission, log_security_event
+from routes.rbac_system import log_activity
 import uuid
 
 router = APIRouter(prefix="/api/accounting", tags=["Accounting"])
@@ -294,11 +295,56 @@ async def update_journal(journal_id: str, data: JournalCreate, user: dict = Depe
         raise HTTPException(status_code=404, detail="Jurnal tidak ditemukan")
     return {"message": "Jurnal berhasil diupdate"}
 
+# ==================== JOURNAL SOURCE TYPES (PRIORITAS 1 SECURITY) ====================
+# System generated journals CANNOT be deleted
+PROTECTED_JOURNAL_SOURCES = [
+    "purchase", "pembelian",
+    "payment", "pembayaran", 
+    "ap", "hutang", "accounts_payable",
+    "ar", "piutang", "accounts_receivable",
+    "inventory", "persediaan", "stock",
+    "payroll", "gaji",
+    "sales", "penjualan",
+    "cash", "bank", "kas",
+    "pos", "retur", "return",
+    "ap_payment", "ar_payment",
+    "ap_invoice_reversal", "ap_payment_void"
+]
+
 @router.delete("/journals/{journal_id}")
 async def delete_journal(journal_id: str, user: dict = Depends(get_current_user)):
+    """
+    Delete journal entry - ONLY allowed for manual journals
+    
+    SECURITY RULE (PRIORITAS 1):
+    - System generated journals (purchase, payment, ap, ar, inventory, payroll) CANNOT be deleted
+    - Only manual journal entries can be deleted
+    - This is standard ERP security practice
+    """
     journal = await journals.find_one({"id": journal_id}, {"_id": 0})
     if not journal:
         raise HTTPException(status_code=404, detail="Jurnal tidak ditemukan")
+    
+    # PRIORITAS 1: Check journal source - block delete for system journals
+    journal_source = (
+        journal.get("journal_source") or 
+        journal.get("reference_type") or 
+        journal.get("source_type") or 
+        journal.get("source") or 
+        "manual"
+    ).lower()
+    
+    # Check if this is a protected system journal
+    is_system_journal = any(src in journal_source for src in PROTECTED_JOURNAL_SOURCES)
+    
+    # Also check if journal has reference_id (linked to transaction)
+    has_reference = bool(journal.get("reference_id") or journal.get("reference_number"))
+    
+    if is_system_journal or (has_reference and journal_source != "manual"):
+        raise HTTPException(
+            status_code=403, 
+            detail="System generated journal cannot be deleted. Jurnal yang dihasilkan sistem tidak dapat dihapus."
+        )
     
     # Reverse account balances
     for entry in journal.get("entries", []):
@@ -313,7 +359,54 @@ async def delete_journal(journal_id: str, user: dict = Depends(get_current_user)
             )
     
     await journals.delete_one({"id": journal_id})
-    return {"message": "Jurnal berhasil dihapus"}
+    
+    # Log activity
+    user_id = user.get("user_id", user.get("id", ""))
+    user_name = user.get("name", "")
+    await log_activity(
+        db, user_id, user_name,
+        "delete", "journal",
+        f"Menghapus jurnal manual {journal.get('journal_number', journal_id)}",
+        "", user.get("branch_id", "")
+    )
+    
+    return {"message": "Jurnal manual berhasil dihapus"}
+
+
+@router.get("/journals/{journal_id}/can-delete")
+async def check_journal_deletable(journal_id: str, user: dict = Depends(get_current_user)):
+    """
+    Check if journal can be deleted - for frontend button state
+    Returns: { can_delete: bool, reason: string }
+    """
+    journal = await journals.find_one({"id": journal_id}, {"_id": 0})
+    if not journal:
+        raise HTTPException(status_code=404, detail="Jurnal tidak ditemukan")
+    
+    journal_source = (
+        journal.get("journal_source") or 
+        journal.get("reference_type") or 
+        journal.get("source_type") or 
+        journal.get("source") or 
+        "manual"
+    ).lower()
+    
+    is_system_journal = any(src in journal_source for src in PROTECTED_JOURNAL_SOURCES)
+    has_reference = bool(journal.get("reference_id") or journal.get("reference_number"))
+    
+    can_delete = not is_system_journal and not (has_reference and journal_source != "manual")
+    
+    reason = ""
+    if not can_delete:
+        reason = f"Jurnal sistem ({journal_source}) tidak dapat dihapus"
+    
+    return {
+        "can_delete": can_delete,
+        "journal_source": journal_source,
+        "is_system_journal": is_system_journal,
+        "reason": reason
+    }
+
 
 # ==================== KAS MASUK/KELUAR/TRANSFER ====================
 

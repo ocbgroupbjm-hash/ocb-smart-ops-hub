@@ -63,7 +63,39 @@ const PurchaseList = () => {
   const handlePrint = (item) => { toast.info(`Mencetak ${item.po_number}...`); };
   const handleReceive = (item) => { window.location.href = `/purchase/receive/${item.id}`; };
   const handleRowSelect = (item) => { setSelectedItem(selectedItem?.id === item.id ? null : item); };
-  const exportToExcel = () => { toast.info('Export Excel akan segera tersedia'); };
+  
+  // PRIORITAS 4: Export Pembelian to Excel
+  const exportToExcel = async () => {
+    try {
+      toast.info('Mempersiapkan export...');
+      
+      const params = new URLSearchParams();
+      if (dateFrom) params.append('date_from', dateFrom);
+      if (dateTo) params.append('date_to', dateTo);
+      if (statusFilter) params.append('status', statusFilter);
+      
+      const res = await api(`/api/export/purchase?${params}`);
+      
+      if (res.ok) {
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `pembelian_${new Date().toISOString().slice(0,10)}.xlsx`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        toast.success('Export berhasil!');
+      } else {
+        const err = await res.json();
+        toast.error(err.detail || 'Gagal export data');
+      }
+    } catch (err) {
+      console.error('Export error:', err);
+      toast.error('Gagal export data');
+    }
+  };
 
   return (
     <div className="space-y-4" data-testid="purchase-list-page">
