@@ -128,6 +128,7 @@ from routes.hr_employees import router as hr_employees_router
 from routes.hr_attendance import router as hr_attendance_router
 from routes.hr_leave import router as hr_leave_router
 from routes.hr_payroll import router as hr_payroll_router
+from routes.hr_kpi import router as hr_kpi_router
 
 # Import Operational Tools Layer - Export, Import, Print
 from routes.export_service import router as export_service_router
@@ -433,6 +434,7 @@ app.include_router(hr_employees_router)
 app.include_router(hr_attendance_router)
 app.include_router(hr_leave_router)
 app.include_router(hr_payroll_router)
+app.include_router(hr_kpi_router)
 
 
 # Health check

@@ -56,6 +56,12 @@ import WhatsAppAlerts from './pages/WhatsAppAlerts';
 import WarRoomAlertPanel from './pages/WarRoomAlertPanel';
 import HRManagement from './pages/HRManagement';
 
+// HR Enterprise System - SUPER DUPER DEWA Blueprint
+import HREmployees from './pages/hr/HREmployees';
+import HRAttendance from './pages/hr/HRAttendance';
+import HRLeave from './pages/hr/HRLeave';
+import HRPayroll from './pages/hr/HRPayroll';
+
 // OCB TITAN AI Phase 3 Pages - AI Super War Room
 import CFODashboard from './pages/CFODashboard';
 
@@ -255,6 +261,12 @@ function App() {
             <Route path="master-erp" element={<MasterERP />} />
             <Route path="erp-reports" element={<ERPReports />} />
             <Route path="hr-management" element={<HRManagement />} />
+            
+            {/* HR Enterprise System Routes - SUPER DUPER DEWA */}
+            <Route path="hr/employees" element={<HREmployees />} />
+            <Route path="hr/attendance" element={<HRAttendance />} />
+            <Route path="hr/leave" element={<HRLeave />} />
+            <Route path="hr/payroll" element={<HRPayroll />} />
             
             <Route path="kasir" element={<POS />} />
             <Route path="produk" element={<Products />} />
