@@ -8,6 +8,23 @@ import { toast } from 'sonner';
 
 const API = process.env.REACT_APP_BACKEND_URL;
 
+// OCB TITAN Design Tokens - Dark Enterprise Theme
+const DESIGN = {
+  text: {
+    primary: 'text-[#E5E7EB]',
+    secondary: 'text-[#9CA3AF]',
+    accent: 'text-[#F97316]',
+  },
+  bg: {
+    modal: 'bg-[#1E293B]',
+    card: 'bg-[#0F172A]',
+    input: 'bg-[#0F172A]',
+  },
+  border: {
+    default: 'border-[#334155]',
+  }
+};
+
 export default function APPaymentModal({ ap, onClose }) {
   const [amount, setAmount] = useState(ap.outstanding_amount || 0);
   const [paymentMethod, setPaymentMethod] = useState('transfer');
@@ -22,11 +39,9 @@ export default function APPaymentModal({ ap, onClose }) {
   
   const token = localStorage.getItem('token');
 
-  // Fetch Cash/Bank accounts - FIX: Use correct API endpoint
   const fetchCashBankAccounts = useCallback(async () => {
     setLoadingAccounts(true);
     try {
-      // Try primary endpoint
       let res = await fetch(`${API}/api/accounts/cash-bank`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -41,7 +56,6 @@ export default function APPaymentModal({ ap, onClose }) {
         }
       }
       
-      // Fallback to accounting endpoint
       res = await fetch(`${API}/api/accounting/accounts/cash-bank`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -56,7 +70,6 @@ export default function APPaymentModal({ ap, onClose }) {
         }
       }
       
-      // Final fallback: get from chart of accounts
       res = await fetch(`${API}/api/accounting/accounts?category=asset`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -64,16 +77,15 @@ export default function APPaymentModal({ ap, onClose }) {
       if (res.ok) {
         const data = await res.json();
         const items = data.items || [];
-        // Filter for cash/bank accounts
-        const cashBankAccounts = items.filter(a => 
+        const filtered = items.filter(a => 
           a.code?.startsWith('1-11') || 
           a.code?.startsWith('1-12') ||
           a.name?.toLowerCase().includes('kas') ||
           a.name?.toLowerCase().includes('bank')
         );
-        if (cashBankAccounts.length > 0) {
-          setCashBankAccounts(cashBankAccounts);
-          setBankAccountId(cashBankAccounts[0].id);
+        if (filtered.length > 0) {
+          setCashBankAccounts(filtered);
+          setBankAccountId(filtered[0].id);
         }
       }
     } catch (err) {
@@ -87,27 +99,18 @@ export default function APPaymentModal({ ap, onClose }) {
     fetchCashBankAccounts();
   }, [fetchCashBankAccounts]);
 
-  const formatCurrency = (val) => {
-    return new Intl.NumberFormat('id-ID', { 
-      style: 'currency', 
-      currency: 'IDR',
-      minimumFractionDigits: 0 
-    }).format(val || 0);
-  };
+  const formatCurrency = (num) => `Rp ${(num || 0).toLocaleString('id-ID')}`;
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
     if (amount <= 0) {
-      toast.error('Jumlah pembayaran harus lebih dari 0');
+      toast.error('Masukkan jumlah pembayaran');
       return;
     }
     
     if (amount > ap.outstanding_amount) {
-      toast.error('Jumlah pembayaran tidak boleh melebihi outstanding');
-      return;
-    }
-
-    if (!bankAccountId) {
-      toast.error('Pilih akun Kas/Bank terlebih dahulu');
+      toast.error('Jumlah pembayaran melebihi outstanding');
       return;
     }
     
@@ -120,22 +123,22 @@ export default function APPaymentModal({ ap, onClose }) {
           Authorization: `Bearer ${token}`
         },
         body: JSON.stringify({
-          amount: parseFloat(amount),
+          amount,
           payment_method: paymentMethod,
           bank_account_id: bankAccountId,
           reference_no: referenceNo,
-          notes: notes
+          notes
         })
       });
       
       const data = await res.json();
       
       if (res.ok) {
-        setSuccess(true);
         setResult(data);
+        setSuccess(true);
         toast.success('Pembayaran berhasil dicatat');
       } else {
-        toast.error(data.detail || 'Gagal mencatat pembayaran');
+        toast.error(data.detail || 'Gagal menyimpan pembayaran');
       }
     } catch (err) {
       console.error('Error recording payment:', err);
@@ -147,20 +150,23 @@ export default function APPaymentModal({ ap, onClose }) {
 
   if (success) {
     return (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg w-full max-w-md p-6 text-center">
-          <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Pembayaran Berhasil!</h2>
-          <p className="text-gray-600 mb-4">
-            No. Pembayaran: <span className="font-mono font-bold">{result?.payment_no}</span>
+      <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+        <div className={`${DESIGN.bg.modal} ${DESIGN.border.default} border rounded-xl w-full max-w-md p-6 text-center shadow-2xl`}>
+          <CheckCircle className="w-16 h-16 text-emerald-400 mx-auto mb-4" />
+          <h2 className={`text-xl font-bold ${DESIGN.text.primary} mb-2`}>Pembayaran Berhasil!</h2>
+          <p className={`${DESIGN.text.secondary} mb-4`}>
+            No. Pembayaran: <span className={`font-mono font-bold ${DESIGN.text.accent}`}>{result?.payment_no}</span>
           </p>
-          <p className="text-sm text-gray-500 mb-4">
-            Journal: {result?.journal_no}
+          <p className={`text-sm ${DESIGN.text.secondary} mb-4`}>
+            Journal: <span className="font-mono">{result?.journal_no}</span>
           </p>
-          <p className="text-gray-600 mb-6">
-            Sisa Outstanding: {formatCurrency(result?.new_outstanding)}
+          <p className={`${DESIGN.text.primary} mb-6`}>
+            Sisa Outstanding: <span className="text-rose-400 font-bold">{formatCurrency(result?.new_outstanding)}</span>
           </p>
-          <Button onClick={() => onClose(true)} className="w-full">
+          <Button 
+            onClick={() => onClose(true)} 
+            className="w-full bg-[#F97316] hover:bg-[#EA580C] text-white"
+          >
             Tutup
           </Button>
         </div>
@@ -169,206 +175,186 @@ export default function APPaymentModal({ ap, onClose }) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" data-testid="ap-payment-modal">
-      <div className="bg-white rounded-lg w-full max-w-lg flex flex-col max-h-[85vh]">
-        {/* Header - Fixed */}
-        <div className="flex items-center justify-between px-6 py-4 border-b bg-gradient-to-r from-purple-600 to-purple-700 text-white shrink-0 rounded-t-lg">
+    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50" data-testid="ap-payment-modal">
+      <div className={`${DESIGN.bg.modal} ${DESIGN.border.default} border rounded-xl w-full max-w-lg flex flex-col max-h-[85vh] shadow-2xl`}>
+        {/* Header */}
+        <div className={`flex items-center justify-between px-6 py-4 border-b ${DESIGN.border.default} bg-gradient-to-r from-[#F97316] to-[#EA580C] text-white shrink-0 rounded-t-xl`}>
           <div className="flex items-center gap-3">
             <DollarSign className="w-6 h-6" />
             <div>
               <h2 className="text-lg font-semibold">Pembayaran Hutang</h2>
-              <p className="text-sm text-purple-100">{ap.ap_no}</p>
+              <p className="text-sm text-orange-100">{ap.ap_no}</p>
             </div>
           </div>
-          <Button variant="ghost" size="sm" onClick={() => onClose(false)} className="text-white hover:bg-purple-500">
+          <Button variant="ghost" size="sm" onClick={() => onClose(false)} className="text-white hover:bg-[#EA580C]/50">
             <X className="w-5 h-5" />
           </Button>
         </div>
 
-        {/* Content - Scrollable */}
+        {/* Content */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          {/* AP Info */}
-          <Card className="bg-gray-50">
-            <CardContent className="p-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-gray-500">Supplier</p>
-                  <p className="font-medium">{ap.supplier_name}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm text-gray-500">Outstanding</p>
-                  <p className="font-mono font-bold text-red-600">{formatCurrency(ap.outstanding_amount)}</p>
-                </div>
+          {/* AP Info Card */}
+          <div className={`${DESIGN.bg.card} ${DESIGN.border.default} border rounded-lg p-4`}>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className={`text-sm ${DESIGN.text.secondary}`}>Supplier</p>
+                <p className={`font-medium ${DESIGN.text.primary} flex items-center gap-2`}>
+                  <Building2 className="w-4 h-4 text-[#9CA3AF]" />
+                  {ap.supplier_name}
+                </p>
               </div>
-              {ap.supplier_invoice_no && (
-                <div className="mt-2 pt-2 border-t">
-                  <p className="text-sm text-gray-500">Invoice Supplier</p>
-                  <p className="font-mono">{ap.supplier_invoice_no}</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+              <div className="text-right">
+                <p className={`text-sm ${DESIGN.text.secondary}`}>Outstanding</p>
+                <p className="font-mono font-bold text-rose-400">{formatCurrency(ap.outstanding_amount)}</p>
+              </div>
+            </div>
+            {ap.supplier_invoice_no && (
+              <div className={`mt-3 pt-3 border-t ${DESIGN.border.default}`}>
+                <p className={`text-sm ${DESIGN.text.secondary}`}>Invoice Supplier</p>
+                <p className={`font-mono ${DESIGN.text.primary}`}>{ap.supplier_invoice_no}</p>
+              </div>
+            )}
+          </div>
 
           {/* Payment Form */}
-          <div className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="text-sm font-medium text-gray-700 mb-1 block">
-                Jumlah Pembayaran <span className="text-red-500">*</span>
+              <label className={`text-sm font-medium ${DESIGN.text.secondary} mb-1 block`}>
+                Jumlah Pembayaran <span className="text-rose-400">*</span>
               </label>
               <Input
                 type="number"
                 value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder="Masukkan jumlah"
-                className="text-lg font-mono"
+                onChange={(e) => setAmount(Number(e.target.value))}
+                max={ap.outstanding_amount}
+                min={0}
+                className={`${DESIGN.bg.input} ${DESIGN.border.default} ${DESIGN.text.primary} focus:ring-[#F97316]/50`}
                 data-testid="payment-amount"
               />
-              <div className="flex gap-2 mt-2">
-                <Button 
-                  variant="outline" 
-                  size="sm"
+              <div className="flex justify-between mt-1">
+                <span className={`text-xs ${DESIGN.text.secondary}`}>Max: {formatCurrency(ap.outstanding_amount)}</span>
+                <button
+                  type="button"
                   onClick={() => setAmount(ap.outstanding_amount)}
-                  data-testid="btn-pay-full"
+                  className={`text-xs ${DESIGN.text.accent} hover:underline`}
                 >
                   Bayar Penuh
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => setAmount(Math.round(ap.outstanding_amount / 2))}
-                >
-                  50%
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => setAmount(Math.round(ap.outstanding_amount / 4))}
-                >
-                  25%
-                </Button>
+                </button>
               </div>
             </div>
 
-            {/* Bank/Cash Account Selection */}
-            <div>
-              <label className="text-sm font-medium text-gray-700 mb-1 block">
-                Akun Kas/Bank <span className="text-red-500">*</span>
-              </label>
-              {loadingAccounts ? (
-                <div className="flex items-center gap-2 text-gray-500 p-3 border rounded-md bg-gray-50">
-                  <RefreshCw className="w-4 h-4 animate-spin" />
-                  <span className="text-sm">Memuat akun...</span>
-                </div>
-              ) : cashBankAccounts.length === 0 ? (
-                <div className="p-3 border rounded-md bg-yellow-50 text-yellow-700 text-sm">
-                  Tidak ada akun Kas/Bank yang aktif. Silakan tambahkan di Setting Akun.
-                </div>
-              ) : (
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className={`text-sm font-medium ${DESIGN.text.secondary} mb-1 block`}>
+                  Metode Pembayaran
+                </label>
                 <select
-                  value={bankAccountId}
-                  onChange={(e) => setBankAccountId(e.target.value)}
-                  className="w-full h-10 px-3 border rounded-md"
-                  data-testid="bank-account-select"
+                  value={paymentMethod}
+                  onChange={(e) => setPaymentMethod(e.target.value)}
+                  className={`w-full px-3 py-2 rounded-md ${DESIGN.bg.input} ${DESIGN.border.default} border ${DESIGN.text.primary}`}
+                  data-testid="payment-method"
                 >
-                  <option value="">-- Pilih Akun Kas/Bank --</option>
-                  {cashBankAccounts.map(acc => (
-                    <option key={acc.id} value={acc.id}>
-                      {acc.code} - {acc.name} {acc.balance ? `(${formatCurrency(acc.balance)})` : ''}
-                    </option>
-                  ))}
+                  <option value="transfer">Transfer Bank</option>
+                  <option value="cash">Tunai</option>
+                  <option value="giro">Giro</option>
                 </select>
-              )}
+              </div>
+              <div>
+                <label className={`text-sm font-medium ${DESIGN.text.secondary} mb-1 block`}>
+                  Akun Kas/Bank
+                </label>
+                {loadingAccounts ? (
+                  <div className={`flex items-center gap-2 ${DESIGN.text.secondary} p-3 border rounded-md ${DESIGN.bg.input} ${DESIGN.border.default}`}>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span className="text-sm">Loading...</span>
+                  </div>
+                ) : cashBankAccounts.length === 0 ? (
+                  <div className={`flex items-center gap-2 text-amber-400 p-3 border rounded-md bg-amber-500/10 border-amber-500/30`}>
+                    <Wallet className="w-4 h-4" />
+                    <span className="text-sm">Tidak ada akun</span>
+                  </div>
+                ) : (
+                  <select
+                    value={bankAccountId}
+                    onChange={(e) => setBankAccountId(e.target.value)}
+                    className={`w-full px-3 py-2 rounded-md ${DESIGN.bg.input} ${DESIGN.border.default} border ${DESIGN.text.primary}`}
+                    data-testid="bank-account"
+                  >
+                    {cashBankAccounts.map(acc => (
+                      <option key={acc.id} value={acc.id}>
+                        {acc.code} - {acc.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
             </div>
 
             <div>
-              <label className="text-sm font-medium text-gray-700 mb-1 block">
-                Metode Pembayaran
-              </label>
-              <select
-                value={paymentMethod}
-                onChange={(e) => setPaymentMethod(e.target.value)}
-                className="w-full h-10 px-3 border rounded-md"
-                data-testid="payment-method"
-              >
-                <option value="cash">Cash</option>
-                <option value="transfer">Transfer Bank</option>
-                <option value="giro">Giro/Cek</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="text-sm font-medium text-gray-700 mb-1 block">
+              <label className={`text-sm font-medium ${DESIGN.text.secondary} mb-1 block`}>
                 No. Referensi
               </label>
               <Input
+                type="text"
                 value={referenceNo}
                 onChange={(e) => setReferenceNo(e.target.value)}
-                placeholder="No. bukti transfer, giro, dll"
-                data-testid="payment-ref"
+                placeholder="No. bukti transfer / cek"
+                className={`${DESIGN.bg.input} ${DESIGN.border.default} ${DESIGN.text.primary} placeholder:text-[#64748B]`}
+                data-testid="reference-no"
               />
             </div>
 
             <div>
-              <label className="text-sm font-medium text-gray-700 mb-1 block">
+              <label className={`text-sm font-medium ${DESIGN.text.secondary} mb-1 block`}>
                 Catatan
               </label>
               <Textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="Catatan pembayaran"
                 rows={2}
+                placeholder="Catatan pembayaran (opsional)"
+                className={`${DESIGN.bg.input} ${DESIGN.border.default} ${DESIGN.text.primary} placeholder:text-[#64748B]`}
+                data-testid="payment-notes"
               />
             </div>
-          </div>
+          </form>
 
-          {/* Summary */}
-          <Card className="border-2 border-purple-200">
-            <CardContent className="p-4">
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Outstanding:</span>
-                  <span className="font-mono">{formatCurrency(ap.outstanding_amount)}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Pembayaran:</span>
-                  <span className="font-mono text-green-600">- {formatCurrency(amount)}</span>
-                </div>
-                <hr />
-                <div className="flex justify-between items-center">
-                  <span className="font-medium text-gray-700">Sisa:</span>
-                  <span className="font-mono font-bold text-lg">
-                    {formatCurrency(Math.max(0, ap.outstanding_amount - amount))}
-                  </span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Auto Journal Info */}
-          <div className="text-xs text-gray-500 bg-gray-50 p-3 rounded-lg">
-            <p className="font-medium mb-1">Auto Journal:</p>
-            <p>Dr. Hutang Usaha ... Rp {formatCurrency(amount)}</p>
-            <p>Cr. Kas/Bank ... Rp {formatCurrency(amount)}</p>
+          {/* Journal Preview */}
+          <div className={`text-xs ${DESIGN.text.secondary} ${DESIGN.bg.card} ${DESIGN.border.default} border p-3 rounded-lg`}>
+            <p className="font-medium mb-2">Preview Jurnal:</p>
+            <div className="space-y-1 font-mono">
+              <p>Dr. Hutang Usaha ... {formatCurrency(amount)}</p>
+              <p>Cr. {paymentMethod === 'cash' ? 'Kas' : 'Bank'} ... {formatCurrency(amount)}</p>
+            </div>
           </div>
         </div>
 
-        {/* Footer - Fixed/Sticky */}
-        <div className="px-6 py-4 border-t bg-gray-50 flex justify-end gap-2 shrink-0 rounded-b-lg">
-          <Button variant="outline" onClick={() => onClose(false)}>
+        {/* Footer */}
+        <div className={`px-6 py-4 border-t ${DESIGN.border.default} ${DESIGN.bg.card} flex justify-end gap-2 shrink-0 rounded-b-xl`}>
+          <Button
+            variant="outline"
+            onClick={() => onClose(false)}
+            className={`${DESIGN.border.default} ${DESIGN.text.primary} hover:bg-[#334155]`}
+          >
             Batal
           </Button>
-          <Button 
-            onClick={handleSubmit} 
-            disabled={saving || !bankAccountId}
-            className="bg-purple-600 hover:bg-purple-700"
-            data-testid="btn-submit-payment"
+          <Button
+            onClick={handleSubmit}
+            disabled={saving || loadingAccounts || amount <= 0}
+            className="bg-[#F97316] hover:bg-[#EA580C] text-white disabled:opacity-50"
+            data-testid="submit-payment"
           >
             {saving ? (
-              <RefreshCw className="w-4 h-4 animate-spin mr-2" />
+              <>
+                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                Menyimpan...
+              </>
             ) : (
-              <DollarSign className="w-4 h-4 mr-2" />
+              <>
+                <DollarSign className="w-4 h-4 mr-2" />
+                Bayar {formatCurrency(amount)}
+              </>
             )}
-            Catat Pembayaran
           </Button>
         </div>
       </div>

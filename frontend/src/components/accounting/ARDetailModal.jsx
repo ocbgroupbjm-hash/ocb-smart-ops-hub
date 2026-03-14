@@ -2,16 +2,32 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
-import { X, Calendar, User, FileText, DollarSign, Clock, CreditCard } from 'lucide-react';
+import { X, Calendar, User, FileText, DollarSign, CreditCard, RefreshCw } from 'lucide-react';
 
 const API = process.env.REACT_APP_BACKEND_URL;
 
+// OCB TITAN Design Tokens - Dark Enterprise Theme
+const DESIGN = {
+  text: {
+    primary: 'text-[#E5E7EB]',
+    secondary: 'text-[#9CA3AF]',
+    accent: 'text-[#F97316]',
+  },
+  bg: {
+    modal: 'bg-[#1E293B]',
+    card: 'bg-[#0F172A]',
+  },
+  border: {
+    default: 'border-[#334155]',
+  }
+};
+
 const STATUS_CONFIG = {
-  open: { label: 'Terbuka', color: 'bg-blue-100 text-blue-800' },
-  partial: { label: 'Sebagian', color: 'bg-yellow-100 text-yellow-800' },
-  paid: { label: 'Lunas', color: 'bg-green-100 text-green-800' },
-  overdue: { label: 'Jatuh Tempo', color: 'bg-red-100 text-red-800' },
-  written_off: { label: 'Dihapuskan', color: 'bg-gray-100 text-gray-800' }
+  open: { label: 'Terbuka', color: 'bg-blue-500/20 text-blue-400' },
+  partial: { label: 'Sebagian', color: 'bg-amber-500/20 text-amber-400' },
+  paid: { label: 'Lunas', color: 'bg-emerald-500/20 text-emerald-400' },
+  overdue: { label: 'Jatuh Tempo', color: 'bg-rose-500/20 text-rose-400' },
+  written_off: { label: 'Dihapuskan', color: 'bg-slate-500/20 text-slate-400' }
 };
 
 export default function ARDetailModal({ ar, onClose }) {
@@ -65,24 +81,29 @@ export default function ARDetailModal({ ar, onClose }) {
 
   return (
     <div 
-      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" 
+      className="fixed inset-0 bg-black/70 flex items-center justify-center z-50" 
       data-testid="ar-detail-modal"
       onClick={() => onClose(false)}
     >
       <div 
-        className="bg-white rounded-lg w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col"
+        className={`${DESIGN.bg.modal} ${DESIGN.border.default} border rounded-xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b bg-gradient-to-r from-blue-600 to-blue-700 text-white">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[#334155] bg-gradient-to-r from-emerald-600 to-emerald-700 text-white rounded-t-xl">
           <div className="flex items-center gap-3">
             <CreditCard className="w-6 h-6" />
             <div>
               <h2 className="text-lg font-semibold">{data.ar_no}</h2>
-              <Badge className={`${statusCfg.color} text-xs`}>{statusCfg.label}</Badge>
+              <p className="text-sm text-emerald-100">{data.customer_name}</p>
             </div>
           </div>
-          <Button variant="ghost" size="sm" onClick={() => onClose(false)} className="text-white hover:bg-blue-500">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => onClose(false)} 
+            className="text-white hover:bg-emerald-600/50"
+          >
             <X className="w-5 h-5" />
           </Button>
         </div>
@@ -90,129 +111,120 @@ export default function ARDetailModal({ ar, onClose }) {
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           {loading ? (
-            <div className="text-center py-8">Memuat...</div>
+            <div className="flex items-center justify-center py-8">
+              <RefreshCw className={`w-6 h-6 animate-spin ${DESIGN.text.accent}`} />
+              <span className={`ml-2 ${DESIGN.text.secondary}`}>Memuat...</span>
+            </div>
           ) : (
             <>
-              {/* Info Grid */}
-              <div className="grid grid-cols-2 gap-4">
-                <Card>
-                  <CardContent className="p-4 space-y-3">
-                    <div className="flex items-center gap-2 text-gray-500 text-sm">
-                      <User className="w-4 h-4" />
-                      Customer
-                    </div>
-                    <p className="font-medium text-lg">{data.customer_name}</p>
-                  </CardContent>
-                </Card>
-                
-                <Card>
-                  <CardContent className="p-4 space-y-3">
-                    <div className="flex items-center gap-2 text-gray-500 text-sm">
-                      <Calendar className="w-4 h-4" />
-                      Tanggal & Jatuh Tempo
-                    </div>
-                    <p className="font-medium">{formatDate(data.ar_date)}</p>
-                    <p className="text-sm text-red-600">Due: {formatDate(data.due_date)}</p>
-                  </CardContent>
-                </Card>
+              {/* Status & Amount Summary */}
+              <div className="grid grid-cols-3 gap-4">
+                <div className={`${DESIGN.bg.card} ${DESIGN.border.default} border rounded-lg p-4`}>
+                  <p className={`text-sm ${DESIGN.text.secondary}`}>Status</p>
+                  <Badge className={`mt-1 ${statusCfg.color}`}>{statusCfg.label}</Badge>
+                </div>
+                <div className={`${DESIGN.bg.card} ${DESIGN.border.default} border rounded-lg p-4`}>
+                  <p className={`text-sm ${DESIGN.text.secondary}`}>Total Piutang</p>
+                  <p className={`font-mono font-bold text-lg ${DESIGN.text.primary}`}>
+                    {formatCurrency(data.original_amount)}
+                  </p>
+                </div>
+                <div className={`${DESIGN.bg.card} ${DESIGN.border.default} border rounded-lg p-4`}>
+                  <p className={`text-sm ${DESIGN.text.secondary}`}>Outstanding</p>
+                  <p className="font-mono font-bold text-lg text-emerald-400">
+                    {formatCurrency(data.outstanding_amount)}
+                  </p>
+                </div>
               </div>
 
-              {/* Amount Summary */}
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base">Ringkasan Nilai</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="text-center p-4 bg-blue-50 rounded-lg">
-                      <p className="text-sm text-gray-500 mb-1">Original</p>
-                      <p className="text-xl font-mono font-bold text-blue-700">
-                        {formatCurrency(data.original_amount)}
-                      </p>
+              {/* Info Grid */}
+              <div className={`${DESIGN.bg.card} ${DESIGN.border.default} border rounded-lg p-4`}>
+                <h3 className={`font-semibold ${DESIGN.text.primary} mb-4`}>Informasi Piutang</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <User className={`w-4 h-4 ${DESIGN.text.secondary}`} />
+                      <span className={`text-sm ${DESIGN.text.secondary}`}>Customer</span>
                     </div>
-                    <div className="text-center p-4 bg-green-50 rounded-lg">
-                      <p className="text-sm text-gray-500 mb-1">Terbayar</p>
-                      <p className="text-xl font-mono font-bold text-green-700">
-                        {formatCurrency(data.paid_amount)}
-                      </p>
-                    </div>
-                    <div className="text-center p-4 bg-red-50 rounded-lg">
-                      <p className="text-sm text-gray-500 mb-1">Outstanding</p>
-                      <p className="text-xl font-mono font-bold text-red-700">
-                        {formatCurrency(data.outstanding_amount)}
-                      </p>
-                    </div>
+                    <p className={DESIGN.text.primary}>{data.customer_name || '-'}</p>
                   </div>
-                </CardContent>
-              </Card>
-
-              {/* Source Info */}
-              {data.source_no && (
-                <Card>
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-2 text-gray-500 text-sm mb-2">
-                      <FileText className="w-4 h-4" />
-                      Sumber Dokumen
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <FileText className={`w-4 h-4 ${DESIGN.text.secondary}`} />
+                      <span className={`text-sm ${DESIGN.text.secondary}`}>No. Invoice</span>
                     </div>
-                    <p className="font-medium">{data.source_type}: {data.source_no}</p>
-                  </CardContent>
-                </Card>
-              )}
+                    <p className={`font-mono ${DESIGN.text.primary}`}>{data.invoice_no || '-'}</p>
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <Calendar className={`w-4 h-4 ${DESIGN.text.secondary}`} />
+                      <span className={`text-sm ${DESIGN.text.secondary}`}>Tanggal Piutang</span>
+                    </div>
+                    <p className={DESIGN.text.primary}>{formatDate(data.ar_date)}</p>
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <Calendar className={`w-4 h-4 ${DESIGN.text.secondary}`} />
+                      <span className={`text-sm ${DESIGN.text.secondary}`}>Jatuh Tempo</span>
+                    </div>
+                    <p className={data.status === 'overdue' ? 'text-rose-400 font-medium' : DESIGN.text.primary}>
+                      {formatDate(data.due_date)}
+                    </p>
+                  </div>
+                </div>
+              </div>
 
               {/* Payment History */}
-              {detail?.payments && detail.payments.length > 0 && (
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <DollarSign className="w-5 h-5" />
-                      Riwayat Pembayaran ({detail.payment_count})
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      {detail.payments.map((pay, idx) => (
-                        <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                          <div>
-                            <p className="font-medium">{pay.payment_no}</p>
-                            <p className="text-sm text-gray-500">{formatDate(pay.payment_date)}</p>
-                            <p className="text-xs text-gray-400">{pay.payment_method} - {pay.reference_no || '-'}</p>
-                          </div>
-                          <div className="text-right">
-                            <p className="font-mono font-bold text-green-600">
-                              {formatCurrency(pay.amount)}
-                            </p>
-                            {pay.journal_id && (
-                              <p className="text-xs text-gray-400">Journal: {pay.journal_id}</p>
-                            )}
-                          </div>
+              {data.payments && data.payments.length > 0 && (
+                <div className={`${DESIGN.bg.card} ${DESIGN.border.default} border rounded-lg p-4`}>
+                  <h3 className={`font-semibold ${DESIGN.text.primary} mb-4 flex items-center gap-2`}>
+                    <DollarSign className="w-5 h-5" />
+                    Riwayat Pembayaran
+                  </h3>
+                  <div className="space-y-2">
+                    {data.payments.map((pay, idx) => (
+                      <div key={idx} className={`flex items-center justify-between p-3 ${DESIGN.bg.modal} rounded-lg border ${DESIGN.border.default}`}>
+                        <div>
+                          <p className={`font-mono ${DESIGN.text.accent}`}>{pay.payment_no}</p>
+                          <p className={`text-sm ${DESIGN.text.secondary}`}>{formatDateTime(pay.payment_date)}</p>
                         </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
+                        <div className="text-right">
+                          <p className="font-mono font-bold text-emerald-400">{formatCurrency(pay.amount)}</p>
+                          <p className={`text-xs ${DESIGN.text.secondary}`}>{pay.payment_method}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               )}
 
               {/* Notes */}
               {data.notes && (
-                <Card>
-                  <CardContent className="p-4">
-                    <p className="text-sm text-gray-500 mb-1">Catatan</p>
-                    <p className="text-gray-700">{data.notes}</p>
-                  </CardContent>
-                </Card>
+                <div className={`${DESIGN.bg.card} ${DESIGN.border.default} border rounded-lg p-4`}>
+                  <h3 className={`font-semibold ${DESIGN.text.primary} mb-2`}>Catatan</h3>
+                  <p className={DESIGN.text.secondary}>{data.notes}</p>
+                </div>
               )}
 
-              {/* Meta Info */}
-              <div className="text-xs text-gray-400 space-y-1">
-                <p>Dibuat oleh: {data.created_by_name} pada {formatDateTime(data.created_at)}</p>
+              {/* Audit Info */}
+              <div className={`text-xs ${DESIGN.text.secondary} ${DESIGN.bg.card} ${DESIGN.border.default} border rounded-lg p-3`}>
+                <div className="flex justify-between">
+                  <span>Dibuat: {formatDateTime(data.created_at)} oleh {data.created_by_name || '-'}</span>
+                  {data.updated_at && (
+                    <span>Update: {formatDateTime(data.updated_at)}</span>
+                  )}
+                </div>
               </div>
             </>
           )}
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t bg-gray-50">
-          <Button variant="outline" onClick={() => onClose(false)}>
+        <div className={`px-6 py-4 border-t ${DESIGN.border.default} ${DESIGN.bg.card} rounded-b-xl`}>
+          <Button 
+            onClick={() => onClose(false)} 
+            className={`${DESIGN.bg.modal} ${DESIGN.border.default} border ${DESIGN.text.primary} hover:bg-[#334155]`}
+          >
             Tutup
           </Button>
         </div>

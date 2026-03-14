@@ -2655,3 +2655,55 @@ Design tokens applied:
 *Last Updated: 2026-03-14 (AP MODULE COMPLETE)*
 *Blueprint Version: 4.7.0 (AP MODULE ENTERPRISE READY)*
 
+---
+
+## UI DARK THEME STANDARDIZATION (2026-03-14) ✅
+
+### Problem Fixed
+Beberapa halaman masih menggunakan:
+- Background putih
+- Card putih
+- Text kuning kontras tinggi
+
+### Components Fixed
+1. **APPaymentModal.jsx** - Full dark theme
+2. **APDetailModal.jsx** - Dark cards, dark info panels
+3. **ARPaymentModal.jsx** - Green gradient header, dark inputs
+4. **ARDetailModal.jsx** - Consistent dark styling
+5. **AccountsPayable.jsx** - Already fixed with dark theme
+6. **PurchasePayments.jsx** - Already fixed with dark theme
+
+### Design Token Applied
+```javascript
+const DESIGN = {
+  text: {
+    primary: '#E5E7EB',
+    secondary: '#9CA3AF',
+    accent: '#F97316',
+  },
+  bg: {
+    page: '#0F172A',
+    card: '#1E293B',
+    input: '#0F172A',
+  },
+  border: '#334155',
+};
+```
+
+### Evidence Files:
+```
+/app/test_reports/ui_dark_theme_fix/
+├── dark_theme_validation.md
+├── ap_module_ui_dark_fix.md
+├── modal_dark_theme_fix.md
+└── dashboard_dark_theme_fix.md
+```
+
+### Screenshot:
+- `/tmp/ap_payment_modal_dark.png`
+
+---
+
+*Last Updated: 2026-03-14 (UI DARK THEME COMPLETE)*
+*Blueprint Version: 4.8.0 (ENTERPRISE UI STANDARD)*
+
