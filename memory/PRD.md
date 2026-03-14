@@ -1458,11 +1458,84 @@ VERIFIED: 2026-03-13
 
 ```
 OCB TITAN ERP
-VERSION: 3.4.0
+VERSION: 3.6.0
 STATUS: PRODUCTION READY
 AI ENGINE: ACTIVE (READ ONLY)
 VERIFIED: 2026-03-14
 ```
+
+---
+
+## PHASE A - DATE FIELD STABILIZATION (2026-03-14) ✅ COMPLETE
+
+### Summary
+Semua modul dengan date field sekarang menampilkan tanggal aktual, bukan placeholder kosong.
+
+### Created Files
+- `/app/frontend/src/utils/dateUtils.js` - Centralized date utilities
+- `/app/frontend/src/components/ui/DateInput.jsx` - Standard date components
+
+### Updated Modules
+- SalesList.jsx - Date filter with defaults
+- PurchaseEnterprise.jsx - Format date utility
+- AccountsPayable.jsx - formatDateDisplay
+- AccountsReceivable.jsx - formatDateDisplay
+- FinancialReports.jsx - Date filters with defaults
+- GeneralLedger.jsx - Date filters with defaults
+- StockMovements.jsx - Date filter
+
+### Test Results: 100% PASS (iteration_64.json)
+
+---
+
+## PHASE B - EDIT POLICY ENFORCEMENT (2026-03-14) ✅ COMPLETE
+
+### Rule: POSTED IMMUTABLE
+- **Draft/Pending** = Editable (tombol Edit)
+- **Posted/Completed** = NOT Editable (tombol Koreksi/Reversal)
+
+### Implementation
+- SalesList.jsx: handleEdit() blocks POSTED, shows Koreksi button
+- PurchaseEnterprise.jsx: handleEditTransaction() blocks POSTED
+- AP/AR: Edit only for items without payments
+
+### Test Results: 100% PASS (100 Koreksi buttons verified)
+
+---
+
+## PHASE C - VISUAL THEME HARDENING (2026-03-14) ✅ COMPLETE
+
+### Created
+- `/app/frontend/src/styles/design-tokens.css` - CSS variables
+
+### Key Fixes
+- Replaced bright yellow with amber (#f59e0b)
+- Off-white text (#f5f5f5) for eye comfort
+- Three-tier text hierarchy: primary/secondary/muted
+- WCAG AA compliant contrast ratios
+
+### Evidence
+- `ui_theme_tokens.md`
+- `accessibility_contrast_review.md`
+
+---
+
+## PHASE D - AP/AR PARITY (2026-03-14) ✅ COMPLETE
+
+### All Required Buttons Implemented
+| Button | AP | AR |
+|--------|----|----|
+| + Tambah | ✅ | ✅ |
+| Detail | ✅ | ✅ |
+| Edit | ✅ | ✅ |
+| Bayar | ✅ | ✅ |
+| Cetak | ✅ | ✅ |
+| Hapus | ✅ | ✅ |
+| Export | ✅ | ✅ |
+
+### New Endpoints
+- PUT /api/ap/{id}/soft-delete
+- PUT /api/ar/{id}/soft-delete
 
 ---
 
@@ -1564,5 +1637,5 @@ AI Rules:
 
 ---
 
-*Last Updated: 2026-03-14 (P0 Bug Fix - AP Payment Module Complete)*
-*Blueprint Version: 3.4.0 (AP PAYMENT FIXED)*
+*Last Updated: 2026-03-14 (Phase A, B, C, D Complete)*
+*Blueprint Version: 3.6.0 (DATE + EDIT POLICY + THEME + AP/AR PARITY)*
