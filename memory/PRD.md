@@ -15,7 +15,39 @@ Membangun sistem ERP retail komprehensif (OCB TITAN) dengan fitur POS, Inventory
 
 ## What's Been Implemented
 
-### Latest Updates (2026-03-14 Session 3)
+### Latest Updates (2026-03-14 Session 4)
+
+#### PRIORITAS 1: Journal Security Fix ✅
+- System-generated journals CANNOT be deleted (403 Forbidden)
+- Manual journals CAN be deleted (200 OK)
+- Protected sources: purchase, payment, ap, ar, inventory, payroll, sales, cash, bank
+- Frontend delete button disabled for system journals
+
+#### PRIORITAS 2: General Ledger Search Improvement ✅
+- Single letter search (typing 'p' finds Piutang, Pendapatan, Persediaan)
+- LIKE %keyword% search method
+- 300ms debounce implemented
+- Shows filtered results count
+
+#### PRIORITAS 3: Date Format Standardization DD/MM/YYYY ✅
+- New functions: formatDateDDMMYYYY(), formatDateTimeDDMMYYYY()
+- All display dates follow Indonesian format
+- Input dates use YYYY-MM-DD (HTML standard)
+
+#### PRIORITAS 4: Purchase Export to Excel ✅
+- Endpoint: GET /api/export/purchase
+- Frontend export button functional
+- Exports: po_number, date, supplier, items, total, status
+
+#### PRIORITAS 5: Serial Number Range ✅
+- SN Awal & SN Akhir fields in Purchase Order form
+- Endpoint: POST /api/purchase/serial-numbers/generate
+- Auto-generates sequential serial numbers
+- Collection: inventory_serial_numbers
+
+---
+
+### Previous Updates (2026-03-14 Session 3)
 
 #### PRIORITAS 1: Piutang Usaha di Buku Besar ✅
 **Problem:** Piutang Usaha tidak muncul di modul Buku Besar
