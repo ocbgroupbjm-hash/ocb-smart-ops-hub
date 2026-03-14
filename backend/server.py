@@ -154,6 +154,9 @@ from routes.integrity_fix_engine import router as integrity_fix_router
 # Integrity Monitor - Nightly Scheduled Checks
 from routes.integrity_monitor import router as integrity_monitor_router
 
+# AI Business Engine - Phase AI
+from routes.ai_engine import router as ai_engine_router
+
 # Mount all routers under /api - Core ERP
 app.include_router(auth_router, prefix="/api")
 app.include_router(products_router, prefix="/api")
@@ -389,6 +392,9 @@ app.include_router(backup_automation_router, prefix="/api")
 # =============================================================
 from routes.ai_business_engine import router as ai_business_engine_router
 app.include_router(ai_business_engine_router, prefix="/api")
+
+# AI Engine v2 - New modular AI
+app.include_router(ai_engine_router)
 
 
 # Health check
