@@ -1,0 +1,49 @@
+{
+  "timestamp": "2026-03-14T19:10:00+00:00",
+  "total_logs_found": 3,
+  "logs": [
+    {
+      "id": "9ab2cb50-2349-412b-8684-6e06d92f50f4",
+      "action": "update_tenant_status",
+      "entity_type": "tenant",
+      "entity_id": "ocb_unt_1",
+      "user_id": "dd1af04d-1d92-48f5-a463-3361a96a807a",
+      "user_email": "ocbgroupbjm@gmail.com",
+      "details": {
+        "new_status": "active",
+        "notes": "Edit test - activated"
+      },
+      "timestamp": "2026-03-14T19:04:08.855281+00:00"
+    },
+    {
+      "id": "945744e2-70c5-4087-bc1d-6d349050c49d",
+      "action": "update_tenant",
+      "entity_type": "tenant",
+      "entity_id": "ocb_unt_1",
+      "user_id": "dd1af04d-1d92-48f5-a463-3361a96a807a",
+      "user_email": "ocbgroupbjm@gmail.com",
+      "details": {
+        "updated_at": "2026-03-14T19:03:58.552301+00:00",
+        "updated_by": "ocbgroupbjm@gmail.com",
+        "tenant_type": "retail",
+        "currency": "IDR",
+        "timezone": "Asia/Jakarta",
+        "ai_enabled": true
+      },
+      "timestamp": "2026-03-14T19:03:58.552301+00:00"
+    },
+    {
+      "id": "06d29553-8c82-4e45-9b5f-fc77cfd97681",
+      "action": "update_tenant_status",
+      "entity_type": "tenant",
+      "entity_id": "ocb_unt_1",
+      "user_id": "dd1af04d-1d92-48f5-a463-3361a96a807a",
+      "user_email": "ocbgroupbjm@gmail.com",
+      "details": {
+        "new_status": "active",
+        "notes": "Test edit via API"
+      },
+      "timestamp": "2026-03-14T19:03:58.421065+00:00"
+    }
+  ]
+}

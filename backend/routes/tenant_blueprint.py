@@ -917,10 +917,114 @@ async def update_tenant_status(
         }}
     )
     
+    # Log to audit
+    await db["audit_logs"].insert_one({
+        "id": str(uuid.uuid4()),
+        "action": "update_tenant_status",
+        "entity_type": "tenant",
+        "entity_id": tenant_id,
+        "user_id": user.get("user_id") or user.get("id"),
+        "user_email": user.get("email"),
+        "details": {
+            "new_status": request.status,
+            "notes": request.notes
+        },
+        "timestamp": now
+    })
+    
     return {
         "status": "updated",
         "tenant_id": tenant_id,
         "new_status": request.status,
+        "updated_at": now
+    }
+
+
+class TenantEditRequest(BaseModel):
+    """Request model untuk edit tenant"""
+    tenant_type: Optional[str] = None
+    currency: Optional[str] = None
+    timezone: Optional[str] = None
+    ai_enabled: Optional[bool] = None
+    notes: Optional[str] = None
+
+
+@router.patch("/tenants/{tenant_id}")
+async def update_tenant(
+    tenant_id: str,
+    request: TenantEditRequest,
+    user: dict = Depends(get_current_user)
+):
+    """
+    PATCH /api/tenant/tenants/{tenant_id}
+    Edit tenant configuration:
+    - tenant_type (retail/wholesale/hybrid)
+    - currency
+    - timezone
+    - AI enable/disable
+    """
+    user_role = user.get("role_code") or user.get("role") or ""
+    if user_role not in ["owner", "super_admin"]:
+        raise HTTPException(status_code=403, detail="Only owner/super_admin can edit tenant")
+    
+    client = get_mongo_client()
+    now = datetime.now(timezone.utc).isoformat()
+    
+    # Find the database for this tenant_id
+    all_dbs = await client.list_database_names()
+    target_db = None
+    
+    for db_name in [d for d in all_dbs if d.startswith("ocb_")]:
+        db = client[db_name]
+        metadata = await db["_tenant_metadata"].find_one({"tenant_id": tenant_id})
+        if metadata:
+            target_db = db_name
+            break
+    
+    if not target_db:
+        if tenant_id in all_dbs:
+            target_db = tenant_id
+        else:
+            raise HTTPException(status_code=404, detail=f"Tenant '{tenant_id}' not found")
+    
+    db = client[target_db]
+    
+    # Build update dict
+    update_data = {"updated_at": now, "updated_by": user.get("email")}
+    
+    if request.tenant_type:
+        update_data["tenant_type"] = request.tenant_type
+    if request.currency:
+        update_data["currency"] = request.currency
+        # Also update company profile
+        await db["company_profile"].update_one({}, {"$set": {"currency": request.currency}})
+    if request.timezone:
+        update_data["timezone"] = request.timezone
+        await db["company_profile"].update_one({}, {"$set": {"timezone": request.timezone}})
+    if request.ai_enabled is not None:
+        update_data["ai_enabled"] = request.ai_enabled
+    if request.notes:
+        update_data["notes"] = request.notes
+    
+    await db["_tenant_metadata"].update_one({}, {"$set": update_data})
+    
+    # Log to audit
+    await db["audit_logs"].insert_one({
+        "id": str(uuid.uuid4()),
+        "action": "update_tenant",
+        "entity_type": "tenant",
+        "entity_id": tenant_id,
+        "user_id": user.get("user_id") or user.get("id"),
+        "user_email": user.get("email"),
+        "details": update_data,
+        "timestamp": now
+    })
+    
+    return {
+        "status": "updated",
+        "tenant_id": tenant_id,
+        "database": target_db,
+        "updated_fields": list(update_data.keys()),
         "updated_at": now
     }
 

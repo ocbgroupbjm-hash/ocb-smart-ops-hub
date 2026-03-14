@@ -1,0 +1,1 @@
+{"status":"warning","message":"Tenant memiliki data transaksi. Konfirmasi penghapusan dengan confirm_delete=true","tenant_id":"ocb_titan","database":"ocb_titan","transaction_counts":{"sales":129,"purchases":50,"journals":2201,"ar":12,"ap":23},"total_transactions":2415,"warning":"PERHATIAN: Penghapusan tenant bersifat PERMANEN dan tidak dapat dikembalikan!"}
