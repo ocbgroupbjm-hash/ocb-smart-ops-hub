@@ -1,0 +1,176 @@
+{
+  "analysis_type": "slow_moving_stock",
+  "period_days": 60,
+  "velocity_threshold": 0.1,
+  "generated_at": "2026-03-14T07:04:59.146008+00:00",
+  "slow_moving_count": 15,
+  "total_slow_moving_value": 48872000.0,
+  "products": [
+    {
+      "product_id": "2881765d-83ab-4f9f-bd98-22bdb9c6e7b5",
+      "product_name": "Saldo Server XL",
+      "sku": null,
+      "current_stock": 17000000.0,
+      "stock_value": 17000000.0,
+      "sold_in_period": 0,
+      "daily_velocity": 0.0,
+      "turnover_ratio": 0.0,
+      "recommendation": "DISCOUNT"
+    },
+    {
+      "product_id": "2ad75718-76d6-4b91-8cb3-b4a310ca94a3",
+      "product_name": "XL Unlimited 30 Hari",
+      "sku": null,
+      "current_stock": 296,
+      "stock_value": 13320000.0,
+      "sold_in_period": 0,
+      "daily_velocity": 0.0,
+      "turnover_ratio": 0.0,
+      "recommendation": "DISCOUNT"
+    },
+    {
+      "product_id": "b0ec8a99-5555-4c92-8639-3b4e9fa8c92d",
+      "product_name": "Kabel Data Premium Test",
+      "sku": null,
+      "current_stock": 77,
+      "stock_value": 7700000.0,
+      "sold_in_period": 0,
+      "daily_velocity": 0.0,
+      "turnover_ratio": 0.0,
+      "recommendation": "DISCOUNT"
+    },
+    {
+      "product_id": "26185e7b-efac-4745-8d8d-c1e114a863ed",
+      "product_name": "STRESS-Saldo Server Telkomsel",
+      "sku": null,
+      "current_stock": 3750000.0,
+      "stock_value": 3750000.0,
+      "sold_in_period": 0,
+      "daily_velocity": 0.0,
+      "turnover_ratio": 0.0,
+      "recommendation": "DISCOUNT"
+    },
+    {
+      "product_id": "0dab5f74-cf6e-40e6-83c0-48ef5ea32c51",
+      "product_name": "Voucher Fisik XL 10GB 30 Hari",
+      "sku": null,
+      "current_stock": 58.0,
+      "stock_value": 2900000.0,
+      "sold_in_period": 0,
+      "daily_velocity": 0.0,
+      "turnover_ratio": 0.0,
+      "recommendation": "DISCOUNT"
+    },
+    {
+      "product_id": "d072cb3d-dba8-47fc-925c-f4da72b99064",
+      "product_name": "AUDIT-Pulsa Telkomsel 50K (Updated)",
+      "sku": null,
+      "current_stock": 44,
+      "stock_value": 2112000.0,
+      "sold_in_period": 0,
+      "daily_velocity": 0.0,
+      "turnover_ratio": 0.0,
+      "recommendation": "DISCOUNT"
+    },
+    {
+      "product_id": "c64bcb0b-6dc7-4bf8-8478-2c612706d370",
+      "product_name": "STRESS-Voucher Fisik Telkomsel 5GB 30H",
+      "sku": null,
+      "current_stock": 47.0,
+      "stock_value": 1175000.0,
+      "sold_in_period": 0,
+      "daily_velocity": 0.0,
+      "turnover_ratio": 0.0,
+      "recommendation": "DISCOUNT"
+    },
+    {
+      "product_id": "baa5a5fd-0fa2-4459-9a27-d32ec1412cf9",
+      "product_name": "Kabel Data Type-C Test v2 (Edited)",
+      "sku": null,
+      "current_stock": 50,
+      "stock_value": 900000.0,
+      "sold_in_period": 0,
+      "daily_velocity": 0.0,
+      "turnover_ratio": 0.0,
+      "recommendation": "DISCOUNT"
+    },
+    {
+      "product_id": "e1cd6253-04e6-4382-9e26-4dda3ebcd362",
+      "product_name": "Kabel Data Type-C",
+      "sku": null,
+      "current_stock": 1,
+      "stock_value": 15000,
+      "sold_in_period": 0,
+      "daily_velocity": 0.0,
+      "turnover_ratio": 0.0,
+      "recommendation": "DISCOUNT"
+    },
+    {
+      "product_id": "PRD-AUDIT-001",
+      "product_name": "Charger Fast 20W USB-C",
+      "sku": "CHG-001",
+      "current_stock": 16,
+      "stock_value": 0,
+      "sold_in_period": 0,
+      "daily_velocity": 0.0,
+      "turnover_ratio": 0.0,
+      "recommendation": "DISCOUNT"
+    },
+    {
+      "product_id": "PRD-AUDIT-002",
+      "product_name": "Charger Fast 33W Dual Port",
+      "sku": "CHG-002",
+      "current_stock": 13,
+      "stock_value": 0,
+      "sold_in_period": 0,
+      "daily_velocity": 0.0,
+      "turnover_ratio": 0.0,
+      "recommendation": "DISCOUNT"
+    },
+    {
+      "product_id": "6d1fd21f-d558-4751-b74c-b73316a03a8d",
+      "product_name": "Voucher Zero XL 10GB",
+      "sku": null,
+      "current_stock": 40.0,
+      "stock_value": 0.0,
+      "sold_in_period": 0,
+      "daily_velocity": 0.0,
+      "turnover_ratio": 0.0,
+      "recommendation": "DISCOUNT"
+    },
+    {
+      "product_id": "c62a3f9c-cc19-469e-a783-3a0c0b354bf3",
+      "product_name": "STRESS-Voucher Zero Telkomsel 5GB",
+      "sku": null,
+      "current_stock": 50.0,
+      "stock_value": 0.0,
+      "sold_in_period": 0,
+      "daily_velocity": 0.0,
+      "turnover_ratio": 0.0,
+      "recommendation": "DISCOUNT"
+    },
+    {
+      "product_id": "a42b820d-d311-4a24-81c8-4afb423af027",
+      "product_name": "Item Test P0",
+      "sku": null,
+      "current_stock": 94,
+      "stock_value": 0,
+      "sold_in_period": 0,
+      "daily_velocity": 0.0,
+      "turnover_ratio": 0.0,
+      "recommendation": "DISCOUNT"
+    },
+    {
+      "product_id": "a009a443-2e22-4597-91a6-cfd7d763b206",
+      "product_name": "E2E Test Product",
+      "sku": null,
+      "current_stock": 995,
+      "stock_value": 0,
+      "sold_in_period": 0,
+      "daily_velocity": 0.0,
+      "turnover_ratio": 0.0,
+      "recommendation": "DISCOUNT"
+    }
+  ],
+  "ai_insight": "Ditemukan 15 produk slow-moving dengan total nilai Rp 48,872,000. Rekomendasi: Buat program diskon atau bundling untuk meningkatkan perputaran stok."
+}

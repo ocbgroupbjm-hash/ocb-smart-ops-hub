@@ -1,0 +1,26 @@
+{
+  "report_type": "ceo_dashboard",
+  "generated_at": "2026-03-14T07:05:00.021696+00:00",
+  "executive_summary": {
+    "sales_growth": {
+      "direction": "INSUFFICIENT_DATA",
+      "percentage": 0
+    },
+    "profit_margin": 0,
+    "cash_health": "GOOD",
+    "inventory_alerts": 49
+  },
+  "insights": {
+    "sales": "Trend penjualan 30 hari terakhir: INSUFFICIENT_DATA (+0.0%). Total transaksi: 0.",
+    "profitability": "Gross profit margin: 0.0%. PERHATIAN: Margin rendah!",
+    "inventory": "Ada 49 produk yang perlu di-restock. Estimasi total biaya: Rp 9,785,390. Prioritaskan 0 produk dengan urgency HIGH.",
+    "cash": "Total variance: Rp 0. Tidak ada pola mencurigakan."
+  },
+  "risk_alerts": [
+    {
+      "type": "inventory",
+      "message": "49 produk perlu restock"
+    },
+    null
+  ]
+}

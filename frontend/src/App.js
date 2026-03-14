@@ -58,6 +58,9 @@ import HRManagement from './pages/HRManagement';
 
 // OCB TITAN AI Phase 3 Pages - AI Super War Room
 import CFODashboard from './pages/CFODashboard';
+
+// OCB TITAN AI Phase 3 - AI Business Engine
+import CEODashboardAI from './pages/CEODashboardAI';
 import AIWarRoomSuper from './pages/AIWarRoomSuper';
 
 // OCB TITAN AI Phase 4 Pages - HR & Performance
@@ -466,6 +469,9 @@ function App() {
             <Route path="settings/info" element={<Settings />} />
             <Route path="settings/business" element={<BusinessManager />} />
             <Route path="kelola-bisnis" element={<BusinessManager />} />
+            
+            {/* AI Business Engine Routes - Phase 3 */}
+            <Route path="ai/ceo-dashboard" element={<CEODashboardAI />} />
           </Route>
         </Routes>
         </BrowserRouter>

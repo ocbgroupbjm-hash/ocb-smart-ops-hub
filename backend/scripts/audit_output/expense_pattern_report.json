@@ -1,0 +1,51 @@
+{
+  "analysis_type": "expense_pattern",
+  "period_days": 30,
+  "generated_at": "2026-03-14T07:04:59.749322+00:00",
+  "total_expense": 14827212.5,
+  "expense_breakdown": [
+    {
+      "_id": "5-1000",
+      "account_name": "Harga Pokok Penjualan",
+      "total_expense": 6275000.0,
+      "transaction_count": 8
+    },
+    {
+      "_id": "5-2000",
+      "account_name": "Beban Gaji",
+      "total_expense": 5000000,
+      "transaction_count": 1
+    },
+    {
+      "_id": "5901",
+      "account_name": "Inventory Adjustment Expense",
+      "total_expense": 2560000.0,
+      "transaction_count": 6
+    },
+    {
+      "_id": "5-9100",
+      "account_name": "Beban Selisih Persediaan",
+      "total_expense": 500000.0,
+      "transaction_count": 2
+    },
+    {
+      "_id": "5-7000",
+      "account_name": "Beban Adjustment Stok",
+      "total_expense": 350000,
+      "transaction_count": 1
+    },
+    {
+      "_id": "5-8000",
+      "account_name": "Biaya Operasional",
+      "total_expense": 100000.0,
+      "transaction_count": 2
+    },
+    {
+      "_id": "6201",
+      "account_name": "Selisih Kurang Kas",
+      "total_expense": 42212.5,
+      "transaction_count": 4
+    }
+  ],
+  "ai_insight": "Total expenses dalam 30 hari: Rp 14,827,212. Expense terbesar: Harga Pokok Penjualan (Rp 6,275,000)"
+}

@@ -357,6 +357,12 @@ app.include_router(integrity_monitor_router, prefix="/api")
 from routes.backup_automation import router as backup_automation_router
 app.include_router(backup_automation_router, prefix="/api")
 
+# =============================================================
+# PHASE 3: AI BUSINESS ENGINE (READ ONLY)
+# =============================================================
+from routes.ai_business_engine import router as ai_business_engine_router
+app.include_router(ai_business_engine_router, prefix="/api")
+
 
 # Health check
 @app.get("/api/health")

@@ -1,0 +1,143 @@
+{
+  "report_type": "sales_ai",
+  "generated_at": "2026-03-14T07:04:58.921793+00:00",
+  "top_products": {
+    "analysis_type": "top_products",
+    "period_days": 30,
+    "generated_at": "2026-03-14T07:04:58.922805+00:00",
+    "products": [],
+    "ai_insight": "Tidak ada data penjualan dalam periode ini."
+  },
+  "dead_stock": {
+    "analysis_type": "dead_stock",
+    "days_no_sale": 60,
+    "generated_at": "2026-03-14T07:04:58.923720+00:00",
+    "dead_stock_count": 15,
+    "total_stuck_value": 48872000.0,
+    "products": [
+      {
+        "id": "2881765d-83ab-4f9f-bd98-22bdb9c6e7b5",
+        "name": "Saldo Server XL",
+        "cost_price": 1.0,
+        "stock": 17000000.0,
+        "stuck_value": 17000000.0
+      },
+      {
+        "id": "2ad75718-76d6-4b91-8cb3-b4a310ca94a3",
+        "name": "XL Unlimited 30 Hari",
+        "cost_price": 45000.0,
+        "stock": 296,
+        "stuck_value": 13320000.0
+      },
+      {
+        "id": "b0ec8a99-5555-4c92-8639-3b4e9fa8c92d",
+        "name": "Kabel Data Premium Test",
+        "cost_price": 100000.0,
+        "stock": 77,
+        "stuck_value": 7700000.0
+      },
+      {
+        "id": "26185e7b-efac-4745-8d8d-c1e114a863ed",
+        "name": "STRESS-Saldo Server Telkomsel",
+        "cost_price": 1.0,
+        "stock": 3750000.0,
+        "stuck_value": 3750000.0
+      },
+      {
+        "id": "0dab5f74-cf6e-40e6-83c0-48ef5ea32c51",
+        "name": "Voucher Fisik XL 10GB 30 Hari",
+        "cost_price": 50000.0,
+        "stock": 58.0,
+        "stuck_value": 2900000.0
+      },
+      {
+        "id": "d072cb3d-dba8-47fc-925c-f4da72b99064",
+        "name": "AUDIT-Pulsa Telkomsel 50K (Updated)",
+        "cost_price": 48000.0,
+        "stock": 44,
+        "stuck_value": 2112000.0
+      },
+      {
+        "id": "c64bcb0b-6dc7-4bf8-8478-2c612706d370",
+        "name": "STRESS-Voucher Fisik Telkomsel 5GB 30H",
+        "cost_price": 25000.0,
+        "stock": 47.0,
+        "stuck_value": 1175000.0
+      },
+      {
+        "id": "baa5a5fd-0fa2-4459-9a27-d32ec1412cf9",
+        "name": "Kabel Data Type-C Test v2 (Edited)",
+        "cost_price": 18000.0,
+        "stock": 50,
+        "stuck_value": 900000.0
+      },
+      {
+        "id": "e1cd6253-04e6-4382-9e26-4dda3ebcd362",
+        "name": "Kabel Data Type-C",
+        "cost_price": 15000,
+        "stock": 1,
+        "stuck_value": 15000
+      },
+      {
+        "id": "PRD-AUDIT-001",
+        "name": "Charger Fast 20W USB-C",
+        "sku": "CHG-001",
+        "stock": 16,
+        "stuck_value": 0
+      },
+      {
+        "id": "PRD-AUDIT-002",
+        "name": "Charger Fast 33W Dual Port",
+        "sku": "CHG-002",
+        "stock": 13,
+        "stuck_value": 0
+      },
+      {
+        "id": "6d1fd21f-d558-4751-b74c-b73316a03a8d",
+        "name": "Voucher Zero XL 10GB",
+        "cost_price": 0.0,
+        "stock": 40.0,
+        "stuck_value": 0.0
+      },
+      {
+        "id": "c62a3f9c-cc19-469e-a783-3a0c0b354bf3",
+        "name": "STRESS-Voucher Zero Telkomsel 5GB",
+        "cost_price": 0.0,
+        "stock": 50.0,
+        "stuck_value": 0.0
+      },
+      {
+        "id": "a42b820d-d311-4a24-81c8-4afb423af027",
+        "name": "Item Test P0",
+        "cost_price": 0,
+        "stock": 94,
+        "stuck_value": 0
+      },
+      {
+        "id": "a009a443-2e22-4597-91a6-cfd7d763b206",
+        "name": "E2E Test Product",
+        "stock": 995,
+        "stuck_value": 0
+      }
+    ],
+    "ai_insight": "Ditemukan 15 produk tanpa penjualan dalam 60 hari. Total nilai stok mati: Rp 48,872,000. Rekomendasi: Pertimbangkan diskon atau bundling untuk produk-produk ini."
+  },
+  "sales_trend": {
+    "analysis_type": "sales_trend",
+    "period_days": 30,
+    "generated_at": "2026-03-14T07:04:58.924136+00:00",
+    "daily_data": [],
+    "trend": {
+      "direction": "INSUFFICIENT_DATA",
+      "percentage": 0
+    },
+    "ai_insight": "Trend penjualan 30 hari terakhir: INSUFFICIENT_DATA (+0.0%). Total transaksi: 0."
+  },
+  "customer_analysis": {
+    "analysis_type": "customer_behaviour",
+    "period_days": 30,
+    "generated_at": "2026-03-14T07:04:58.924612+00:00",
+    "top_customers": [],
+    "ai_insight": "Top 0 pelanggan berkontribusi Rp 0 dalam 30 hari."
+  }
+}

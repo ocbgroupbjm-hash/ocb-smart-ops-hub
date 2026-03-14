@@ -1,0 +1,13 @@
+{
+  "analysis_type": "profitability",
+  "period_days": 30,
+  "generated_at": "2026-03-14T07:04:59.525433+00:00",
+  "metrics": {
+    "total_revenue": 0,
+    "total_cost": 0,
+    "gross_profit": 0,
+    "gross_margin_pct": 0,
+    "transaction_count": 0
+  },
+  "ai_insight": "Gross profit margin: 0.0%. PERHATIAN: Margin rendah!"
+}
