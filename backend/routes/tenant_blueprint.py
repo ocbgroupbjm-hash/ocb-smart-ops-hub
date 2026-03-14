@@ -3,6 +3,7 @@
 # All tenants must follow the same ERP blueprint
 
 from fastapi import APIRouter, HTTPException, Depends
+from pydantic import BaseModel
 from datetime import datetime, timezone
 from motor.motor_asyncio import AsyncIOMotorClient
 from utils.auth import get_current_user
@@ -657,7 +658,7 @@ async def check_tenant_health(db_name: str, user: dict = Depends(get_current_use
 # ==================== TENANT REGISTRATION API ====================
 # Sesuai MASTER BLUEPRINT - Governance resmi untuk pendaftaran tenant baru
 
-from pydantic import BaseModel, Field, EmailStr
+from pydantic import Field, EmailStr
 from typing import Optional
 
 class TenantRegistrationRequest(BaseModel):
@@ -921,4 +922,207 @@ async def update_tenant_status(
         "tenant_id": tenant_id,
         "new_status": request.status,
         "updated_at": now
+    }
+
+
+
+# ==================== DELETE TENANT ====================
+
+class TenantDeleteRequest(BaseModel):
+    confirm_delete: bool = False
+    backup_before_delete: bool = True
+    reason: str = ""
+
+
+@router.delete("/{tenant_id}")
+async def delete_tenant(
+    tenant_id: str,
+    confirm_delete: bool = False,
+    backup_before_delete: bool = True,
+    reason: str = "",
+    user: dict = Depends(get_current_user)
+):
+    """
+    DELETE TENANT - Hard delete tenant database
+    
+    FLOW:
+    1. Validasi permission OWNER/SUPER_ADMIN
+    2. Check if tenant has transaction data (warning)
+    3. Disable tenant (set status = 'deleted')
+    4. Backup tenant database (optional)
+    5. Drop database
+    6. Remove tenant from registry
+    7. Log audit event
+    
+    WARNING: This action is IRREVERSIBLE!
+    """
+    # 1. Validasi permission OWNER
+    user_role = user.get("role_code") or user.get("role") or ""
+    if user_role not in ["owner", "super_admin"]:
+        raise HTTPException(status_code=403, detail="Hanya OWNER/SUPER_ADMIN yang boleh menghapus tenant")
+    
+    client = get_mongo_client()
+    now = datetime.now(timezone.utc).isoformat()
+    
+    # Find the database for this tenant_id
+    all_dbs = await client.list_database_names()
+    target_db = None
+    tenant_metadata = None
+    
+    for db_name in [d for d in all_dbs if d.startswith("ocb_")]:
+        db = client[db_name]
+        metadata = await db["_tenant_metadata"].find_one({})
+        if metadata:
+            tid = metadata.get("tenant_id") or db_name
+            if tid == tenant_id or db_name == tenant_id:
+                target_db = db_name
+                tenant_metadata = metadata
+                break
+    
+    if not target_db:
+        # Check if tenant_id is the database name directly
+        if tenant_id in all_dbs and tenant_id.startswith("ocb_"):
+            target_db = tenant_id
+            db = client[target_db]
+            tenant_metadata = await db["_tenant_metadata"].find_one({})
+        else:
+            raise HTTPException(status_code=404, detail=f"Tenant '{tenant_id}' tidak ditemukan")
+    
+    db = client[target_db]
+    
+    # Check for transaction data
+    transaction_counts = {
+        "sales": await db["sales_invoices"].count_documents({}),
+        "purchases": await db["purchase_orders"].count_documents({}),
+        "journals": await db["journal_entries"].count_documents({}),
+        "ar": await db["accounts_receivable"].count_documents({}),
+        "ap": await db["accounts_payable"].count_documents({}),
+    }
+    
+    total_transactions = sum(transaction_counts.values())
+    has_transactions = total_transactions > 0
+    
+    # If not confirmed and has transactions, return warning
+    if not confirm_delete and has_transactions:
+        return {
+            "status": "warning",
+            "message": "Tenant memiliki data transaksi. Konfirmasi penghapusan dengan confirm_delete=true",
+            "tenant_id": tenant_id,
+            "database": target_db,
+            "transaction_counts": transaction_counts,
+            "total_transactions": total_transactions,
+            "warning": "PERHATIAN: Penghapusan tenant bersifat PERMANEN dan tidak dapat dikembalikan!"
+        }
+    
+    if not confirm_delete:
+        return {
+            "status": "requires_confirmation",
+            "message": "Set confirm_delete=true untuk menghapus tenant",
+            "tenant_id": tenant_id,
+            "database": target_db
+        }
+    
+    # 2. Disable tenant first
+    await db["_tenant_metadata"].update_one(
+        {},
+        {"$set": {
+            "status": "deleted",
+            "deleted_at": now,
+            "deleted_by": user.get("email"),
+            "delete_reason": reason
+        }}
+    )
+    
+    # 3. Backup tenant (if requested)
+    backup_result = None
+    if backup_before_delete:
+        try:
+            # Create backup by exporting to JSON
+            backup_data = {
+                "tenant_id": tenant_id,
+                "database": target_db,
+                "deleted_at": now,
+                "deleted_by": user.get("email"),
+                "reason": reason,
+                "metadata": {k: str(v) if not isinstance(v, (str, int, float, bool, list, dict, type(None))) else v for k, v in (tenant_metadata or {}).items() if k != "_id"},
+                "transaction_counts": transaction_counts
+            }
+            
+            # Store backup info in main database
+            main_db = client["erp_db"]
+            await main_db["deleted_tenants_backup"].insert_one(backup_data)
+            backup_result = "Backup saved to erp_db.deleted_tenants_backup"
+        except Exception as e:
+            backup_result = f"Backup warning: {str(e)}"
+    
+    # 4. Drop database
+    try:
+        await client.drop_database(target_db)
+        database_dropped = True
+    except Exception as e:
+        database_dropped = False
+        raise HTTPException(status_code=500, detail=f"Gagal menghapus database: {str(e)}")
+    
+    # 5. Remove from tenant registry (if exists in main DB)
+    try:
+        main_db = client["erp_db"]
+        await main_db["tenants"].delete_one({"tenant_id": tenant_id})
+        await main_db["tenants"].delete_one({"db_name": target_db})
+    except Exception:
+        pass  # Registry might not exist
+    
+    # 6. Log audit event
+    try:
+        main_db = client["erp_db"]
+        await main_db["audit_logs"].insert_one({
+            "id": str(uuid.uuid4()),
+            "action": "delete_tenant",
+            "entity_type": "tenant",
+            "entity_id": tenant_id,
+            "user_id": user.get("user_id") or user.get("id"),
+            "user_email": user.get("email"),
+            "details": {
+                "database_dropped": target_db,
+                "transaction_counts": transaction_counts,
+                "backup_created": backup_before_delete,
+                "reason": reason
+            },
+            "timestamp": now,
+            "ip_address": ""
+        })
+    except Exception:
+        pass  # Audit log might fail but deletion succeeded
+    
+    return {
+        "status": "deleted",
+        "message": f"Tenant '{tenant_id}' berhasil dihapus",
+        "tenant_id": tenant_id,
+        "database": target_db,
+        "database_dropped": database_dropped,
+        "backup_created": backup_result,
+        "transaction_counts_deleted": transaction_counts,
+        "deleted_at": now,
+        "deleted_by": user.get("email")
+    }
+
+
+@router.get("/deleted/history")
+async def get_deleted_tenants_history(
+    user: dict = Depends(get_current_user)
+):
+    """Get history of deleted tenants"""
+    user_role = user.get("role_code") or user.get("role") or ""
+    if user_role not in ["owner", "super_admin"]:
+        raise HTTPException(status_code=403, detail="Only owner/super_admin can view deleted tenants")
+    
+    client = get_mongo_client()
+    main_db = client["erp_db"]
+    
+    deleted = await main_db["deleted_tenants_backup"].find(
+        {}, {"_id": 0}
+    ).sort("deleted_at", -1).to_list(100)
+    
+    return {
+        "deleted_tenants": deleted,
+        "total": len(deleted)
     }

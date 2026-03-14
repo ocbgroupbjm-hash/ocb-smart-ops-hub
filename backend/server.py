@@ -132,6 +132,9 @@ from routes.ai_insight_engine import router as ai_insight_engine_router
 # Import Mobile API Layer - Phase 17 PERINTAH 7
 from routes.mobile_api import router as mobile_api_router
 
+# Import/Export Engine - Phase E Hardening
+from routes.import_export import router as import_export_router
+
 # Mount all routers under /api - Core ERP
 app.include_router(auth_router, prefix="/api")
 app.include_router(products_router, prefix="/api")
@@ -154,6 +157,7 @@ app.include_router(print_router)
 app.include_router(serial_router)
 app.include_router(assembly_router)
 app.include_router(business_router)
+app.include_router(import_export_router)
 
 # Mount SUPER AI routers
 app.include_router(ai_sales_router)

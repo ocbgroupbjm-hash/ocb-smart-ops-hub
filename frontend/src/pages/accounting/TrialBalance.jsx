@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 
 const TrialBalance = () => {
   const { api } = useAuth();
-  const [data, setData] = useState({ items: [], total_debit: 0, total_credit: 0, is_balanced: true });
+  const [data, setData] = useState({ accounts: [], items: [], total_debit: 0, total_credit: 0, totals: { debit: 0, credit: 0, is_balanced: true }, is_balanced: true });
   const [loading, setLoading] = useState(true);
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
@@ -13,17 +13,18 @@ const TrialBalance = () => {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({
-        ...(dateFrom && { date_from: dateFrom }),
-        ...(dateTo && { date_to: dateTo })
-      });
-      const res = await api(`/api/accounting/trial-balance?${params}`);
+      // Use the unified financial trial-balance endpoint
+      const params = new URLSearchParams();
+      if (dateTo) {
+        params.append('date', dateTo);
+      }
+      const res = await api(`/api/accounting/financial/trial-balance?${params}`);
       if (res.ok) {
         setData(await res.json());
       }
     } catch (err) { toast.error('Gagal memuat data'); }
     finally { setLoading(false); }
-  }, [api, dateFrom, dateTo]);
+  }, [api, dateTo]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
@@ -35,8 +36,15 @@ const TrialBalance = () => {
     expense: 'Beban'
   };
 
-  const groupedItems = data.items.reduce((acc, item) => {
-    const cat = item.category || 'other';
+  // Handle both old (items) and new (accounts) API response format
+  const items = data.accounts || data.items || [];
+  const totalDebit = data.totals?.debit || data.total_debit || 0;
+  const totalCredit = data.totals?.credit || data.total_credit || 0;
+  const isBalanced = data.totals?.is_balanced ?? data.is_balanced ?? true;
+
+  const groupedItems = items.reduce((acc, item) => {
+    // Map account_type to category if category not present
+    const cat = item.category || item.account_type || 'other';
     if (!acc[cat]) acc[cat] = [];
     acc[cat].push(item);
     return acc;
@@ -61,25 +69,25 @@ const TrialBalance = () => {
 
       {/* Status Card */}
       <div className={`p-4 rounded-xl flex items-center justify-between ${
-        data.is_balanced ? 'bg-green-600/10 border border-green-600/30' : 'bg-red-600/10 border border-red-600/30'
+        isBalanced ? 'bg-green-600/10 border border-green-600/30' : 'bg-red-600/10 border border-red-600/30'
       }`}>
         <div className="flex items-center gap-3">
-          {data.is_balanced ? 
+          {isBalanced ? 
             <CheckCircle className="h-6 w-6 text-green-400" /> : 
             <XCircle className="h-6 w-6 text-red-400" />
           }
-          <span className={data.is_balanced ? 'text-green-400' : 'text-red-400'}>
-            {data.is_balanced ? 'Neraca Seimbang' : 'Neraca Tidak Seimbang'}
+          <span className={isBalanced ? 'text-green-400' : 'text-red-400'}>
+            {isBalanced ? 'Neraca Seimbang' : 'Neraca Tidak Seimbang'}
           </span>
         </div>
         <div className="flex gap-8">
           <div className="text-right">
             <p className="text-sm text-gray-400">Total Debit</p>
-            <p className="text-xl font-bold text-blue-400">Rp {data.total_debit.toLocaleString('id-ID')}</p>
+            <p className="text-xl font-bold text-blue-400">Rp {totalDebit.toLocaleString('id-ID')}</p>
           </div>
           <div className="text-right">
             <p className="text-sm text-gray-400">Total Kredit</p>
-            <p className="text-xl font-bold text-green-400">Rp {data.total_credit.toLocaleString('id-ID')}</p>
+            <p className="text-xl font-bold text-green-400">Rp {totalCredit.toLocaleString('id-ID')}</p>
           </div>
         </div>
       </div>
@@ -121,10 +129,10 @@ const TrialBalance = () => {
                       <td className="px-4 py-3 text-sm font-mono text-amber-300 pl-8">{item.account_code}</td>
                       <td className="px-4 py-3 text-sm text-gray-200">{item.account_name}</td>
                       <td className="px-4 py-3 text-sm text-right text-blue-400">
-                        {item.debit_balance > 0 ? `Rp ${item.debit_balance.toLocaleString('id-ID')}` : '-'}
+                        {(item.debit_balance || item.debit || 0) > 0 ? `Rp ${(item.debit_balance || item.debit).toLocaleString('id-ID')}` : '-'}
                       </td>
                       <td className="px-4 py-3 text-sm text-right text-green-400">
-                        {item.credit_balance > 0 ? `Rp ${item.credit_balance.toLocaleString('id-ID')}` : '-'}
+                        {(item.credit_balance || item.credit || 0) > 0 ? `Rp ${(item.credit_balance || item.credit).toLocaleString('id-ID')}` : '-'}
                       </td>
                     </tr>
                   ))}
@@ -132,8 +140,8 @@ const TrialBalance = () => {
               ))}
               <tr className="bg-red-900/20 font-bold">
                 <td colSpan={2} className="px-4 py-3 text-amber-200">TOTAL</td>
-                <td className="px-4 py-3 text-right text-blue-400">Rp {data.total_debit.toLocaleString('id-ID')}</td>
-                <td className="px-4 py-3 text-right text-green-400">Rp {data.total_credit.toLocaleString('id-ID')}</td>
+                <td className="px-4 py-3 text-right text-blue-400">Rp {totalDebit.toLocaleString('id-ID')}</td>
+                <td className="px-4 py-3 text-right text-green-400">Rp {totalCredit.toLocaleString('id-ID')}</td>
               </tr>
             </tbody>
           </table>
