@@ -339,6 +339,14 @@ app.include_router(tenant_registry_router)
 from routes.control_center import router as control_center_router
 app.include_router(control_center_router)
 
+# Observability - OpenTelemetry-style monitoring
+from routes.observability import router as observability_router
+app.include_router(observability_router)
+
+# Backup & DR - Disaster Recovery System
+from routes.backup_dr import router as backup_dr_router
+app.include_router(backup_dr_router)
+
 # Tenant Blueprint & Migration Engine
 from routes.tenant_blueprint import router as tenant_blueprint_router
 app.include_router(tenant_blueprint_router)
