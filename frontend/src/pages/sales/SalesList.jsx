@@ -6,9 +6,11 @@ import {
 import { toast } from 'sonner';
 import { OwnerEditButton, OwnerEditModal } from '../../components/OwnerEditButton';
 import ERPActionToolbar from '../../components/ERPActionToolbar';
+import { formatDateDisplay, formatDateInput, getDefaultFilterDates } from '../../utils/dateUtils';
+import { DateInput } from '../../components/ui/DateInput';
 
 const formatRupiah = (num) => `Rp ${(num || 0).toLocaleString('id-ID')}`;
-const formatDate = (date) => date ? new Date(date).toLocaleDateString('id-ID') : '-';
+const formatDate = (date) => formatDateDisplay(date, '-');
 
 const StatusBadge = ({ status }) => {
   const styles = {
@@ -23,7 +25,11 @@ const SalesList = () => {
   const { api, user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [sales, setSales] = useState([]);
-  const [filters, setFilters] = useState({ keyword: '', dateFrom: '', dateTo: '', warehouse_id: '' });
+  const [filters, setFilters] = useState(() => ({
+    keyword: '', 
+    warehouse_id: '',
+    ...getDefaultFilterDates()
+  }));
   const [warehouses, setWarehouses] = useState([]);
   const [selectedItem, setSelectedItem] = useState(null);
   
@@ -71,9 +77,29 @@ const SalesList = () => {
 
   // CRUD handlers
   const handleEdit = (item) => {
+    // POSTED IMMUTABLE RULE: 
+    // - Draft/pending = editable
+    // - Posted/completed = tidak boleh edit langsung, harus via koreksi/reversal
+    const isPosted = ['completed', 'posted', 'paid', 'lunas'].includes(item.status?.toLowerCase());
+    
+    if (isPosted) {
+      toast.error(
+        'Transaksi yang sudah di-POST tidak bisa diedit langsung. Gunakan fitur Koreksi/Reversal.',
+        { duration: 4000 }
+      );
+      return;
+    }
+    
     // Navigate to edit page or open modal
     setEditItem(item);
     setShowOwnerEdit(true);
+  };
+
+  const handleReversal = (item) => {
+    // Handle reversal for posted transactions
+    toast.info(`Memproses reversal untuk ${item.invoice_number}...`);
+    // TODO: Implement reversal flow
+    window.location.href = `/sales/reversal/add?invoice_id=${item.id}`;
   };
 
   const handleDelete = async (item) => {
@@ -141,11 +167,19 @@ const SalesList = () => {
           </div>
           <div>
             <label className="block text-xs text-gray-400 mb-1">Dari Tanggal</label>
-            <input type="date" value={filters.dateFrom} onChange={e => setFilters(p => ({...p, dateFrom: e.target.value}))} className="w-full px-3 py-1.5 bg-[#0a0608] border border-red-900/30 rounded text-sm text-white" />
+            <DateInput 
+              value={filters.dateFrom} 
+              onChange={(val) => setFilters(p => ({...p, dateFrom: val}))} 
+              testId="filter-date-from"
+            />
           </div>
           <div>
             <label className="block text-xs text-gray-400 mb-1">Sampai Tanggal</label>
-            <input type="date" value={filters.dateTo} onChange={e => setFilters(p => ({...p, dateTo: e.target.value}))} className="w-full px-3 py-1.5 bg-[#0a0608] border border-red-900/30 rounded text-sm text-white" />
+            <DateInput 
+              value={filters.dateTo} 
+              onChange={(val) => setFilters(p => ({...p, dateTo: val}))} 
+              testId="filter-date-to"
+            />
           </div>
           <div className="flex items-end">
             <button onClick={loadData} className="px-4 py-1.5 bg-gray-700 hover:bg-gray-600 rounded flex items-center gap-2 text-sm">
@@ -233,12 +267,30 @@ const SalesList = () => {
                       <button onClick={(e) => { e.stopPropagation(); handlePrint(s); }} className="p-1 hover:bg-gray-700 rounded" title="Print">
                         <Printer className="h-3.5 w-3.5" />
                       </button>
-                      <button onClick={(e) => { e.stopPropagation(); handleEdit(s); }} className="p-1 hover:bg-purple-700 rounded text-purple-400" title="Edit">
-                        <Edit2 className="h-3.5 w-3.5" />
-                      </button>
-                      <button onClick={(e) => { e.stopPropagation(); handleDelete(s); }} className="p-1 hover:bg-red-700 rounded text-red-400" title="Hapus">
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
+                      {/* Edit/Koreksi Button - Based on POSTED IMMUTABLE rule */}
+                      {['completed', 'posted', 'paid', 'lunas'].includes(s.status?.toLowerCase()) ? (
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); handleReversal(s); }} 
+                          className="p-1 hover:bg-orange-700 rounded text-orange-400" 
+                          title="Koreksi/Reversal (Transaksi sudah POST)"
+                        >
+                          <RotateCcw className="h-3.5 w-3.5" />
+                        </button>
+                      ) : (
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); handleEdit(s); }} 
+                          className="p-1 hover:bg-purple-700 rounded text-purple-400" 
+                          title="Edit (Draft)"
+                        >
+                          <Edit2 className="h-3.5 w-3.5" />
+                        </button>
+                      )}
+                      {/* Delete hanya untuk draft/pending */}
+                      {!['completed', 'posted', 'paid', 'lunas'].includes(s.status?.toLowerCase()) && (
+                        <button onClick={(e) => { e.stopPropagation(); handleDelete(s); }} className="p-1 hover:bg-red-700 rounded text-red-400" title="Hapus">
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>

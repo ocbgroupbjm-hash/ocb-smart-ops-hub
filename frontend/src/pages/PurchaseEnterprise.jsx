@@ -8,11 +8,12 @@ import {
   StickyNote, Copy, ArrowUpDown, Download, Upload, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { formatDateDisplay, formatDateInput, getDefaultFilterDates, getTodayISO } from '../utils/dateUtils';
 
 // ==================== UTILITY FUNCTIONS ====================
 const formatRupiah = (num) => `Rp ${(num || 0).toLocaleString('id-ID')}`;
 const formatNumber = (num) => (num || 0).toLocaleString('id-ID');
-const formatDate = (date) => date ? new Date(date).toLocaleDateString('id-ID') : '-';
+const formatDate = (date) => formatDateDisplay(date, '-');
 const formatDateTime = (date) => date ? new Date(date).toLocaleString('id-ID') : '-';
 const formatTime = (date) => date ? new Date(date).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '-';
 
@@ -322,6 +323,19 @@ const PurchaseEnterprise = () => {
   };
   
   const handleEditTransaction = (tx) => {
+    // POSTED IMMUTABLE RULE:
+    // - Draft/pending = editable
+    // - Posted/received/completed = tidak boleh edit langsung
+    const isPosted = ['posted', 'received', 'completed', 'lunas', 'approved'].includes(tx.status?.toLowerCase());
+    
+    if (isPosted) {
+      toast.error(
+        'Transaksi yang sudah di-POST tidak bisa diedit langsung. Gunakan fitur Koreksi/Reversal.',
+        { duration: 4000 }
+      );
+      return;
+    }
+    
     setForm({
       ...tx,
       transaction_no: tx.po_number || tx.transaction_no,
@@ -334,6 +348,12 @@ const PurchaseEnterprise = () => {
     });
     setEditingId(tx.id);
     setViewMode('form');
+  };
+  
+  const handleReversalTransaction = (tx) => {
+    // Handle reversal for posted transactions
+    toast.info(`Memproses koreksi/reversal untuk ${tx.po_number || tx.transaction_no}...`);
+    // TODO: Implement reversal flow via BRE
   };
   
   // ==================== ITEM MANAGEMENT ====================

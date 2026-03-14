@@ -8,6 +8,7 @@ import {
   TrendingDown, DollarSign, BarChart3, PieChart, Wallet,
   ArrowRight, CheckCircle, XCircle
 } from 'lucide-react';
+import { getTodayISO, getMonthStartISO, formatDateDisplay } from '../../utils/dateUtils';
 
 const API = process.env.REACT_APP_BACKEND_URL;
 
@@ -16,10 +17,10 @@ export default function FinancialReports() {
   const [loading, setLoading] = useState(false);
   const [reportData, setReportData] = useState(null);
   
-  // Filters
-  const [asOfDate, setAsOfDate] = useState(new Date().toISOString().split('T')[0]);
-  const [startDate, setStartDate] = useState(new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0]);
-  const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
+  // Filters - Initialize with proper defaults
+  const [asOfDate, setAsOfDate] = useState(getTodayISO());
+  const [startDate, setStartDate] = useState(getMonthStartISO());
+  const [endDate, setEndDate] = useState(getTodayISO());
   
   const token = localStorage.getItem('token');
 

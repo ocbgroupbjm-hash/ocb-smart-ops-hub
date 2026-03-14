@@ -6,10 +6,13 @@ import { Badge } from '../../components/ui/badge';
 import { 
   Search, Plus, Eye, DollarSign, AlertTriangle, RefreshCw, 
   Filter, Download, Calendar, User, Building2, Clock,
-  TrendingUp, TrendingDown, FileText, CreditCard, XCircle
+  TrendingUp, TrendingDown, FileText, CreditCard, XCircle,
+  Edit, Trash2, Printer
 } from 'lucide-react';
 import ARDetailModal from '../../components/accounting/ARDetailModal';
 import ARPaymentModal from '../../components/accounting/ARPaymentModal';
+import { toast } from 'sonner';
+import { formatDateDisplay, isOverdue as checkOverdue } from '../../utils/dateUtils';
 
 const API = process.env.REACT_APP_BACKEND_URL;
 
@@ -123,6 +126,141 @@ export default function AccountsReceivable() {
     setShowPayment(true);
   };
 
+  const handleEdit = (ar) => {
+    // Only allow edit for draft/open status that hasn't been paid yet
+    if (ar.status === 'paid') {
+      toast.error('Piutang lunas tidak bisa diedit. Gunakan jurnal koreksi.');
+      return;
+    }
+    if (ar.paid_amount > 0) {
+      toast.error('Piutang yang sudah ada pembayaran tidak bisa diedit langsung. Gunakan jurnal koreksi.');
+      return;
+    }
+    // TODO: Open edit modal
+    toast.info('Fitur edit dalam pengembangan');
+  };
+
+  const handleSoftDelete = async (ar) => {
+    // Validation: cannot delete if has payments or journal
+    if (ar.status === 'paid' || ar.paid_amount > 0) {
+      toast.error('Tidak dapat menghapus piutang yang sudah ada pembayaran');
+      return;
+    }
+    
+    if (!window.confirm(`Yakin ingin menghapus piutang ${ar.ar_no}? Data akan di-soft delete.`)) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API}/api/ar/${ar.id}/soft-delete`, {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (res.ok) {
+        toast.success('Piutang berhasil dihapus');
+        fetchARList();
+        fetchSummary();
+      } else {
+        const data = await res.json();
+        toast.error(data.detail || 'Gagal menghapus piutang');
+      }
+    } catch (err) {
+      console.error('Delete error:', err);
+      toast.error('Terjadi kesalahan saat menghapus');
+    }
+  };
+
+  const handlePrint = (ar) => {
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Bukti Piutang - ${ar.ar_no}</title>
+        <style>
+          body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }
+          .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 15px; margin-bottom: 20px; }
+          .company { font-size: 18px; font-weight: bold; }
+          .title { font-size: 16px; margin-top: 10px; }
+          .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+          .info-item { padding: 10px; background: #f5f5f5; border-radius: 4px; }
+          .label { font-size: 12px; color: #666; margin-bottom: 4px; }
+          .value { font-size: 14px; font-weight: 500; }
+          .amount-section { background: #f0f9ff; padding: 20px; border-radius: 8px; margin: 20px 0; }
+          .amount { font-size: 24px; font-weight: bold; color: #0369a1; }
+          .footer { margin-top: 40px; display: flex; justify-content: space-between; }
+          .signature { text-align: center; width: 200px; }
+          .signature-line { border-top: 1px solid #333; margin-top: 60px; padding-top: 10px; }
+          @media print { body { padding: 0; } }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div class="company">OCB TITAN ERP</div>
+          <div class="title">BUKTI PIUTANG DAGANG</div>
+        </div>
+        
+        <div class="info-grid">
+          <div class="info-item">
+            <div class="label">No. Piutang</div>
+            <div class="value">${ar.ar_no || '-'}</div>
+          </div>
+          <div class="info-item">
+            <div class="label">Tanggal</div>
+            <div class="value">${formatDateDisplay(ar.ar_date)}</div>
+          </div>
+          <div class="info-item">
+            <div class="label">Customer</div>
+            <div class="value">${ar.customer_name || '-'}</div>
+          </div>
+          <div class="info-item">
+            <div class="label">Jatuh Tempo</div>
+            <div class="value">${formatDateDisplay(ar.due_date)}</div>
+          </div>
+          <div class="info-item">
+            <div class="label">No. Invoice</div>
+            <div class="value">${ar.invoice_no || '-'}</div>
+          </div>
+          <div class="info-item">
+            <div class="label">Status</div>
+            <div class="value">${ar.status?.toUpperCase() || 'OPEN'}</div>
+          </div>
+        </div>
+        
+        <div class="amount-section">
+          <div class="label">Total Piutang</div>
+          <div class="amount">Rp ${(ar.original_amount || 0).toLocaleString('id-ID')}</div>
+          <div style="margin-top: 10px;">
+            <span>Terbayar: Rp ${(ar.paid_amount || 0).toLocaleString('id-ID')}</span>
+            <span style="margin-left: 20px;">Outstanding: Rp ${(ar.outstanding_amount || 0).toLocaleString('id-ID')}</span>
+          </div>
+        </div>
+        
+        ${ar.notes ? `<div style="margin: 20px 0;"><strong>Catatan:</strong> ${ar.notes}</div>` : ''}
+        
+        <div class="footer">
+          <div class="signature">
+            <div>Dibuat oleh</div>
+            <div class="signature-line">${ar.created_by_name || ''}</div>
+          </div>
+          <div class="signature">
+            <div>Disetujui oleh</div>
+            <div class="signature-line">________________</div>
+          </div>
+        </div>
+        
+        <div style="text-align: center; margin-top: 30px; font-size: 11px; color: #666;">
+          Dicetak pada: ${new Date().toLocaleString('id-ID')}
+        </div>
+        
+        <script>window.onload = function() { window.print(); }</script>
+      </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
   const handleModalClose = (refresh = false) => {
     setShowDetail(false);
     setShowPayment(false);
@@ -142,19 +280,9 @@ export default function AccountsReceivable() {
     }).format(val || 0);
   };
 
-  const formatDate = (dateStr) => {
-    if (!dateStr) return '-';
-    return new Date(dateStr).toLocaleDateString('id-ID', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric'
-    });
-  };
+  const formatDate = (dateStr) => formatDateDisplay(dateStr, '-');
 
-  const isOverdue = (dueDate) => {
-    if (!dueDate) return false;
-    return new Date(dueDate) < new Date();
-  };
+  const isOverdue = (dueDate) => checkOverdue(dueDate);
 
   const exportToCSV = () => {
     const headers = ['No AR', 'Tanggal', 'Jatuh Tempo', 'Customer', 'Original', 'Outstanding', 'Status'];
@@ -185,10 +313,16 @@ export default function AccountsReceivable() {
           <h1 className="text-2xl font-bold text-gray-900">Piutang Dagang (AR)</h1>
           <p className="text-gray-500 text-sm mt-1">Kelola piutang dari penjualan kredit</p>
         </div>
-        <Button onClick={exportToCSV} variant="outline" data-testid="btn-export">
-          <Download className="w-4 h-4 mr-2" />
-          Export CSV
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={() => toast.info('Fitur tambah dalam pengembangan')} className="bg-blue-600 hover:bg-blue-700" data-testid="btn-add-ar">
+            <Plus className="w-4 h-4 mr-2" />
+            Tambah Piutang
+          </Button>
+          <Button onClick={exportToCSV} variant="outline" data-testid="btn-export">
+            <Download className="w-4 h-4 mr-2" />
+            Export CSV
+          </Button>
+        </div>
       </div>
 
       {/* Summary Cards */}
@@ -438,24 +572,69 @@ export default function AccountsReceivable() {
                           </Badge>
                         </td>
                         <td className="px-4 py-3 text-center">
-                          <div className="flex items-center justify-center gap-1">
+                          <div className="flex items-center justify-center gap-0.5">
+                            {/* Detail Button */}
                             <Button 
                               variant="ghost" 
                               size="sm"
                               onClick={() => handleViewDetail(ar)}
+                              title="Lihat Detail"
                               data-testid={`btn-view-${ar.id}`}
                             >
                               <Eye className="w-4 h-4" />
                             </Button>
+                            
+                            {/* Edit Button - Only for draft/open without payments */}
+                            {ar.status !== 'paid' && ar.status !== 'written_off' && (ar.paid_amount || 0) === 0 && (
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={() => handleEdit(ar)}
+                                title="Edit"
+                                className="text-blue-600"
+                                data-testid={`btn-edit-${ar.id}`}
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                            )}
+                            
+                            {/* Pay Button */}
                             {ar.status !== 'paid' && ar.status !== 'written_off' && (
                               <Button 
                                 variant="ghost" 
                                 size="sm"
                                 onClick={() => handlePayment(ar)}
+                                title="Bayar"
                                 className="text-green-600"
                                 data-testid={`btn-pay-${ar.id}`}
                               >
                                 <DollarSign className="w-4 h-4" />
+                              </Button>
+                            )}
+                            
+                            {/* Print Button */}
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => handlePrint(ar)}
+                              title="Cetak"
+                              className="text-gray-600"
+                              data-testid={`btn-print-${ar.id}`}
+                            >
+                              <Printer className="w-4 h-4" />
+                            </Button>
+                            
+                            {/* Delete Button - Soft delete only for unpaid */}
+                            {ar.status !== 'paid' && ar.status !== 'written_off' && (ar.paid_amount || 0) === 0 && (
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={() => handleSoftDelete(ar)}
+                                title="Hapus"
+                                className="text-red-600"
+                                data-testid={`btn-delete-${ar.id}`}
+                              >
+                                <Trash2 className="w-4 h-4" />
                               </Button>
                             )}
                           </div>

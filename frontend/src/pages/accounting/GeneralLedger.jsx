@@ -2,14 +2,16 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Search, Download, Printer, Loader2, FileText, ChevronDown, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
+import { getDefaultFilterDates, formatDateDisplay } from '../../utils/dateUtils';
 
 const GeneralLedger = () => {
   const { api } = useAuth();
   const [ledger, setLedger] = useState([]);
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
+  const { dateFrom: defaultFrom, dateTo: defaultTo } = getDefaultFilterDates();
+  const [dateFrom, setDateFrom] = useState(defaultFrom);
+  const [dateTo, setDateTo] = useState(defaultTo);
   const [accountFilter, setAccountFilter] = useState('');
   const [expandedAccounts, setExpandedAccounts] = useState({});
 

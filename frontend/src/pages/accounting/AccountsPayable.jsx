@@ -11,6 +11,7 @@ import {
 import APDetailModal from '../../components/accounting/APDetailModal';
 import APPaymentModal from '../../components/accounting/APPaymentModal';
 import { toast } from 'sonner';
+import { formatDateDisplay, isOverdue as checkOverdue } from '../../utils/dateUtils';
 
 const API = process.env.REACT_APP_BACKEND_URL;
 
@@ -280,19 +281,9 @@ export default function AccountsPayable() {
     }).format(val || 0);
   };
 
-  const formatDate = (dateStr) => {
-    if (!dateStr) return '-';
-    return new Date(dateStr).toLocaleDateString('id-ID', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric'
-    });
-  };
+  const formatDate = (dateStr) => formatDateDisplay(dateStr, '-');
 
-  const isOverdue = (dueDate) => {
-    if (!dueDate) return false;
-    return new Date(dueDate) < new Date();
-  };
+  const isOverdue = (dueDate) => checkOverdue(dueDate);
 
   const exportToCSV = () => {
     const headers = ['No AP', 'Tanggal', 'Jatuh Tempo', 'Supplier', 'Invoice', 'Original', 'Outstanding', 'Status'];

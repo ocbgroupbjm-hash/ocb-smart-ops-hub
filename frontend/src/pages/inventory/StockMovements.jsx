@@ -7,6 +7,7 @@ import { SearchableEnumSelect, STOCK_MOVEMENT_TYPES } from '../../components/ui/
 import { DatePickerWithDefault } from '../../components/ui/date-picker-default';
 import { useProducts, useBranches } from '../../hooks/useMasterData';
 import ERPActionToolbar from '../../components/ERPActionToolbar';
+import { formatDateDisplay, formatDateInput, getTodayISO } from '../../utils/dateUtils';
 
 const StockMovements = () => {
   const { api, token } = useAuth();
@@ -37,10 +38,11 @@ const StockMovements = () => {
   const loadMovements = useCallback(async () => {
     setLoading(true);
     try {
+      const dateStr = dateFilter ? formatDateInput(dateFilter) : '';
       const params = new URLSearchParams({
         ...(searchTerm && { search: searchTerm }),
         ...(typeFilter && { movement_type: typeFilter }),
-        ...(dateFilter && { date: dateFilter.toISOString().split('T')[0] })
+        ...(dateStr && { date: dateStr })
       });
       const res = await api(`/api/inventory/movements?${params}`);
       if (res.ok) {
