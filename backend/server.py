@@ -145,6 +145,12 @@ from routes.system_monitoring import router as system_monitoring_router
 # Data Integrity - Phase E Reconciliation
 from routes.data_integrity import router as data_integrity_router
 
+# Maintenance Mode - Phase E Hardening
+from routes.maintenance_mode import router as maintenance_mode_router
+
+# Integrity Fix Engine - Phase E Data Integrity
+from routes.integrity_fix_engine import router as integrity_fix_router
+
 # Mount all routers under /api - Core ERP
 app.include_router(auth_router, prefix="/api")
 app.include_router(products_router, prefix="/api")
@@ -170,6 +176,8 @@ app.include_router(business_router)
 app.include_router(import_export_router)
 app.include_router(system_monitoring_router)
 app.include_router(data_integrity_router)
+app.include_router(maintenance_mode_router)
+app.include_router(integrity_fix_router)
 
 # Mount SUPER AI routers
 app.include_router(ai_sales_router)

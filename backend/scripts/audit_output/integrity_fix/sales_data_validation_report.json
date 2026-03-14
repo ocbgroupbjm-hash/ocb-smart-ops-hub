@@ -1,0 +1,1685 @@
+{
+  "timestamp": "2026-03-14T18:31:49.920376+00:00",
+  "total_checked": 123,
+  "valid_count": 123,
+  "invalid_count": 0,
+  "validation_rate": "100.0%",
+  "results": [
+    {
+      "invoice_id": "69b1b996055f73ed46c3acae",
+      "invoice_number": "INV-20260311-0001",
+      "date": "2026-03-11T18:51:02.774359+00:00",
+      "amount": 249750.0,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "69b1b9b8055f73ed46c3acbf",
+      "invoice_number": "INV-20260311-0002",
+      "date": "2026-03-11T18:51:36.705096+00:00",
+      "amount": 499500.0,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "69b1bade8d8c9f19879e6257",
+      "invoice_number": "INV-20260311-0003",
+      "date": "2026-03-11T18:56:30.518115+00:00",
+      "amount": 149850.0,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "69b1bade8d8c9f19879e6265",
+      "invoice_number": "INV-20260311-0004",
+      "date": "2026-03-11T18:56:30.634098+00:00",
+      "amount": 149850.0,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "69b1bb68e6d592dcbcf77dd1",
+      "invoice_number": "INV-20260311-0005",
+      "date": "2026-03-11T18:58:48.248925+00:00",
+      "amount": 149850.0,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "69b1bb68e6d592dcbcf77ddf",
+      "invoice_number": "INV-20260311-0006",
+      "date": "2026-03-11T18:58:48.372685+00:00",
+      "amount": 149850.0,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "69b1bb6fe6d592dcbcf77df1",
+      "invoice_number": "INV-20260311-0007",
+      "date": "2026-03-11T18:58:55.806260+00:00",
+      "amount": 149850.0,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "69b1bb6fe6d592dcbcf77dff",
+      "invoice_number": "INV-20260311-0008",
+      "date": "2026-03-11T18:58:55.916135+00:00",
+      "amount": 149850.0,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "69b1cc916ff1bc2dac7de93b",
+      "invoice_number": "INV-20260311-0009",
+      "date": "2026-03-11T20:12:01.360141+00:00",
+      "amount": 166500.0,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "69b1cd0442edc9cf10b1a321",
+      "invoice_number": "INV-20260311-0010",
+      "date": "2026-03-11T20:13:56.929938+00:00",
+      "amount": 11100.0,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "69b1d180508023379a7acdef",
+      "invoice_number": "INV-20260311-0011",
+      "date": "2026-03-11T20:33:04.778545+00:00",
+      "amount": 49950.0,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "69b1d1bf703534d88e819f6f",
+      "invoice_number": "INV-20260311-0012",
+      "date": "2026-03-11T20:34:07.900601+00:00",
+      "amount": 49950.0,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "69b2e604befd5cf2ca74d66e",
+      "invoice_number": "INV-20260312-0001",
+      "date": "2026-03-12T16:12:52.803838+00:00",
+      "amount": 832500.0,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "69b308205998f4980a0fe1d1",
+      "invoice_number": "INV-20260312-0002",
+      "date": "2026-03-12T18:38:24.651141+00:00",
+      "amount": 416250.0,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "69b308205998f4980a0fe1e1",
+      "invoice_number": "INV-20260312-0003",
+      "date": "2026-03-12T18:38:24.823662+00:00",
+      "amount": 249750.0,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "69b30cb05998f4980a0fe2c6",
+      "invoice_number": "INV-20260312-0004",
+      "date": "2026-03-12T18:57:52.965758+00:00",
+      "amount": 388500.0,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "69b30cbb5998f4980a0fe2d6",
+      "invoice_number": "INV-20260312-0005",
+      "date": "2026-03-12T18:58:03.368714+00:00",
+      "amount": 194250.0,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "69b31ac0c8984d77e5eb3e8d",
+      "invoice_number": "INV-20260312-0007",
+      "date": "2026-03-12T19:57:52.308225+00:00",
+      "amount": 4440000.0,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "69b31b1a7534858416911ad7",
+      "invoice_number": "INV-20260312-0008",
+      "date": "2026-03-12T19:59:22.382268+00:00",
+      "amount": 2220000.0,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "69b337fe29012c5d84ec01ac",
+      "invoice_number": "INV-20260312-0004",
+      "date": "2026-03-12T22:02:38.296919+00:00",
+      "amount": 333000.0,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "69b3381329012c5d84ec01b0",
+      "invoice_number": "INV-20260312-0005",
+      "date": "2026-03-12T22:02:59.063598+00:00",
+      "amount": 333000.0,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "33f94dad-5ce1-4213-96bc-e121f103823b",
+      "invoice_number": "INV-E2E-20260313190516-002",
+      "date": "2026-03-13T19:05:16.612206+00:00",
+      "amount": 300000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "5ce44750-1915-4745-ad1d-8e7f268fc36d",
+      "invoice_number": "PERF-20260313201238-0000",
+      "date": "2026-03-13T20:12:38.681707+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "1fd6dcb9-3369-4055-8389-f4ad542306a2",
+      "invoice_number": "PERF-20260313201238-0001",
+      "date": "2026-03-13T20:12:38.686129+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "c80edd61-14d8-4dea-a94c-3f97d1f72a18",
+      "invoice_number": "PERF-20260313201238-0002",
+      "date": "2026-03-13T20:12:38.686586+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "709732a8-39b0-47bc-acad-64fb2c105655",
+      "invoice_number": "PERF-20260313201238-0003",
+      "date": "2026-03-13T20:12:38.686874+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "f8201958-137e-456d-98cf-572ba1b80acb",
+      "invoice_number": "PERF-20260313201238-0004",
+      "date": "2026-03-13T20:12:38.687126+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "80a78865-5924-4445-82f3-d6a204c86d9b",
+      "invoice_number": "PERF-20260313201238-0005",
+      "date": "2026-03-13T20:12:38.687363+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "f3821218-a189-4e27-a6d5-d02710c40cf4",
+      "invoice_number": "PERF-20260313201238-0006",
+      "date": "2026-03-13T20:12:38.687575+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "6b8ac961-1090-4600-a565-a90384f0d505",
+      "invoice_number": "PERF-20260313201238-0007",
+      "date": "2026-03-13T20:12:38.687824+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "a0cb557c-a0ea-43bd-98d2-d938729a9ccc",
+      "invoice_number": "PERF-20260313201238-0008",
+      "date": "2026-03-13T20:12:38.688043+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "c7dcf046-7fdb-4b12-9e7e-1cd2daeae790",
+      "invoice_number": "PERF-20260313201238-0009",
+      "date": "2026-03-13T20:12:38.688260+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "6b14b124-aa09-4ed9-9c7f-96ae5e36c64f",
+      "invoice_number": "PERF-20260313201238-0010",
+      "date": "2026-03-13T20:12:38.688464+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "7c96cd7d-b9d3-400c-95a4-1843dff2548e",
+      "invoice_number": "PERF-20260313201238-0011",
+      "date": "2026-03-13T20:12:38.688718+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "3f3fad28-5e2a-4405-b478-bdaab37a6868",
+      "invoice_number": "PERF-20260313201238-0012",
+      "date": "2026-03-13T20:12:38.688989+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "92cb6c19-dabf-4ec7-9e44-37f482573c9d",
+      "invoice_number": "PERF-20260313201238-0013",
+      "date": "2026-03-13T20:12:38.689214+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "791e62a4-2bb3-4f33-b244-9195d8a4a91f",
+      "invoice_number": "PERF-20260313201238-0014",
+      "date": "2026-03-13T20:12:38.689427+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "2fc2ca23-1f97-4bb1-836d-b3496f2aa33d",
+      "invoice_number": "PERF-20260313201238-0015",
+      "date": "2026-03-13T20:12:38.689631+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "259a361c-1297-45a1-9657-3ac4e0130c00",
+      "invoice_number": "PERF-20260313201238-0016",
+      "date": "2026-03-13T20:12:38.689856+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "01b50ed5-9923-424d-88e6-21e7528ea5ef",
+      "invoice_number": "PERF-20260313201238-0017",
+      "date": "2026-03-13T20:12:38.690065+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "1026a861-14d4-4ede-8278-df3bce4acae6",
+      "invoice_number": "PERF-20260313201238-0018",
+      "date": "2026-03-13T20:12:38.690326+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "b92333f9-23b8-4490-9961-3c59b5a75f59",
+      "invoice_number": "PERF-20260313201238-0019",
+      "date": "2026-03-13T20:12:38.690708+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "8f79b6bf-9b8c-4daa-8511-1449f7c9dab4",
+      "invoice_number": "PERF-20260313201238-0020",
+      "date": "2026-03-13T20:12:38.691038+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "bff54a5e-3659-42e2-b2a4-df5e4ec0f9d3",
+      "invoice_number": "PERF-20260313201238-0021",
+      "date": "2026-03-13T20:12:38.691337+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "204ae030-241d-416f-a430-42efdf33c593",
+      "invoice_number": "PERF-20260313201238-0022",
+      "date": "2026-03-13T20:12:38.691568+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "8f840991-ec6b-4ce5-be06-41d5f66b0f44",
+      "invoice_number": "PERF-20260313201238-0023",
+      "date": "2026-03-13T20:12:38.691795+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "813ea7a8-bb4d-462b-9a22-cb6d2e99b8a1",
+      "invoice_number": "PERF-20260313201238-0024",
+      "date": "2026-03-13T20:12:38.691995+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "cb598ef7-ab41-4290-8971-0c246ef8472e",
+      "invoice_number": "PERF-20260313201238-0025",
+      "date": "2026-03-13T20:12:38.692193+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "ece57a3e-5d8c-466b-aac1-039adcda1108",
+      "invoice_number": "PERF-20260313201238-0026",
+      "date": "2026-03-13T20:12:38.692393+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "d6fc1cae-45ee-4c92-bb10-d5ded678847d",
+      "invoice_number": "PERF-20260313201238-0027",
+      "date": "2026-03-13T20:12:38.692586+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "54bc1c56-7ae5-481b-9a4a-15df46827bae",
+      "invoice_number": "PERF-20260313201238-0028",
+      "date": "2026-03-13T20:12:38.692797+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "0bad6c0f-ca51-4817-ad41-e8b11b6293de",
+      "invoice_number": "PERF-20260313201238-0029",
+      "date": "2026-03-13T20:12:38.692989+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "22c320e3-b60b-41f0-9c8a-b3ff1339f164",
+      "invoice_number": "PERF-20260313201238-0030",
+      "date": "2026-03-13T20:12:38.693180+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "362badcd-b7ab-4925-9036-0e203cb47f9f",
+      "invoice_number": "PERF-20260313201238-0031",
+      "date": "2026-03-13T20:12:38.693411+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "cf8a0b1e-fdae-4fc2-91c5-6c59a8eba89d",
+      "invoice_number": "PERF-20260313201238-0032",
+      "date": "2026-03-13T20:12:38.693680+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "c30a37ff-1897-409e-a639-07514133e300",
+      "invoice_number": "PERF-20260313201238-0033",
+      "date": "2026-03-13T20:12:38.693983+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "304b22cc-08a0-4c56-87de-39333ac96fdc",
+      "invoice_number": "PERF-20260313201238-0034",
+      "date": "2026-03-13T20:12:38.694372+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "f69e62ae-5203-4d5a-8550-8856e654edf8",
+      "invoice_number": "PERF-20260313201238-0035",
+      "date": "2026-03-13T20:12:38.694616+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "442a8e77-3a28-4f7b-8b7f-0e4cef7ad88d",
+      "invoice_number": "PERF-20260313201238-0036",
+      "date": "2026-03-13T20:12:38.694829+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "6fdd2853-d1fb-47c8-97ff-40f251ed4d99",
+      "invoice_number": "PERF-20260313201238-0037",
+      "date": "2026-03-13T20:12:38.695031+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "f47e124c-5328-45f4-9b29-d3c446b99573",
+      "invoice_number": "PERF-20260313201238-0038",
+      "date": "2026-03-13T20:12:38.695234+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "bbfd17e4-281a-4b54-b227-93406fe50e79",
+      "invoice_number": "PERF-20260313201238-0039",
+      "date": "2026-03-13T20:12:38.695455+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "2c6c46e0-fee7-4ab7-901a-04175f7302ea",
+      "invoice_number": "PERF-20260313201238-0040",
+      "date": "2026-03-13T20:12:38.695656+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "072d5436-5294-4634-a436-e12214db2399",
+      "invoice_number": "PERF-20260313201238-0041",
+      "date": "2026-03-13T20:12:38.695934+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "94e36de5-5d97-4767-979c-7f16ea090e0b",
+      "invoice_number": "PERF-20260313201238-0042",
+      "date": "2026-03-13T20:12:38.696161+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "6d2e6eda-5e6d-4e91-b0a8-f7dadf1dc2c8",
+      "invoice_number": "PERF-20260313201238-0043",
+      "date": "2026-03-13T20:12:38.696377+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "d444c471-eb44-4a90-b6d6-331c85adc21d",
+      "invoice_number": "PERF-20260313201238-0044",
+      "date": "2026-03-13T20:12:38.696575+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "ef68f899-02f5-4abe-baf9-c658bed1ecfd",
+      "invoice_number": "PERF-20260313201238-0045",
+      "date": "2026-03-13T20:12:38.696794+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "a7672f1b-3184-455e-a375-a7c76503f07f",
+      "invoice_number": "PERF-20260313201238-0046",
+      "date": "2026-03-13T20:12:38.697006+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "3cda79f4-3a40-440b-9061-7b3352d8b2d8",
+      "invoice_number": "PERF-20260313201238-0047",
+      "date": "2026-03-13T20:12:38.697216+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "adb9dc05-59d0-4283-bcef-14a1179eda38",
+      "invoice_number": "PERF-20260313201238-0048",
+      "date": "2026-03-13T20:12:38.697419+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "2badf7b5-99bf-43b6-8563-e5de5614765d",
+      "invoice_number": "PERF-20260313201238-0049",
+      "date": "2026-03-13T20:12:38.697614+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "625e62e2-89da-4aec-8a21-0d9b6ac65d85",
+      "invoice_number": "PERF-20260313201238-0050",
+      "date": "2026-03-13T20:12:38.697811+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "3a27b6cf-1972-44fb-96c2-e0c643b3134d",
+      "invoice_number": "PERF-20260313201238-0051",
+      "date": "2026-03-13T20:12:38.698024+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "afac9e3e-0853-434d-baf5-2bff21686bcb",
+      "invoice_number": "PERF-20260313201238-0052",
+      "date": "2026-03-13T20:12:38.698309+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "20860e1e-8dc9-4140-adb1-2b343d2c447a",
+      "invoice_number": "PERF-20260313201238-0053",
+      "date": "2026-03-13T20:12:38.698545+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "7f1c3471-5a82-497b-a6a5-55bd60d72e3d",
+      "invoice_number": "PERF-20260313201238-0054",
+      "date": "2026-03-13T20:12:38.698751+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "91504fd4-6881-4d77-8e7f-10b24aef542c",
+      "invoice_number": "PERF-20260313201238-0055",
+      "date": "2026-03-13T20:12:38.699080+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "b462fee1-cb51-4bf3-8ca0-4b963a0566e4",
+      "invoice_number": "PERF-20260313201238-0056",
+      "date": "2026-03-13T20:12:38.699319+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "fb5fede9-6d03-4678-b633-6e38f29ef667",
+      "invoice_number": "PERF-20260313201238-0057",
+      "date": "2026-03-13T20:12:38.699520+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "4eabd4b1-1a02-4d9b-9e6e-ba2062d734a1",
+      "invoice_number": "PERF-20260313201238-0058",
+      "date": "2026-03-13T20:12:38.699742+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "15626189-7060-45a8-ab93-eb918ee4d14f",
+      "invoice_number": "PERF-20260313201238-0059",
+      "date": "2026-03-13T20:12:38.699949+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "1908009b-3d70-4b14-a5ca-be05eb87adfa",
+      "invoice_number": "PERF-20260313201238-0060",
+      "date": "2026-03-13T20:12:38.700143+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "7901630e-a924-4f27-9a16-f5a216f6e81a",
+      "invoice_number": "PERF-20260313201238-0061",
+      "date": "2026-03-13T20:12:38.700349+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "c7975150-141c-4ec9-9b0d-7798b855d27e",
+      "invoice_number": "PERF-20260313201238-0062",
+      "date": "2026-03-13T20:12:38.700551+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "584b9559-e278-402c-a050-72f40ab00e55",
+      "invoice_number": "PERF-20260313201238-0063",
+      "date": "2026-03-13T20:12:38.700774+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "3bfba085-4ac0-4850-8f5e-d4dc98c1c55e",
+      "invoice_number": "PERF-20260313201238-0064",
+      "date": "2026-03-13T20:12:38.700973+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "d0dd69fe-0fd5-4b20-bc29-29d457304538",
+      "invoice_number": "PERF-20260313201238-0065",
+      "date": "2026-03-13T20:12:38.701196+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "2c28b581-913c-44dc-a7ce-3d00617e454b",
+      "invoice_number": "PERF-20260313201238-0066",
+      "date": "2026-03-13T20:12:38.701413+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "260a4db9-8bda-4a5f-84c0-3bee800d7206",
+      "invoice_number": "PERF-20260313201238-0067",
+      "date": "2026-03-13T20:12:38.701753+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "550a3c38-219a-455c-8be4-962a9ffa0a1d",
+      "invoice_number": "PERF-20260313201238-0068",
+      "date": "2026-03-13T20:12:38.702230+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "3be9c548-91db-41c3-99a2-822b7db691d8",
+      "invoice_number": "PERF-20260313201238-0069",
+      "date": "2026-03-13T20:12:38.702588+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "7fbb5692-c789-4e51-8a1a-087ae502b3d3",
+      "invoice_number": "PERF-20260313201238-0070",
+      "date": "2026-03-13T20:12:38.702922+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "44371a9e-1c4a-4eaf-a8fb-ea87cb5adaf3",
+      "invoice_number": "PERF-20260313201238-0071",
+      "date": "2026-03-13T20:12:38.703323+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "340b726f-cd0a-448d-b504-c0e45e9c4e93",
+      "invoice_number": "PERF-20260313201238-0072",
+      "date": "2026-03-13T20:12:38.703683+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "f8fbb927-0b62-4e1d-85e4-0007da580994",
+      "invoice_number": "PERF-20260313201238-0073",
+      "date": "2026-03-13T20:12:38.704049+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "d544605f-bf8d-47a1-ad32-5d10ea2bbd85",
+      "invoice_number": "PERF-20260313201238-0074",
+      "date": "2026-03-13T20:12:38.704390+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "cdf6ba79-dd7b-4f10-9b5c-285e953fecce",
+      "invoice_number": "PERF-20260313201238-0075",
+      "date": "2026-03-13T20:12:38.704721+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "299ffeb3-a3e8-4f59-b44c-3b892658359f",
+      "invoice_number": "PERF-20260313201238-0076",
+      "date": "2026-03-13T20:12:38.705039+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "2e67de10-604d-43e9-b895-7c8dafabbbec",
+      "invoice_number": "PERF-20260313201238-0077",
+      "date": "2026-03-13T20:12:38.705361+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "05d279e3-025c-41a6-8e6c-aeb4c70f7158",
+      "invoice_number": "PERF-20260313201238-0078",
+      "date": "2026-03-13T20:12:38.705667+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "1a4dbced-3edb-4a2f-8be9-3c4de3268dff",
+      "invoice_number": "PERF-20260313201238-0079",
+      "date": "2026-03-13T20:12:38.705997+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "012cad00-b86e-411e-a578-436d0f2369a7",
+      "invoice_number": "PERF-20260313201238-0080",
+      "date": "2026-03-13T20:12:38.706330+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "170e33c7-fe31-448c-9560-69b430c86651",
+      "invoice_number": "PERF-20260313201238-0081",
+      "date": "2026-03-13T20:12:38.706585+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "a061d38c-7946-4baf-ba6a-b724ad18efe9",
+      "invoice_number": "PERF-20260313201238-0082",
+      "date": "2026-03-13T20:12:38.706816+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "53864176-5f57-4318-a6af-0defc1150f79",
+      "invoice_number": "PERF-20260313201238-0083",
+      "date": "2026-03-13T20:12:38.707070+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "2c7bb322-c1b1-44d3-a3f0-57c7e71260d9",
+      "invoice_number": "PERF-20260313201238-0084",
+      "date": "2026-03-13T20:12:38.707368+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "8aedfe01-0802-42e6-a127-f4cdf06792bd",
+      "invoice_number": "PERF-20260313201238-0085",
+      "date": "2026-03-13T20:12:38.707918+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "c5be5163-91a2-4dc2-8a8f-fc83553ea602",
+      "invoice_number": "PERF-20260313201238-0086",
+      "date": "2026-03-13T20:12:38.708328+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "46c83e93-656c-48a9-bf88-d08e36c93c06",
+      "invoice_number": "PERF-20260313201238-0087",
+      "date": "2026-03-13T20:12:38.708664+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "7097ff84-2398-4ef0-af15-3cfd9b413d11",
+      "invoice_number": "PERF-20260313201238-0088",
+      "date": "2026-03-13T20:12:38.709070+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "6c94a837-ff3a-44ab-83c0-140c5bee82e9",
+      "invoice_number": "PERF-20260313201238-0089",
+      "date": "2026-03-13T20:12:38.709404+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "a2a3f0a5-f91b-4dde-8fd3-440ad5f1c98d",
+      "invoice_number": "PERF-20260313201238-0090",
+      "date": "2026-03-13T20:12:38.709745+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "74e048e4-65a0-45e8-9f1a-69a91ea46b1b",
+      "invoice_number": "PERF-20260313201238-0091",
+      "date": "2026-03-13T20:12:38.710064+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "9e2a2032-0c11-4752-acb2-d7023b043808",
+      "invoice_number": "PERF-20260313201238-0092",
+      "date": "2026-03-13T20:12:38.710393+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "26f5b2b2-afd9-4fce-afc5-f98654e70352",
+      "invoice_number": "PERF-20260313201238-0093",
+      "date": "2026-03-13T20:12:38.710730+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "b3650a77-8de9-48ee-9971-41f2bbe1eca1",
+      "invoice_number": "PERF-20260313201238-0094",
+      "date": "2026-03-13T20:12:38.711122+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "cf0c6808-a2f3-49c2-a2d4-2152e06e0cfc",
+      "invoice_number": "PERF-20260313201238-0095",
+      "date": "2026-03-13T20:12:38.711461+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "725c41e4-603b-4558-94c5-530c7e108aab",
+      "invoice_number": "PERF-20260313201238-0096",
+      "date": "2026-03-13T20:12:38.711802+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "d5fdcddd-0012-4b1f-b6c8-4d4238170957",
+      "invoice_number": "PERF-20260313201238-0097",
+      "date": "2026-03-13T20:12:38.712055+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "aaf4ade6-8a77-4570-b57c-8fd2d2676cda",
+      "invoice_number": "PERF-20260313201238-0098",
+      "date": "2026-03-13T20:12:38.712268+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "5d68e213-7461-48f2-875c-a664d15fc063",
+      "invoice_number": "PERF-20260313201238-0099",
+      "date": "2026-03-13T20:12:38.712471+00:00",
+      "amount": 65000,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [
+        "Customer tidak diset"
+      ],
+      "can_repost": true
+    },
+    {
+      "invoice_id": "69b561700bcd8ce7826daa47",
+      "invoice_number": "INV-20260314-0007",
+      "date": "2026-03-14T13:24:00.793025+00:00",
+      "amount": 27750.0,
+      "items_count": 1,
+      "valid": true,
+      "flag": "VALID",
+      "errors": [],
+      "warnings": [],
+      "can_repost": true
+    }
+  ]
+}

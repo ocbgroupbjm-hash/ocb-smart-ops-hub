@@ -1,0 +1,32 @@
+{
+  "timestamp": "2026-03-14T18:33:34.925431+00:00",
+  "ssot_inventory": {
+    "source": "stock_movements",
+    "total_products": 1,
+    "total_quantity": 105,
+    "total_value": 0.0,
+    "top_10_by_value": [
+      {
+        "product_name": "E2E Test Product",
+        "avg_cost": 0.0,
+        "product_id": "3c8fd6cc-4c76-43d5-b8f3-d910d8d998b8",
+        "current_qty": 105,
+        "current_value": 0.0
+      }
+    ]
+  },
+  "gl_inventory": {
+    "source": "journal_entries (account 1-14xx)",
+    "total_debit": 0,
+    "total_credit": 0,
+    "balance": 0
+  },
+  "reconciliation": {
+    "ssot_value": 0.0,
+    "gl_value": 0,
+    "variance": 0.0,
+    "variance_percentage": 0.0,
+    "status": "MATCHED",
+    "action_required": "NONE"
+  }
+}
