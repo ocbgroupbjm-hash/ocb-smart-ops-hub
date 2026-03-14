@@ -1458,11 +1458,91 @@ VERIFIED: 2026-03-13
 
 ```
 OCB TITAN ERP
-VERSION: 3.3.0
+VERSION: 3.4.0
 STATUS: PRODUCTION READY
 AI ENGINE: ACTIVE (READ ONLY)
 VERIFIED: 2026-03-14
 ```
+
+---
+
+## P0 BUG FIX: AP PAYMENT MODULE (2026-03-14) ✅
+
+### Bug yang Diperbaiki
+
+#### 1. Dropdown Bank/Kas Kosong ✅ FIXED
+**Masalah:** Modal pembayaran hutang menampilkan dropdown "Bank/Kas" kosong - "Tidak ditemukan"
+
+**Root Cause:**
+- Backend query mencari `type: 'cash'` atau `type: 'bank'` tapi akun punya `type: 'asset'`
+- Tidak ada field `sub_type` untuk identifikasi kas/bank
+- Query regex terlalu broad, menangkap akun piutang
+
+**Solusi:**
+1. Update query `/api/accounts/cash-bank` untuk filter berdasarkan:
+   - `sub_type` field (primary)
+   - Nama akun yang mengandung "Kas" atau "Bank"
+   - Exclude akun dengan nama "Piutang" atau "Hutang"
+2. Tambahkan `sub_type` ke 9 akun kas/bank di database
+3. Endpoint tenant-aware dengan fallback jika tidak ada tenant_id
+
+**Hasil:** Dropdown menampilkan 9 akun kas/bank aktif
+
+#### 2. Tombol Aksi di Daftar Hutang ✅ IMPLEMENTED
+Sesuai requirement arsitektur AP/AR Enterprise, semua tombol wajib ditambahkan:
+
+| Tombol | Status | Kondisi Tampil |
+|--------|--------|----------------|
+| + Tambah Hutang | ✅ | Selalu |
+| Detail (Eye) | ✅ | Selalu |
+| Edit | ✅ | Hanya jika belum ada pembayaran |
+| Bayar (Dollar) | ✅ | Hanya jika status != paid |
+| Cetak (Printer) | ✅ | Selalu |
+| Hapus (Trash) | ✅ | Hanya jika belum ada pembayaran (soft delete) |
+| Export CSV | ✅ | Selalu |
+
+#### 3. Soft Delete AP ✅ IMPLEMENTED
+**Endpoint:** `PUT /api/ap/{ap_id}/soft-delete`
+
+**Validasi:**
+- Tidak bisa hapus jika `paid_amount > 0`
+- Tidak bisa hapus jika `status = paid`
+- Tidak bisa hapus jika ada payment records
+- Audit log tercatat
+
+#### 4. Jurnal Pembayaran Hutang ✅ VERIFIED
+**Test Result:**
+- Payment No: `PAY-20260314-0002`
+- Journal No: `JV-20260314-0005`
+- Entries:
+  - Dr. Hutang Dagang (2-1100): Rp 100,000
+  - Cr. Bank (1-1200): Rp 100,000
+- Balanced: TRUE
+- Status: POSTED
+
+### Test Report
+**File:** `/app/test_reports/iteration_63.json`
+
+| Feature | Status |
+|---------|--------|
+| Dropdown Bank/Kas | ✅ PASS (9 akun) |
+| Tombol Tambah | ✅ PASS |
+| Tombol Detail | ✅ PASS |
+| Tombol Edit | ✅ PASS |
+| Tombol Bayar | ✅ PASS |
+| Tombol Cetak | ✅ PASS |
+| Tombol Hapus | ✅ PASS |
+| Export CSV | ✅ PASS |
+| Payment Journal | ✅ PASS |
+| Journal Balance | ✅ PASS |
+
+**Backend: 100% | Frontend: 100%**
+
+### Evidence Files
+**Location:** `/app/backend/scripts/audit_output/ap_payment_fix/`
+- `cash_bank_ledger_test.json`
+- `ap_payment_journal_test.json`
+- `ap_payment_list_actions.md`
 
 ---
 
@@ -1484,5 +1564,5 @@ AI Rules:
 
 ---
 
-*Last Updated: 2026-03-14 (Phase 3 - AI Business Engine Complete)*
-*Blueprint Version: 3.3.0 (AI ENGINE ACTIVE)*
+*Last Updated: 2026-03-14 (P0 Bug Fix - AP Payment Module Complete)*
+*Blueprint Version: 3.4.0 (AP PAYMENT FIXED)*
