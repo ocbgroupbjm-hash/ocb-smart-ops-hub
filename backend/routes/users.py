@@ -86,9 +86,25 @@ async def get_user(user_id: str, user: dict = Depends(require_permission("master
 
 @router.post("")
 async def create_user(data: UserCreate, request: Request, user: dict = Depends(require_permission("master_user", "create"))):
-    """Create new user - Requires master_user.create permission"""
-    if user.get("role") not in ["owner", "admin"]:
-        raise HTTPException(status_code=403, detail="Insufficient permissions: Hanya owner/admin yang dapat membuat user baru")
+    """
+    Create new user - Requires master_user.create permission
+    
+    VALIDATION RULES:
+    - Only owner/admin can create users
+    - Email must be valid and unique per tenant
+    - Role must exist in tenant's roles collection
+    - Branch must exist if provided
+    
+    STORED FIELDS:
+    - tenant_id (from current database)
+    - role_id (from roles collection)
+    - role_code
+    - created_at
+    - status
+    - audit trail
+    """
+    if user.get("role") not in ["owner", "admin", "super_admin"]:
+        raise HTTPException(status_code=403, detail="Insufficient permissions: Hanya owner/admin/super_admin yang dapat membuat user baru")
     
     # Validate email format
     if not data.email or "@" not in data.email:
@@ -99,11 +115,13 @@ async def create_user(data: UserCreate, request: Request, user: dict = Depends(r
     if existing:
         raise HTTPException(status_code=400, detail=f"Email '{data.email}' sudah terdaftar di tenant ini")
     
-    # Get current database and find role
+    # Get current database and tenant info
     db = get_db()
+    from database import get_active_db_name
+    tenant_id = get_active_db_name()
     
     # Validate role code exists
-    valid_roles = ["owner", "admin", "finance", "warehouse", "cashier", "super_admin"]
+    valid_roles = ["owner", "admin", "finance", "warehouse", "cashier", "super_admin", "manager", "supervisor"]
     role_code = data.role.lower() if data.role else "cashier"
     
     if role_code not in valid_roles:
@@ -111,14 +129,31 @@ async def create_user(data: UserCreate, request: Request, user: dict = Depends(r
     
     role_doc = await db["roles"].find_one({"code": role_code})
     if not role_doc:
-        raise HTTPException(status_code=400, detail=f"Role '{role_code}' tidak ditemukan. Role valid: owner, admin, finance, warehouse, cashier")
+        # Try to find alternative role naming
+        alt_role_doc = await db["roles"].find_one({"code": {"$regex": f"^{role_code}", "$options": "i"}})
+        if alt_role_doc:
+            role_doc = alt_role_doc
+        else:
+            # Get available roles for error message
+            available_roles = await db["roles"].find({}, {"_id": 0, "code": 1}).to_list(20)
+            role_codes = [r.get("code") for r in available_roles if r.get("code")]
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Role '{role_code}' tidak ditemukan di tenant '{tenant_id}'. Role tersedia: {', '.join(role_codes)}"
+            )
     role_id = role_doc.get("id")
     
     # Validate branch_id if provided
     if data.branch_id:
         branch_exists = await db["branches"].find_one({"id": data.branch_id})
         if not branch_exists:
-            raise HTTPException(status_code=400, detail=f"Branch ID '{data.branch_id}' tidak ditemukan")
+            # Get available branches for error message
+            available_branches = await db["branches"].find({}, {"_id": 0, "id": 1, "name": 1}).to_list(20)
+            branch_info = [f"{b.get('name')} ({b.get('id')})" for b in available_branches]
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Branch ID '{data.branch_id}' tidak ditemukan di tenant '{tenant_id}'. Branch tersedia: {', '.join(branch_info)}"
+            )
     
     new_user = User(
         email=data.email,
@@ -130,10 +165,12 @@ async def create_user(data: UserCreate, request: Request, user: dict = Depends(r
         branch_ids=data.branch_ids or ([data.branch_id] if data.branch_id else [])
     )
     
-    # Add role_id and role_code to user document
+    # Add role_id, role_code, and tenant_id to user document
     user_dict = new_user.model_dump()
     user_dict["role_id"] = role_id
     user_dict["role_code"] = role_code
+    user_dict["tenant_id"] = tenant_id  # Store tenant for audit
+    user_dict["status"] = "active"
     
     await users.insert_one(user_dict)
     
@@ -145,11 +182,22 @@ async def create_user(data: UserCreate, request: Request, user: dict = Depends(r
         module="users",
         entity_type="user",
         entity_id=new_user.id,
-        new_value={"email": new_user.email, "name": new_user.name, "role": role_code, "role_id": role_id}
+        new_value={
+            "email": new_user.email, 
+            "name": new_user.name, 
+            "role": role_code, 
+            "role_id": role_id,
+            "tenant_id": tenant_id
+        }
     )
     await audit_logs.insert_one(log.model_dump())
     
-    return {"id": new_user.id, "message": "User berhasil dibuat", "role_id": role_id}
+    return {
+        "id": new_user.id, 
+        "message": "User berhasil dibuat", 
+        "role_id": role_id,
+        "tenant_id": tenant_id
+    }
 
 @router.put("/{user_id}")
 async def update_user(user_id: str, data: UserUpdate, request: Request, user: dict = Depends(require_permission("master_user", "edit"))):

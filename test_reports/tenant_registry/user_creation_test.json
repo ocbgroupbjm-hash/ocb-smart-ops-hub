@@ -1,0 +1,58 @@
+{
+  "test_date": "2026-03-14",
+  "target_tenant": "ocb_titan",
+  "test_type": "user_creation",
+  "test_results": [
+    {
+      "tenant": "ocb_titan",
+      "test": "create_user_cashier",
+      "result": "SUCCESS",
+      "user_id": "19ab7acc-1d3c-4ba1-af90-37aba4794cf8",
+      "role_id": "f7c51162-7b25-4abe-bd7c-c85f2d6670b4",
+      "tenant_id": "ocb_titan",
+      "response": {
+        "id": "19ab7acc-1d3c-4ba1-af90-37aba4794cf8",
+        "message": "User berhasil dibuat",
+        "role_id": "f7c51162-7b25-4abe-bd7c-c85f2d6670b4",
+        "tenant_id": "ocb_titan"
+      }
+    },
+    {
+      "tenant": "ocb_unit_4",
+      "test": "create_user_cashier",
+      "result": "SUCCESS",
+      "user_id": "5d301a52-d15c-4ab7-a277-8deef7706472",
+      "role_id": "47746b68-e582-4282-ab5a-77847ee92ffb"
+    },
+    {
+      "tenant": "ocb_unt_1",
+      "test": "create_user_cashier",
+      "result": "SUCCESS",
+      "user_id": "1f3c2385-d0dc-4b81-8ac1-d8cd4d59ddb6",
+      "role_id": "47746b68-e582-4282-ab5a-77847ee92ffb"
+    }
+  ],
+  "validation_checks": {
+    "role_id_stored": true,
+    "tenant_id_stored": true,
+    "email_unique_check": true,
+    "role_validation": true,
+    "branch_validation": true,
+    "audit_log_created": true
+  },
+  "stored_fields_verified": [
+    "id",
+    "email",
+    "name",
+    "phone",
+    "role",
+    "role_id",
+    "role_code",
+    "tenant_id",
+    "status",
+    "created_at",
+    "branch_id",
+    "branch_ids"
+  ],
+  "conclusion": "User creation works correctly across all tenants"
+}

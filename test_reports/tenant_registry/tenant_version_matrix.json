@@ -1,0 +1,52 @@
+{
+  "generated_at": "2026-03-14T20:15:00Z",
+  "current_blueprint_version": "2.0.0",
+  "total_tenants": 3,
+  "summary": {
+    "synced": 3,
+    "drift": 0,
+    "pending_migration": 0,
+    "error": 0
+  },
+  "tenants": [
+    {
+      "db_name": "ocb_titan",
+      "display_name": "OCB GROUP",
+      "blueprint_version": "2.0.0",
+      "status": "active",
+      "sync_status": "synced",
+      "last_migrated_at": "2026-03-14T08:40:10.027539+00:00",
+      "features": {
+        "ai_enabled": true,
+        "tenant_registry": true,
+        "enhanced_user_creation": true
+      }
+    },
+    {
+      "db_name": "ocb_unit_4",
+      "display_name": "OCB UNIT 4 MPC & MP3",
+      "blueprint_version": "2.0.0",
+      "status": "active",
+      "sync_status": "synced",
+      "last_migrated_at": "2026-03-14T19:16:13.893728+00:00",
+      "features": {
+        "ai_enabled": false,
+        "tenant_registry": true,
+        "enhanced_user_creation": true
+      }
+    },
+    {
+      "db_name": "ocb_unt_1",
+      "display_name": "OCB UNIT 1 RETAIL",
+      "blueprint_version": "2.0.0",
+      "status": "active",
+      "sync_status": "synced",
+      "last_migrated_at": "2026-03-14T19:16:14.043015+00:00",
+      "features": {
+        "ai_enabled": true,
+        "tenant_registry": true,
+        "enhanced_user_creation": true
+      }
+    }
+  ]
+}

@@ -331,6 +331,10 @@ app.include_router(loyalty_points_router, prefix="/api")
 from routes.database_init import router as db_init_router
 app.include_router(db_init_router)
 
+# Tenant Registry - SINGLE SOURCE OF TRUTH for tenant list
+from routes.tenant_registry import router as tenant_registry_router
+app.include_router(tenant_registry_router)
+
 # Tenant Blueprint & Migration Engine
 from routes.tenant_blueprint import router as tenant_blueprint_router
 app.include_router(tenant_blueprint_router)

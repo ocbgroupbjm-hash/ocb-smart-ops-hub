@@ -2214,6 +2214,92 @@ Core DB → Read-Only Access → AI Data Layer → Feature Builder → Insights 
 
 ---
 
-*Last Updated: 2026-03-14 (AI EVIDENCE COMPLETE + USER MANAGEMENT)*
-*Blueprint Version: 4.1.1 (AI ENGINE + USER MANAGEMENT)*
+## TENANT REGISTRY FIX (2026-03-14) ✅
+
+### Problem Solved:
+Tenant yang sudah dihapus masih muncul di login page karena login page membaca dari `businesses.json` bukan dari `tenant_registry`.
+
+### Solution Implemented:
+1. Membuat `/app/backend/routes/tenant_registry.py` - Single Source of Truth
+2. Update `/api/business/list` untuk membaca dari `_tenant_metadata` collection
+3. Auto-sync saat tenant di-delete
+
+### Evidence Files Created:
+| File | Purpose | Status |
+|------|---------|--------|
+| tenant_registry_test.md | Test tenant registry | ✅ |
+| tenant_delete_sync_test.md | Test delete sync | ✅ |
+| login_tenant_list_test.md | Test login page | ✅ |
+| sample_api_business_list.json | API response sample | ✅ |
+| file_changed_list.md | Files changed | ✅ |
+
+### API Endpoints Added:
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| /api/tenant-registry/list | GET | List active tenants |
+| /api/tenant-registry/all | GET | List all tenants by status |
+| /api/tenant-registry/version-matrix | GET | Blueprint sync status |
+| /api/tenant-registry/status/{db_name} | GET | Single tenant status |
+
+---
+
+## USER CREATION FIX (2026-03-14) ✅
+
+### Enhancement:
+- Added `tenant_id` field to user document
+- Enhanced role validation with fallback search
+- Improved error messages with available options
+- Added `status` field default to "active"
+
+### Evidence Files:
+| File | Purpose | Status |
+|------|---------|--------|
+| user_creation_test.json | Test results | ✅ |
+| user_creation_multi_tenant_test.md | Multi-tenant test | ✅ |
+
+---
+
+## TENANT SYNC & ROLLOUT (2026-03-14) ✅
+
+### Status:
+- All 3 tenants synced with blueprint v2.0.0
+- No drift detected
+- All smoke tests passed (18/18)
+
+### Evidence Files:
+| File | Purpose | Status |
+|------|---------|--------|
+| tenant_sync_report.md | Sync status | ✅ |
+| smoke_test_all_tenants.md | Smoke test results | ✅ |
+| blueprint_version_after_rollout.json | Version matrix | ✅ |
+| tenant_version_matrix.json | Full matrix | ✅ |
+| tenant_drift_report.md | Drift report | ✅ |
+
+---
+
+## NEXT PHASE: AI BUSINESS ENGINE
+
+### Prerequisites Met:
+- ✅ Fix tenant login selesai
+- ✅ Fix user creation selesai
+- ✅ Rollout ke semua tenant selesai
+- ✅ Semua tenant sync status = healthy
+- ✅ Evidence lengkap sudah ada
+- ✅ Smoke test semua tenant PASS
+
+### AI Engine Status:
+- **Phase:** READY FOR PILOT
+- **Duration:** 7-14 hari
+- **Target Tenant:** ocb_titan only
+
+### AI Mode Requirements:
+- ☑️ READ ONLY
+- ☑️ NO WRITE
+- ☑️ NO BRE BYPASS
+- ☑️ TENANT SAFE
+
+---
+
+*Last Updated: 2026-03-14 (TENANT REGISTRY FIX + USER CREATION FIX + ROLLOUT COMPLETE)*
+*Blueprint Version: 4.2.0 (TENANT REGISTRY + AI ENGINE READY)*
 

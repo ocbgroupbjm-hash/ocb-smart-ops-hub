@@ -72,20 +72,35 @@ def save_businesses(businesses: List[dict]):
 
 @router.get("/list")
 async def list_businesses():
-    """List all available businesses/databases - Only show active tenants"""
-    businesses = load_businesses()
-    # Filter: only show businesses that should appear in login selector
+    """
+    List all available businesses/databases for login page.
+    
+    SOURCE OF TRUTH: tenant_registry (_tenant_metadata collection)
+    
+    This endpoint now reads from _tenant_metadata in each database,
+    NOT from businesses.json file.
+    
+    Only returns tenants with status = 'active'.
+    """
+    from routes.tenant_registry import get_all_tenants_from_registry
+    
+    # Get tenants from registry (source of truth)
+    all_tenants = await get_all_tenants_from_registry()
+    
+    # Filter only active tenants for login page
     visible_businesses = [
-        b for b in businesses 
-        if b.get("show_in_login_selector", True) 
-        and not b.get("is_test", False) 
-        and not b.get("is_internal", False)
+        t for t in all_tenants 
+        if t.get("status") == "active" 
+        and t.get("show_in_login_selector", True)
     ]
+    
     # Get current active database from memory
     current_db = get_active_db_name()
+    
     return {
         "businesses": visible_businesses,
-        "current_db": current_db
+        "current_db": current_db,
+        "source": "tenant_registry"  # Indicate source of truth
     }
 
 @router.post("/create")

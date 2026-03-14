@@ -1175,6 +1175,15 @@ async def delete_tenant(
     except Exception:
         pass  # Registry might not exist
     
+    # 5b. Sync businesses.json file (remove deleted tenant)
+    try:
+        from routes.business import load_businesses, save_businesses
+        businesses = load_businesses()
+        businesses = [b for b in businesses if b.get("db_name") != target_db and b.get("id") != tenant_id]
+        save_businesses(businesses)
+    except Exception:
+        pass  # File sync might fail but deletion succeeded
+    
     # 6. Log audit event
     try:
         main_db = client["erp_db"]
