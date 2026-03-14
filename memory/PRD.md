@@ -15,7 +15,47 @@ Membangun sistem ERP retail komprehensif (OCB TITAN) dengan fitur POS, Inventory
 
 ## What's Been Implemented
 
-### Latest Updates (2026-03-14 Session 2)
+### Latest Updates (2026-03-14 Session 3)
+
+#### PRIORITAS 1: Piutang Usaha di Buku Besar ✅
+**Problem:** Piutang Usaha tidak muncul di modul Buku Besar
+**Root Cause:** Frontend GeneralLedger.jsx menggunakan deprecated endpoint `/api/accounting/ledger`
+**Fix:** Updated to use `/api/accounting/financial/trial-balance` dan `/api/accounting/financial/general-ledger`
+**Verification:**
+- Trial Balance: `1-1300 Piutang Usaha = Rp 9,990,450` ✅
+- Balance Sheet: `1-1300 Piutang Usaha = Rp 9,990,450` ✅
+- General Ledger: 20 entries dengan Total Debit Rp 14,192,950 ✅
+
+#### PRIORITAS 2: E2E Testing ✅
+**Testing Agent Results:**
+- Backend: 91% (21/23 tests passed)
+- Frontend: 100%
+- Trial Balance BALANCED: Rp 237,726,067.5
+- All AP/AR endpoints working
+
+#### PRIORITAS 3: KPI Engine UI ✅
+**New File:** `/app/frontend/src/pages/hr/HRKpi.jsx`
+**Route:** `/hr/kpi`
+**Features:**
+- Dashboard tab with top performers & category breakdown
+- KPI Targets management (CRUD)
+- KPI Results tracking with achievement calculation
+- Assign KPI to employees
+- Update actual values with auto-rating
+
+#### PRIORITAS 4: HR Analytics Dashboard ✅
+**New File:** `/app/frontend/src/pages/hr/HRAnalytics.jsx`
+**Route:** `/hr/analytics`
+**Metrics:**
+- Total employees (active/resigned)
+- Attendance rate & late count
+- Pending leave requests
+- Total payroll & avg salary
+- KPI performance average
+- Turnover rate
+- Department breakdown
+
+### Previous Updates (2026-03-14 Session 2)
 
 #### AP/AR Bug Fix - TASK 1-5 ✅
 **TASK 1: Fix AP Invoice Delete Flow**
@@ -52,32 +92,13 @@ Membangun sistem ERP retail komprehensif (OCB TITAN) dengan fitur POS, Inventory
 #### HR Frontend UI - TASK 6 ✅
 **Implemented Pages:**
 1. **HREmployees.jsx** (760 lines)
-   - Full CRUD operations
-   - Employee list table with pagination
-   - Modal forms for add/edit
-   - Status badges, filters
-
 2. **HRAttendance.jsx** (634 lines)
-   - Today's attendance dashboard
-   - Check-in/Check-out modals
-   - Shift display
-   - Work hours calculation
-
 3. **HRLeave.jsx** (651 lines)
-   - Leave request modal
-   - Approval workflow modal
-   - Leave types display
-   - Status filtering
-
 4. **HRPayroll.jsx** (628 lines)
-   - Run payroll modal
-   - Post payroll (journal integration)
-   - Payroll slip modal
-   - Period filtering
+5. **HRKpi.jsx** (520 lines) - NEW
+6. **HRAnalytics.jsx** (320 lines) - NEW
 
 ### Previous Updates (2026-03-14)
-
-#### AP/AR Enterprise Architecture ✅
 **Payment Allocation Engine - Multi-Invoice Payment Support**
 - `payment_allocation_engine.py` - New enterprise module
 - **Collections Created:**

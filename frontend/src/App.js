@@ -61,6 +61,8 @@ import HREmployees from './pages/hr/HREmployees';
 import HRAttendance from './pages/hr/HRAttendance';
 import HRLeave from './pages/hr/HRLeave';
 import HRPayroll from './pages/hr/HRPayroll';
+import HRKpi from './pages/hr/HRKpi';
+import HRAnalytics from './pages/hr/HRAnalytics';
 
 // OCB TITAN AI Phase 3 Pages - AI Super War Room
 import CFODashboard from './pages/CFODashboard';
@@ -267,6 +269,8 @@ function App() {
             <Route path="hr/attendance" element={<HRAttendance />} />
             <Route path="hr/leave" element={<HRLeave />} />
             <Route path="hr/payroll" element={<HRPayroll />} />
+            <Route path="hr/kpi" element={<HRKpi />} />
+            <Route path="hr/analytics" element={<HRAnalytics />} />
             
             <Route path="kasir" element={<POS />} />
             <Route path="produk" element={<Products />} />
