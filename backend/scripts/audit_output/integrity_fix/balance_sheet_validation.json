@@ -1,31 +1,97 @@
 {
-  "timestamp": "2026-03-14T18:33:34.927514+00:00",
+  "timestamp": "2026-03-14T18:45:25.882040+00:00",
   "assets": {
     "accounts": [
       {
+        "code": "1-1000",
+        "name": "Kas",
+        "balance": -5400000
+      },
+      {
+        "code": "1-1002",
+        "name": "Bank BCA",
+        "balance": 0
+      },
+      {
         "code": "1-1100",
         "name": "Kas",
-        "balance": -250000.0
+        "balance": 5434950.0
+      },
+      {
+        "code": "1-1200",
+        "name": "Persediaan Barang",
+        "balance": 1500000.0
+      },
+      {
+        "code": "1-1300",
+        "name": "Piutang Usaha",
+        "balance": 9777950.0
+      },
+      {
+        "code": "1-1400",
+        "name": "Persediaan Barang",
+        "balance": -4860000.0
+      },
+      {
+        "code": "1101",
+        "name": "Kas Kecil Pusat",
+        "balance": 25899405.0
+      },
+      {
+        "code": "1102",
+        "name": "Kas Cabang",
+        "balance": -15211617.5
+      },
+      {
+        "code": "1104",
+        "name": "Inventory",
+        "balance": 1065000.0
+      },
+      {
+        "code": "1201",
+        "name": "Piutang Dagang",
+        "balance": -5275000.0
       }
     ],
-    "total": -250000.0
+    "total": 12930687.5
   },
   "liabilities": {
-    "accounts": [],
-    "total": 0
+    "accounts": [
+      {
+        "code": "2-1000",
+        "name": "Hutang Usaha",
+        "balance": 1190000
+      },
+      {
+        "code": "2-1100",
+        "name": "Hutang Dagang",
+        "balance": 1150000.0
+      },
+      {
+        "code": "2-1400",
+        "name": "PPN Keluaran",
+        "balance": 1522400.0
+      },
+      {
+        "code": "2101",
+        "name": "Hutang Dagang",
+        "balance": -11000000.0
+      }
+    ],
+    "total": -7137600.0
   },
   "equity": {
     "accounts": [],
     "total": 0
   },
   "income_statement": {
-    "revenue": -250000,
-    "expense": 0,
-    "net_income": -250000
+    "revenue": 31315500.0,
+    "expense": 11247212.5,
+    "net_income": 20068287.5
   },
   "balance_check": {
-    "total_assets": -250000.0,
-    "total_liabilities_equity": -250000,
+    "total_assets": 12930687.5,
+    "total_liabilities_equity": 12930687.5,
     "difference": 0.0,
     "is_balanced": true,
     "formula": "Asset = Liability + Equity + Net Income",

@@ -1,32 +1,95 @@
 {
-  "timestamp": "2026-03-14T18:33:34.925431+00:00",
+  "timestamp": "2026-03-14T18:45:25.732672+00:00",
   "ssot_inventory": {
     "source": "stock_movements",
-    "total_products": 1,
-    "total_quantity": 105,
-    "total_value": 0.0,
+    "total_products": 21,
+    "total_quantity": 20751779.0,
+    "total_value": 225006322512004.0,
     "top_10_by_value": [
       {
+        "product_name": "Saldo Server XL",
+        "avg_cost": 5000000.5,
+        "product_id": "2881765d-83ab-4f9f-bd98-22bdb9c6e7b5",
+        "current_qty": 17000000.0,
+        "current_value": 199999997000000.0
+      },
+      {
+        "product_name": "STRESS-Saldo Server Telkomsel",
+        "avg_cost": 2500000.5,
+        "product_id": "26185e7b-efac-4745-8d8d-c1e114a863ed",
+        "current_qty": 3750000.0,
+        "current_value": 24999998750000.0
+      },
+      {
+        "product_name": "XL Unlimited 30 Hari",
+        "avg_cost": 840975.6097560975,
+        "product_id": "2ad75718-76d6-4b91-8cb3-b4a310ca94a3",
+        "current_qty": 295,
+        "current_value": 3429275000.0
+      },
+      {
+        "product_name": "Kabel Lightning 2M",
+        "avg_cost": 5779660.0,
+        "product_id": "PRD-AUDIT-004",
+        "current_qty": 0,
+        "current_value": 1682901000.0
+      },
+      {
+        "product_name": "Kabel Data Premium Test",
+        "avg_cost": 1300000.0,
+        "product_id": "b0ec8a99-5555-4c92-8639-3b4e9fa8c92d",
+        "current_qty": 77,
+        "current_value": 1006700000.0
+      },
+      {
+        "product_name": "AUDIT-Pulsa Telkomsel 50K (Updated)",
+        "avg_cost": 600000.0,
+        "product_id": "d072cb3d-dba8-47fc-925c-f4da72b99064",
+        "current_qty": 44,
+        "current_value": 120000000.0
+      },
+      {
         "product_name": "E2E Test Product",
-        "avg_cost": 0.0,
-        "product_id": "3c8fd6cc-4c76-43d5-b8f3-d910d8d998b8",
-        "current_qty": 105,
-        "current_value": 0.0
+        "avg_cost": 70000.0,
+        "product_id": "a009a443-2e22-4597-91a6-cfd7d763b206",
+        "current_qty": 995,
+        "current_value": 69650000
+      },
+      {
+        "product_name": "Kabel Data Type-C Test v2 (Edited)",
+        "avg_cost": 900000.0,
+        "product_id": "baa5a5fd-0fa2-4459-9a27-d32ec1412cf9",
+        "current_qty": 50,
+        "current_value": 45000000.0
+      },
+      {
+        "product_name": "Voucher Fisik XL 10GB 30 Hari",
+        "avg_cost": 44444.444444444445,
+        "product_id": "0dab5f74-cf6e-40e6-83c0-48ef5ea32c51",
+        "current_qty": 58.0,
+        "current_value": 3000000.0
+      },
+      {
+        "product_name": "STRESS-Voucher Fisik Telkomsel 5GB 30H",
+        "avg_cost": 21428.571428571428,
+        "product_id": "c64bcb0b-6dc7-4bf8-8478-2c612706d370",
+        "current_qty": 47.0,
+        "current_value": 1250000.0
       }
     ]
   },
   "gl_inventory": {
     "source": "journal_entries (account 1-14xx)",
-    "total_debit": 0,
-    "total_credit": 0,
-    "balance": 0
+    "total_debit": 10955000.0,
+    "total_credit": 13625000.0,
+    "balance": -2670000.0
   },
   "reconciliation": {
-    "ssot_value": 0.0,
-    "gl_value": 0,
-    "variance": 0.0,
-    "variance_percentage": 0.0,
-    "status": "MATCHED",
-    "action_required": "NONE"
+    "ssot_value": 225006322512004.0,
+    "gl_value": -2670000.0,
+    "variance": 225006325182004.0,
+    "variance_percentage": 100.0,
+    "status": "MISMATCH",
+    "action_required": "ADJUSTMENT_NEEDED"
   }
 }
