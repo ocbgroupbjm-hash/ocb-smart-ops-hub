@@ -1,0 +1,37 @@
+{
+  "test_date": "2026-03-14",
+  "database": "ocb_titan",
+  "collection": "audit_logs",
+  "audit_log_entry": {
+    "action": "soft_delete",
+    "module": "users",
+    "entity_type": "user",
+    "entity_id": "dc719936-8d0a-4d93-8942-3c886912613c",
+    "user_id": "21e37a5c-3ebd-4182-bd6e-61f7dcf5d105",
+    "user_name": "Oscar OCB",
+    "timestamp": "2026-03-14T20:18:45.655285+00:00",
+    "old_value": {
+      "email": "delete_test_1773519525@test.com",
+      "name": "User To Delete",
+      "role": "cashier",
+      "status": "active",
+      "tenant_id": "ocb_titan",
+      "has_transactions": false,
+      "transaction_count": 0,
+      "transaction_types": []
+    },
+    "new_value": {
+      "status": "deleted",
+      "deleted_at": "2026-03-14T20:18:45.652073+00:00",
+      "deleted_by": "21e37a5c-3ebd-4182-bd6e-61f7dcf5d105"
+    }
+  },
+  "validation": {
+    "action_recorded": true,
+    "user_who_deleted_recorded": true,
+    "timestamp_recorded": true,
+    "old_value_captured": true,
+    "new_value_captured": true,
+    "transaction_info_captured": true
+  }
+}

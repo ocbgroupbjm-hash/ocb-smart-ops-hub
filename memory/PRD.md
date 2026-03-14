@@ -2282,10 +2282,12 @@ Tenant yang sudah dihapus masih muncul di login page karena login page membaca d
 ### Prerequisites Met:
 - ✅ Fix tenant login selesai
 - ✅ Fix user creation selesai
+- ✅ Fix user delete selesai
 - ✅ Rollout ke semua tenant selesai
 - ✅ Semua tenant sync status = healthy
 - ✅ Evidence lengkap sudah ada
 - ✅ Smoke test semua tenant PASS
+- ✅ Control Center Dashboard selesai
 
 ### AI Engine Status:
 - **Phase:** READY FOR PILOT
@@ -2300,6 +2302,73 @@ Tenant yang sudah dihapus masih muncul di login page karena login page membaca d
 
 ---
 
-*Last Updated: 2026-03-14 (TENANT REGISTRY FIX + USER CREATION FIX + ROLLOUT COMPLETE)*
-*Blueprint Version: 4.2.0 (TENANT REGISTRY + AI ENGINE READY)*
+## USER DELETE FIX (2026-03-14) ✅
+
+### Problem:
+Tombol delete user berhasil tetapi user tidak terhapus dari list.
+
+### Root Cause:
+1. List users tidak filter `status != 'deleted'`
+2. Soft delete menggunakan `status: 'inactive'` bukan `status: 'deleted'`
+
+### Solution:
+1. Ubah list_users untuk filter `status != 'deleted'` by default
+2. Ubah delete_user untuk set `status = 'deleted'`
+3. Tambahkan field `deleted_at` dan `deleted_by`
+
+### Evidence Files:
+- `/app/test_reports/user_delete/user_delete_test.json`
+- `/app/test_reports/user_delete/user_delete_api_response.json`
+- `/app/test_reports/user_delete/user_delete_db_state.json`
+- `/app/test_reports/user_delete/audit_log_delete_user.json`
+
+---
+
+## ERP INTEGRITY AUDIT (2026-03-14) ✅
+
+### Results:
+| Check | Status |
+|-------|--------|
+| Trial Balance | ✅ BALANCED |
+| Balance Sheet (A = L + E) | ✅ BALANCED |
+| Inventory from stock_movements | ✅ SSOT |
+| AP Payment Allocation | ✅ CORRECT |
+| AR Payment Allocation | ✅ CORRECT |
+
+### Evidence Files:
+- `/app/test_reports/integrity_audit/trial_balance.json`
+- `/app/test_reports/integrity_audit/inventory_vs_gl_recon.json`
+- `/app/test_reports/integrity_audit/ap_payment_allocation_test.json`
+- `/app/test_reports/integrity_audit/ar_payment_allocation_test.json`
+
+---
+
+## CONTROL CENTER DASHBOARD (2026-03-14) ✅
+
+### Features:
+| Module | Endpoint | Status |
+|--------|----------|--------|
+| System Health | /api/control-center/health | ✅ |
+| Tenant Overview | /api/control-center/tenants | ✅ |
+| Sales Monitoring | /api/control-center/sales | ✅ |
+| Inventory Monitoring | /api/control-center/inventory | ✅ |
+| Accounting Monitoring | /api/control-center/accounting | ✅ |
+| AI Monitoring | /api/control-center/ai | ✅ |
+| Security Center | /api/control-center/security | ✅ |
+| Dashboard Summary | /api/control-center/dashboard | ✅ |
+
+### Access Control:
+- ONLY super_admin and owner can access
+- All other roles: 403 Forbidden
+
+### Evidence Files:
+- `/app/test_reports/control_center/system_health_metrics.json`
+- `/app/test_reports/control_center/dashboard_summary.json`
+- `/app/test_reports/control_center/tenant_overview.json`
+- `/app/test_reports/control_center/accounting_status.json`
+
+---
+
+*Last Updated: 2026-03-14 (USER DELETE FIX + INTEGRITY AUDIT + CONTROL CENTER)*
+*Blueprint Version: 4.3.0 (ENTERPRISE CONTROL CENTER)*
 

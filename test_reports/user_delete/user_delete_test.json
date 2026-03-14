@@ -1,0 +1,64 @@
+{
+  "test_date": "2026-03-14",
+  "target_tenant": "ocb_titan",
+  "test_type": "user_delete",
+  "tests_performed": [
+    {
+      "test": "create_user",
+      "result": "SUCCESS",
+      "user_id": "dc719936-8d0a-4d93-8942-3c886912613c",
+      "email": "delete_test_1773519525@test.com",
+      "name": "User To Delete"
+    },
+    {
+      "test": "delete_user_soft",
+      "result": "SUCCESS",
+      "response": {
+        "success": true,
+        "message": "User berhasil dihapus (soft delete)",
+        "user_id": "dc719936-8d0a-4d93-8942-3c886912613c",
+        "action": "soft_delete",
+        "deleted_permanently": false,
+        "has_transactions": false,
+        "transaction_count": 0,
+        "deleted_at": "2026-03-14T20:18:45.652073+00:00",
+        "deleted_by": "21e37a5c-3ebd-4182-bd6e-61f7dcf5d105"
+      }
+    },
+    {
+      "test": "verify_user_not_in_list",
+      "result": "SUCCESS",
+      "users_before": 15,
+      "users_after": 14,
+      "deleted_user_in_list": false
+    },
+    {
+      "test": "verify_database_state",
+      "result": "SUCCESS",
+      "user_status_in_db": "deleted",
+      "has_deleted_at": true,
+      "has_deleted_by": true
+    },
+    {
+      "test": "verify_audit_log",
+      "result": "SUCCESS",
+      "action_logged": "soft_delete",
+      "old_value_captured": true,
+      "new_value_captured": true
+    }
+  ],
+  "summary": {
+    "total_tests": 5,
+    "passed": 5,
+    "failed": 0
+  },
+  "fix_details": {
+    "problem": "Tombol delete user berhasil tetapi user tidak terhapus dari list",
+    "root_cause": "List users tidak filter status != 'deleted', dan soft delete menggunakan status 'inactive' bukan 'deleted'",
+    "solution": [
+      "Ubah list_users untuk filter status != 'deleted' by default",
+      "Ubah delete_user untuk set status = 'deleted'",
+      "Tambahkan field deleted_at dan deleted_by"
+    ]
+  }
+}

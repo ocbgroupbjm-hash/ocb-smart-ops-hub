@@ -1,0 +1,28 @@
+{
+  "test_date": "2026-03-14",
+  "database": "ocb_titan",
+  "collection": "users",
+  "deleted_user_state": {
+    "id": "dc719936-8d0a-4d93-8942-3c886912613c",
+    "name": "User To Delete",
+    "email": "delete_test_1773519525@test.com",
+    "status": "deleted",
+    "is_active": false,
+    "deleted_at": "2026-03-14T20:18:45.652073+00:00",
+    "deleted_by": "21e37a5c-3ebd-4182-bd6e-61f7dcf5d105"
+  },
+  "validation": {
+    "status_is_deleted": true,
+    "is_active_is_false": true,
+    "has_deleted_at": true,
+    "has_deleted_by": true,
+    "user_preserved_in_db": true,
+    "user_filtered_from_list": true
+  },
+  "soft_delete_fields_required": [
+    "status = 'deleted'",
+    "is_active = false",
+    "deleted_at (timestamp)",
+    "deleted_by (user_id)"
+  ]
+}

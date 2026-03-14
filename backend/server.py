@@ -335,6 +335,10 @@ app.include_router(db_init_router)
 from routes.tenant_registry import router as tenant_registry_router
 app.include_router(tenant_registry_router)
 
+# Control Center - Super Admin Dashboard
+from routes.control_center import router as control_center_router
+app.include_router(control_center_router)
+
 # Tenant Blueprint & Migration Engine
 from routes.tenant_blueprint import router as tenant_blueprint_router
 app.include_router(tenant_blueprint_router)

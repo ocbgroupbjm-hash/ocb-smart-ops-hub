@@ -39,15 +39,25 @@ async def list_users(
     branch_id: str = "",
     role: str = "",
     search: str = "",
+    include_deleted: bool = False,
     limit: int = 200,
     user: dict = Depends(require_permission("master_user", "view"))
 ):
-    """List users - Requires master_user.view permission"""
+    """
+    List users - Requires master_user.view permission
+    
+    By default, EXCLUDES deleted users (status = 'deleted').
+    Use include_deleted=true to see all users including deleted ones.
+    """
     if user.get("role") not in ["owner", "admin"]:
         # Regular users can only see their branch
         branch_id = user.get("branch_id", "")
     
     query = {}
+    
+    # IMPORTANT: Filter out deleted users by default
+    if not include_deleted:
+        query["status"] = {"$ne": "deleted"}
     
     if branch_id:
         query["branch_id"] = branch_id
@@ -282,14 +292,24 @@ async def change_password(user_id: str, data: ChangePassword, user: dict = Depen
 
 @router.delete("/{user_id}")
 async def delete_user(user_id: str, hard: bool = False, request: Request = None, user: dict = Depends(require_permission("master_user", "delete"))):
-    """Delete user (soft or hard delete) - Requires master_user.delete permission
-    
-    Soft Delete Rules:
-    - Jika user memiliki transaksi, tidak boleh delete, hanya bisa deactivate
-    - Transaksi yang dicek: sales_invoices, purchases, journal_entries, stock_movements
     """
-    if user.get("role") not in ["owner", "admin"]:
-        raise HTTPException(status_code=403, detail="Insufficient permissions")
+    Delete user (soft or hard delete) - Requires master_user.delete permission
+    
+    SOFT DELETE RULES:
+    - User yang memiliki transaksi → WAJIB soft delete, status = "deleted"
+    - User yang tidak memiliki transaksi → boleh hard delete (hanya owner)
+    - Transaksi yang dicek: sales_invoices, purchases, journal_entries, stock_movements
+    
+    SOFT DELETE FIELDS:
+    - status = "deleted"
+    - is_active = False
+    - deleted_at = timestamp
+    - deleted_by = user_id yang menghapus
+    
+    User dengan status = "deleted" TIDAK akan muncul di list users default.
+    """
+    if user.get("role") not in ["owner", "admin", "super_admin"]:
+        raise HTTPException(status_code=403, detail="Insufficient permissions: Hanya owner/admin/super_admin")
     
     if user.get("user_id") == user_id:
         raise HTTPException(status_code=400, detail="Cannot delete yourself")
@@ -298,7 +318,14 @@ async def delete_user(user_id: str, hard: bool = False, request: Request = None,
     if not target:
         raise HTTPException(status_code=404, detail="User not found")
     
+    # Check if user is already deleted
+    if target.get("status") == "deleted":
+        raise HTTPException(status_code=400, detail="User sudah dihapus sebelumnya")
+    
     db = get_db()
+    from database import get_active_db_name
+    tenant_id = get_active_db_name()
+    now = datetime.now(timezone.utc).isoformat()
     
     # Check if user has transactions (SSOT check)
     transaction_count = 0
@@ -334,34 +361,40 @@ async def delete_user(user_id: str, hard: bool = False, request: Request = None,
         # Hard delete - only owner can do this and only if no transactions
         result = await users.delete_one({"id": user_id})
         if result.deleted_count == 0:
-            raise HTTPException(status_code=404, detail="User not found")
-        message = "User permanently deleted"
+            raise HTTPException(status_code=500, detail="Delete operation failed")
+        message = "User permanently deleted (hard delete)"
         action = "hard_delete"
+        deleted_permanently = True
     elif hard and has_transactions:
         # Cannot hard delete if user has transactions
         raise HTTPException(
             status_code=400, 
-            detail=f"Tidak dapat menghapus user yang memiliki transaksi ({', '.join(transaction_types)}). Gunakan soft delete (nonaktifkan) saja."
+            detail=f"DILARANG hard delete user yang memiliki transaksi ({', '.join(transaction_types)}). Gunakan soft delete."
         )
     else:
-        # Soft delete - deactivate
+        # SOFT DELETE - Set status = "deleted"
         result = await users.update_one(
             {"id": user_id},
             {"$set": {
                 "is_active": False, 
-                "status": "inactive",
-                "updated_at": datetime.now(timezone.utc).isoformat(),
-                "deactivated_at": datetime.now(timezone.utc).isoformat(),
-                "deactivated_by": user.get("user_id", ""),
-                "deactivation_reason": "soft_delete"
+                "status": "deleted",  # CRITICAL: Must be "deleted" not "inactive"
+                "deleted_at": now,    # WAJIB: timestamp penghapusan
+                "deleted_by": user.get("user_id", ""),  # WAJIB: siapa yang menghapus
+                "updated_at": now
             }}
         )
         if result.matched_count == 0:
-            raise HTTPException(status_code=404, detail="User not found")
-        message = f"User deactivated (memiliki {transaction_count} transaksi)" if has_transactions else "User deactivated"
+            raise HTTPException(status_code=500, detail="Delete operation failed - user not found")
+        if result.modified_count == 0:
+            raise HTTPException(status_code=500, detail="Delete operation failed - no changes made")
+        
+        message = f"User berhasil dihapus (soft delete)" 
+        if has_transactions:
+            message += f" - memiliki {transaction_count} transaksi yang dipertahankan"
         action = "soft_delete"
+        deleted_permanently = False
     
-    # Audit log
+    # Audit log - WAJIB untuk semua delete
     log = AuditLog(
         user_id=user.get("user_id", ""),
         user_name=user.get("name", ""),
@@ -372,16 +405,31 @@ async def delete_user(user_id: str, hard: bool = False, request: Request = None,
         old_value={
             "email": target.get("email"), 
             "name": target.get("name"),
+            "role": target.get("role"),
+            "status": target.get("status", "active"),
+            "tenant_id": tenant_id,
             "has_transactions": has_transactions,
-            "transaction_count": transaction_count
+            "transaction_count": transaction_count,
+            "transaction_types": transaction_types
+        },
+        new_value={
+            "status": "deleted" if not deleted_permanently else "permanently_deleted",
+            "deleted_at": now,
+            "deleted_by": user.get("user_id", "")
         }
     )
     await audit_logs.insert_one(log.model_dump())
     
     return {
+        "success": True,
         "message": message, 
+        "user_id": user_id,
+        "action": action,
+        "deleted_permanently": deleted_permanently if 'deleted_permanently' in dir() else False,
         "has_transactions": has_transactions,
-        "transaction_count": transaction_count
+        "transaction_count": transaction_count,
+        "deleted_at": now,
+        "deleted_by": user.get("user_id", "")
     }
 
 # ==================== AUDIT LOGS ====================

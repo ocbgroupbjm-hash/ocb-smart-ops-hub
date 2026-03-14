@@ -1,0 +1,1 @@
+{"status":"healthy","timestamp":"2026-03-14T20:22:34.183798+00:00","metrics":{"cpu":{"percent":3.0,"status":"healthy"},"memory":{"total_gb":15.6,"used_gb":8.58,"percent":55.0,"status":"healthy"},"disk":{"total_gb":94.19,"used_gb":12.72,"percent":13.5,"status":"healthy"}}}
