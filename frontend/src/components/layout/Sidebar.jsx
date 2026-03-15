@@ -207,7 +207,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
         { name: 'Stock Opname', icon: ClipboardList, path: '/inventory/opname' },
         { name: 'Penyesuaian Stok', icon: Settings, path: '/inventory/adjustment' },
         { divider: true, label: 'Manufaktur' },
-        { name: 'Perakitan (BOM)', icon: Puzzle, path: '/inventory/assemblies', badge: 'NEW' }, // TASK 2 - 2026-03-15
+        { name: 'Perakitan Voucher', icon: Puzzle, path: '/inventory/assembly-voucher', badge: 'NEW' },
       ]
     },
 

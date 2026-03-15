@@ -556,6 +556,86 @@ async def activate_formula(formula_id: str, user: dict = Depends(get_current_use
     return {"message": "Formula berhasil diaktifkan"}
 
 
+@router.delete("/formulas/v2/{formula_id}/hard-delete")
+async def hard_delete_formula(formula_id: str, user: dict = Depends(get_current_user)):
+    """
+    HARD DELETE formula voucher - menghapus permanen dari database
+    
+    VALIDASI:
+    - Formula tidak boleh sudah digunakan dalam transaksi
+    - Jika sudah digunakan, return error
+    """
+    if user.get("role") not in ["owner", "admin"]:
+        raise HTTPException(status_code=403, detail="Tidak diizinkan menghapus formula")
+    
+    tenant_id = user.get("tenant_id", "ocb_titan")
+    user_id = user.get("user_id", "")
+    user_name = user.get("name", "")
+    
+    # Check formula exists
+    formula = await assembly_formulas.find_one(
+        {"id": formula_id, "tenant_id": tenant_id},
+        {"_id": 0}
+    )
+    
+    if not formula:
+        raise HTTPException(status_code=404, detail="Formula tidak ditemukan")
+    
+    # VALIDASI: Check if formula is used in any transactions
+    transaction_count = await assembly_transactions.count_documents({
+        "formula_id": formula_id,
+        "tenant_id": tenant_id
+    })
+    
+    if transaction_count > 0:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Voucher sudah digunakan pada {transaction_count} transaksi dan tidak dapat dihapus."
+        )
+    
+    # Store formula info for logging before delete
+    formula_name = formula.get("formula_name", "Unknown")
+    component_count = formula.get("component_count", 0)
+    
+    # HARD DELETE: Delete components first
+    await assembly_components.delete_many({
+        "formula_id": formula_id,
+        "tenant_id": tenant_id
+    })
+    
+    # HARD DELETE: Delete formula
+    await assembly_formulas.delete_one({
+        "id": formula_id,
+        "tenant_id": tenant_id
+    })
+    
+    # Log action (store in audit_logs since formula is deleted)
+    db = get_db()
+    await db.audit_logs.insert_one({
+        "id": str(uuid.uuid4()),
+        "action": "HARD_DELETE_FORMULA",
+        "entity_type": "assembly_formula",
+        "entity_id": formula_id,
+        "entity_name": formula_name,
+        "user_id": user_id,
+        "user_name": user_name,
+        "old_value": {
+            "formula_name": formula_name,
+            "status": formula.get("status"),
+            "component_count": component_count
+        },
+        "new_value": None,
+        "tenant_id": tenant_id,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    })
+    
+    return {
+        "message": f"Formula voucher '{formula_name}' berhasil dihapus permanen",
+        "deleted_formula_id": formula_id,
+        "deleted_formula_name": formula_name
+    }
+
+
 # ============ ASSEMBLY EXECUTION ENDPOINTS ============
 
 @router.post("/execute/v2")

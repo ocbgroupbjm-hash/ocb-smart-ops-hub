@@ -390,6 +390,7 @@ function App() {
             <Route path="inventory/opname" element={<StockOpname />} />
             <Route path="inventory/serial-numbers" element={<SerialNumbers />} />
             <Route path="inventory/assemblies" element={<ProductAssembly />} />
+            <Route path="inventory/assembly-voucher" element={<ProductAssembly />} />
             
             {/* Accounting Routes */}
             <Route path="accounting/coa" element={<ChartOfAccounts />} />

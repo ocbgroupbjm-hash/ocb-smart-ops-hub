@@ -172,22 +172,38 @@ const ProductAssembly = () => {
   };
 
   const deleteFormula = async (id) => {
-    if (!window.confirm('Nonaktifkan formula ini?')) return;
+    // HARD DELETE - Confirm with user
+    if (!window.confirm('HAPUS PERMANEN formula voucher ini?\n\nPerhatian: Data akan dihapus selamanya dan tidak dapat dikembalikan.')) return;
+    
     try {
-      // Use enterprise API - deactivate instead of delete
-      const res = await api(`${API_PREFIX}/formulas/v2/${id}/deactivate`, { method: 'PATCH' });
+      // Use HARD DELETE endpoint (will validate if used in transactions)
+      const res = await api(`${API_PREFIX}/formulas/v2/${id}/hard-delete`, { method: 'DELETE' });
+      
       if (res.ok) {
-        toast.success('Formula dinonaktifkan');
+        toast.success('Formula voucher berhasil dihapus permanen');
         loadFormulas();
       } else {
-        // Fallback to legacy
-        const legacyRes = await api(`${API_LEGACY}/formulas/${id}`, { method: 'DELETE' });
-        if (legacyRes.ok) {
-          toast.success('Formula dihapus');
-          loadFormulas();
+        const err = await res.json();
+        // Check if validation error (voucher used in transactions)
+        if (err.detail && err.detail.includes('digunakan pada transaksi')) {
+          toast.error(err.detail);
+        } else if (err.detail && err.detail.includes('used in')) {
+          toast.error('Voucher sudah digunakan pada transaksi dan tidak dapat dihapus.');
+        } else {
+          // Fallback to legacy delete
+          const legacyRes = await api(`${API_LEGACY}/formulas/${id}`, { method: 'DELETE' });
+          if (legacyRes.ok) {
+            toast.success('Formula voucher dihapus');
+            loadFormulas();
+          } else {
+            const legacyErr = await legacyRes.json();
+            toast.error(legacyErr.detail || 'Gagal menghapus formula voucher');
+          }
         }
       }
-    } catch (err) { toast.error('Gagal menghapus'); }
+    } catch (err) { 
+      toast.error('Gagal menghapus formula voucher'); 
+    }
   };
 
   const processAssembly = async () => {
@@ -271,17 +287,18 @@ const ProductAssembly = () => {
   const formatRupiah = (num) => `Rp ${(num || 0).toLocaleString('id-ID')}`;
 
   return (
-    <div className="space-y-6" data-testid="product-assembly-page">
+    <div className="space-y-6" data-testid="assembly-voucher-page">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-amber-100">Rakitan Produk</h1>
-          <p className="text-gray-400">Kelola formula rakitan dan pembongkaran produk</p>
+          <h1 className="text-2xl font-bold text-amber-100">Perakitan Voucher</h1>
+          <p className="text-gray-400">Kelola formula perakitan voucher dan komponen</p>
         </div>
         <button
           onClick={() => { resetForm(); setShowFormModal(true); }}
           className="px-4 py-2 bg-green-600/20 text-green-400 rounded-lg hover:bg-green-600/30 flex items-center gap-2"
+          data-testid="add-voucher-btn"
         >
-          <Plus className="h-4 w-4" /> Buat Formula
+          <Plus className="h-4 w-4" /> Tambah Perakitan Voucher
         </button>
       </div>
 
@@ -290,12 +307,14 @@ const ProductAssembly = () => {
         <button
           onClick={() => setActiveTab('formulas')}
           className={`px-4 py-2 rounded-t-lg transition-colors ${activeTab === 'formulas' ? 'bg-red-900/30 text-amber-400' : 'text-gray-400 hover:text-white'}`}
+          data-testid="tab-formula-voucher"
         >
-          Formula Rakitan
+          Formula Voucher
         </button>
         <button
           onClick={() => setActiveTab('history')}
           className={`px-4 py-2 rounded-t-lg transition-colors ${activeTab === 'history' ? 'bg-red-900/30 text-amber-400' : 'text-gray-400 hover:text-white'}`}
+          data-testid="tab-history"
         >
           Riwayat Transaksi
         </button>
@@ -311,7 +330,7 @@ const ProductAssembly = () => {
           ) : formulas.length === 0 ? (
             <div className="col-span-full text-center py-8 text-gray-400">
               <Boxes className="h-12 w-12 mx-auto mb-3 opacity-50" />
-              <p>Belum ada formula rakitan</p>
+              <p>Belum ada formula voucher</p>
             </div>
           ) : (
             formulas.map((formula) => (
