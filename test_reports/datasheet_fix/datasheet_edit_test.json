@@ -1,0 +1,40 @@
+{
+  "test_date": "2026-03-16",
+  "test_type": "Edit Function Test - Data Sheet Module",
+  "tenant": "ocb_titan",
+  "test_product": {
+    "id": "2ad75718-76d6-4b91-8cb3-b4a310ca94a3",
+    "name": "XL Unlimited 30 Hari"
+  },
+  "test_scenarios": [
+    {
+      "scenario": "Edit Selling Price",
+      "field": "selling_price",
+      "original_value": 65000,
+      "new_value": 66000,
+      "endpoint": "PUT /api/products/{id}",
+      "result": "PASS",
+      "verified": true
+    },
+    {
+      "scenario": "Restore Original Price",
+      "field": "selling_price",
+      "original_value": 66000,
+      "new_value": 65000,
+      "endpoint": "PUT /api/products/{id}",
+      "result": "PASS",
+      "verified": true
+    }
+  ],
+  "audit_log": {
+    "action": "datasheet_edit",
+    "entity_type": "products",
+    "logged": true
+  },
+  "summary": {
+    "total_tests": 2,
+    "passed": 2,
+    "failed": 0,
+    "status": "ALL PASS"
+  }
+}

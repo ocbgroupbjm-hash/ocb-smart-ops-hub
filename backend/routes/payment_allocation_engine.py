@@ -356,7 +356,7 @@ async def create_ap_payment_with_allocation(
     
     return {
         "status": "success",
-        "message": f"Pembayaran hutang berhasil dibuat",
+        "message": "Pembayaran hutang berhasil dibuat",
         "payment_no": payment_no,
         "payment_id": payment_id,
         "journal_no": journal_no,
@@ -608,7 +608,7 @@ async def create_ar_payment_with_allocation(
     
     return {
         "status": "success",
-        "message": f"Penerimaan piutang berhasil dibuat",
+        "message": "Penerimaan piutang berhasil dibuat",
         "payment_no": payment_no,
         "payment_id": payment_id,
         "journal_no": journal_no,
@@ -746,4 +746,398 @@ async def check_ar_allocation_integrity(user: dict = Depends(get_current_user)):
         "issues_found": len(issues),
         "issues": issues,
         "rule": "SUM(allocation.amount) = payment.amount"
+    }
+
+
+
+# ==================== PAYMENT REVERSAL SYSTEM ====================
+# ENTERPRISE RULE: Invoice LUNAS tidak bisa di-edit
+# Jika ada kesalahan → REVERSAL JOURNAL, bukan edit/delete
+
+class PaymentReversalRequest(BaseModel):
+    """Request untuk reversal payment"""
+    reason: str = Field(..., min_length=5, description="Alasan reversal - wajib diisi")
+    notes: Optional[str] = None
+
+
+@router.post("/ap/payments/{payment_id}/reverse")
+async def reverse_ap_payment(
+    payment_id: str,
+    data: PaymentReversalRequest,
+    request: Request,
+    user: dict = Depends(get_current_user)
+):
+    """
+    REVERSAL AP PAYMENT
+    
+    Flow:
+    1. Create reversal journal (kebalikan dari journal asli)
+    2. Restore outstanding amount pada semua invoice yang terkait
+    3. Update status invoice (PAID → PARTIAL/OPEN)
+    4. Mark payment as REVERSED
+    5. Create audit log
+    
+    TIDAK BOLEH: Edit atau delete payment langsung
+    """
+    user_id = user.get("user_id", "")
+    user_name = user.get("name", "System")
+    
+    # Get original payment
+    payment = await ap_payments.find_one({"id": payment_id}, {"_id": 0})
+    if not payment:
+        raise HTTPException(status_code=404, detail="Payment tidak ditemukan")
+    
+    if payment.get("status") == "reversed":
+        raise HTTPException(status_code=400, detail="Payment ini sudah di-reverse sebelumnya")
+    
+    if payment.get("status") != "posted":
+        raise HTTPException(status_code=400, detail="Hanya payment dengan status POSTED yang bisa di-reverse")
+    
+    # Get all allocations for this payment
+    allocations = await ap_allocations.find(
+        {"payment_header_id": payment_id},
+        {"_id": 0}
+    ).to_list(100)
+    
+    if not allocations:
+        raise HTTPException(status_code=400, detail="Tidak ada alokasi yang ditemukan untuk payment ini")
+    
+    supplier_name = payment.get("supplier_name", "Unknown")
+    branch_id = payment.get("branch_id", "")
+    total_amount = payment.get("total_amount", 0)
+    discount_amount = payment.get("discount_amount", 0)
+    
+    # Create REVERSAL Journal Entry
+    # Kebalikan dari journal asli: yang tadinya Debit jadi Credit, dst
+    ap_account = await derive_account("ap_account", branch_id)
+    
+    if payment.get("payment_method") in ["bank", "transfer"]:
+        cash_bank_account = await derive_account("bank_account", branch_id)
+        if payment.get("bank_account_code"):
+            cash_bank_account = {"code": payment.get("bank_account_code"), "name": "Bank"}
+    else:
+        cash_bank_account = await derive_account("cash_account", branch_id)
+    
+    reversal_entries = [
+        {
+            "account_code": cash_bank_account["code"],
+            "account_name": cash_bank_account["name"],
+            "debit": total_amount,  # REVERSAL: Kas/Bank naik kembali
+            "credit": 0,
+            "description": f"REVERSAL - Pembayaran Hutang {payment.get('payment_no')} - {supplier_name}"
+        },
+        {
+            "account_code": ap_account["code"],
+            "account_name": ap_account["name"],
+            "debit": 0,
+            "credit": total_amount,  # REVERSAL: Hutang kembali bertambah
+            "description": f"REVERSAL - Pembayaran Hutang {payment.get('payment_no')} - {supplier_name}"
+        }
+    ]
+    
+    # If original had discount, reverse it too
+    if discount_amount > 0:
+        discount_account = await derive_account("discount_purchase", branch_id)
+        reversal_entries.append({
+            "account_code": discount_account["code"],
+            "account_name": discount_account["name"],
+            "debit": discount_amount,  # REVERSAL: Potongan dibatalkan
+            "credit": 0,
+            "description": f"REVERSAL - Potongan Pembelian {payment.get('payment_no')}"
+        })
+        # Adjust credit on AP account
+        reversal_entries[1]["credit"] = total_amount + discount_amount
+    
+    # Generate reversal journal
+    reversal_journal_no = await create_journal_entry(
+        reference_type="ap_payment_reversal",
+        reference_id=payment_id,
+        reference_no=f"REV-{payment.get('payment_no')}",
+        description=f"REVERSAL Pembayaran Hutang {payment.get('payment_no')} - {data.reason}",
+        entries=reversal_entries,
+        branch_id=branch_id,
+        user_id=user_id,
+        user_name=user_name
+    )
+    
+    # Restore outstanding on each invoice
+    restored_invoices = []
+    for alloc in allocations:
+        invoice = await ap_collection.find_one({"id": alloc["invoice_id"]}, {"_id": 0})
+        if invoice:
+            current_paid = invoice.get("paid_amount", 0)
+            current_outstanding = invoice.get("outstanding_amount", 0)
+            original_amount = invoice.get("original_amount", invoice.get("amount", 0))
+            
+            # Restore: paid berkurang, outstanding bertambah
+            new_paid = max(0, current_paid - alloc.get("allocated_amount", 0))
+            new_outstanding = min(original_amount, current_outstanding + alloc.get("allocated_amount", 0))
+            
+            await ap_collection.update_one(
+                {"id": alloc["invoice_id"]},
+                {"$set": {
+                    "paid_amount": new_paid,
+                    "outstanding_amount": new_outstanding,
+                    "updated_at": datetime.now(timezone.utc).isoformat()
+                }}
+            )
+            
+            # Update invoice status
+            await update_invoice_status(ap_collection, alloc["invoice_id"], "ap")
+            
+            restored_invoices.append({
+                "invoice_no": alloc.get("invoice_no"),
+                "restored_amount": alloc.get("allocated_amount", 0)
+            })
+    
+    # Mark payment as REVERSED
+    await ap_payments.update_one(
+        {"id": payment_id},
+        {"$set": {
+            "status": "reversed",
+            "reversal_journal_no": reversal_journal_no,
+            "reversal_reason": data.reason,
+            "reversal_notes": data.notes,
+            "reversed_by": user_id,
+            "reversed_by_name": user_name,
+            "reversed_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    # Audit log
+    await log_activity(
+        db, user_id, user_name,
+        "ap_payment_reversal",
+        f"REVERSAL Payment AP {payment.get('payment_no')} - Rp {total_amount:,.0f}",
+        "ap_payments",
+        payment_id,
+        request.client.host if request.client else "",
+        severity="warning"
+    )
+    
+    return {
+        "message": "Payment berhasil di-reverse",
+        "payment_no": payment.get("payment_no"),
+        "reversal_journal_no": reversal_journal_no,
+        "total_reversed": total_amount,
+        "restored_invoices": restored_invoices,
+        "reason": data.reason
+    }
+
+
+@router.post("/ar/payments/{payment_id}/reverse")
+async def reverse_ar_payment(
+    payment_id: str,
+    data: PaymentReversalRequest,
+    request: Request,
+    user: dict = Depends(get_current_user)
+):
+    """
+    REVERSAL AR PAYMENT
+    
+    Flow:
+    1. Create reversal journal (kebalikan dari journal asli)
+    2. Restore outstanding amount pada semua invoice yang terkait
+    3. Update status invoice (PAID → PARTIAL/OPEN)
+    4. Mark payment as REVERSED
+    5. Create audit log
+    """
+    user_id = user.get("user_id", "")
+    user_name = user.get("name", "System")
+    
+    # Get original payment
+    payment = await ar_payments.find_one({"id": payment_id}, {"_id": 0})
+    if not payment:
+        raise HTTPException(status_code=404, detail="Payment tidak ditemukan")
+    
+    if payment.get("status") == "reversed":
+        raise HTTPException(status_code=400, detail="Payment ini sudah di-reverse sebelumnya")
+    
+    if payment.get("status") != "posted":
+        raise HTTPException(status_code=400, detail="Hanya payment dengan status POSTED yang bisa di-reverse")
+    
+    # Get all allocations for this payment
+    allocations = await ar_allocations.find(
+        {"payment_header_id": payment_id},
+        {"_id": 0}
+    ).to_list(100)
+    
+    if not allocations:
+        raise HTTPException(status_code=400, detail="Tidak ada alokasi yang ditemukan untuk payment ini")
+    
+    customer_name = payment.get("customer_name", "Unknown")
+    branch_id = payment.get("branch_id", "")
+    total_amount = payment.get("total_amount", 0)
+    discount_amount = payment.get("discount_amount", 0)
+    
+    # Create REVERSAL Journal Entry
+    ar_account = await derive_account("ar_account", branch_id)
+    
+    if payment.get("payment_method") in ["bank", "transfer"]:
+        cash_bank_account = await derive_account("bank_account", branch_id)
+        if payment.get("bank_account_code"):
+            cash_bank_account = {"code": payment.get("bank_account_code"), "name": "Bank"}
+    else:
+        cash_bank_account = await derive_account("cash_account", branch_id)
+    
+    reversal_entries = [
+        {
+            "account_code": ar_account["code"],
+            "account_name": ar_account["name"],
+            "debit": total_amount,  # REVERSAL: Piutang kembali bertambah
+            "credit": 0,
+            "description": f"REVERSAL - Pembayaran Piutang {payment.get('payment_no')} - {customer_name}"
+        },
+        {
+            "account_code": cash_bank_account["code"],
+            "account_name": cash_bank_account["name"],
+            "debit": 0,
+            "credit": total_amount,  # REVERSAL: Kas/Bank berkurang
+            "description": f"REVERSAL - Pembayaran Piutang {payment.get('payment_no')} - {customer_name}"
+        }
+    ]
+    
+    # If original had discount, reverse it too
+    if discount_amount > 0:
+        discount_account = await derive_account("discount_sales", branch_id)
+        reversal_entries.append({
+            "account_code": discount_account["code"],
+            "account_name": discount_account["name"],
+            "debit": 0,
+            "credit": discount_amount,  # REVERSAL: Potongan penjualan dibatalkan
+            "description": f"REVERSAL - Potongan Penjualan {payment.get('payment_no')}"
+        })
+        # Adjust debit on AR account
+        reversal_entries[0]["debit"] = total_amount + discount_amount
+    
+    # Generate reversal journal
+    reversal_journal_no = await create_journal_entry(
+        reference_type="ar_payment_reversal",
+        reference_id=payment_id,
+        reference_no=f"REV-{payment.get('payment_no')}",
+        description=f"REVERSAL Pembayaran Piutang {payment.get('payment_no')} - {data.reason}",
+        entries=reversal_entries,
+        branch_id=branch_id,
+        user_id=user_id,
+        user_name=user_name
+    )
+    
+    # Restore outstanding on each invoice
+    restored_invoices = []
+    for alloc in allocations:
+        invoice = await ar_collection.find_one({"id": alloc["invoice_id"]}, {"_id": 0})
+        if invoice:
+            current_paid = invoice.get("paid_amount", 0)
+            current_outstanding = invoice.get("outstanding_amount", 0)
+            original_amount = invoice.get("original_amount", invoice.get("amount", 0))
+            
+            # Restore: paid berkurang, outstanding bertambah
+            new_paid = max(0, current_paid - alloc.get("allocated_amount", 0))
+            new_outstanding = min(original_amount, current_outstanding + alloc.get("allocated_amount", 0))
+            
+            await ar_collection.update_one(
+                {"id": alloc["invoice_id"]},
+                {"$set": {
+                    "paid_amount": new_paid,
+                    "outstanding_amount": new_outstanding,
+                    "updated_at": datetime.now(timezone.utc).isoformat()
+                }}
+            )
+            
+            # Update invoice status
+            await update_invoice_status(ar_collection, alloc["invoice_id"], "ar")
+            
+            restored_invoices.append({
+                "invoice_no": alloc.get("invoice_no"),
+                "restored_amount": alloc.get("allocated_amount", 0)
+            })
+    
+    # Mark payment as REVERSED
+    await ar_payments.update_one(
+        {"id": payment_id},
+        {"$set": {
+            "status": "reversed",
+            "reversal_journal_no": reversal_journal_no,
+            "reversal_reason": data.reason,
+            "reversal_notes": data.notes,
+            "reversed_by": user_id,
+            "reversed_by_name": user_name,
+            "reversed_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    # Audit log
+    await log_activity(
+        db, user_id, user_name,
+        "ar_payment_reversal",
+        f"REVERSAL Payment AR {payment.get('payment_no')} - Rp {total_amount:,.0f}",
+        "ar_payments",
+        payment_id,
+        request.client.host if request.client else "",
+        severity="warning"
+    )
+    
+    return {
+        "message": "Payment berhasil di-reverse",
+        "payment_no": payment.get("payment_no"),
+        "reversal_journal_no": reversal_journal_no,
+        "total_reversed": total_amount,
+        "restored_invoices": restored_invoices,
+        "reason": data.reason
+    }
+
+
+@router.get("/ap/payments/{payment_id}/can-reverse")
+async def check_ap_payment_reversible(
+    payment_id: str,
+    user: dict = Depends(get_current_user)
+):
+    """Check if AP payment can be reversed"""
+    payment = await ap_payments.find_one({"id": payment_id}, {"_id": 0})
+    if not payment:
+        raise HTTPException(status_code=404, detail="Payment tidak ditemukan")
+    
+    can_reverse = payment.get("status") == "posted"
+    reason = None
+    
+    if payment.get("status") == "reversed":
+        reason = "Payment sudah di-reverse sebelumnya"
+    elif payment.get("status") != "posted":
+        reason = f"Status payment: {payment.get('status')} - hanya POSTED yang bisa di-reverse"
+    
+    return {
+        "payment_id": payment_id,
+        "payment_no": payment.get("payment_no"),
+        "can_reverse": can_reverse,
+        "reason": reason,
+        "current_status": payment.get("status"),
+        "total_amount": payment.get("total_amount", 0)
+    }
+
+
+@router.get("/ar/payments/{payment_id}/can-reverse")
+async def check_ar_payment_reversible(
+    payment_id: str,
+    user: dict = Depends(get_current_user)
+):
+    """Check if AR payment can be reversed"""
+    payment = await ar_payments.find_one({"id": payment_id}, {"_id": 0})
+    if not payment:
+        raise HTTPException(status_code=404, detail="Payment tidak ditemukan")
+    
+    can_reverse = payment.get("status") == "posted"
+    reason = None
+    
+    if payment.get("status") == "reversed":
+        reason = "Payment sudah di-reverse sebelumnya"
+    elif payment.get("status") != "posted":
+        reason = f"Status payment: {payment.get('status')} - hanya POSTED yang bisa di-reverse"
+    
+    return {
+        "payment_id": payment_id,
+        "payment_no": payment.get("payment_no"),
+        "can_reverse": can_reverse,
+        "reason": reason,
+        "current_status": payment.get("status"),
+        "total_amount": payment.get("total_amount", 0)
     }

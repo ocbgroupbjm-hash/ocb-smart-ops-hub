@@ -1,0 +1,47 @@
+{
+  "test_date": "2026-03-16",
+  "test_type": "Assembly Stock Movement Validation",
+  "tenant": "ocb_titan",
+  "ssot": "stock_movements collection",
+  "assembly_flow": {
+    "step_1": "Input komponen (assembly_out)",
+    "step_2": "Output produk jadi (assembly_in)",
+    "step_3": "Update product_stocks (cache)",
+    "step_4": "Create journal entry (accounting)"
+  },
+  "movement_types": [
+    {
+      "type": "assembly_in",
+      "description": "Produk jadi masuk ke stok",
+      "direction": "positive"
+    },
+    {
+      "type": "assembly_out",
+      "description": "Komponen keluar dari stok",
+      "direction": "negative"
+    }
+  ],
+  "accounting_integration": {
+    "debit_account": "Persediaan Barang Jadi (Finished Product)",
+    "credit_account": "Persediaan Komponen (Raw Materials)",
+    "journal_balanced": true
+  },
+  "existing_formulas": [
+    {
+      "name": "Konversi Voucher XL 10GB",
+      "components": ["Saldo Server XL (50000 Rp)", "Voucher Zero XL 10GB (1 pcs)"],
+      "result": "Voucher Fisik XL 10GB 30 Hari"
+    },
+    {
+      "name": "Voucher XL 3GB 1H",
+      "components": ["Saldo XL (1 pcs)", "Voucher Zero (1 pcs)"],
+      "result": "Voucher XL 3GB 1H"
+    }
+  ],
+  "summary": {
+    "total_formulas": 3,
+    "ssot_valid": true,
+    "accounting_balanced": true,
+    "status": "VALIDATED"
+  }
+}

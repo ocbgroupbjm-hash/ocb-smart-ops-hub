@@ -1,0 +1,28 @@
+{
+  "test_date": "2026-03-16",
+  "test_type": "Audit Log for Payment Operations",
+  "tenant": "ocb_titan",
+  "audit_events": [
+    {
+      "action": "ap_payment_reversal",
+      "description": "REVERSAL Payment AP {payment_no} - Rp {amount}",
+      "severity": "warning",
+      "logged_fields": ["payment_no", "total_reversed", "reason", "reversed_by", "reversed_at"]
+    },
+    {
+      "action": "ar_payment_reversal",
+      "description": "REVERSAL Payment AR {payment_no} - Rp {amount}",
+      "severity": "warning",
+      "logged_fields": ["payment_no", "total_reversed", "reason", "reversed_by", "reversed_at"]
+    }
+  ],
+  "data_integrity": {
+    "payment_status_tracking": ["posted", "reversed"],
+    "invoice_status_auto_update": true,
+    "outstanding_amount_restored": true
+  },
+  "summary": {
+    "status": "IMPLEMENTED",
+    "audit_trail_complete": true
+  }
+}

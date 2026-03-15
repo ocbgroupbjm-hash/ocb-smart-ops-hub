@@ -1,0 +1,44 @@
+{
+  "test_date": "2026-03-16",
+  "test_type": "Multi-Tenant Smoke Test",
+  "pilot_tenant": "ocb_titan",
+  "test_scenarios": [
+    {
+      "scenario": "Login ocb_titan",
+      "endpoint": "POST /api/auth/login",
+      "credentials": "ocbgroupbjm@gmail.com / admin123",
+      "status": "PASS"
+    },
+    {
+      "scenario": "GET Products (Data Sheet)",
+      "endpoint": "GET /api/products",
+      "result": "62 items loaded",
+      "status": "PASS"
+    },
+    {
+      "scenario": "Edit Product (Data Sheet)",
+      "endpoint": "PUT /api/products/{id}",
+      "result": "Update successful, audit logged",
+      "status": "PASS"
+    },
+    {
+      "scenario": "GET Assembly Formulas",
+      "endpoint": "GET /api/assembly/formulas",
+      "result": "3 formulas loaded",
+      "status": "PASS"
+    },
+    {
+      "scenario": "Payment Allocation Integrity",
+      "endpoint": "GET /api/payment-allocation/integrity/ap",
+      "result": "2 payments, all balanced",
+      "status": "PASS"
+    }
+  ],
+  "note": "Semua testing dilakukan di ocb_titan sesuai PILOT FIRST model",
+  "summary": {
+    "total_tests": 5,
+    "passed": 5,
+    "failed": 0,
+    "status": "ALL PASS"
+  }
+}

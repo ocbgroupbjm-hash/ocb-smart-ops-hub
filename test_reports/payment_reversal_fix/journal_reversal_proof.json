@@ -1,0 +1,33 @@
+{
+  "test_date": "2026-03-16",
+  "test_type": "Journal Reversal Proof",
+  "tenant": "ocb_titan",
+  "concept": "IMMUTABLE JOURNAL - Transaksi yang sudah diposting tidak boleh diedit/delete",
+  "solution": "Reversal Journal untuk membatalkan efek transaksi",
+  "implementation": {
+    "ap_payment_reversal": {
+      "journal_reference_type": "ap_payment_reversal",
+      "journal_number_prefix": "REV-PAY-AP",
+      "entries": [
+        {"account": "Kas/Bank", "position": "Debit", "description": "Kas/Bank dikembalikan"},
+        {"account": "Hutang Dagang", "position": "Credit", "description": "Hutang dipulihkan"}
+      ],
+      "status": "BALANCED"
+    },
+    "ar_payment_reversal": {
+      "journal_reference_type": "ar_payment_reversal", 
+      "journal_number_prefix": "REV-PAY-AR",
+      "entries": [
+        {"account": "Piutang Usaha", "position": "Debit", "description": "Piutang dipulihkan"},
+        {"account": "Kas/Bank", "position": "Credit", "description": "Kas/Bank dikurangi"}
+      ],
+      "status": "BALANCED"
+    }
+  },
+  "audit_requirements": {
+    "logged_to": "audit_logs collection",
+    "severity": "warning",
+    "fields_captured": ["user_id", "user_name", "action", "entity_type", "entity_id", "ip_address"]
+  },
+  "summary": "Reversal journal memastikan integritas accounting tetap terjaga tanpa menghapus jejak transaksi asli"
+}

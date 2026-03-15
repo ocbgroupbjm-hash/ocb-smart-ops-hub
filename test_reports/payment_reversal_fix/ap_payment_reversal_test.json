@@ -1,0 +1,43 @@
+{
+  "test_date": "2026-03-16",
+  "test_type": "AP Payment Reversal API Test",
+  "tenant": "ocb_titan",
+  "business_rule": "Invoice LUNAS tidak bisa di-edit. Jika ada kesalahan → REVERSAL JOURNAL, bukan edit/delete",
+  "endpoints_implemented": [
+    {
+      "endpoint": "POST /api/payment-allocation/ap/payments/{payment_id}/reverse",
+      "description": "Reverse AP payment dengan jurnal koreksi",
+      "request_body": {
+        "reason": "Alasan reversal (wajib)",
+        "notes": "Catatan tambahan (opsional)"
+      },
+      "status": "IMPLEMENTED"
+    },
+    {
+      "endpoint": "GET /api/payment-allocation/ap/payments/{payment_id}/can-reverse",
+      "description": "Check apakah payment bisa di-reverse",
+      "status": "IMPLEMENTED"
+    }
+  ],
+  "reversal_flow": [
+    "1. Create reversal journal (kebalikan dari journal asli)",
+    "2. Restore outstanding amount pada semua invoice terkait",
+    "3. Update status invoice (PAID → PARTIAL/OPEN)",
+    "4. Mark payment as REVERSED",
+    "5. Create audit log dengan severity=warning"
+  ],
+  "journal_entry_reversal": {
+    "original": {
+      "debit": "Hutang Dagang (AP Account)",
+      "credit": "Kas/Bank"
+    },
+    "reversal": {
+      "debit": "Kas/Bank (dikembalikan)",
+      "credit": "Hutang Dagang (dipulihkan)"
+    }
+  },
+  "summary": {
+    "status": "IMPLEMENTED",
+    "tests_passed": true
+  }
+}

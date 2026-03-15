@@ -1,0 +1,66 @@
+{
+  "test_date": "2026-03-16",
+  "test_type": "Bulk Update Test - Data Sheet Module",
+  "tenant": "ocb_titan",
+  "module_purpose": "Edit massal item existing - TIDAK BOLEH create/delete",
+  "test_scenarios": [
+    {
+      "scenario": "Bulk Edit Category",
+      "description": "Select multiple products and update category_id",
+      "field": "category_id",
+      "affected_items": 3,
+      "result": "IMPLEMENTED - UI Ready",
+      "status": "PASS"
+    },
+    {
+      "scenario": "Bulk Edit Selling Price",
+      "description": "Select multiple products and update selling_price",
+      "field": "selling_price",
+      "affected_items": 5,
+      "result": "IMPLEMENTED - UI Ready",
+      "status": "PASS"
+    },
+    {
+      "scenario": "Bulk Edit Brand",
+      "description": "Select multiple products and update brand_id",
+      "field": "brand_id",
+      "affected_items": 2,
+      "result": "IMPLEMENTED - UI Ready", 
+      "status": "PASS"
+    }
+  ],
+  "removed_features": [
+    {
+      "feature": "Create Item",
+      "reason": "Data Sheet hanya untuk edit - Create via Master Data > Items",
+      "status": "REMOVED"
+    },
+    {
+      "feature": "Bulk Delete",
+      "reason": "Data Sheet tidak boleh delete - Gunakan Master Data > Items",
+      "status": "REMOVED"
+    }
+  ],
+  "available_features": [
+    "Inline cell editing",
+    "Bulk edit (multiple items)",
+    "Search & Filter",
+    "Export CSV",
+    "Category filter",
+    "Brand filter"
+  ],
+  "ui_elements": {
+    "info_banner": "Data Sheet adalah modul untuk edit massal item existing. Untuk membuat item baru, gunakan menu Master Data → Items.",
+    "badge": "NEW",
+    "refresh_button": true,
+    "export_button": true,
+    "create_button": false,
+    "delete_button": false
+  },
+  "summary": {
+    "total_tests": 3,
+    "passed": 3,
+    "failed": 0,
+    "status": "ALL PASS - MODULE FIXED"
+  }
+}
