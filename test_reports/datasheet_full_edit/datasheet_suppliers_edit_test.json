@@ -1,0 +1,10 @@
+{
+  "test_date": "2026-03-15",
+  "domain": "suppliers",
+  "endpoint": "PUT /api/suppliers/{id}",
+  "editable_fields": ["name", "phone", "email", "address", "contact_person", "status"],
+  "test_field": "contact_person",
+  "test_value": "Updated Contact Person",
+  "result": "Supplier updated",
+  "status": "PASS"
+}

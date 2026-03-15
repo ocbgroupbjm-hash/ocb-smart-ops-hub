@@ -112,6 +112,15 @@ class EmployeeCreate(BaseModel):
     payment_method: str = "transfer"  # transfer, cash, ewallet
     photo_url: str = ""
     user_id: str = ""
+    # ============================================================
+    # SALES FIELDS - Employee as SSOT for Sales
+    # ============================================================
+    is_sales: bool = False
+    sales_code: str = ""
+    sales_target_profile: str = ""  # ObjectId reference to sales target
+    sales_commission_rate: float = 0  # Percentage
+    sales_effective_date: str = ""  # When employee became sales
+    sales_end_date: str = ""  # When employee stopped being sales (nullable)
 
 class EmployeeUpdate(BaseModel):
     name: Optional[str] = None
@@ -161,6 +170,15 @@ class EmployeeUpdate(BaseModel):
     payment_method: Optional[str] = None  # transfer, cash, ewallet
     photo_url: Optional[str] = None
     user_id: Optional[str] = None
+    # ============================================================
+    # SALES FIELDS - Employee as SSOT for Sales
+    # ============================================================
+    is_sales: Optional[bool] = None
+    sales_code: Optional[str] = None
+    sales_target_profile: Optional[str] = None
+    sales_commission_rate: Optional[float] = None
+    sales_effective_date: Optional[str] = None
+    sales_end_date: Optional[str] = None
 
 @router.get("/employees")
 async def list_employees(
@@ -188,6 +206,151 @@ async def list_employees(
     cursor = employees_col().find(query, {"_id": 0}).sort("name", 1)
     employees = await cursor.to_list(length=1000)
     return {"employees": employees, "total": len(employees)}
+
+# ============================================================
+# SALES ENDPOINTS - Employees as SSOT for Sales
+# ============================================================
+
+@router.get("/sales")
+async def list_sales_employees(
+    branch_id: Optional[str] = None,
+    active_only: bool = True,
+    search: Optional[str] = None,
+    user: dict = Depends(require_permission("sales", "view"))
+):
+    """
+    List employees who are marked as sales
+    SSOT: employees collection with is_sales=True
+    """
+    query = {"is_sales": True}
+    if active_only:
+        query["status"] = "active"
+        query["$or"] = [
+            {"sales_end_date": {"$exists": False}},
+            {"sales_end_date": None},
+            {"sales_end_date": ""}
+        ]
+    if branch_id:
+        query["branch_id"] = branch_id
+    if search:
+        query["$and"] = [
+            {"$or": [
+                {"name": {"$regex": search, "$options": "i"}},
+                {"sales_code": {"$regex": search, "$options": "i"}}
+            ]}
+        ]
+    
+    cursor = employees_col().find(query, {"_id": 0}).sort("name", 1)
+    sales_employees = await cursor.to_list(length=500)
+    
+    # Format for sales dropdown/selection
+    sales_list = [{
+        "id": emp["id"],
+        "employee_id": emp["id"],  # Backward compatibility
+        "sales_code": emp.get("sales_code", ""),
+        "name": emp.get("name", ""),
+        "branch_id": emp.get("branch_id", ""),
+        "branch_name": emp.get("branch_name", ""),
+        "commission_rate": emp.get("sales_commission_rate", 0),
+        "target_profile": emp.get("sales_target_profile", "")
+    } for emp in sales_employees]
+    
+    return {"sales": sales_list, "total": len(sales_list)}
+
+@router.put("/employees/{employee_id}/set-sales")
+async def set_employee_as_sales(
+    employee_id: str,
+    data: dict,
+    user: dict = Depends(require_permission("hr_management", "edit"))
+):
+    """
+    Mark employee as sales with required fields
+    Required: sales_code (unique per tenant)
+    Optional: sales_commission_rate, sales_target_profile
+    """
+    db = get_db()
+    
+    # Check employee exists
+    emp = await employees_col().find_one({"id": employee_id})
+    if not emp:
+        raise HTTPException(status_code=404, detail="Karyawan tidak ditemukan")
+    
+    # Validate sales_code uniqueness
+    sales_code = data.get("sales_code", "").strip()
+    if not sales_code:
+        raise HTTPException(status_code=400, detail="sales_code wajib diisi")
+    
+    existing = await employees_col().find_one({
+        "sales_code": sales_code,
+        "id": {"$ne": employee_id}
+    })
+    if existing:
+        raise HTTPException(status_code=400, detail=f"sales_code '{sales_code}' sudah digunakan oleh {existing.get('name', 'employee lain')}")
+    
+    # Update employee with sales fields
+    update_data = {
+        "is_sales": True,
+        "sales_code": sales_code,
+        "sales_commission_rate": data.get("sales_commission_rate", 0),
+        "sales_target_profile": data.get("sales_target_profile", ""),
+        "sales_effective_date": data.get("sales_effective_date", now_iso()[:10]),
+        "sales_end_date": "",  # Clear end date when setting as active sales
+        "updated_at": now_iso()
+    }
+    
+    await employees_col().update_one({"id": employee_id}, {"$set": update_data})
+    
+    # Audit log
+    await db.audit_logs.insert_one({
+        "id": gen_id(),
+        "action": "employee_set_sales",
+        "entity_type": "employee",
+        "entity_id": employee_id,
+        "user_id": user.get("user_id", ""),
+        "user_name": user.get("name", ""),
+        "changes": update_data,
+        "created_at": now_iso()
+    })
+    
+    updated = await employees_col().find_one({"id": employee_id}, {"_id": 0})
+    return {"message": f"Karyawan {emp.get('name')} berhasil dijadikan Sales", "employee": updated}
+
+@router.put("/employees/{employee_id}/remove-sales")
+async def remove_employee_from_sales(
+    employee_id: str,
+    user: dict = Depends(require_permission("hr_management", "edit"))
+):
+    """
+    Remove sales role from employee
+    Sets is_sales=False and records end_date
+    """
+    db = get_db()
+    
+    emp = await employees_col().find_one({"id": employee_id})
+    if not emp:
+        raise HTTPException(status_code=404, detail="Karyawan tidak ditemukan")
+    
+    update_data = {
+        "is_sales": False,
+        "sales_end_date": now_iso()[:10],
+        "updated_at": now_iso()
+    }
+    
+    await employees_col().update_one({"id": employee_id}, {"$set": update_data})
+    
+    # Audit log
+    await db.audit_logs.insert_one({
+        "id": gen_id(),
+        "action": "employee_remove_sales",
+        "entity_type": "employee",
+        "entity_id": employee_id,
+        "user_id": user.get("user_id", ""),
+        "user_name": user.get("name", ""),
+        "changes": update_data,
+        "created_at": now_iso()
+    })
+    
+    return {"message": f"Karyawan {emp.get('name')} sudah bukan Sales lagi"}
 
 @router.get("/employees/{employee_id}")
 async def get_employee(employee_id: str, user: dict = Depends(require_permission("hr_management", "view"))):

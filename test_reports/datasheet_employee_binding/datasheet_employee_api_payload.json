@@ -1,0 +1,15 @@
+{
+  "endpoint": "GET /api/erp/employees",
+  "parameters": {
+    "branch_id": "optional - filter by branch",
+    "department": "optional - filter by department", 
+    "status": "optional - default: active",
+    "search": "optional - search by name/nik/email"
+  },
+  "response_format": {
+    "employees": "array of employee objects",
+    "total": "total count"
+  },
+  "source_collection": "employees",
+  "note": "SSOT for employee data"
+}

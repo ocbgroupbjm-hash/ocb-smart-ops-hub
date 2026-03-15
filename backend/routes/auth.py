@@ -13,6 +13,7 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 class LoginRequest(BaseModel):
     email: str
     password: str
+    db_name: Optional[str] = None  # Optional tenant database name
 
 class RegisterRequest(BaseModel):
     email: str
@@ -29,6 +30,17 @@ class AuthResponse(BaseModel):
 @router.post("/login", response_model=AuthResponse)
 async def login(data: LoginRequest):
     print(f"[DEBUG] Login attempt for: {data.email}")
+    
+    # ============================================================
+    # MULTI-TENANT DATABASE SWITCH
+    # If db_name is provided, switch to that database before login
+    # ============================================================
+    if data.db_name:
+        from database import set_active_db_name, get_active_db_name
+        current_db = get_active_db_name()
+        if current_db != data.db_name:
+            print(f"[DEBUG] Switching database from {current_db} to {data.db_name}")
+            set_active_db_name(data.db_name)
     
     user = await users.find_one({"email": data.email}, {"_id": 0})
     if not user:

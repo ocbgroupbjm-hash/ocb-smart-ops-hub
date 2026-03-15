@@ -1,0 +1,10 @@
+{
+  "test_date": "2026-03-15",
+  "domain": "customers",
+  "endpoint": "PUT /api/customers/{id}",
+  "editable_fields": ["name", "phone", "email", "address", "status", "credit_limit"],
+  "test_field": "phone",
+  "test_value": "081199887766",
+  "result": "Customer updated",
+  "status": "PASS"
+}

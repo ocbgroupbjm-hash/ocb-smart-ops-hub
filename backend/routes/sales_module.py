@@ -310,6 +310,59 @@ async def create_receivable(db, customer_id: str, invoice_number: str, amount: f
     await db.accounts_receivable.insert_one(ar)
     return ar
 
+# ==================== SALES PERSON ENDPOINTS (from EMPLOYEES SSOT) ====================
+
+@router.get("/sales-persons")
+async def get_sales_persons(
+    branch_id: Optional[str] = None,
+    active_only: bool = True,
+    search: Optional[str] = None
+):
+    """
+    Get sales persons from Employee Master (SSOT)
+    Sales adalah employee dengan is_sales=True
+    """
+    db = get_database()
+    
+    query = {"is_sales": True}
+    if active_only:
+        query["status"] = "active"
+    if branch_id:
+        query["branch_id"] = branch_id
+    if search:
+        query["$or"] = [
+            {"name": {"$regex": search, "$options": "i"}},
+            {"sales_code": {"$regex": search, "$options": "i"}}
+        ]
+    
+    sales = await db.employees.find(query, {"_id": 0}).sort("name", 1).to_list(500)
+    
+    # Format for dropdown selection
+    result = [{
+        "id": s["id"],
+        "code": s.get("sales_code", s.get("nik", "")),
+        "name": s.get("name", ""),
+        "branch_id": s.get("branch_id", ""),
+        "branch_name": s.get("branch_name", ""),
+        "commission_rate": s.get("sales_commission_rate", 0)
+    } for s in sales]
+    
+    return {"items": result, "total": len(result)}
+
+async def get_sales_person_info(db, sales_person_id: str) -> dict:
+    """Get sales person information from employees collection"""
+    if not sales_person_id:
+        return {}
+    employee = await db.employees.find_one({"id": sales_person_id}, {"_id": 0})
+    if employee and employee.get("is_sales"):
+        return {
+            "id": employee["id"],
+            "name": employee.get("name", ""),
+            "code": employee.get("sales_code", employee.get("nik", "")),
+            "commission_rate": employee.get("sales_commission_rate", 0)
+        }
+    return {}
+
 # ==================== SALES ORDER ENDPOINTS ====================
 
 @router.get("/orders")

@@ -1,0 +1,10 @@
+{
+  "test_date": "2026-03-15",
+  "test_name": "Invalid Input Validation",
+  "test_description": "Verify server-side validation rejects invalid input",
+  "test_field": "cost_price",
+  "test_value": "invalid (non-numeric string)",
+  "expected_result": "Validation error - Input should be a valid number",
+  "actual_result": "float_parsing error - Input should be a valid number, unable to parse string as a number",
+  "status": "PASS"
+}

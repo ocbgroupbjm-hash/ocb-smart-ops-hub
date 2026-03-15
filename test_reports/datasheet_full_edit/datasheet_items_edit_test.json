@@ -1,0 +1,10 @@
+{
+  "test_date": "2026-03-15",
+  "domain": "items",
+  "endpoint": "PUT /api/products/{id}",
+  "editable_fields": ["name", "category_id", "brand_id", "unit_id", "default_supplier_id", "status", "min_stock", "cost_price", "selling_price"],
+  "test_field": "min_stock",
+  "test_value": 50,
+  "result": "Product updated",
+  "status": "PASS"
+}

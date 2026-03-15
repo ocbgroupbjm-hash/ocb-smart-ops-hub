@@ -1,0 +1,10 @@
+{
+  "test_date": "2026-03-15",
+  "domain": "employees",
+  "endpoint": "PUT /api/erp/employees/{id}",
+  "editable_fields": ["name", "phone", "email", "address", "department", "branch_id", "branch_name", "status", "is_sales", "sales_code", "sales_commission_rate", "sales_effective_date", "sales_end_date"],
+  "test_field": "department",
+  "test_value": "SALES RETAIL UPDATED",
+  "result": "Data karyawan berhasil diupdate",
+  "status": "PASS"
+}

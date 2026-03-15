@@ -1,0 +1,9 @@
+{
+  "test_date": "2026-03-15",
+  "test_name": "Data Sheet Employee Edit",
+  "employee_id": "8b6a569b-5c47-4118-85da-a62140b37e1f",
+  "field_edited": "address",
+  "new_value": "Test Address Updated via DataSheet",
+  "api_response": {"message":"Data karyawan berhasil diupdate","employee":{"id":"8b6a569b-5c47-4118-85da-a62140b37e1f","nik":"BJMS-SRU1-009","name":"ABDUL LATIF","email":"alatifbjm123@gmail.com","phone":"08111222333","whatsapp":" 083198861998","jabatan_id":"1fb317a7-0a5e-434e-92ab-baa1e0a64f22","jabatan_name":"SALES RETAIL-U1","department":"SALES RETAIL","branch_id":"911c5363-74c8-47de-802c-37b1d4aa765a","branch_name":"OCB Banjarmasin Pusat","ktp_number":"6371030410060008","birth_date":"2006-10-04","birth_place":"Banjarmasin","gender":"Laki-laki","religion":"","marital_status":"","address":"Test Address Updated via DataSheet","join_date":"2025-02-05","contract_type":"kontrak","contract_end_date":"2026-10-31","status":"active","bank_name":"","bank_account":"","bank_holder":"","salary_type":"monthly","gaji_pokok":1240000.0,"upah_harian":0,"tunjangan_jabatan":0,"tunjangan_transport":0,"tunjangan_makan":0,"tunjangan_keluarga":0,"tunjangan_lainnya":0,"tunjangan_total":0.0,"bonus_kehadiran":0,"bonus_performance":0,"bonus_target":0,"bonus_lainnya":0,"potongan_bpjs_kes":0,"potongan_bpjs_tk":0,"potongan_pinjaman":0,"potongan_lainnya":0,"payment_method":"transfer","total_minus":0,"total_plus":0,"piutang_karyawan":0,"photo_url":"","user_id":"","created_at":"2026-03-11T08:20:07.724969+00:00","updated_at":"2026-03-15T21:12:26.426243+00:00","salary_base":5000000,"is_sales":true,"sales_code":"SLS-001","sales_commission_rate":2.5,"sales_effective_date":"2026-03-15","sales_end_date":"","sales_target_profile":""}},
+  "status": "PASS"
+}

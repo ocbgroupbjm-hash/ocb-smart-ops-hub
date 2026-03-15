@@ -1,0 +1,15 @@
+{
+  "test_date": "2026-03-15",
+  "test_name": "RBAC Permission Check for Employee Data",
+  "required_permission": "hr_management.view",
+  "test_results": [
+    {
+      "role": "owner",
+      "has_permission": true,
+      "result": "PASS - 21 employees returned"
+    }
+  ],
+  "endpoint": "GET /api/erp/employees",
+  "middleware": "require_permission('hr_management', 'view')",
+  "status": "PASS"
+}

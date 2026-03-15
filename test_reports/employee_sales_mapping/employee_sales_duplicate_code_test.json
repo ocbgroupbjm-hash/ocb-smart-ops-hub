@@ -1,0 +1,13 @@
+{
+  "test_date": "2026-03-15",
+  "test_name": "Duplicate Sales Code Rejection",
+  "test_description": "Verify that duplicate sales_code is rejected with proper error message",
+  "test_steps": [
+    "1. Set first employee as sales with code SLS-001",
+    "2. Attempt to set second employee with same code SLS-001",
+    "3. Verify rejection with error message"
+  ],
+  "expected_result": "Duplicate code rejected",
+  "actual_result": "sales_code 'SLS-001' sudah digunakan oleh ABDUL LATIF",
+  "status": "PASS"
+}
