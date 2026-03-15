@@ -40,11 +40,13 @@ export default function ItemFormModal({
   const [localCategories, setLocalCategories] = useState([]);
   const [localUnits, setLocalUnits] = useState([]);
   const [localBrands, setLocalBrands] = useState([]);
+  const [localSuppliers, setLocalSuppliers] = useState([]);
   
   // Merge passed props with locally added items
   const allCategories = useMemo(() => [...categories, ...localCategories], [categories, localCategories]);
   const allUnits = useMemo(() => [...units, ...localUnits], [units, localUnits]);
   const allBrands = useMemo(() => [...brands, ...localBrands], [brands, localBrands]);
+  const allSuppliers = useMemo(() => [...suppliers, ...localSuppliers], [suppliers, localSuppliers]);
   
   // Convert master data to options format for SearchableSelect
   const categoryOptions = useMemo(() => 
@@ -63,8 +65,8 @@ export default function ItemFormModal({
   );
   
   const supplierOptions = useMemo(() => 
-    suppliers.map(s => ({ value: s.id, label: s.name, sublabel: s.code })), 
-    [suppliers]
+    allSuppliers.map(s => ({ value: s.id, label: s.name, sublabel: s.code })), 
+    [allSuppliers]
   );
   
   // Handler for quick create success - add to local state and optionally refresh parent
@@ -79,11 +81,27 @@ export default function ItemFormModal({
       case 'brand':
         setLocalBrands(prev => [...prev, newItem]);
         break;
+      default:
+        break;
     }
     
     // Optionally refresh parent's master data
     if (onRefreshMasterData) {
       onRefreshMasterData(type);
+    }
+  }, [onRefreshMasterData]);
+  
+  // Special handler for supplier quick create - auto-select after creation
+  const handleQuickCreateSupplierSuccess = useCallback((type, newItem) => {
+    if (type === 'supplier') {
+      // Add to local state
+      setLocalSuppliers(prev => [...prev, newItem]);
+      // Auto-select the new supplier
+      setFormData(prev => ({ ...prev, supplier_id: newItem.id }));
+      // Optionally refresh parent
+      if (onRefreshMasterData) {
+        onRefreshMasterData('supplier');
+      }
     }
   }, [onRefreshMasterData]);
   
@@ -666,13 +684,19 @@ export default function ItemFormModal({
                     </div>
                   </div>
                   <div>
-                    <label className="block text-xs text-gray-400 mb-1">Supplier Default</label>
-                    <SearchableSelect
+                    <label className="block text-xs text-gray-400 mb-1">
+                      Supplier Default
+                      <span className="text-green-400 text-[10px] ml-1">(+ Baru)</span>
+                    </label>
+                    <SearchableSelectWithCreate
                       options={supplierOptions}
                       value={formData.supplier_id}
                       onValueChange={(val) => setFormData({ ...formData, supplier_id: val })}
                       placeholder="Pilih Supplier"
                       searchPlaceholder="Ketik nama supplier..."
+                      type="supplier"
+                      token={token}
+                      onItemCreated={handleQuickCreateSupplierSuccess}
                       data-testid="supplier-select"
                     />
                   </div>

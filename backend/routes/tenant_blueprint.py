@@ -13,7 +13,7 @@ import os
 router = APIRouter(prefix="/api/tenant", tags=["Tenant Management"])
 
 # ==================== BLUEPRINT VERSION ====================
-CURRENT_BLUEPRINT_VERSION = "2.0.0"  # Updated for full collection sync
+CURRENT_BLUEPRINT_VERSION = "2.4.0"  # Enterprise Stabilization - Assembly Reversal Complete
 CURRENT_MIGRATION_VERSION = 2
 
 # ==================== REQUIRED COLLECTIONS ====================

@@ -25,7 +25,11 @@ export function QuickCreateModal({
     code: '',
     name: '',
     description: '',
-    symbol: ''
+    symbol: '',
+    contact_person: '',
+    phone: '',
+    email: '',
+    address: ''
   });
   const [error, setError] = useState('');
 
@@ -49,6 +53,12 @@ export function QuickCreateModal({
       endpoint: '/api/master/brands',
       fields: ['code', 'name'],
       validation: { name: 'Nama merek wajib diisi' }
+    },
+    supplier: {
+      title: 'Tambah Supplier Baru',
+      endpoint: '/api/suppliers',
+      fields: ['code', 'name', 'contact_person', 'phone', 'email', 'address'],
+      validation: { name: 'Nama supplier wajib diisi' }
     }
   };
 
@@ -97,7 +107,7 @@ export function QuickCreateModal({
       toast.success(`${config.title.replace('Tambah ', '')} berhasil!`);
       
       // Reset form
-      setFormData({ code: '', name: '', description: '', symbol: '' });
+      setFormData({ code: '', name: '', description: '', symbol: '', contact_person: '', phone: '', email: '', address: '' });
       
       // Callback with new item
       if (onSuccess) {
@@ -169,10 +179,78 @@ export function QuickCreateModal({
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 className="w-full px-3 py-2 bg-[#0a0a0a] border border-[#333] rounded-lg text-white text-sm"
-                placeholder={`Nama ${type === 'category' ? 'kategori' : type === 'unit' ? 'satuan' : 'merek'}`}
+                placeholder={`Nama ${type === 'category' ? 'kategori' : type === 'unit' ? 'satuan' : type === 'supplier' ? 'supplier' : 'merek'}`}
                 autoFocus
                 required
                 data-testid="quick-create-name"
+              />
+            </div>
+          )}
+          
+          {/* Contact Person field (for suppliers) */}
+          {config.fields.includes('contact_person') && (
+            <div>
+              <label className="block text-xs text-gray-400 mb-1">
+                Contact Person
+              </label>
+              <input
+                type="text"
+                value={formData.contact_person || ''}
+                onChange={(e) => setFormData({ ...formData, contact_person: e.target.value })}
+                className="w-full px-3 py-2 bg-[#0a0a0a] border border-[#333] rounded-lg text-white text-sm"
+                placeholder="Nama kontak"
+                data-testid="quick-create-contact-person"
+              />
+            </div>
+          )}
+          
+          {/* Phone field (for suppliers) */}
+          {config.fields.includes('phone') && (
+            <div>
+              <label className="block text-xs text-gray-400 mb-1">
+                Telepon
+              </label>
+              <input
+                type="tel"
+                value={formData.phone || ''}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                className="w-full px-3 py-2 bg-[#0a0a0a] border border-[#333] rounded-lg text-white text-sm"
+                placeholder="08xx-xxxx-xxxx"
+                data-testid="quick-create-phone"
+              />
+            </div>
+          )}
+          
+          {/* Email field (for suppliers) */}
+          {config.fields.includes('email') && (
+            <div>
+              <label className="block text-xs text-gray-400 mb-1">
+                Email
+              </label>
+              <input
+                type="email"
+                value={formData.email || ''}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                className="w-full px-3 py-2 bg-[#0a0a0a] border border-[#333] rounded-lg text-white text-sm"
+                placeholder="email@supplier.com"
+                data-testid="quick-create-email"
+              />
+            </div>
+          )}
+          
+          {/* Address field (for suppliers) */}
+          {config.fields.includes('address') && (
+            <div>
+              <label className="block text-xs text-gray-400 mb-1">
+                Alamat
+              </label>
+              <textarea
+                value={formData.address || ''}
+                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                className="w-full px-3 py-2 bg-[#0a0a0a] border border-[#333] rounded-lg text-white text-sm resize-none"
+                placeholder="Alamat supplier"
+                rows={2}
+                data-testid="quick-create-address"
               />
             </div>
           )}
@@ -295,7 +373,8 @@ export function SearchableSelectWithCreate({
   const typeLabels = {
     category: 'Kategori',
     unit: 'Satuan',
-    brand: 'Merek'
+    brand: 'Merek',
+    supplier: 'Supplier'
   };
 
   return (
