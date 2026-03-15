@@ -1,0 +1,84 @@
+{
+  "summary": "BUG CONFIRMED: Item Quick Create - Form closes after saving new master data (Category/Unit/Brand/Supplier). Expected behavior: Item Form should remain open with new master auto-selected.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "ItemFormModal + QuickCreateModal",
+        "issue": "After saving new master data via Quick Create (+ Tambah Kategori/Satuan/Merek/Supplier), the Item Form modal closes instead of staying open",
+        "selector": "[data-testid='category-select'], [data-testid='unit-select'], [data-testid='brand-select'], [data-testid='supplier-select']",
+        "priority": "HIGH",
+        "steps_to_reproduce": [
+          "1. Navigate to Master Data -> Items",
+          "2. Click '+ Tambah Item' button",
+          "3. Click on Category dropdown (or Unit/Brand/Supplier)",
+          "4. Click '+ Tambah Kategori Baru'",
+          "5. Fill form (name required) and click 'Simpan'",
+          "6. BUG: Item Form modal closes, user is back to Items list"
+        ],
+        "expected_behavior": "Item Form should remain open with the newly created category auto-selected in the field",
+        "actual_behavior": "Item Form modal closes after quick create save, user loses all other form data they may have entered"
+      }
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "QuickCreateModal",
+        "issues": [
+          "NESTED FORM HTML VIOLATION: QuickCreateModal uses <form> inside ItemFormModal's <form>. This violates HTML spec and can cause unpredictable browser behavior",
+          "Console warning: 'In HTML, <form> cannot be a descendant of <form>. This will cause a hydration error.'"
+        ]
+      }
+    ]
+  },
+  "test_report_links": [
+    "/app/test_reports/iteration_77.json"
+  ],
+  "action_items": [
+    "FIX REQUIRED: Prevent Item Form from closing when Quick Create saves",
+    "ROOT CAUSE: Nested <form> elements - QuickCreateModal.jsx line 145 creates <form> inside ItemFormModal.jsx line 466's <form>",
+    "SOLUTION 1: Change QuickCreateModal to use <div> instead of <form> and handle submit via button onClick",
+    "SOLUTION 2: Add e.stopPropagation() to QuickCreateModal's handleSubmit",
+    "SOLUTION 3: Move QuickCreateModal outside of ItemFormModal using React Portal",
+    "VERIFY: After fix, ensure new master data is auto-selected in the dropdown after save"
+  ],
+  "critical_code_review_comments": [
+    "QuickCreateModal.jsx line 145: Uses <form> element which gets nested inside ItemFormModal's form",
+    "QuickCreateModal.jsx line 117: Calls onClose() after onSuccess(), causing double state updates",
+    "SearchableSelectWithCreate line 369-370: setShowQuickCreate(false) and setIsOpen(false) are called in handleQuickCreateSuccess, but QuickCreateModal also calls onClose() which is redundant",
+    "ItemFormModal.jsx line 466: Parent <form> element that contains the nested QuickCreateModal",
+    "MasterItems.jsx: Does not pass onRefreshMasterData callback to ItemFormModal"
+  ],
+  "updated_files": [],
+  "success_rate": {
+    "backend": "N/A - Frontend only test",
+    "frontend": "0% - Bug confirmed"
+  },
+  "test_credentials": {
+    "email": "ocbgroupbjm@gmail.com",
+    "password": "admin123",
+    "db_name": "ocb_titan"
+  },
+  "seed_data_creation": "Created test category TEST-KAT-9930 during bug reproduction",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Bug confirmed in Item Quick Create. After main agent fixes the nested form issue, need to retest all quick create buttons: Category, Unit, Brand, Supplier. Also verify auto-selection of new item in dropdown after save.",
+  "rca_of_the_issue": {
+    "root_cause": "HTML spec violation - nested <form> elements causing browser to mishandle form submission",
+    "technical_detail": "QuickCreateModal uses <form> element (line 145) which gets rendered inside ItemFormModal's <form> (line 466). When QuickCreateModal submits, even with e.preventDefault(), the browser behavior is unpredictable due to nested forms. The parent form (ItemFormModal) appears to be affected by the child form's submission event.",
+    "evidence": [
+      "Console warning: 'In HTML, <form> cannot be a descendant of <form>'",
+      "Screenshots show Item Form closes immediately after Quick Create save",
+      "Test output: '❌ BUG CONFIRMED: Item Form CLOSED after quick create!'"
+    ],
+    "recommended_fix": "Replace <form> with <div> in QuickCreateModal and trigger submission via button onClick with type='button'. This eliminates the nested form issue while maintaining the same functionality."
+  },
+  "screenshots": {
+    "form_open": ".screenshots/qc_test_01_form_open.png",
+    "after_save": ".screenshots/qc_test_04_after_save.png",
+    "final": ".screenshots/qc_test_05_final.png"
+  }
+}
