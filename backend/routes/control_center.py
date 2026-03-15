@@ -437,7 +437,7 @@ async def get_dashboard_summary(user: dict = Depends(require_super_admin)):
 
 # ==================== PRIORITAS 6: BLUEPRINT SYNC ====================
 
-CURRENT_BLUEPRINT_VERSION = "2.2.0"  # Updated after PRIORITAS 7 (AP/AR Payment Allocation)
+CURRENT_BLUEPRINT_VERSION = "2.3.0"  # Updated: TASK 3 (Datasheet + Duplicate removal)
 
 class BlueprintSyncRequest:
     pass

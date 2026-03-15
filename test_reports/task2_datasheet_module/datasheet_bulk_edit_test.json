@@ -1,0 +1,46 @@
+{
+  "report_type": "Datasheet Bulk Edit Test",
+  "date": "2026-03-15T17:56:25.111982+00:00",
+  "test_scenarios": [
+    {
+      "test": "Select multiple items",
+      "result": "PASS"
+    },
+    {
+      "test": "Bulk edit field selection",
+      "result": "PASS"
+    },
+    {
+      "test": "Apply bulk update",
+      "result": "PASS"
+    },
+    {
+      "test": "Bulk delete with confirmation",
+      "result": "PASS"
+    },
+    {
+      "test": "Audit log creation",
+      "result": "PASS"
+    }
+  ],
+  "supported_fields": {
+    "products": [
+      "category_id",
+      "brand_id",
+      "cost_price",
+      "selling_price",
+      "min_stock"
+    ],
+    "customers": [
+      "credit_limit",
+      "payment_term"
+    ],
+    "suppliers": [
+      "payment_term"
+    ],
+    "employees": [
+      "department",
+      "position"
+    ]
+  }
+}

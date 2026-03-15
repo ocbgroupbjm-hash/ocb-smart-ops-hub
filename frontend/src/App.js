@@ -452,7 +452,7 @@ function App() {
             <Route path="reports/sales" element={<Reports />} />
             <Route path="reports/purchase" element={<Reports />} />
             <Route path="reports/inventory" element={<Reports />} />
-            <Route path="reports/stock-card" element={<KartuStok />} />
+            {/* REMOVED: reports/stock-card - duplicate dengan Inventory > Kartu Stok (TASK 1 - 2026-03-15) */}
             <Route path="reports/best-sellers" element={<Reports />} />
             <Route path="reports/payables" element={<AccountsPayable />} />
             <Route path="reports/receivables" element={<AccountsReceivable />} />

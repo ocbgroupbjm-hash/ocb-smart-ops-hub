@@ -1,0 +1,16 @@
+{
+  "report_type": "Stock Card Duplicate Removal",
+  "date": "2026-03-15T17:56:25.111733+00:00",
+  "tenant": "ocb_titan",
+  "action_taken": {
+    "removed_from_sidebar": "Laporan \u2192 Laporan Kartu Stok",
+    "removed_route": "/reports/stock-card",
+    "kept_module": "Inventory \u2192 Kartu Stok (/inventory/kartu-stok)"
+  },
+  "ssot_compliance": "Stock data derived from stock_movements collection",
+  "test_result": "PASS",
+  "files_changed": [
+    "/app/frontend/src/components/layout/Sidebar.jsx",
+    "/app/frontend/src/App.js"
+  ]
+}

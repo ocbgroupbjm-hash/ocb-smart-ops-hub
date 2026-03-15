@@ -1,0 +1,15 @@
+{
+  "report_type": "Stock Card Inventory Module Test",
+  "date": "2026-03-15T17:56:25.111871+00:00",
+  "module_path": "/inventory/kartu-stok",
+  "features_verified": [
+    "Date range filter",
+    "Product selection",
+    "Movement history (qty_in, qty_out)",
+    "Running balance",
+    "Reference type and ID",
+    "Warehouse filter"
+  ],
+  "data_source": "stock_movements (SSOT)",
+  "test_result": "PASS"
+}

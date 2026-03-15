@@ -104,8 +104,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       submenu: [
         { name: 'Daftar Item', icon: Package, path: '/master/items' },
         { name: 'Item Baru', icon: Plus, path: '/master/items?new=true' },
-        // HIDDEN: MasterDatasheet - jarang dipakai (Phase A Cleanup 2026-03-13)
-        // { name: 'Datasheet', icon: Table, path: '/master/datasheet' },
+        { name: 'Data Sheet', icon: Table, path: '/master/datasheet' }, // RESTORED: TASK 2 - 2026-03-15
         // Kartu Stok dipindahkan ke menu Inventory (menghindari duplicate)
         { name: 'Barcode', icon: QrCode, path: '/master/barcode' },
         { divider: true, label: 'Promosi & Diskon' },
@@ -288,7 +287,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
         { name: 'Laporan Penjualan', icon: TrendingUp, path: '/reports/sales' },
         { name: 'Laporan Pembelian', icon: Truck, path: '/reports/purchase' },
         { name: 'Laporan Stok', icon: Boxes, path: '/reports/inventory' },
-        { name: 'Laporan Kartu Stok', icon: ClipboardList, path: '/reports/stock-card' },
+        // REMOVED: Laporan Kartu Stok - duplicate dengan Inventory > Kartu Stok (TASK 1 - 2026-03-15)
       ]
     },
 

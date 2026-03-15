@@ -1,0 +1,13 @@
+{
+  "report_type": "Blueprint Lock Report",
+  "date": "2026-03-15T17:56:25.112048+00:00",
+  "previous_version": "2.2.0",
+  "new_version": "2.3.0",
+  "features_in_v2.3.0": [
+    "All features from v2.2.0",
+    "TASK 1: Stock Card duplicate removed from Reports",
+    "TASK 2: Data Sheet module restored in Master Data",
+    "Bulk edit/delete functionality in Data Sheet"
+  ],
+  "lock_status": "SUCCESS"
+}

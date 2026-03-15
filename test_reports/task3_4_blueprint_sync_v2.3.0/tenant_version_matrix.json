@@ -1,0 +1,27 @@
+{
+  "report_type": "Tenant Version Matrix",
+  "date": "2026-03-15T17:56:25.112084+00:00",
+  "target_version": "2.3.0",
+  "tenants": [
+    {
+      "name": "OCB GROUP",
+      "database": "ocb_titan",
+      "version": "2.3.0",
+      "status": "synced"
+    },
+    {
+      "name": "OCB UNIT 4 MPC & MP3",
+      "database": "ocb_unit_4",
+      "version": "2.3.0",
+      "status": "synced"
+    },
+    {
+      "name": "OCB UNIT 1 RETAIL",
+      "database": "ocb_unt_1",
+      "version": "2.3.0",
+      "status": "synced"
+    }
+  ],
+  "all_synced": true,
+  "note": "Only system version synced. User data (items, transactions, customers, etc.) NOT touched."
+}
