@@ -1,0 +1,18 @@
+{
+  "sync_date": "2026-03-15",
+  "blueprint_version": "2.4.3",
+  "previous_version": "2.4.2",
+  "changes_included": [
+    "Bug Fix: Item Quick Create Dropdown Display",
+    "HR Phase 3: Leave Management",
+    "Leave Types (ANNUAL, SICK, MATERNITY, etc.)",
+    "Leave Request workflow (pending -> approved/rejected)",
+    "Leave Balance tracking"
+  ],
+  "tenants_synced": [
+    {"db_name": "ocb_titan", "status": "SYNCED", "blueprint_version": "2.4.3"},
+    {"db_name": "ocb_unit_4", "status": "SYNCED", "blueprint_version": "2.4.3"},
+    {"db_name": "ocb_unt_1", "status": "SYNCED", "blueprint_version": "2.4.3"}
+  ],
+  "status": "COMPLETE"
+}

@@ -13,7 +13,7 @@ import os
 router = APIRouter(prefix="/api/tenant", tags=["Tenant Management"])
 
 # ==================== BLUEPRINT VERSION ====================
-CURRENT_BLUEPRINT_VERSION = "2.4.2"  # HR Phase 2 - Attendance System Complete
+CURRENT_BLUEPRINT_VERSION = "2.4.3"  # HR Phase 3 - Leave Management Complete + Quick Create Fix
 CURRENT_MIGRATION_VERSION = 2
 
 # ==================== REQUIRED COLLECTIONS ====================

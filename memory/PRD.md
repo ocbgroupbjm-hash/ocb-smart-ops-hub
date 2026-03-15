@@ -16,7 +16,49 @@ Membangun sistem ERP retail komprehensif (OCB TITAN) dengan fitur POS, Inventory
 
 ## What's Been Implemented
 
-### Latest Updates (2026-03-15 Session 7)
+### Latest Updates (2026-03-15 Session 7 - Final)
+
+#### HR PHASE 3: LEAVE MANAGEMENT ✅ COMPLETE
+**Date Completed:** 2026-03-15
+**Blueprint Version:** v2.4.3
+
+**Database Collections:**
+- `leave_types` - Tipe cuti (ANNUAL, SICK, MATERNITY, etc.)
+- `leave_requests` - Pengajuan cuti dengan approval workflow
+- `leave_balances` - Tracking sisa cuti per karyawan
+
+**Leave Types:**
+- ANNUAL (12 days), SICK (14 days), MATERNITY (90 days)
+- PATERNITY (3 days), UNPAID (30 days), SPECIAL (5 days)
+
+**API Endpoints:**
+- `GET/POST /api/hr/leave/types` - CRUD Leave Types
+- `GET/POST /api/hr/leave/requests` - CRUD Leave Requests
+- `PUT /api/hr/leave/requests/{id}/approve` - Approve/Reject
+- `PUT /api/hr/leave/requests/{id}/cancel` - Cancel request
+- `GET /api/hr/leave/balance/{employee_id}` - Get balance
+
+**Approval Workflow:**
+```
+pending -> manager_approved -> approved/rejected
+```
+
+**Testing (Iteration 82):**
+- Backend: 94% (17/18 tests, 1 skipped)
+- Frontend: 100% (All UI verified)
+- Evidence: `/app/test_reports/hr_phase3_leave_management/`
+
+---
+
+#### BUG FIX: ITEM QUICK CREATE DROPDOWN ✅ FIXED
+**Date Fixed:** 2026-03-15
+**Testing (Iteration 81):** PASS
+
+**Issue:** Setelah quick create category/unit/brand/supplier, item tidak muncul di dropdown
+**Root Cause:** Backend API hanya return {id, message} tanpa name/code
+**Fix:** Backend endpoints sekarang return full object dengan semua fields
+
+---
 
 #### HR PHASE 2: ATTENDANCE SYSTEM ✅ COMPLETE
 **Date Completed:** 2026-03-15
