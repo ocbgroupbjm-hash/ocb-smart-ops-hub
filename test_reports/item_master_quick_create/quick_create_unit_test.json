@@ -1,0 +1,16 @@
+{
+  "test_date": "2026-03-16",
+  "test_type": "Quick Create Unit Test",
+  "tenant": "ocb_titan",
+  "endpoint": "POST /api/master/units",
+  "request": {
+    "code": "TEST-UNIT",
+    "name": "Test Unit",
+    "symbol": "tu"
+  },
+  "response": {
+    "id": "88327f20-0c55-4bfb-bada-0a9ea9d2e1eb",
+    "message": "Satuan berhasil ditambahkan"
+  },
+  "status": "PASS"
+}

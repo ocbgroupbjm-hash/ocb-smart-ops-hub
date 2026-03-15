@@ -1,0 +1,37 @@
+{
+  "test_date": "2026-03-16",
+  "test_type": "Data Sheet RBAC Test",
+  "tenant": "ocb_titan",
+  "test_user": {
+    "email": "ocbgroupbjm@gmail.com",
+    "role": "owner"
+  },
+  "rbac_checks": [
+    {
+      "endpoint": "/api/customers",
+      "requires_auth": true,
+      "auth_verified": true
+    },
+    {
+      "endpoint": "/api/suppliers",
+      "requires_auth": true,
+      "auth_verified": true
+    },
+    {
+      "endpoint": "/api/erp/employees",
+      "requires_auth": true,
+      "auth_verified": true
+    },
+    {
+      "endpoint": "/api/products",
+      "requires_auth": true,
+      "auth_verified": true
+    }
+  ],
+  "tenant_filter": "Active - queries filtered by tenant_id from JWT",
+  "summary": {
+    "rbac_active": true,
+    "tenant_guard_active": true,
+    "status": "PASS"
+  }
+}

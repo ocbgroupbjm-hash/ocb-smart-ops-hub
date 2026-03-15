@@ -1,0 +1,41 @@
+{
+  "test_date": "2026-03-16",
+  "test_type": "Data Sheet API Payloads",
+  "tenant": "ocb_titan",
+  "endpoints_fixed": {
+    "customers": {
+      "old": "/api/master/customers",
+      "new": "/api/customers",
+      "method": "GET",
+      "auth": "Bearer Token",
+      "response": {"items": "array", "total": "number"}
+    },
+    "suppliers": {
+      "old": "/api/master/suppliers",
+      "new": "/api/suppliers",
+      "method": "GET",
+      "auth": "Bearer Token",
+      "response": {"items": "array", "total": "number"}
+    },
+    "employees": {
+      "old": "/api/employees",
+      "new": "/api/erp/employees",
+      "method": "GET",
+      "auth": "Bearer Token",
+      "response": {"employees": "array", "total": "number"}
+    },
+    "products": {
+      "endpoint": "/api/products?limit=500",
+      "method": "GET",
+      "auth": "Bearer Token",
+      "response": {"items": "array", "total": "number"}
+    }
+  },
+  "update_endpoints_fixed": {
+    "customers": "/api/customers/{id}",
+    "suppliers": "/api/suppliers/{id}",
+    "employees": "/api/erp/employees/{id}",
+    "products": "/api/products/{id}"
+  },
+  "summary": "All endpoints corrected to use SSOT master data sources"
+}

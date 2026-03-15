@@ -31,6 +31,14 @@ const ProductAssembly = () => {
     unit: 'pcs'
   });
 
+  // ============================================================
+  // ENTERPRISE ASSEMBLY API - Using /api/assembly-enterprise/*
+  // Legacy API /api/assembly/* still works for backward compatibility
+  // ============================================================
+  
+  const API_PREFIX = '/api/assembly-enterprise'; // Enterprise API
+  const API_LEGACY = '/api/assembly'; // Legacy fallback
+
   useEffect(() => {
     loadFormulas();
     loadProducts();
@@ -40,7 +48,11 @@ const ProductAssembly = () => {
   const loadFormulas = async () => {
     setLoading(true);
     try {
-      const res = await api('/api/assembly/formulas');
+      // Try enterprise API first, fallback to legacy
+      let res = await api(`${API_PREFIX}/formulas/v2?status=ALL`);
+      if (!res.ok) {
+        res = await api(`${API_LEGACY}/formulas`);
+      }
       if (res.ok) {
         const data = await res.json();
         setFormulas(data.formulas || []);
@@ -61,7 +73,11 @@ const ProductAssembly = () => {
 
   const loadTransactions = async () => {
     try {
-      const res = await api('/api/assembly/transactions?limit=50');
+      // Try enterprise API first, fallback to legacy
+      let res = await api(`${API_PREFIX}/history/v2?status=ALL`);
+      if (!res.ok) {
+        res = await api(`${API_LEGACY}/transactions?limit=50`);
+      }
       if (res.ok) {
         const data = await res.json();
         setTransactions(data.transactions || []);
@@ -100,12 +116,47 @@ const ProductAssembly = () => {
     }
     try {
       const method = selectedFormula ? 'PUT' : 'POST';
-      const url = selectedFormula ? `/api/assembly/formulas/${selectedFormula.id}` : '/api/assembly/formulas';
+      
+      // Use enterprise API for create/update
+      let url;
+      let payload;
+      
+      if (selectedFormula) {
+        url = `${API_PREFIX}/formulas/v2/${selectedFormula.id}`;
+        payload = {
+          formula_name: formData.name,
+          product_result_id: formData.result_product_id,
+          result_quantity: formData.result_quantity,
+          components: formData.components.map((c, i) => ({
+            item_id: c.product_id,
+            quantity_required: c.quantity,
+            uom: c.unit || 'pcs',
+            sequence_no: i + 1
+          })),
+          notes: formData.notes,
+          status: formData.is_active ? 'ACTIVE' : 'INACTIVE'
+        };
+      } else {
+        url = `${API_PREFIX}/formulas/v2`;
+        payload = {
+          formula_name: formData.name,
+          product_result_id: formData.result_product_id,
+          result_quantity: formData.result_quantity,
+          uom: 'pcs',
+          components: formData.components.map((c, i) => ({
+            item_id: c.product_id,
+            quantity_required: c.quantity,
+            uom: c.unit || 'pcs',
+            sequence_no: i + 1
+          })),
+          notes: formData.notes
+        };
+      }
       
       const res = await api(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(payload)
       });
       
       if (res.ok) {
@@ -121,12 +172,20 @@ const ProductAssembly = () => {
   };
 
   const deleteFormula = async (id) => {
-    if (!window.confirm('Hapus formula ini?')) return;
+    if (!window.confirm('Nonaktifkan formula ini?')) return;
     try {
-      const res = await api(`/api/assembly/formulas/${id}`, { method: 'DELETE' });
+      // Use enterprise API - deactivate instead of delete
+      const res = await api(`${API_PREFIX}/formulas/v2/${id}/deactivate`, { method: 'PATCH' });
       if (res.ok) {
-        toast.success('Formula dihapus');
+        toast.success('Formula dinonaktifkan');
         loadFormulas();
+      } else {
+        // Fallback to legacy
+        const legacyRes = await api(`${API_LEGACY}/formulas/${id}`, { method: 'DELETE' });
+        if (legacyRes.ok) {
+          toast.success('Formula dihapus');
+          loadFormulas();
+        }
       }
     } catch (err) { toast.error('Gagal menghapus'); }
   };
@@ -137,15 +196,24 @@ const ProductAssembly = () => {
       return;
     }
     try {
-      const endpoint = isDisassembly ? '/api/assembly/disassemble' : '/api/assembly/assemble';
+      // Use enterprise API for assembly execution
+      const endpoint = isDisassembly 
+        ? `${API_LEGACY}/disassemble` // Disassembly still uses legacy for now
+        : `${API_PREFIX}/execute/v2`;
+      
+      const payload = isDisassembly 
+        ? { formula_id: selectedFormula.id, quantity: assemblyQty, notes: '' }
+        : { 
+            formula_id: selectedFormula.id, 
+            planned_qty: assemblyQty, 
+            notes: '',
+            save_as_draft: false // Direct POST instead of DRAFT
+          };
+      
       const res = await api(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          formula_id: selectedFormula.id,
-          quantity: assemblyQty,
-          notes: ''
-        })
+        body: JSON.stringify(payload)
       });
       
       if (res.ok) {
@@ -157,7 +225,13 @@ const ProductAssembly = () => {
         loadTransactions();
       } else {
         const err = await res.json();
-        toast.error(err.detail?.message || err.detail || 'Proses gagal');
+        // Handle detailed error for stock insufficient
+        if (err.detail?.items) {
+          const items = err.detail.items.map(i => `${i.item_name}: butuh ${i.required}, ada ${i.available}`).join('\n');
+          toast.error(`Stok tidak cukup:\n${items}`);
+        } else {
+          toast.error(err.detail?.message || err.detail || 'Proses gagal');
+        }
       }
     } catch (err) { toast.error('Proses gagal'); }
   };

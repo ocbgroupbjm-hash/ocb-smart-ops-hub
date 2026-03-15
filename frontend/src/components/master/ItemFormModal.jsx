@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { toast } from 'sonner';
 import { 
   X, Save, Package, DollarSign, Warehouse, Calculator, 
@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { SearchableSelect } from '../ui/searchable-select';
 import { SearchableEnumSelect } from '../ui/searchable-enum-select';
+import { SearchableSelectWithCreate } from './QuickCreateModal';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -29,31 +30,62 @@ export default function ItemFormModal({
   units = [],
   brands = [],
   suppliers = [],
-  onSave
+  onSave,
+  onRefreshMasterData  // Callback untuk refresh master data setelah quick create
 }) {
   const [activeTab, setActiveTab] = useState('data');
   const [saving, setSaving] = useState(false);
   
+  // Local state for dynamically added items
+  const [localCategories, setLocalCategories] = useState([]);
+  const [localUnits, setLocalUnits] = useState([]);
+  const [localBrands, setLocalBrands] = useState([]);
+  
+  // Merge passed props with locally added items
+  const allCategories = useMemo(() => [...categories, ...localCategories], [categories, localCategories]);
+  const allUnits = useMemo(() => [...units, ...localUnits], [units, localUnits]);
+  const allBrands = useMemo(() => [...brands, ...localBrands], [brands, localBrands]);
+  
   // Convert master data to options format for SearchableSelect
   const categoryOptions = useMemo(() => 
-    categories.map(c => ({ value: c.id, label: c.name, sublabel: c.code })), 
-    [categories]
+    allCategories.map(c => ({ value: c.id, label: c.name, sublabel: c.code })), 
+    [allCategories]
   );
   
   const unitOptions = useMemo(() => 
-    units.map(u => ({ value: u.id, label: u.name, sublabel: u.code })), 
-    [units]
+    allUnits.map(u => ({ value: u.id, label: u.name, sublabel: u.code })), 
+    [allUnits]
   );
   
   const brandOptions = useMemo(() => 
-    brands.map(b => ({ value: b.id, label: b.name, sublabel: b.code })), 
-    [brands]
+    allBrands.map(b => ({ value: b.id, label: b.name, sublabel: b.code })), 
+    [allBrands]
   );
   
   const supplierOptions = useMemo(() => 
     suppliers.map(s => ({ value: s.id, label: s.name, sublabel: s.code })), 
     [suppliers]
   );
+  
+  // Handler for quick create success - add to local state and optionally refresh parent
+  const handleQuickCreateSuccess = useCallback((type, newItem) => {
+    switch (type) {
+      case 'category':
+        setLocalCategories(prev => [...prev, newItem]);
+        break;
+      case 'unit':
+        setLocalUnits(prev => [...prev, newItem]);
+        break;
+      case 'brand':
+        setLocalBrands(prev => [...prev, newItem]);
+        break;
+    }
+    
+    // Optionally refresh parent's master data
+    if (onRefreshMasterData) {
+      onRefreshMasterData(type);
+    }
+  }, [onRefreshMasterData]);
   
   // Item type options for searchable enum
   const itemTypeOptions = [
@@ -500,24 +532,36 @@ export default function ItemFormModal({
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-gray-400 mb-1">Kategori</label>
-                    <SearchableSelect
+                    <label className="block text-xs text-gray-400 mb-1">
+                      Kategori
+                      <span className="text-green-400 text-[10px] ml-1">(+ Baru)</span>
+                    </label>
+                    <SearchableSelectWithCreate
                       options={categoryOptions}
                       value={formData.category_id}
                       onValueChange={(val) => setFormData({ ...formData, category_id: val })}
                       placeholder="Pilih Kategori"
                       searchPlaceholder="Ketik kategori..."
+                      type="category"
+                      token={token}
+                      onItemCreated={handleQuickCreateSuccess}
                       data-testid="category-select"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-gray-400 mb-1">Satuan <span className="text-red-400">*</span></label>
-                    <SearchableSelect
+                    <label className="block text-xs text-gray-400 mb-1">
+                      Satuan <span className="text-red-400">*</span>
+                      <span className="text-green-400 text-[10px] ml-1">(+ Baru)</span>
+                    </label>
+                    <SearchableSelectWithCreate
                       options={unitOptions}
                       value={formData.unit_id}
                       onValueChange={(val) => setFormData({ ...formData, unit_id: val })}
                       placeholder="Pilih Satuan"
                       searchPlaceholder="Ketik satuan..."
+                      type="unit"
+                      token={token}
+                      onItemCreated={handleQuickCreateSuccess}
                       data-testid="unit-select"
                     />
                   </div>
@@ -526,13 +570,19 @@ export default function ItemFormModal({
                 {/* Row 4: Brand, Rack, SKU */}
                 <div className="grid grid-cols-3 gap-4">
                   <div>
-                    <label className="block text-xs text-gray-400 mb-1">Merek</label>
-                    <SearchableSelect
+                    <label className="block text-xs text-gray-400 mb-1">
+                      Merek
+                      <span className="text-green-400 text-[10px] ml-1">(+ Baru)</span>
+                    </label>
+                    <SearchableSelectWithCreate
                       options={brandOptions}
                       value={formData.brand_id}
                       onValueChange={(val) => setFormData({ ...formData, brand_id: val })}
                       placeholder="Pilih Merek"
                       searchPlaceholder="Ketik merek..."
+                      type="brand"
+                      token={token}
+                      onItemCreated={handleQuickCreateSuccess}
                       data-testid="brand-select"
                     />
                   </div>

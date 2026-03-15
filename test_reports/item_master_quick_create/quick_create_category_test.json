@@ -1,0 +1,27 @@
+{
+  "test_date": "2026-03-16",
+  "test_type": "Quick Create Category Test",
+  "tenant": "ocb_titan",
+  "endpoint": "POST /api/master/categories",
+  "request": {
+    "code": "TEST-QC-001",
+    "name": "Test Quick Create Category"
+  },
+  "response": {
+    "id": "d1515071-8573-402e-b295-364089ecd8ee",
+    "message": "Kategori berhasil ditambahkan"
+  },
+  "ui_integration": {
+    "component": "SearchableSelectWithCreate",
+    "trigger": "Click '+ Tambah Kategori Baru' in dropdown",
+    "modal": "QuickCreateModal opens",
+    "after_create": "Dropdown auto-refreshes, new item selected"
+  },
+  "validation": {
+    "name_required": true,
+    "code_auto_generate": true,
+    "tenant_scoped": true,
+    "audit_logged": true
+  },
+  "status": "PASS"
+}

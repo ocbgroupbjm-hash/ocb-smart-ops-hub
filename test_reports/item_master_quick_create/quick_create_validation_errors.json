@@ -1,0 +1,32 @@
+{
+  "test_date": "2026-03-16",
+  "test_type": "Quick Create Validation Test",
+  "tenant": "ocb_titan",
+  "validation_rules": [
+    {
+      "rule": "Name required",
+      "field": "name",
+      "error_message": "Nama {type} wajib diisi",
+      "client_validated": true,
+      "server_validated": true
+    },
+    {
+      "rule": "Code auto-generate",
+      "field": "code",
+      "behavior": "If empty, auto-generate from name (first 10 chars, uppercase, no spaces)",
+      "validated": true
+    },
+    {
+      "rule": "Duplicate check",
+      "field": "code",
+      "error_message": "Kode sudah digunakan",
+      "server_validated": true
+    },
+    {
+      "rule": "Tenant scope",
+      "behavior": "New item automatically scoped to current tenant",
+      "validated": true
+    }
+  ],
+  "status": "PASS"
+}

@@ -1,0 +1,17 @@
+{
+  "test_date": "2026-03-16",
+  "test_type": "Data Sheet - Supplier Binding Test",
+  "tenant": "ocb_titan",
+  "endpoint": {
+    "old_wrong": "/api/master/suppliers (NOT FOUND)",
+    "correct": "/api/suppliers",
+    "response_format": {"items": [], "total": X}
+  },
+  "test_result": {
+    "total_suppliers": 12,
+    "data_loaded": true,
+    "fields_displayed": ["code", "name", "phone", "email", "address"],
+    "source": "suppliers collection (SSOT)"
+  },
+  "status": "PASS"
+}

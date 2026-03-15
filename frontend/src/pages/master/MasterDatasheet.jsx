@@ -52,24 +52,31 @@ const MasterDatasheet = () => {
     try {
       const headers = getAuthHeaders().headers;
       
-      // Fetch data with proper error handling
+      // ============================================================
+      // CORRECT ENDPOINTS FOR SSOT MASTER DATA
+      // Customers: /api/customers → {items: [], total: X}
+      // Suppliers: /api/suppliers → {items: [], total: X}
+      // Employees: /api/erp/employees → {employees: [], total: X}
+      // ============================================================
+      
       const [productsRes, customersRes, suppliersRes, employeesRes, categoriesRes, brandsRes, unitsRes] = await Promise.all([
         axios.get(`${API_URL}/api/products?limit=500`, { headers }).catch(e => ({ data: { items: [] } })),
-        axios.get(`${API_URL}/api/master/customers`, { headers }).catch(e => ({ data: { items: [] } })),
-        axios.get(`${API_URL}/api/master/suppliers`, { headers }).catch(e => ({ data: { items: [] } })),
-        axios.get(`${API_URL}/api/employees`, { headers }).catch(e => ({ data: { employees: [] } })),
-        axios.get(`${API_URL}/api/master/categories`, { headers }).catch(e => ({ data: { items: [] } })),
-        axios.get(`${API_URL}/api/master/brands`, { headers }).catch(e => ({ data: { items: [] } })),
-        axios.get(`${API_URL}/api/master/units`, { headers }).catch(e => ({ data: { items: [] } }))
+        axios.get(`${API_URL}/api/customers`, { headers }).catch(e => ({ data: { items: [] } })),
+        axios.get(`${API_URL}/api/suppliers`, { headers }).catch(e => ({ data: { items: [] } })),
+        axios.get(`${API_URL}/api/erp/employees`, { headers }).catch(e => ({ data: { employees: [] } })),
+        axios.get(`${API_URL}/api/categories`, { headers }).catch(e => ({ data: { items: [] } })),
+        axios.get(`${API_URL}/api/brands`, { headers }).catch(e => ({ data: { items: [] } })),
+        axios.get(`${API_URL}/api/units`, { headers }).catch(e => ({ data: { items: [] } }))
       ]);
       
+      // Parse responses with correct field names
       setProducts(productsRes.data.items || productsRes.data || []);
-      setCustomers(customersRes.data.items || customersRes.data || []);
-      setSuppliers(suppliersRes.data.items || suppliersRes.data || []);
-      setEmployees(employeesRes.data.employees || employeesRes.data || []);
-      setCategories(categoriesRes.data.items || categoriesRes.data || []);
-      setBrands(brandsRes.data.items || brandsRes.data || []);
-      setUnits(unitsRes.data.items || unitsRes.data || []);
+      setCustomers(customersRes.data.items || customersRes.data.customers || customersRes.data || []);
+      setSuppliers(suppliersRes.data.items || suppliersRes.data.suppliers || suppliersRes.data || []);
+      setEmployees(employeesRes.data.employees || employeesRes.data.items || employeesRes.data || []);
+      setCategories(categoriesRes.data.items || categoriesRes.data.categories || categoriesRes.data || []);
+      setBrands(brandsRes.data.items || brandsRes.data.brands || brandsRes.data || []);
+      setUnits(unitsRes.data.items || unitsRes.data.units || unitsRes.data || []);
       
       toast.success('Data berhasil dimuat');
     } catch (err) {
@@ -106,19 +113,21 @@ const MasterDatasheet = () => {
       let endpoint = '';
       let updateData = {};
       
-      // Determine endpoint based on data type
+      // ============================================================
+      // CORRECT UPDATE ENDPOINTS FOR SSOT MASTER DATA
+      // ============================================================
       switch (dataType) {
         case 'products':
           endpoint = `/api/products/${itemId}`;
           break;
         case 'customers':
-          endpoint = `/api/master/customers/${itemId}`;
+          endpoint = `/api/customers/${itemId}`;
           break;
         case 'suppliers':
-          endpoint = `/api/master/suppliers/${itemId}`;
+          endpoint = `/api/suppliers/${itemId}`;
           break;
         case 'employees':
-          endpoint = `/api/employees/${itemId}`;
+          endpoint = `/api/erp/employees/${itemId}`;
           break;
         default:
           endpoint = `/api/products/${itemId}`;

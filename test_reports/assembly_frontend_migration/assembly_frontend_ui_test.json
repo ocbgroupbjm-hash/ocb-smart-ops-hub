@@ -1,0 +1,32 @@
+{
+  "test_date": "2026-03-16",
+  "test_type": "Assembly Frontend UI Test",
+  "tenant": "ocb_titan",
+  "components_tested": [
+    {
+      "component": "Formula List",
+      "api": "/api/assembly-enterprise/formulas/v2",
+      "status": "IMPLEMENTED"
+    },
+    {
+      "component": "Transaction History",
+      "api": "/api/assembly-enterprise/history/v2",
+      "status": "IMPLEMENTED"
+    },
+    {
+      "component": "Create Formula Modal",
+      "api": "/api/assembly-enterprise/formulas/v2",
+      "status": "IMPLEMENTED"
+    },
+    {
+      "component": "Assembly Execution",
+      "api": "/api/assembly-enterprise/execute/v2",
+      "status": "IMPLEMENTED"
+    }
+  ],
+  "backward_compatibility": {
+    "legacy_fallback": true,
+    "description": "Falls back to /api/assembly/* if enterprise API fails"
+  },
+  "status": "PARTIALLY MIGRATED"
+}

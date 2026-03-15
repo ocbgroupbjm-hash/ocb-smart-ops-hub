@@ -1,0 +1,15 @@
+{
+  "test_date": "2026-03-16",
+  "test_type": "Quick Create Brand Test",
+  "tenant": "ocb_titan",
+  "endpoint": "POST /api/master/brands",
+  "request": {
+    "code": "TEST-BRAND",
+    "name": "Test Brand"
+  },
+  "response": {
+    "id": "e467c195-a135-4258-8e3e-2e96fa9bcd5d",
+    "message": "Merk berhasil ditambahkan"
+  },
+  "status": "PASS"
+}

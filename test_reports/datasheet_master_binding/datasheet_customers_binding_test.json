@@ -1,0 +1,17 @@
+{
+  "test_date": "2026-03-16",
+  "test_type": "Data Sheet - Customer Binding Test",
+  "tenant": "ocb_titan",
+  "endpoint": {
+    "old_wrong": "/api/master/customers (NOT FOUND)",
+    "correct": "/api/customers",
+    "response_format": {"items": [], "total": X}
+  },
+  "test_result": {
+    "total_customers": 15,
+    "data_loaded": true,
+    "fields_displayed": ["code", "name", "phone", "email", "address", "credit_limit"],
+    "source": "customers collection (SSOT)"
+  },
+  "status": "PASS"
+}

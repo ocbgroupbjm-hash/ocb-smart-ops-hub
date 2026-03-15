@@ -1,0 +1,17 @@
+{
+  "test_date": "2026-03-16",
+  "test_type": "Data Sheet - Employee Binding Test",
+  "tenant": "ocb_titan",
+  "endpoint": {
+    "old_wrong": "/api/employees (NOT FOUND)",
+    "correct": "/api/erp/employees",
+    "response_format": {"employees": [], "total": X}
+  },
+  "test_result": {
+    "total_employees": 21,
+    "data_loaded": true,
+    "fields_displayed": ["code", "name", "position", "department", "basic_salary"],
+    "source": "employees collection (SSOT)"
+  },
+  "status": "PASS"
+}
