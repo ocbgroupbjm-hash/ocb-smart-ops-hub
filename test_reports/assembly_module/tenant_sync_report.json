@@ -1,0 +1,53 @@
+{
+  "test_date": "2026-03-16",
+  "test_type": "Assembly Module Tenant Sync Report",
+  "pilot_tenant": "ocb_titan",
+  "sync_phase": "PENDING - Awaiting System Architect Validation",
+  "changes_to_sync": {
+    "backend_routes": [
+      "/app/backend/routes/assembly_enterprise.py (NEW)",
+      "/app/backend/server.py (router registration)"
+    ],
+    "database_collections": [
+      "assembly_formulas (NEW schema)",
+      "assembly_components (NEW)",
+      "assembly_logs (NEW)"
+    ],
+    "stock_movement_types": [
+      "ASSEMBLY_CONSUME",
+      "ASSEMBLY_PRODUCE",
+      "ASSEMBLY_CONSUME_REVERSAL",
+      "ASSEMBLY_PRODUCE_REVERSAL"
+    ],
+    "journal_reference_types": [
+      "assembly",
+      "assembly_reversal"
+    ]
+  },
+  "sync_rules": {
+    "what_to_sync": [
+      "code",
+      "schema",
+      "blueprint_version",
+      "business_rules",
+      "routes",
+      "UI menus"
+    ],
+    "what_NOT_to_sync": [
+      "items",
+      "transactions",
+      "customers",
+      "suppliers",
+      "inventory data",
+      "journal historis"
+    ]
+  },
+  "target_tenants": [
+    "ocb_unit_4",
+    "ocb_unt_1",
+    "erp_db"
+  ],
+  "current_blueprint": "v2.3.0",
+  "next_blueprint": "v2.4.0",
+  "status": "READY_FOR_SYNC - Pending System Architect Approval"
+}

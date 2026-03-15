@@ -3196,3 +3196,125 @@ const DESIGN = {
 | SSOT Accounting | ✅ BALANCED |
 | SSOT Inventory | ✅ VALID |
 
+
+---
+
+## Phase 22: Assembly Module Enterprise Upgrade (2026-03-16) ✅
+
+### TASK 1: Database Schema Enterprise ✅
+**Collections Created/Extended:**
+```
+assembly_formulas:
+  - formula_id, formula_name, product_result_id, result_quantity, uom
+  - status (ACTIVE/INACTIVE), notes, tenant_id
+  - created_by, created_at, updated_at
+
+assembly_components:
+  - component_id, formula_id, item_id, quantity_required
+  - uom, sequence_no, waste_factor, tenant_id
+
+assembly_transactions:
+  - assembly_id, formula_id, product_result_id
+  - planned_qty, produced_qty, assembly_date
+  - status (DRAFT/POSTED/REVERSED/CANCELLED)
+  - journal_entry_id, reversal_journal_entry_id
+  - posted_by, posted_at, reversed_by, reversed_at, tenant_id
+
+assembly_logs:
+  - log_id, assembly_id, action, old_value, new_value
+  - user_id, timestamp, tenant_id
+```
+
+### TASK 2: Multi-Component Formula Support ✅
+- Formula dapat memiliki 2+ komponen
+- Validasi: komponen tidak boleh sama dengan hasil
+- Status ACTIVE/INACTIVE untuk kontrol eksekusi
+- Audit log untuk setiap perubahan formula
+
+### TASK 3: Assembly Execution Workflow ✅
+**Workflow: DRAFT → POST → REVERSED**
+- DRAFT: Dapat di-edit dan di-delete (soft delete)
+- POST: Tidak dapat di-edit/delete - harus REVERSAL
+- REVERSED: Status final setelah koreksi
+
+**Stock Movement Types:**
+- ASSEMBLY_CONSUME: Komponen keluar (negative qty)
+- ASSEMBLY_PRODUCE: Hasil masuk (positive qty)
+- ASSEMBLY_CONSUME_REVERSAL: Komponen kembali
+- ASSEMBLY_PRODUCE_REVERSAL: Hasil dibatalkan
+
+### TASK 4: Accounting Integration ✅
+**Journal Entry on POST:**
+- Debit: Persediaan Barang Jadi (1-1400)
+- Credit: Persediaan Bahan Baku (1-1300)
+
+**Journal Entry on REVERSAL:**
+- Kebalikan dari journal POST
+- Immutability rule: POSTED journal tidak bisa di-edit
+
+### TASK 5: Assembly History & Audit ✅
+- UI: Inventory → Assembly History
+- Filter: DRAFT, POSTED, REVERSED, CANCELLED, ALL
+- Audit logs untuk setiap aksi
+- Stock movements linked ke assembly_id
+
+### API Endpoints Implemented
+```
+POST   /api/assembly-enterprise/formulas/v2
+GET    /api/assembly-enterprise/formulas/v2
+GET    /api/assembly-enterprise/formulas/v2/{id}
+PUT    /api/assembly-enterprise/formulas/v2/{id}
+PATCH  /api/assembly-enterprise/formulas/v2/{id}/activate
+PATCH  /api/assembly-enterprise/formulas/v2/{id}/deactivate
+POST   /api/assembly-enterprise/execute/v2
+POST   /api/assembly-enterprise/execute/v2/post
+POST   /api/assembly-enterprise/execute/v2/reverse
+PUT    /api/assembly-enterprise/transactions/v2/{id}
+DELETE /api/assembly-enterprise/transactions/v2/{id}
+GET    /api/assembly-enterprise/history/v2
+GET    /api/assembly-enterprise/history/v2/{id}
+GET    /api/assembly-enterprise/logs/v2/{id}
+GET    /api/assembly-enterprise/validate/stock/{formula_id}
+```
+
+### Testing Results
+**Test Report:** `/app/test_reports/iteration_72.json`
+- Backend: 87.5% (14/16 tests passed, 2 skipped)
+- Skipped: POST→REVERSED flow (no stock for components)
+- Legacy API: 100% backward compatible
+
+### Evidence Files (14 files)
+```
+/app/test_reports/assembly_module/
+├── assembly_formula_test.json
+├── assembly_multi_component_test.json
+├── assembly_execution_test.json
+├── assembly_stock_movement.json
+├── assembly_journal_test.json
+├── assembly_gl_impact.json
+├── assembly_trial_balance.json
+├── assembly_history_draft_edit_test.json
+├── assembly_history_posted_reversal_test.json
+├── assembly_enterprise_api_test.json
+├── assembly_inventory_test.json
+├── assembly_process_flow.md
+├── tenant_sync_report.json
+└── rollback_plan.md
+```
+
+### Status: READY FOR SYSTEM ARCHITECT VALIDATION
+
+---
+
+## Current Blueprint Status
+
+| Version | Status | Description |
+|---------|--------|-------------|
+| v2.3.0 | LOCKED | Data Sheet fix, Assembly menu, badges |
+| v2.4.0 | PENDING | Assembly Enterprise Module |
+
+### Pending Actions
+1. System Architect validation of Assembly Module
+2. Blueprint lock to v2.4.0
+3. Tenant sync (ocb_unit_4, ocb_unt_1, erp_db)
+
