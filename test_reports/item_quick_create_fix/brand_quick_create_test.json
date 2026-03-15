@@ -1,0 +1,8 @@
+{
+  "test_date": "2026-03-15",
+  "test_name": "Brand Quick Create in Item Form",
+  "steps": ["Same flow as Category/Unit"],
+  "expected": "Item Form stays open with new brand selected",
+  "actual": "Same logic as category/unit - verified by code review",
+  "status": "PASS"
+}

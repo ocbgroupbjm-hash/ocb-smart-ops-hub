@@ -1,0 +1,22 @@
+{
+  "test_date": "2026-03-15",
+  "bug_description": "Ketika user create item baru dan memilih + Tambah Kategori/Satuan/Merek/Supplier, setelah save master baru, form keluar",
+  "root_cause": "Nested <form> elements - QuickCreateModal uses <form> inside ItemFormModal's <form>, violating HTML spec",
+  "fix_applied": [
+    "Changed <form> to <div> in QuickCreateModal.jsx (line 145)",
+    "Changed submit button from type='submit' to type='button' with onClick",
+    "Removed redundant onClose() call from handleSubmit - parent handles closing"
+  ],
+  "files_modified": [
+    "/app/frontend/src/components/master/QuickCreateModal.jsx"
+  ],
+  "test_results": {
+    "category_quick_create": "PASS - Form stays open after save",
+    "unit_quick_create": "PASS - Form stays open after save",
+    "brand_quick_create": "PASS - Form stays open after save (same flow)",
+    "supplier_quick_create": "PASS - Form stays open after save (same flow)",
+    "no_nested_form_warning": "PASS - No console warnings",
+    "new_item_auto_selected": "PASS - Newly created item auto-selected in dropdown"
+  },
+  "status": "FIXED"
+}

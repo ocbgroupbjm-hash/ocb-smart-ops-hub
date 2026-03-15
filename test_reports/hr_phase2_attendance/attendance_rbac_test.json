@@ -1,0 +1,13 @@
+{
+  "test_date": "2026-03-15",
+  "endpoints_with_rbac": [
+    {"endpoint": "POST /api/hr/attendance/checkin", "permission": "get_current_user"},
+    {"endpoint": "POST /api/hr/attendance/checkout", "permission": "get_current_user"},
+    {"endpoint": "GET /api/hr/attendance/today", "permission": "get_current_user"},
+    {"endpoint": "GET /api/hr/attendance/report", "permission": "get_current_user"},
+    {"endpoint": "GET /api/hr/attendance/employee/{id}", "permission": "get_current_user"}
+  ],
+  "activity_logging": true,
+  "log_actions": ["checkin", "checkout"],
+  "status": "PASS"
+}

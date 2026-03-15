@@ -1,0 +1,19 @@
+{
+  "test_date": "2026-03-15",
+  "endpoints_tested": {
+    "POST /api/hr/attendance/checkin": "200 OK - Check-in recorded",
+    "POST /api/hr/attendance/checkout": "200 OK - Check-out recorded",
+    "GET /api/hr/attendance/today": "200 OK - Today's summary",
+    "GET /api/hr/attendance/report": "200 OK - Date range report",
+    "GET /api/hr/attendance/employee/{id}": "200 OK - Employee history",
+    "GET /api/hr/attendance/shifts": "200 OK - List shifts",
+    "POST /api/hr/attendance/shifts": "200 OK - Create shift"
+  },
+  "business_rules": [
+    "One check-in per day per employee",
+    "Must check-in before check-out",
+    "Late status calculated against shift start time",
+    "Work hours calculated from check-in to check-out"
+  ],
+  "status": "PASS"
+}

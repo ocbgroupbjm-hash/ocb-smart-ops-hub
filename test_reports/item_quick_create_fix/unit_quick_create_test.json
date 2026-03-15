@@ -1,0 +1,15 @@
+{
+  "test_date": "2026-03-15",
+  "test_name": "Unit Quick Create in Item Form",
+  "steps": [
+    "1. Navigate to Master Data -> Items",
+    "2. Click Tambah Item",
+    "3. Click Unit dropdown",
+    "4. Click + Tambah Satuan Baru",
+    "5. Fill name and save",
+    "6. Verify form stays open"
+  ],
+  "expected": "Item Form stays open with new unit selected",
+  "actual": "Item Form stays open with new unit selected",
+  "status": "PASS"
+}

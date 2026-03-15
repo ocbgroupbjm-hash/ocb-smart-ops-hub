@@ -1,0 +1,18 @@
+{
+  "test_date": "2026-03-15",
+  "test_name": "Attendance Check-in",
+  "endpoint": "POST /api/hr/attendance/checkin",
+  "request_body": {
+    "employee_id": "2d232e6a-e993-4d76-a4da-cea06b60f4d3",
+    "method": "manual",
+    "notes": "Test checkin"
+  },
+  "response": {
+    "status": "success",
+    "message": "Check-in berhasil",
+    "employee_name": "SAHRI",
+    "check_in_time": "22:00:27",
+    "date": "2026-03-15"
+  },
+  "status": "PASS"
+}

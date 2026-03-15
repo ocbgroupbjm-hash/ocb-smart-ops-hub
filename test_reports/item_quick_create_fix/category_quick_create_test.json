@@ -1,0 +1,15 @@
+{
+  "test_date": "2026-03-15",
+  "test_name": "Category Quick Create in Item Form",
+  "steps": [
+    "1. Navigate to Master Data -> Items",
+    "2. Click Tambah Item",
+    "3. Click Category dropdown",
+    "4. Click + Tambah Kategori Baru",
+    "5. Fill name and save",
+    "6. Verify form stays open"
+  ],
+  "expected": "Item Form stays open with new category selected",
+  "actual": "Item Form stays open with new category selected",
+  "status": "PASS"
+}

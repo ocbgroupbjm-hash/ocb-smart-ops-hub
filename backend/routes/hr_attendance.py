@@ -127,9 +127,9 @@ async def check_in(
     user_id = user.get("user_id", user.get("id", ""))
     user_name = user.get("name", "")
     
-    # Find employee
+    # Find employee (support both id, employee_id, and nik field)
     employee = await employees.find_one(
-        {"$or": [{"id": data.employee_id}, {"employee_id": data.employee_id.upper()}]},
+        {"$or": [{"id": data.employee_id}, {"employee_id": data.employee_id.upper()}, {"nik": data.employee_id.upper()}]},
         {"_id": 0}
     )
     
@@ -183,10 +183,10 @@ async def check_in(
     attendance = {
         "id": str(uuid.uuid4()),
         "employee_id": employee["id"],
-        "employee_nik": employee.get("employee_id"),
-        "employee_name": employee.get("full_name"),
-        "department_id": employee.get("department_id"),
-        "department_name": employee.get("department_name"),
+        "employee_nik": employee.get("nik") or employee.get("employee_id"),  # Fixed: use 'nik' field
+        "employee_name": employee.get("name") or employee.get("full_name"),  # Fixed: use 'name' field
+        "department_id": employee.get("department_id") or employee.get("jabatan_id"),
+        "department_name": employee.get("department") or employee.get("department_name"),  # Fixed: use 'department' field
         "branch_id": employee.get("branch_id"),
         "date": attendance_date,
         
@@ -243,7 +243,7 @@ async def check_in(
     response = {
         "status": "success",
         "message": f"Check-in berhasil",
-        "employee_name": employee.get("full_name"),
+        "employee_name": employee.get("name") or employee.get("full_name"),
         "check_in_time": check_in_dt.strftime("%H:%M:%S"),
         "date": attendance_date,
         "is_late": is_late
@@ -272,9 +272,9 @@ async def check_out(
     user_id = user.get("user_id", user.get("id", ""))
     user_name = user.get("name", "")
     
-    # Find employee
+    # Find employee (support both id, employee_id, and nik field)
     employee = await employees.find_one(
-        {"$or": [{"id": data.employee_id}, {"employee_id": data.employee_id.upper()}]},
+        {"$or": [{"id": data.employee_id}, {"employee_id": data.employee_id.upper()}, {"nik": data.employee_id.upper()}]},
         {"_id": 0}
     )
     
@@ -341,7 +341,7 @@ async def check_out(
     return {
         "status": "success",
         "message": "Check-out berhasil",
-        "employee_name": employee.get("full_name"),
+        "employee_name": employee.get("name") or employee.get("full_name"),
         "check_in_time": attendance.get("check_in_time"),
         "check_out_time": check_out_dt.strftime("%H:%M:%S"),
         "work_hours": round(work_hours, 2),
@@ -408,7 +408,7 @@ async def get_attendance_report(
     
     if employee_id:
         employee = await employees.find_one(
-            {"$or": [{"id": employee_id}, {"employee_id": employee_id.upper()}]},
+            {"$or": [{"id": employee_id}, {"employee_id": employee_id.upper()}, {"nik": employee_id.upper()}]},
             {"_id": 0}
         )
         if employee:
@@ -447,7 +447,7 @@ async def get_employee_attendance(
 ):
     """Get attendance history for specific employee"""
     employee = await employees.find_one(
-        {"$or": [{"id": employee_id}, {"employee_id": employee_id.upper()}]},
+        {"$or": [{"id": employee_id}, {"employee_id": employee_id.upper()}, {"nik": employee_id.upper()}]},
         {"_id": 0}
     )
     
@@ -474,9 +474,9 @@ async def get_employee_attendance(
     return {
         "employee": {
             "id": employee["id"],
-            "employee_id": employee.get("employee_id"),
-            "name": employee.get("full_name"),
-            "department": employee.get("department_name")
+            "employee_id": employee.get("nik") or employee.get("employee_id"),  # Fixed: use 'nik' field
+            "name": employee.get("name") or employee.get("full_name"),  # Fixed: use 'name' field
+            "department": employee.get("department") or employee.get("department_name")  # Fixed: use 'department' field
         },
         "summary": {
             "present_days": present_days,
