@@ -1,0 +1,78 @@
+{
+  "test_date": "2026-03-16",
+  "test_type": "Assembly Reversal Stock Movements Evidence",
+  "tenant": "ocb_titan",
+  "ssot": "stock_movements collection",
+  "assembly_transaction": {
+    "assembly_id": "d5a55362-ab59-4eef-97b4-103e0c79aedc",
+    "assembly_number": "ASM-20260315202456"
+  },
+  "stock_movements_created": {
+    "on_post": [
+      {
+        "product": "PULSA INDOSAT 5K",
+        "movement_type": "ASSEMBLY_CONSUME",
+        "quantity": -10,
+        "direction": "OUT"
+      },
+      {
+        "product": "PULSA SMARTFREEN 5K",
+        "movement_type": "ASSEMBLY_CONSUME",
+        "quantity": -5,
+        "direction": "OUT"
+      },
+      {
+        "product": "PULSA XL AXIS 5K",
+        "movement_type": "ASSEMBLY_PRODUCE",
+        "quantity": 5,
+        "direction": "IN"
+      }
+    ],
+    "on_reversal": [
+      {
+        "product": "PULSA INDOSAT 5K",
+        "movement_type": "ASSEMBLY_CONSUME_REVERSAL",
+        "quantity": 10,
+        "direction": "IN (restored)"
+      },
+      {
+        "product": "PULSA SMARTFREEN 5K",
+        "movement_type": "ASSEMBLY_CONSUME_REVERSAL",
+        "quantity": 5,
+        "direction": "IN (restored)"
+      },
+      {
+        "product": "PULSA XL AXIS 5K",
+        "movement_type": "ASSEMBLY_PRODUCE_REVERSAL",
+        "quantity": -5,
+        "direction": "OUT (cancelled)"
+      }
+    ]
+  },
+  "stock_balance_verification": {
+    "component_1_INDOSAT": {
+      "initial": 100,
+      "after_post": 90,
+      "after_reversal": 100,
+      "net_change": 0
+    },
+    "component_2_SMARTFREEN": {
+      "initial": 100,
+      "after_post": 95,
+      "after_reversal": 100,
+      "net_change": 0
+    },
+    "result_AXIS": {
+      "initial": 0,
+      "after_post": 5,
+      "after_reversal": 0,
+      "net_change": 0
+    }
+  },
+  "ssot_integrity": {
+    "all_changes_via_movements": true,
+    "no_direct_write_to_product": true,
+    "calculated_from_sum": true
+  },
+  "summary": "Stock movements correctly track assembly and reversal. SSOT intact."
+}

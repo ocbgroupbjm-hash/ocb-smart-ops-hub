@@ -1,0 +1,32 @@
+{
+  "test_date": "2026-03-16",
+  "test_type": "Assembly Reversal Trial Balance Evidence",
+  "tenant": "ocb_titan",
+  "trial_balance_impact": {
+    "after_post": {
+      "persediaan_barang_jadi_1400": {"debit": 312600, "credit": 0},
+      "persediaan_bahan_baku_1300": {"debit": 0, "credit": 312600},
+      "net_impact": "Barang jadi naik, bahan baku turun - BALANCED"
+    },
+    "after_reversal": {
+      "persediaan_barang_jadi_1400": {"debit": 0, "credit": 312600},
+      "persediaan_bahan_baku_1300": {"debit": 312600, "credit": 0},
+      "net_impact": "Kebalikan dari POST - BALANCED"
+    },
+    "combined_net": {
+      "persediaan_barang_jadi_1400": "Net 0 (POST debit + REVERSAL credit)",
+      "persediaan_bahan_baku_1300": "Net 0 (POST credit + REVERSAL debit)",
+      "conclusion": "Trial balance tetap balance setelah reversal"
+    }
+  },
+  "rule_validation": {
+    "debit_equals_credit": true,
+    "no_orphan_entries": true,
+    "all_entries_linked": true
+  },
+  "summary": {
+    "status": "PASS",
+    "trial_balance": "BALANCED",
+    "accounting_integrity": "MAINTAINED"
+  }
+}

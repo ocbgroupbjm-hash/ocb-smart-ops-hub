@@ -1,0 +1,52 @@
+{
+  "test_date": "2026-03-16",
+  "test_type": "Assembly Reversal Journal Evidence",
+  "tenant": "ocb_titan",
+  "ssot": "journal_entries collection",
+  "assembly_journal": {
+    "journal_number": "JV-20260315202456-ASM-20260315202456",
+    "reference_type": "assembly",
+    "description": "Assembly: TEST-REVERSAL-FORMULA - 5.0 PULSA XL AXIS 5K",
+    "entries": [
+      {
+        "account": "Persediaan Barang Jadi (1-1400)",
+        "debit": 312600,
+        "credit": 0,
+        "description": "Produk hasil assembly"
+      },
+      {
+        "account": "Persediaan Bahan Baku (1-1300)",
+        "debit": 0,
+        "credit": 312600,
+        "description": "Komponen keluar"
+      }
+    ],
+    "is_balanced": true
+  },
+  "reversal_journal": {
+    "journal_number": "JV-20260315202517-REV-ASM-20260315202456",
+    "reference_type": "assembly_reversal",
+    "description": "REVERSAL Assembly: TEST-REVERSAL-FORMULA",
+    "entries": [
+      {
+        "account": "Persediaan Bahan Baku (1-1300)",
+        "debit": 312600,
+        "credit": 0,
+        "description": "Komponen dikembalikan"
+      },
+      {
+        "account": "Persediaan Barang Jadi (1-1400)",
+        "debit": 0,
+        "credit": 312600,
+        "description": "Produk hasil dibatalkan"
+      }
+    ],
+    "is_balanced": true
+  },
+  "accounting_integrity": {
+    "immutability_rule": "Journal POSTED tidak di-edit, dibuat reversal baru",
+    "debit_equals_credit": true,
+    "audit_trail_complete": true
+  },
+  "summary": "Both assembly and reversal journals balanced. Accounting integrity maintained."
+}

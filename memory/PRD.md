@@ -3419,3 +3419,72 @@ GET    /api/assembly-enterprise/validate/stock/{formula_id}
 4. Lock blueprint v2.4.0
 5. Sync to all tenants
 
+
+---
+
+## Phase 24: Reversal Flow Complete & Blueprint Lock Ready (2026-03-16) ✅
+
+### TASK 4: Complete Reversal Flow Evidence ✅ DONE
+
+**Test Flow Executed:**
+1. ✅ Add Stock via `/api/assembly-enterprise/stock/adjustment`
+   - PULSA INDOSAT 5K: +100
+   - PULSA SMARTFREEN 5K: +100
+
+2. ✅ Create Formula with 2 components
+   - Formula: TEST-REVERSAL-FORMULA
+   - Components: PULSA INDOSAT 5K (qty 2), PULSA SMARTFREEN 5K (qty 1)
+   - Result: PULSA XL AXIS 5K
+
+3. ✅ Execute Assembly (qty=5, direct POST)
+   - Assembly Number: ASM-20260315202456
+   - Status: POSTED
+   - Journal: JV-20260315202456-ASM-20260315202456
+
+4. ✅ Verify Stock After POST
+   - Component 1: 100 → 90 (consumed 10)
+   - Component 2: 100 → 95 (consumed 5)
+   - Result: 0 → 5 (produced 5)
+
+5. ✅ REVERSE Assembly
+   - Reversal Number: REV-ASM-20260315202456
+   - Status: REVERSED
+   - Reversal Journal: JV-20260315202517-REV-ASM-20260315202456
+
+6. ✅ Verify Stock After REVERSAL
+   - Component 1: 90 → 100 (restored)
+   - Component 2: 95 → 100 (restored)
+   - Result: 5 → 0 (cancelled)
+
+**SSOT Validation:**
+- ✅ stock_movements: All changes via SSOT
+- ✅ journal_entries: Both assembly and reversal journals balanced
+- ✅ Trial Balance: Debit = Credit maintained
+
+**Evidence Files:**
+- assembly_post_to_reversed_full_test.json
+- assembly_reversal_stock_movements.json
+- assembly_reversal_journal.json
+- assembly_reversal_trial_balance.json
+
+---
+
+## BLUEPRINT v2.4.0 - READY FOR LOCK ✅
+
+### All Prerequisites Met:
+| Requirement | Status |
+|-------------|--------|
+| Data Sheet Binding Fixed | ✅ |
+| Quick Create Master References | ✅ |
+| Assembly Enterprise API Migration | ✅ |
+| Reversal Flow Evidence Complete | ✅ |
+| All Evidence Files Generated | ✅ (18 files) |
+| Testing on ocb_titan only | ✅ |
+
+### Next Steps:
+1. 🟢 LOCK BLUEPRINT v2.4.0
+2. 🟢 Backup all tenants
+3. 🟢 Sync to all tenants (ocb_unit_4, ocb_unt_1, erp_db)
+4. 🟢 Smoke test all tenants
+5. 🔵 Proceed to HR System
+

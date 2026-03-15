@@ -1,0 +1,75 @@
+{
+  "test_date": "2026-03-16",
+  "test_type": "Assembly POST → REVERSED Full Flow Test",
+  "tenant": "ocb_titan",
+  "test_flow": {
+    "step_1_add_stock": {
+      "action": "POST /api/assembly-enterprise/stock/adjustment",
+      "products": [
+        {"product": "PULSA INDOSAT 5K", "qty_added": 100},
+        {"product": "PULSA SMARTFREEN 5K", "qty_added": 100}
+      ],
+      "status": "PASS"
+    },
+    "step_2_create_formula": {
+      "action": "POST /api/assembly-enterprise/formulas/v2",
+      "formula_id": "bc80a3de-ea17-42b6-9357-39eafef45261",
+      "formula_name": "TEST-REVERSAL-FORMULA",
+      "components": 2,
+      "status": "PASS"
+    },
+    "step_3_execute_assembly": {
+      "action": "POST /api/assembly-enterprise/execute/v2",
+      "assembly_id": "d5a55362-ab59-4eef-97b4-103e0c79aedc",
+      "assembly_number": "ASM-20260315202456",
+      "planned_qty": 5,
+      "status_after": "POSTED",
+      "journal_number": "JV-20260315202456-ASM-20260315202456",
+      "status": "PASS"
+    },
+    "step_4_verify_stock_post": {
+      "component_1": {"before": 100, "after": 90, "change": -10},
+      "component_2": {"before": 100, "after": 95, "change": -5},
+      "result": {"before": 0, "after": 5, "change": 5},
+      "status": "PASS"
+    },
+    "step_5_reverse_assembly": {
+      "action": "POST /api/assembly-enterprise/execute/v2/reverse",
+      "assembly_id": "d5a55362-ab59-4eef-97b4-103e0c79aedc",
+      "reversal_number": "REV-ASM-20260315202456",
+      "status_after": "REVERSED",
+      "reversal_journal": "JV-20260315202517-REV-ASM-20260315202456",
+      "reason": "Test reversal flow - membuktikan SSOT bekerja",
+      "status": "PASS"
+    },
+    "step_6_verify_stock_reversed": {
+      "component_1": {"before_reversal": 90, "after_reversal": 100, "restored": true},
+      "component_2": {"before_reversal": 95, "after_reversal": 100, "restored": true},
+      "result": {"before_reversal": 5, "after_reversal": 0, "restored": true},
+      "status": "PASS"
+    }
+  },
+  "ssot_validation": {
+    "stock_movements": {
+      "movement_types_created": [
+        "OPENING_BALANCE",
+        "ASSEMBLY_CONSUME",
+        "ASSEMBLY_PRODUCE",
+        "ASSEMBLY_CONSUME_REVERSAL",
+        "ASSEMBLY_PRODUCE_REVERSAL"
+      ],
+      "all_via_ssot": true
+    },
+    "journal_entries": {
+      "assembly_journal": "JV-20260315202456-ASM-20260315202456",
+      "reversal_journal": "JV-20260315202517-REV-ASM-20260315202456",
+      "both_balanced": true
+    }
+  },
+  "summary": {
+    "total_steps": 6,
+    "passed": 6,
+    "failed": 0,
+    "status": "ALL PASS - REVERSAL FLOW VERIFIED"
+  }
+}

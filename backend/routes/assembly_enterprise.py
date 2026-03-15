@@ -1390,3 +1390,122 @@ async def validate_formula_stock(
         "components": validation_result,
         "insufficient_items": insufficient
     }
+
+
+
+# ============ STOCK ADJUSTMENT FOR TESTING ============
+# Endpoint untuk menambah stok produk via stock_movements (SSOT)
+
+class StockAdjustmentRequest(BaseModel):
+    """Request untuk stock adjustment"""
+    product_id: str
+    quantity: float = Field(..., gt=0)
+    adjustment_type: str = "adjustment_in"  # adjustment_in, opening_balance
+    notes: Optional[str] = None
+    warehouse_id: Optional[str] = None
+
+
+@router.post("/stock/adjustment")
+async def create_stock_adjustment(
+    data: StockAdjustmentRequest,
+    request: Request,
+    user: dict = Depends(get_current_user)
+):
+    """
+    Stock Adjustment - Menambah stok produk via stock_movements (SSOT)
+    
+    Digunakan untuk:
+    - Opening balance
+    - Stock adjustment (koreksi stok)
+    - Testing purposes
+    
+    RULE: Semua perubahan stok HARUS melalui stock_movements
+    """
+    if user.get("role") not in ["owner", "admin", "super_admin"]:
+        raise HTTPException(status_code=403, detail="Tidak diizinkan")
+    
+    tenant_id = user.get("tenant_id", "ocb_titan")
+    user_id = user.get("user_id", "")
+    user_name = user.get("name", "")
+    branch_id = data.warehouse_id or user.get("branch_id", "")
+    
+    # Validate product exists
+    product = await products_collection.find_one(
+        {"id": data.product_id},
+        {"_id": 0}
+    )
+    if not product:
+        raise HTTPException(status_code=404, detail="Produk tidak ditemukan")
+    
+    # Generate adjustment number
+    adj_number = f"ADJ-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}"
+    
+    # Create stock movement (SSOT)
+    movement = {
+        "id": str(uuid.uuid4()),
+        "product_id": data.product_id,
+        "product_name": product.get("name"),
+        "product_code": product.get("code"),
+        "movement_type": data.adjustment_type.upper(),
+        "quantity": data.quantity,  # Positive = add stock
+        "reference_id": adj_number,
+        "reference_type": "stock_adjustment",
+        "reference_number": adj_number,
+        "branch_id": branch_id,
+        "notes": data.notes or f"Stock Adjustment: {product.get('name')}",
+        "tenant_id": tenant_id,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_by": user_id,
+        "created_by_name": user_name
+    }
+    await stock_movements_collection.insert_one(movement)
+    
+    # Get new stock level
+    new_stock = await calculate_stock_from_movements(data.product_id, branch_id)
+    
+    # Log activity
+    await log_assembly_action(
+        adj_number, "STOCK_ADJUSTMENT", user_id, user_name,
+        new_value={"product": product.get("name"), "qty_added": data.quantity, "new_stock": new_stock},
+        tenant_id=tenant_id
+    )
+    
+    return {
+        "message": f"Stock adjustment berhasil",
+        "adjustment_number": adj_number,
+        "product_id": data.product_id,
+        "product_name": product.get("name"),
+        "quantity_added": data.quantity,
+        "new_stock_level": new_stock,
+        "movement_id": movement["id"]
+    }
+
+
+@router.get("/stock/{product_id}")
+async def get_product_stock(
+    product_id: str,
+    warehouse_id: str = "",
+    user: dict = Depends(get_current_user)
+):
+    """Get current stock level for a product (calculated from stock_movements SSOT)"""
+    branch_id = warehouse_id or user.get("branch_id", "")
+    
+    product = await products_collection.find_one({"id": product_id}, {"_id": 0})
+    if not product:
+        raise HTTPException(status_code=404, detail="Produk tidak ditemukan")
+    
+    current_stock = await calculate_stock_from_movements(product_id, branch_id)
+    
+    # Get recent movements
+    movements = await stock_movements_collection.find(
+        {"product_id": product_id},
+        {"_id": 0}
+    ).sort("created_at", -1).limit(10).to_list(10)
+    
+    return {
+        "product_id": product_id,
+        "product_name": product.get("name"),
+        "product_code": product.get("code"),
+        "current_stock": current_stock,
+        "recent_movements": movements
+    }
