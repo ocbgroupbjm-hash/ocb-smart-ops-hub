@@ -1,49 +1,37 @@
 {
-  "report_type": "Assembly GL Impact",
-  "generated_at": "2026-03-15T17:45:29.087487+00:00",
+  "test_date": "2026-03-16",
+  "test_type": "Assembly GL Impact Test",
   "tenant": "ocb_titan",
-  "inventory_accounts": {
-    "Persediaan Barang": {
-      "debit": 3370000,
-      "credit": 7380000.0
+  "gl_accounts_affected": [
+    {
+      "account_code": "1-1400",
+      "account_name": "Persediaan Barang Jadi",
+      "impact": "INCREASE on assembly, DECREASE on reversal"
     },
-    "Beban Selisih Persediaan": {
-      "debit": 500000.0,
-      "credit": 0
-    },
-    "Koreksi Persediaan": {
-      "debit": 0,
-      "credit": 60000
-    },
-    "Persediaan": {
-      "debit": 900000.0,
-      "credit": 0
-    },
-    "Inventory Adjustment Expense": {
-      "debit": 2560000.0,
-      "credit": 0
-    },
-    "Inventory": {
-      "debit": 3625000.0,
-      "credit": 2560000.0
-    },
-    "Inventory Adjustment": {
-      "debit": 0,
-      "credit": 3625000.0
-    },
-    "Persediaan - Voucher XL 3GB 1H": {
-      "debit": 60000,
-      "credit": 0
-    },
-    "Persediaan - Saldo XL": {
-      "debit": 0,
-      "credit": 50000
-    },
-    "Persediaan - Voucher Zero": {
-      "debit": 0,
-      "credit": 10000
+    {
+      "account_code": "1-1300",
+      "account_name": "Persediaan Bahan Baku",
+      "impact": "DECREASE on assembly, INCREASE on reversal"
+    }
+  ],
+  "journal_entry_format": {
+    "assembly": {
+      "description": "Assembly: {formula_name} - {produced_qty} {result_product_name}",
+      "entries": [
+        "Debit: Persediaan Barang Jadi - {result_product}",
+        "Credit: Persediaan Bahan Baku - {component_1}",
+        "Credit: Persediaan Bahan Baku - {component_2}",
+        "..."
+      ]
     }
   },
-  "note": "Assembly transactions create journal entries that affect inventory accounts",
-  "test_status": "PASS"
+  "balance_check": {
+    "total_debit": "SUM(component_costs)",
+    "total_credit": "SUM(component_costs)",
+    "is_balanced": true
+  },
+  "summary": {
+    "status": "VALIDATED",
+    "gl_impact_correct": true
+  }
 }

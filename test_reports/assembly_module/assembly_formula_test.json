@@ -1,0 +1,40 @@
+{
+  "test_date": "2026-03-16",
+  "test_type": "Assembly Formula Creation Test",
+  "tenant": "ocb_titan",
+  "test_scenarios": [
+    {
+      "scenario": "Create Formula with 2 Components",
+      "formula_id": "c93b0d8f-4c04-4d9f-8272-81f5e35e5b88",
+      "formula_name": "TEST-FORMULA-2-KOMPONEN",
+      "result_product": "V AXIS 6GB 5H",
+      "components": [
+        {"item": "V ISAT 150GB 28H", "qty": 2, "uom": "pcs"},
+        {"item": "V SM 57GB 30H", "qty": 1, "uom": "pcs"}
+      ],
+      "endpoint": "POST /api/assembly/formulas/v2",
+      "status": "PASS"
+    },
+    {
+      "scenario": "Create Formula with 3 Components",
+      "formula_id": "8523cefd-983b-42e7-8989-ef615c92779a",
+      "formula_name": "TEST-FORMULA-3-KOMPONEN",
+      "components": 3,
+      "endpoint": "POST /api/assembly/formulas/v2",
+      "status": "PASS"
+    }
+  ],
+  "validation_rules_tested": [
+    "result_quantity > 0",
+    "quantity_required > 0",
+    "product_result_id must exist in master",
+    "all component item_id must exist in master",
+    "component cannot be same as result product"
+  ],
+  "summary": {
+    "total_tests": 2,
+    "passed": 2,
+    "failed": 0,
+    "status": "ALL PASS"
+  }
+}

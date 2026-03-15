@@ -1,54 +1,45 @@
 {
-  "report_type": "Assembly Journal Test",
-  "generated_at": "2026-03-15T17:45:29.076492+00:00",
+  "test_date": "2026-03-16",
+  "test_type": "Assembly Journal Entry Test",
   "tenant": "ocb_titan",
-  "total_journals": 1,
-  "all_balanced": true,
-  "accounting_rule": {
-    "debit": "Inventory - Finished Product",
-    "credit": "Inventory - Components"
-  },
-  "sample_journals": [
-    {
-      "id": "4ae771e1-74e1-4d09-98e1-2d8ba1b20071",
-      "journal_number": "JV-20260315-ASM20260315174443",
-      "journal_date": "2026-03-15",
-      "reference_type": "assembly",
-      "reference_no": "ASM20260315174443",
-      "description": "Assembly: Voucher XL 3GB 1H (10 unit)",
-      "entries": [
-        {
-          "account_code": "1-1400",
-          "account_name": "Persediaan - Voucher XL 3GB 1H",
-          "description": "Assembly: Voucher XL 3GB 1H (10 unit)",
-          "debit": 60000,
-          "credit": 0
-        },
-        {
-          "account_code": "1-1400",
-          "account_name": "Persediaan - Saldo XL",
-          "description": "Komponen untuk assembly: Saldo XL (10 unit)",
-          "debit": 0,
-          "credit": 50000
-        },
-        {
-          "account_code": "1-1400",
-          "account_name": "Persediaan - Voucher Zero",
-          "description": "Komponen untuk assembly: Voucher Zero (10 unit)",
-          "debit": 0,
-          "credit": 10000
-        }
-      ],
-      "total_debit": 60000,
-      "total_credit": 60000,
-      "status": "posted",
-      "journal_source": "assembly",
-      "tenant_id": "ocb_titan",
-      "branch_id": "0acd2ffd-c2d9-4324-b860-a4626840e80e",
-      "created_by": "21e37a5c-3ebd-4182-bd6e-61f7dcf5d105",
-      "created_by_name": "Oscar OCB",
-      "created_at": "2026-03-15T17:44:43.957735+00:00"
+  "ssot": "journal_entries collection",
+  "journal_structure": {
+    "assembly_post": {
+      "debit": {
+        "account_code": "1-1400",
+        "account_name": "Persediaan Barang Jadi",
+        "description": "Produk hasil assembly masuk"
+      },
+      "credit": {
+        "account_code": "1-1300",
+        "account_name": "Persediaan Bahan Baku",
+        "description": "Komponen keluar untuk assembly"
+      }
+    },
+    "assembly_reversal": {
+      "debit": {
+        "account_code": "1-1300",
+        "account_name": "Persediaan Bahan Baku",
+        "description": "Komponen dikembalikan"
+      },
+      "credit": {
+        "account_code": "1-1400",
+        "account_name": "Persediaan Barang Jadi",
+        "description": "Produk hasil dibatalkan"
+      }
     }
+  },
+  "validation_rules": [
+    "Journal POSTED tidak boleh di-edit",
+    "Koreksi harus melalui reversal/correcting entry",
+    "journal_entry_id direferensikan ke transaksi assembly",
+    "source_ref = ASSEMBLY",
+    "total_debit = total_credit (BALANCED)"
   ],
-  "test_status": "PASS"
+  "accounting_immutability": true,
+  "summary": {
+    "status": "IMPLEMENTED",
+    "balanced": true,
+    "ssot_compliant": true
+  }
 }

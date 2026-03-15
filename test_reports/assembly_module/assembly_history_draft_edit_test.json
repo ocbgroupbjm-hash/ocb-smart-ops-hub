@@ -1,0 +1,42 @@
+{
+  "test_date": "2026-03-16",
+  "test_type": "Assembly History - DRAFT Edit/Delete Test",
+  "tenant": "ocb_titan",
+  "business_rule": "DRAFT dapat di-edit dan di-delete (soft delete)",
+  "test_results": [
+    {
+      "scenario": "Edit DRAFT assembly",
+      "endpoint": "PUT /api/assembly/transactions/v2/{id}",
+      "precondition": "status = DRAFT",
+      "action": "Update planned_qty and notes",
+      "result": "PASS - Draft assembly berhasil diupdate",
+      "audit_logged": true
+    },
+    {
+      "scenario": "Delete DRAFT assembly",
+      "endpoint": "DELETE /api/assembly/transactions/v2/{id}",
+      "precondition": "status = DRAFT",
+      "action": "Soft delete (status → CANCELLED)",
+      "result": "PASS - Draft assembly berhasil dibatalkan",
+      "audit_logged": true,
+      "hard_delete": false
+    },
+    {
+      "scenario": "Edit non-DRAFT (should fail)",
+      "endpoint": "PUT /api/assembly/transactions/v2/{id}",
+      "precondition": "status = POSTED",
+      "expected_error": "Hanya DRAFT yang bisa di-edit",
+      "result": "PASS - Correctly rejected"
+    }
+  ],
+  "buttons_ui": {
+    "draft_status": ["Edit", "Delete", "Post"],
+    "posted_status": ["View", "Reverse", "Duplicate as New"]
+  },
+  "summary": {
+    "total_tests": 3,
+    "passed": 3,
+    "failed": 0,
+    "status": "ALL PASS"
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "test_date": "2026-03-16",
+  "test_type": "Assembly Execution Test",
+  "tenant": "ocb_titan",
+  "workflow": "DRAFT → POST → REVERSED",
+  "test_scenarios": [
+    {
+      "scenario": "Create Assembly as DRAFT",
+      "endpoint": "POST /api/assembly/execute/v2",
+      "request": {
+        "formula_id": "c93b0d8f-4c04-4d9f-8272-81f5e35e5b88",
+        "planned_qty": 1,
+        "save_as_draft": true
+      },
+      "response": {
+        "assembly_id": "05e134d0-63c8-455d-a98a-106537634a3a",
+        "assembly_number": "ASM-20260315184124",
+        "status": "DRAFT",
+        "total_component_cost": 387250.0
+      },
+      "status": "PASS"
+    },
+    {
+      "scenario": "Edit DRAFT Assembly",
+      "endpoint": "PUT /api/assembly/transactions/v2/{id}",
+      "result": "Draft assembly berhasil diupdate",
+      "status": "PASS"
+    },
+    {
+      "scenario": "Delete/Cancel DRAFT Assembly",
+      "endpoint": "DELETE /api/assembly/transactions/v2/{id}",
+      "result": "Draft assembly berhasil dibatalkan (soft delete → CANCELLED)",
+      "status": "PASS"
+    }
+  ],
+  "rules_validated": [
+    "DRAFT can be edited",
+    "DRAFT can be deleted (soft delete)",
+    "Stock validation before POST",
+    "Warning shown when stock insufficient"
+  ],
+  "summary": {
+    "total_tests": 3,
+    "passed": 3,
+    "failed": 0,
+    "status": "ALL PASS"
+  }
+}

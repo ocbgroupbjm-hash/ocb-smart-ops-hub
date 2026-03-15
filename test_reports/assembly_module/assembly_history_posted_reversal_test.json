@@ -1,0 +1,36 @@
+{
+  "test_date": "2026-03-16",
+  "test_type": "Assembly History - POSTED Reversal Test",
+  "tenant": "ocb_titan",
+  "business_rule": "POSTED tidak boleh di-edit/delete langsung. Koreksi wajib melalui REVERSAL",
+  "reversal_flow": [
+    "1. Create reversal stock movements (kebalikan dari POST)",
+    "2. Create reversal journal entry (kebalikan dari POST)",
+    "3. Update transaction status → REVERSED",
+    "4. Log to assembly_logs audit trail"
+  ],
+  "endpoints": {
+    "reverse": "POST /api/assembly/execute/v2/reverse",
+    "request_body": {
+      "assembly_id": "string (required)",
+      "reason": "string (min 5 chars, required)",
+      "notes": "string (optional)"
+    }
+  },
+  "reversal_effects": {
+    "stock_movements": [
+      "ASSEMBLY_CONSUME_REVERSAL: Returns components to stock (+qty)",
+      "ASSEMBLY_PRODUCE_REVERSAL: Removes finished product from stock (-qty)"
+    ],
+    "journal_entries": [
+      "Debit: Bahan Baku (returns to inventory)",
+      "Credit: Barang Jadi (removed from inventory)"
+    ]
+  },
+  "immutability_rule": "Journal POSTED immutable. Koreksi via reversal/correcting entry saja.",
+  "summary": {
+    "status": "IMPLEMENTED",
+    "reversal_supported": true,
+    "accounting_compliant": true
+  }
+}

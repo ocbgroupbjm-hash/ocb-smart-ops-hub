@@ -1,0 +1,36 @@
+{
+  "test_date": "2026-03-16",
+  "test_type": "Multi-Component Formula Test",
+  "tenant": "ocb_titan",
+  "requirement": "Formula harus bisa memiliki lebih dari 1 komponen",
+  "test_results": [
+    {
+      "formula": "TEST-FORMULA-2-KOMPONEN",
+      "component_count": 2,
+      "components": [
+        {"sequence": 1, "item": "V ISAT 150GB 28H", "qty_required": 2},
+        {"sequence": 2, "item": "V SM 57GB 30H", "qty_required": 1}
+      ],
+      "status": "PASS"
+    },
+    {
+      "formula": "TEST-FORMULA-3-KOMPONEN",
+      "component_count": 3,
+      "components": [
+        {"sequence": 1, "item": "V ISAT 3GB 1H", "qty_required": 1},
+        {"sequence": 2, "item": "V XL 6GB 1H", "qty_required": 2},
+        {"sequence": 3, "item": "V XL 750MB 1H", "qty_required": 1}
+      ],
+      "status": "PASS"
+    }
+  ],
+  "database_structure": {
+    "assembly_formulas": "Stores formula header (name, result_product, result_qty)",
+    "assembly_components": "Stores component details per formula (item_id, qty_required, sequence)"
+  },
+  "summary": {
+    "multi_component_supported": true,
+    "max_components_tested": 3,
+    "status": "VALIDATED"
+  }
+}

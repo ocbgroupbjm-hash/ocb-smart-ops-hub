@@ -53,6 +53,7 @@ from routes.backup import router as backup_router
 from routes.print_settings import router as print_router
 from routes.serial_number import router as serial_router
 from routes.assembly import router as assembly_router
+from routes.assembly_enterprise import router as assembly_enterprise_router
 from routes.business import router as business_router
 
 # Import Account Settings router
@@ -188,6 +189,7 @@ app.include_router(backup_router)
 app.include_router(print_router)
 app.include_router(serial_router)
 app.include_router(assembly_router)
+app.include_router(assembly_enterprise_router)
 app.include_router(business_router)
 app.include_router(import_export_router)
 app.include_router(system_monitoring_router)

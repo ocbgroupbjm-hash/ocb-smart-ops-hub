@@ -1,0 +1,45 @@
+{
+  "test_date": "2026-03-16",
+  "test_type": "Assembly Stock Movement Test",
+  "tenant": "ocb_titan",
+  "ssot": "stock_movements collection",
+  "movement_types_implemented": [
+    {
+      "type": "ASSEMBLY_CONSUME",
+      "description": "Komponen keluar dari stok saat assembly POST",
+      "quantity_sign": "negative",
+      "reference_type": "assembly"
+    },
+    {
+      "type": "ASSEMBLY_PRODUCE",
+      "description": "Hasil rakitan masuk ke stok saat assembly POST",
+      "quantity_sign": "positive",
+      "reference_type": "assembly"
+    },
+    {
+      "type": "ASSEMBLY_CONSUME_REVERSAL",
+      "description": "Komponen dikembalikan ke stok saat assembly REVERSED",
+      "quantity_sign": "positive",
+      "reference_type": "assembly_reversal"
+    },
+    {
+      "type": "ASSEMBLY_PRODUCE_REVERSAL",
+      "description": "Hasil rakitan dikeluarkan dari stok saat assembly REVERSED",
+      "quantity_sign": "negative",
+      "reference_type": "assembly_reversal"
+    }
+  ],
+  "stock_calculation": {
+    "method": "SUM(quantity) from stock_movements WHERE product_id = X",
+    "ssot_compliant": true
+  },
+  "validation": {
+    "stock_not_written_directly": true,
+    "all_changes_via_movements": true,
+    "reference_id_linked": true
+  },
+  "summary": {
+    "status": "IMPLEMENTED",
+    "ssot_valid": true
+  }
+}
