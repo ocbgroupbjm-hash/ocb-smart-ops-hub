@@ -1,1 +1,97 @@
-{"as_of_date":"2026-03-14","aging":{"current":{"count":9,"amount":11489700.0},"1_30":{"count":0,"amount":0},"31_60":{"count":0,"amount":0},"61_90":{"count":0,"amount":0},"over_90":{"count":0,"amount":0}},"total_count":9,"total_outstanding":11489700.0}
+{
+  "report_type": "AR Aging Report",
+  "as_of_date": "2026-03-15",
+  "generated_at": "2026-03-15T07:18:09.829731+00:00",
+  "tenant_id": "ocb_titan",
+  "aging_buckets": {
+    "current": {
+      "count": 9,
+      "amount": 15489700.0,
+      "invoices": [
+        {
+          "invoice_no": "AR-20260311-0003",
+          "customer_name": "CV Berkah Abadi",
+          "outstanding": 149850.0,
+          "days_overdue": -26
+        },
+        {
+          "invoice_no": "AR-20260311-0004",
+          "customer_name": "CV Berkah Abadi",
+          "outstanding": 149850.0,
+          "days_overdue": -26
+        },
+        {
+          "invoice_no": "AR-INV000014",
+          "customer_name": "Test Credit Customer",
+          "outstanding": 65000.0,
+          "days_overdue": -26
+        },
+        {
+          "invoice_no": "AR-INV000020",
+          "customer_name": "Toko Maju Jaya",
+          "outstanding": 125000.0,
+          "days_overdue": -28
+        },
+        {
+          "invoice_no": null,
+          "customer_name": "CV Berkah Abadi",
+          "outstanding": 3000000.0,
+          "days_overdue": -25
+        },
+        {
+          "invoice_no": null,
+          "customer_name": "CV Berkah Abadi",
+          "outstanding": 4000000.0,
+          "days_overdue": -25
+        },
+        {
+          "invoice_no": null,
+          "customer_name": "CV Berkah Abadi",
+          "outstanding": 4000000.0,
+          "days_overdue": -25
+        },
+        {
+          "invoice_no": "AR-ALLOC-001",
+          "customer_name": "PT Test Customer Allocation",
+          "outstanding": 2000000.0,
+          "days_overdue": -30
+        },
+        {
+          "invoice_no": "AR-ALLOC-002",
+          "customer_name": "PT Test Customer Allocation",
+          "outstanding": 2000000.0,
+          "days_overdue": -30
+        }
+      ]
+    },
+    "1_30": {
+      "count": 0,
+      "amount": 0,
+      "invoices": []
+    },
+    "31_60": {
+      "count": 1,
+      "amount": 5000000,
+      "invoices": [
+        {
+          "invoice_no": "AR-ALLOC-003",
+          "customer_name": "PT Test Customer Allocation",
+          "outstanding": 5000000,
+          "days_overdue": 45
+        }
+      ]
+    },
+    "61_90": {
+      "count": 0,
+      "amount": 0,
+      "invoices": []
+    },
+    "over_90": {
+      "count": 0,
+      "amount": 0,
+      "invoices": []
+    }
+  },
+  "total_outstanding": 20489700.0,
+  "total_invoices": 10
+}

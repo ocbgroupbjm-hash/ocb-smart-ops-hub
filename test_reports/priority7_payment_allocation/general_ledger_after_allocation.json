@@ -1,0 +1,183 @@
+{
+  "report_type": "General Ledger After Payment Allocation",
+  "generated_at": "2026-03-15T07:18:39.427694+00:00",
+  "tenant_id": "ocb_titan",
+  "accounts": {
+    "2-1100": {
+      "account_code": "2-1100",
+      "account_name": "Hutang Dagang",
+      "entries": [
+        {
+          "date": "2026-03-12",
+          "journal_number": "JV-APP-20260312-8F55FB",
+          "reference_type": "ap_payment",
+          "description": "Pembayaran hutang None - CV Sentosa Mandiri",
+          "debit": 500000.0,
+          "credit": 0,
+          "balance": -500000.0
+        }
+      ],
+      "ending_balance": -500000.0
+    },
+    "1-1300": {
+      "account_code": "1-1300",
+      "account_name": "Piutang Usaha",
+      "entries": [
+        {
+          "date": "2026-03-11",
+          "journal_number": "JV-20260311-0002",
+          "reference_type": null,
+          "description": "Penjualan INV-20260311-0002",
+          "debit": 499500.0,
+          "credit": 0,
+          "balance": 499500.0
+        },
+        {
+          "date": "2026-03-11",
+          "journal_number": "JV-20260311-0003",
+          "reference_type": null,
+          "description": "Retur Penjualan SRT-20260311-0001",
+          "debit": 0,
+          "credit": 90000.0,
+          "balance": 409500.0
+        },
+        {
+          "date": "2026-03-11",
+          "journal_number": "JV-20260311-0005",
+          "reference_type": null,
+          "description": "Retur Penjualan SRT-20260311-0002",
+          "debit": 0,
+          "credit": 45000.0,
+          "balance": 364500.0
+        },
+        {
+          "date": "2026-03-11",
+          "journal_number": "JV-20260311-0007",
+          "reference_type": null,
+          "description": "Penjualan INV-20260311-0006",
+          "debit": 149850.0,
+          "credit": 0,
+          "balance": 514350.0
+        },
+        {
+          "date": "2026-03-11",
+          "journal_number": "JV-20260311-0009",
+          "reference_type": null,
+          "description": "Penjualan INV-20260311-0008",
+          "debit": 149850.0,
+          "credit": 0,
+          "balance": 664200.0
+        },
+        {
+          "date": "2026-03-11",
+          "journal_number": "JV-20260311-0010",
+          "reference_type": null,
+          "description": "Retur Penjualan SRT-20260311-0003",
+          "debit": 0,
+          "credit": 45000.0,
+          "balance": 619200.0
+        },
+        {
+          "date": "2026-03-12",
+          "journal_number": "JV-20260312-0001",
+          "reference_type": null,
+          "description": "Penerimaan penjualan (auto-fix)",
+          "debit": 832500.0,
+          "credit": 0,
+          "balance": 1451700.0
+        },
+        {
+          "date": "2026-03-12",
+          "journal_number": "JV-20260312-0002",
+          "reference_type": null,
+          "description": "Penerimaan penjualan (auto-fix)",
+          "debit": 416250.0,
+          "credit": 0,
+          "balance": 1867950.0
+        },
+        {
+          "date": "2026-03-12",
+          "journal_number": "JV-20260312-0003",
+          "reference_type": null,
+          "description": "Penerimaan penjualan (auto-fix)",
+          "debit": 249750.0,
+          "credit": 0,
+          "balance": 2117700.0
+        },
+        {
+          "date": "2026-03-12",
+          "journal_number": "JV-20260312-0004",
+          "reference_type": null,
+          "description": "Penerimaan penjualan (auto-fix)",
+          "debit": 388500.0,
+          "credit": 0,
+          "balance": 2506200.0
+        },
+        {
+          "date": "2026-03-12",
+          "journal_number": "JV-20260312-0005",
+          "reference_type": null,
+          "description": "Penerimaan penjualan (auto-fix)",
+          "debit": 194250.0,
+          "credit": 0,
+          "balance": 2700450.0
+        },
+        {
+          "date": "2026-03-12",
+          "journal_number": "JV-ARP-20260312-16A46B",
+          "reference_type": "ar_payment",
+          "description": "Pelunasan piutang AR-HQ-20260310-0001",
+          "debit": 0,
+          "credit": 3000000.0,
+          "balance": -299550.0
+        },
+        {
+          "date": "2026-03-12",
+          "journal_number": "JV-20260312-0006",
+          "reference_type": null,
+          "description": "Piutang Usaha (corrected entry)",
+          "debit": 4440000,
+          "credit": 0,
+          "balance": 4140450.0
+        },
+        {
+          "date": "2026-03-12",
+          "journal_number": "JV-20260312-0007",
+          "reference_type": null,
+          "description": "Piutang Usaha (corrected entry)",
+          "debit": 4440000,
+          "credit": 0,
+          "balance": 8580450.0
+        },
+        {
+          "date": "2026-03-12",
+          "journal_number": "JV-20260312-0008",
+          "reference_type": null,
+          "description": "Piutang Usaha (corrected entry)",
+          "debit": 2220000,
+          "credit": 0,
+          "balance": 10800450.0
+        },
+        {
+          "date": "2026-03-12",
+          "journal_number": "JV-ARP-20260312-38DAD7",
+          "reference_type": "ar_payment",
+          "description": "Pelunasan piutang AR-INV000015",
+          "debit": 0,
+          "credit": 22500.0,
+          "balance": 10777950.0
+        },
+        {
+          "date": "2026-03-13",
+          "journal_number": "JV-20260313-0004",
+          "reference_type": "ar_payment",
+          "description": "Pelunasan piutang AR-HQ-20260310-0002",
+          "debit": 0,
+          "credit": 1000000.0,
+          "balance": 9777950.0
+        }
+      ],
+      "ending_balance": 9777950.0
+    }
+  }
+}

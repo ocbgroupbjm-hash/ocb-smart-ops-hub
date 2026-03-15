@@ -1,0 +1,110 @@
+{
+  "report_type": "Trial Balance After Payment Allocation",
+  "as_of_date": "2026-03-15",
+  "generated_at": "2026-03-15T07:18:39.427265+00:00",
+  "tenant_id": "ocb_titan",
+  "accounts": [
+    {
+      "account_code": "1-1100",
+      "account_name": "Kas",
+      "debit": 4822800.0,
+      "credit": 0
+    },
+    {
+      "account_code": "1-1300",
+      "account_name": "Piutang Usaha",
+      "debit": 9777950.0,
+      "credit": 0
+    },
+    {
+      "account_code": "1-1400",
+      "account_name": "Persediaan Barang",
+      "debit": 0,
+      "credit": 6715000.0
+    },
+    {
+      "account_code": "1101",
+      "account_name": "Kas Kecil Pusat",
+      "debit": 9464405.0,
+      "credit": 0
+    },
+    {
+      "account_code": "1102",
+      "account_name": "Kas Cabang",
+      "debit": 0,
+      "credit": 15211617.5
+    },
+    {
+      "account_code": "1201",
+      "account_name": "Piutang Dagang",
+      "debit": 0,
+      "credit": 5275000.0
+    },
+    {
+      "account_code": "2-1100",
+      "account_name": "Hutang Dagang",
+      "debit": 500000.0,
+      "credit": 0
+    },
+    {
+      "account_code": "2-1400",
+      "account_name": "PPN Keluaran",
+      "debit": 0,
+      "credit": 1515250.0
+    },
+    {
+      "account_code": "2101",
+      "account_name": "Hutang Dagang",
+      "debit": 11000000.0,
+      "credit": 0
+    },
+    {
+      "account_code": "4-1000",
+      "account_name": "Penjualan",
+      "debit": 0,
+      "credit": 13815500.0
+    },
+    {
+      "account_code": "4-1100",
+      "account_name": "Retur Penjualan",
+      "debit": 180000,
+      "credit": 0
+    },
+    {
+      "account_code": "4-9100",
+      "account_name": "Koreksi Persediaan",
+      "debit": 0,
+      "credit": 60000
+    },
+    {
+      "account_code": "5-1000",
+      "account_name": "Harga Pokok Penjualan",
+      "debit": 6275000.0,
+      "credit": 0
+    },
+    {
+      "account_code": "5-8000",
+      "account_name": "Biaya Operasional",
+      "debit": 50000.0,
+      "credit": 0
+    },
+    {
+      "account_code": "5-9100",
+      "account_name": "Beban Selisih Persediaan",
+      "debit": 500000.0,
+      "credit": 0
+    },
+    {
+      "account_code": "6201",
+      "account_name": "Selisih Kurang Kas",
+      "debit": 22212.5,
+      "credit": 0
+    }
+  ],
+  "totals": {
+    "total_debit": 42592367.5,
+    "total_credit": 42592367.5,
+    "is_balanced": true
+  },
+  "journal_count": 2000
+}

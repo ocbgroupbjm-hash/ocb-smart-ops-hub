@@ -1,0 +1,65 @@
+{
+  "report_type": "Balance Sheet After Payment Allocation",
+  "as_of_date": "2026-03-15",
+  "generated_at": "2026-03-15T07:18:39.427947+00:00",
+  "tenant_id": "ocb_titan",
+  "assets": [
+    {
+      "code": "1-1100",
+      "name": "Kas",
+      "balance": 4822800.0
+    },
+    {
+      "code": "1-1300",
+      "name": "Piutang Usaha",
+      "balance": 9777950.0
+    },
+    {
+      "code": "1-1400",
+      "name": "Persediaan Barang",
+      "balance": -6715000.0
+    },
+    {
+      "code": "1101",
+      "name": "Kas Kecil Pusat",
+      "balance": 9464405.0
+    },
+    {
+      "code": "1102",
+      "name": "Kas Cabang",
+      "balance": -15211617.5
+    },
+    {
+      "code": "1201",
+      "name": "Piutang Dagang",
+      "balance": -5275000.0
+    }
+  ],
+  "liabilities": [
+    {
+      "code": "2-1100",
+      "name": "Hutang Dagang",
+      "balance": -500000.0
+    },
+    {
+      "code": "2-1400",
+      "name": "PPN Keluaran",
+      "balance": 1515250.0
+    },
+    {
+      "code": "2101",
+      "name": "Hutang Dagang",
+      "balance": -11000000.0
+    }
+  ],
+  "equity": [],
+  "totals": {
+    "total_assets": -3136462.5,
+    "total_liabilities": -9984750.0,
+    "total_equity": 0,
+    "net_income": 6848287.5,
+    "total_equity_with_income": 6848287.5,
+    "is_balanced": true
+  },
+  "journal_count": 2000
+}

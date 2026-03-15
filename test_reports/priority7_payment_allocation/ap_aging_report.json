@@ -1,1 +1,73 @@
-{"as_of_date":"2026-03-14","aging":{"current":{"count":5,"amount":25450000.0},"1_30":{"count":0,"amount":0},"31_60":{"count":0,"amount":0},"61_90":{"count":0,"amount":0},"over_90":{"count":0,"amount":0}},"total_count":5,"total_outstanding":25450000.0}
+{
+  "report_type": "AP Aging Report",
+  "as_of_date": "2026-03-15",
+  "generated_at": "2026-03-15T07:18:09.828125+00:00",
+  "tenant_id": "ocb_titan",
+  "aging_buckets": {
+    "current": {
+      "count": 5,
+      "amount": 27450000.0,
+      "invoices": [
+        {
+          "invoice_no": null,
+          "supplier_name": "CV Mitra Aksesoris",
+          "outstanding": 10000000.0,
+          "days_overdue": -40
+        },
+        {
+          "invoice_no": null,
+          "supplier_name": "CV Mitra Aksesoris",
+          "outstanding": 4750000.0,
+          "days_overdue": -25
+        },
+        {
+          "invoice_no": null,
+          "supplier_name": "CV Mitra Aksesoris",
+          "outstanding": 5200000.0,
+          "days_overdue": -25
+        },
+        {
+          "invoice_no": null,
+          "supplier_name": "CV Mitra Aksesoris",
+          "outstanding": 5500000.0,
+          "days_overdue": -25
+        },
+        {
+          "invoice_no": "AP-ALLOC-001",
+          "supplier_name": "PT Test Payment Allocation",
+          "outstanding": 2000000.0,
+          "days_overdue": -30
+        }
+      ]
+    },
+    "1_30": {
+      "count": 0,
+      "amount": 0,
+      "invoices": []
+    },
+    "31_60": {
+      "count": 1,
+      "amount": 5000000,
+      "invoices": [
+        {
+          "invoice_no": "AP-ALLOC-003",
+          "supplier_name": "PT Test Payment Allocation",
+          "outstanding": 5000000,
+          "days_overdue": 45
+        }
+      ]
+    },
+    "61_90": {
+      "count": 0,
+      "amount": 0,
+      "invoices": []
+    },
+    "over_90": {
+      "count": 0,
+      "amount": 0,
+      "invoices": []
+    }
+  },
+  "total_outstanding": 32450000.0,
+  "total_invoices": 6
+}

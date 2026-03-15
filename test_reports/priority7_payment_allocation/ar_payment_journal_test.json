@@ -1,0 +1,321 @@
+{
+  "report_type": "AR Payment Journal Test",
+  "generated_at": "2026-03-15T07:18:09.824926+00:00",
+  "tenant_id": "ocb_titan",
+  "summary": {
+    "total_ar_payments": 10,
+    "total_ar_allocations": 2,
+    "total_ar_journals": 10,
+    "all_journals_balanced": true
+  },
+  "sample_payments": [
+    {
+      "id": "3ef4c1ca-dc95-4420-8b9c-03c30bb49391",
+      "payment_no": "PAY-AR-20260315-0001",
+      "payment_date": "2026-03-15",
+      "customer_id": "CUS-TEST-ALLOC-001",
+      "customer_name": "PT Test Customer Allocation",
+      "total_amount": 6500000.0,
+      "discount_amount": 0.0,
+      "net_amount": 6500000.0,
+      "payment_method": "transfer",
+      "bank_account_id": null,
+      "bank_account_code": "1-1200",
+      "reference_no": "TRF-AR-TEST-001",
+      "notes": "Test AR Payment Allocation - Multi Invoice",
+      "branch_id": "0acd2ffd-c2d9-4324-b860-a4626840e80e",
+      "allocation_count": 2,
+      "status": "posted",
+      "journal_id": "JV-20260315-0018",
+      "created_by": "21e37a5c-3ebd-4182-bd6e-61f7dcf5d105",
+      "created_by_name": "Oscar OCB",
+      "created_at": "2026-03-15T07:16:08.836013+00:00"
+    },
+    {
+      "id": "49379efc-ba7a-4238-a26f-e7ff9a4552d3",
+      "payment_no": "RECV-20260313-0001",
+      "payment_date": "2026-03-13",
+      "ar_id": "6cfd21db-0b30-4aa9-b09e-d8aa54749c0e",
+      "ar_no": "AR-HQ-20260310-0002",
+      "customer_id": "CUS-AUDIT-003",
+      "branch_id": "0acd2ffd-c2d9-4324-b860-a4626840e80e",
+      "amount": 1000000.0,
+      "payment_method": "cash",
+      "bank_account_id": "",
+      "reference_no": "BUKTI-BAYAR-TEST-001",
+      "notes": "Test pembayaran sebagian piutang",
+      "journal_id": "JV-20260313-0004",
+      "created_by": "21e37a5c-3ebd-4182-bd6e-61f7dcf5d105",
+      "created_by_name": "Oscar OCB",
+      "created_at": "2026-03-13T12:42:37.257594+00:00"
+    },
+    {
+      "id": "1b489151-08da-47ab-86fe-ade96c917445",
+      "payment_no": "ARP-20260312-0002",
+      "payment_date": "2026-03-12",
+      "ar_id": "3af61fa0-2fbf-4cb2-afc2-88b7446b1b62",
+      "ar_no": "AR-INV000015",
+      "customer_id": "CUS-AUDIT-003",
+      "branch_id": "0acd2ffd-c2d9-4324-b860-a4626840e80e",
+      "amount": 22500.0,
+      "payment_method": "cash",
+      "bank_account_id": "",
+      "reference_no": "",
+      "notes": "Test payment AR",
+      "journal_id": "JV-ARP-20260312-38DAD7",
+      "created_by": "0dabf154-9982-431f-8ef6-29ebdaa5c43b",
+      "created_by_name": "Administrator",
+      "created_at": "2026-03-12T20:02:00.830922+00:00"
+    },
+    {
+      "id": "a55a8f2b-5785-4a66-a964-a3478e8e4490",
+      "payment_no": "ARP-20260312-0001",
+      "payment_date": "2026-03-12",
+      "ar_id": "bf97579e-4aeb-420a-8574-d14c66b47ee6",
+      "ar_no": "AR-HQ-20260310-0001",
+      "customer_id": "CUS-AUDIT-003",
+      "branch_id": "0acd2ffd-c2d9-4324-b860-a4626840e80e",
+      "amount": 3000000.0,
+      "payment_method": "cash",
+      "bank_account_id": "",
+      "reference_no": "",
+      "notes": "",
+      "journal_id": "JV-ARP-20260312-16A46B",
+      "created_by": "21e37a5c-3ebd-4182-bd6e-61f7dcf5d105",
+      "created_by_name": "Oscar OCB",
+      "created_at": "2026-03-12T19:05:33.733689+00:00"
+    },
+    {
+      "id": "9f1186e4-e73a-4286-8d7c-29c7333db042",
+      "payment_no": "ARP-20260311-0002",
+      "payment_date": "2026-03-11",
+      "ar_id": "97245f36-1eca-44ec-a67b-7d903957d5ca",
+      "ar_no": "AR-INV000012",
+      "customer_id": "CUS-AUDIT-003",
+      "branch_id": "0acd2ffd-c2d9-4324-b860-a4626840e80e",
+      "amount": 175000.0,
+      "payment_method": "transfer",
+      "bank_account_id": "",
+      "reference_no": "TRF-001",
+      "notes": "Final payment",
+      "journal_id": "JV-ARP-20260311-D36048",
+      "created_by": "21e37a5c-3ebd-4182-bd6e-61f7dcf5d105",
+      "created_by_name": "Oscar OCB",
+      "created_at": "2026-03-11T17:50:39.207751+00:00"
+    }
+  ],
+  "sample_allocations": [
+    {
+      "id": "6fc3c0a8-8f98-4b19-8100-febb44b40277",
+      "payment_header_id": "3ef4c1ca-dc95-4420-8b9c-03c30bb49391",
+      "payment_no": "PAY-AR-20260315-0001",
+      "invoice_id": "081a5ecc-0aea-4c7f-a181-6e5de7d64872",
+      "invoice_no": "AR-ALLOC-002",
+      "original_amount": 4500000,
+      "allocated_amount": 2500000.0,
+      "discount_amount": 0.0,
+      "net_allocated": 2500000.0,
+      "notes": null,
+      "created_at": "2026-03-15T07:16:08.854918+00:00"
+    },
+    {
+      "id": "2acd3e7a-738d-44a1-b5f7-e4a730d58f49",
+      "payment_header_id": "3ef4c1ca-dc95-4420-8b9c-03c30bb49391",
+      "payment_no": "PAY-AR-20260315-0001",
+      "invoice_id": "4683a4e6-1b5d-45ff-83a8-40ea93a0cb0c",
+      "invoice_no": "AR-ALLOC-001",
+      "original_amount": 6000000,
+      "allocated_amount": 4000000.0,
+      "discount_amount": 0.0,
+      "net_allocated": 4000000.0,
+      "notes": null,
+      "created_at": "2026-03-15T07:16:08.851393+00:00"
+    }
+  ],
+  "sample_journals": [
+    {
+      "id": "5cbc04a5-55d9-45c9-ad2a-a06e3c7d2b60",
+      "journal_number": "JV-20260315-0018",
+      "journal_no": "JV-20260315-0018",
+      "journal_date": "2026-03-15T07:16:08.862378+00:00",
+      "posted_at": "2026-03-15T07:16:08.862386+00:00",
+      "reference_type": "ar_payment",
+      "reference_id": "3ef4c1ca-dc95-4420-8b9c-03c30bb49391",
+      "reference_no": "PAY-AR-20260315-0001",
+      "memo": "Penerimaan Piutang PAY-AR-20260315-0001 - PT Test Customer Allocation",
+      "description": "Penerimaan Piutang PAY-AR-20260315-0001 - PT Test Customer Allocation",
+      "branch_id": "0acd2ffd-c2d9-4324-b860-a4626840e80e",
+      "entries": [
+        {
+          "account_code": "1-1200",
+          "account_name": "Bank",
+          "debit": 6500000.0,
+          "credit": 0,
+          "description": "Penerimaan Piutang - PT Test Customer Allocation"
+        },
+        {
+          "account_code": "1-1300",
+          "account_name": "Piutang Usaha",
+          "debit": 0,
+          "credit": 6500000.0,
+          "description": "Penerimaan Piutang - PT Test Customer Allocation"
+        }
+      ],
+      "lines": [
+        {
+          "account_code": "1-1200",
+          "account_name": "Bank",
+          "debit": 6500000.0,
+          "credit": 0,
+          "description": "Penerimaan Piutang - PT Test Customer Allocation"
+        },
+        {
+          "account_code": "1-1300",
+          "account_name": "Piutang Usaha",
+          "debit": 0,
+          "credit": 6500000.0,
+          "description": "Penerimaan Piutang - PT Test Customer Allocation"
+        }
+      ],
+      "total_debit": 6500000.0,
+      "total_credit": 6500000.0,
+      "is_balanced": true,
+      "status": "posted",
+      "created_by": "21e37a5c-3ebd-4182-bd6e-61f7dcf5d105",
+      "created_by_name": "Oscar OCB",
+      "created_at": "2026-03-15T07:16:08.862390+00:00"
+    },
+    {
+      "id": "dfdfb63c-7a8e-4591-8e76-2fdd38438759",
+      "journal_number": "JV-20260313-0004",
+      "journal_date": "2026-03-13T12:42:37.279190+00:00",
+      "reference_type": "ar_payment",
+      "reference_id": "49379efc-ba7a-4238-a26f-e7ff9a4552d3",
+      "reference_number": "RECV-20260313-0001",
+      "description": "Pelunasan Piutang AR-HQ-20260310-0002 - CV Berkah Abadi",
+      "branch_id": "0acd2ffd-c2d9-4324-b860-a4626840e80e",
+      "entries": [
+        {
+          "account_code": "1-1100",
+          "account_name": "Kas",
+          "debit": 1000000.0,
+          "credit": 0,
+          "description": "Pelunasan piutang AR-HQ-20260310-0002 - CV Berkah Abadi"
+        },
+        {
+          "account_code": "1-1300",
+          "account_name": "Piutang Usaha",
+          "debit": 0,
+          "credit": 1000000.0,
+          "description": "Pelunasan piutang AR-HQ-20260310-0002"
+        }
+      ],
+      "total_debit": 1000000.0,
+      "total_credit": 1000000.0,
+      "is_balanced": true,
+      "status": "posted",
+      "created_by": "21e37a5c-3ebd-4182-bd6e-61f7dcf5d105",
+      "created_by_name": "Oscar OCB",
+      "created_at": "2026-03-13T12:42:37.279205+00:00"
+    },
+    {
+      "id": "326ed413-7324-47c3-85ef-1c2fe73f98b1",
+      "journal_number": "JV-ARP-20260312-38DAD7",
+      "journal_date": "2026-03-12T20:02:00.834684+00:00",
+      "reference_type": "ar_payment",
+      "reference_id": "1b489151-08da-47ab-86fe-ade96c917445",
+      "reference_number": "ARP-20260312-0002",
+      "description": "Pelunasan Piutang AR-INV000015 - CV Berkah Abadi",
+      "branch_id": "0acd2ffd-c2d9-4324-b860-a4626840e80e",
+      "entries": [
+        {
+          "account_code": "1-1100",
+          "account_name": "Kas",
+          "debit": 22500.0,
+          "credit": 0,
+          "description": "Pelunasan piutang AR-INV000015 - CV Berkah Abadi"
+        },
+        {
+          "account_code": "1-1300",
+          "account_name": "Piutang Usaha",
+          "debit": 0,
+          "credit": 22500.0,
+          "description": "Pelunasan piutang AR-INV000015"
+        }
+      ],
+      "total_debit": 22500.0,
+      "total_credit": 22500.0,
+      "is_balanced": true,
+      "status": "posted",
+      "created_by": "0dabf154-9982-431f-8ef6-29ebdaa5c43b",
+      "created_by_name": "Administrator",
+      "created_at": "2026-03-12T20:02:00.834695+00:00"
+    },
+    {
+      "id": "81c3643e-16ce-4492-bbd2-12e9f35bf676",
+      "journal_number": "JV-ARP-20260312-16A46B",
+      "journal_date": "2026-03-12T19:05:33.747948+00:00",
+      "reference_type": "ar_payment",
+      "reference_id": "a55a8f2b-5785-4a66-a964-a3478e8e4490",
+      "reference_number": "ARP-20260312-0001",
+      "description": "Pelunasan Piutang AR-HQ-20260310-0001 - CV Berkah Abadi",
+      "branch_id": "0acd2ffd-c2d9-4324-b860-a4626840e80e",
+      "entries": [
+        {
+          "account_code": "1-1100",
+          "account_name": "Kas",
+          "debit": 3000000.0,
+          "credit": 0,
+          "description": "Pelunasan piutang AR-HQ-20260310-0001 - CV Berkah Abadi"
+        },
+        {
+          "account_code": "1-1300",
+          "account_name": "Piutang Usaha",
+          "debit": 0,
+          "credit": 3000000.0,
+          "description": "Pelunasan piutang AR-HQ-20260310-0001"
+        }
+      ],
+      "total_debit": 3000000.0,
+      "total_credit": 3000000.0,
+      "is_balanced": true,
+      "status": "posted",
+      "created_by": "21e37a5c-3ebd-4182-bd6e-61f7dcf5d105",
+      "created_by_name": "Oscar OCB",
+      "created_at": "2026-03-12T19:05:33.747957+00:00"
+    },
+    {
+      "id": "f66cead1-fc8d-4e1c-ab53-e3a8d9b83d1e",
+      "journal_number": "JV-ARP-20260311-D36048",
+      "journal_date": "2026-03-11T17:50:39.211032+00:00",
+      "reference_type": "ar_payment",
+      "reference_id": "9f1186e4-e73a-4286-8d7c-29c7333db042",
+      "reference_number": "ARP-20260311-0002",
+      "description": "Pelunasan Piutang AR-INV000012 - CV Berkah Abadi",
+      "branch_id": "0acd2ffd-c2d9-4324-b860-a4626840e80e",
+      "entries": [
+        {
+          "account_code": "1101",
+          "account_name": "Kas",
+          "debit": 175000.0,
+          "credit": 0,
+          "description": "Pelunasan piutang AR-INV000012 - CV Berkah Abadi"
+        },
+        {
+          "account_code": "1201",
+          "account_name": "Piutang Dagang",
+          "debit": 0,
+          "credit": 175000.0,
+          "description": "Pelunasan piutang AR-INV000012"
+        }
+      ],
+      "total_debit": 175000.0,
+      "total_credit": 175000.0,
+      "is_balanced": true,
+      "status": "posted",
+      "created_by": "21e37a5c-3ebd-4182-bd6e-61f7dcf5d105",
+      "created_by_name": "Oscar OCB",
+      "created_at": "2026-03-11T17:50:39.211044+00:00"
+    }
+  ]
+}

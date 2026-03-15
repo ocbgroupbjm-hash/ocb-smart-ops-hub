@@ -1,0 +1,303 @@
+{
+  "report_type": "Cash/Bank Ledger Test",
+  "generated_at": "2026-03-15T07:18:39.426693+00:00",
+  "tenant_id": "ocb_titan",
+  "summary": {
+    "total_transactions": 29,
+    "total_debit": 14837205.0,
+    "total_credit": 15761617.5,
+    "net_movement": -924412.5
+  },
+  "recent_movements": [
+    {
+      "date": "2026-03-13",
+      "journal_number": "JV-20260313-0004",
+      "reference_type": "ar_payment",
+      "account_code": "1-1100",
+      "account_name": "Kas",
+      "debit": 1000000.0,
+      "credit": 0,
+      "description": "Pelunasan piutang AR-HQ-20260310-0002 - CV Berkah Abadi"
+    },
+    {
+      "date": "2026-03-12",
+      "journal_number": "JV-ARP-20260312-16A46B",
+      "reference_type": "ar_payment",
+      "account_code": "1-1100",
+      "account_name": "Kas",
+      "debit": 3000000.0,
+      "credit": 0,
+      "description": "Pelunasan piutang AR-HQ-20260310-0001 - CV Berkah Abadi"
+    },
+    {
+      "date": "2026-03-12",
+      "journal_number": "JV-APP-20260312-8F55FB",
+      "reference_type": "ap_payment",
+      "account_code": "1-1100",
+      "account_name": "Kas",
+      "debit": 0,
+      "credit": 500000.0,
+      "description": "Pembayaran hutang None"
+    },
+    {
+      "date": "2026-03-12",
+      "journal_number": "JV-ARP-20260312-38DAD7",
+      "reference_type": "ar_payment",
+      "account_code": "1-1100",
+      "account_name": "Kas",
+      "debit": 22500.0,
+      "credit": 0,
+      "description": "Pelunasan piutang AR-INV000015 - CV Berkah Abadi"
+    },
+    {
+      "date": "2026-03-12",
+      "journal_number": "JV-20260312-0002",
+      "reference_type": "sales",
+      "account_code": "1-1100",
+      "account_name": "Kas",
+      "debit": 300000.0,
+      "credit": 0,
+      "description": "Penjualan INV-20260312-0006"
+    },
+    {
+      "date": "2026-03-12",
+      "journal_number": "JV-20260312-0002",
+      "reference_type": "sales",
+      "account_code": "1-1100",
+      "account_name": "Kas",
+      "debit": 33000.0,
+      "credit": 0,
+      "description": "Penjualan INV-20260312-0006"
+    },
+    {
+      "date": "2026-03-12",
+      "journal_number": "JV-20260312-0003",
+      "reference_type": "expense",
+      "account_code": "1-1100",
+      "account_name": "Kas Kecil",
+      "debit": 0,
+      "credit": 50000.0,
+      "description": "Pengeluaran Kas: Beli ATK untuk kasir"
+    },
+    {
+      "date": "2026-03-11",
+      "journal_number": "JV-ARP-20260311-D93DAB",
+      "reference_type": "ar_payment",
+      "account_code": "1101",
+      "account_name": "Kas",
+      "debit": 100000.0,
+      "credit": 0,
+      "description": "Pelunasan piutang AR-INV000012 - CV Berkah Abadi"
+    },
+    {
+      "date": "2026-03-11",
+      "journal_number": "JV-ARP-20260311-D36048",
+      "reference_type": "ar_payment",
+      "account_code": "1101",
+      "account_name": "Kas",
+      "debit": 175000.0,
+      "credit": 0,
+      "description": "Pelunasan piutang AR-INV000012 - CV Berkah Abadi"
+    },
+    {
+      "date": "2026-03-11",
+      "journal_number": "JV-20260311-0001",
+      "reference_type": null,
+      "account_code": "1-1100",
+      "account_name": "Kas",
+      "debit": 249750.0,
+      "credit": 0,
+      "description": "Penjualan INV-20260311-0001"
+    },
+    {
+      "date": "2026-03-11",
+      "journal_number": "JV-20260311-0004",
+      "reference_type": null,
+      "account_code": "1-1100",
+      "account_name": "Kas",
+      "debit": 163350.0,
+      "credit": 0,
+      "description": "Penjualan INV-20260311-0003"
+    },
+    {
+      "date": "2026-03-11",
+      "journal_number": "JV-20260311-0006",
+      "reference_type": null,
+      "account_code": "1-1100",
+      "account_name": "Kas",
+      "debit": 163350.0,
+      "credit": 0,
+      "description": "Penjualan INV-20260311-0005"
+    },
+    {
+      "date": "2026-03-11",
+      "journal_number": "JV-20260311-0008",
+      "reference_type": null,
+      "account_code": "1-1100",
+      "account_name": "Kas",
+      "debit": 163350.0,
+      "credit": 0,
+      "description": "Penjualan INV-20260311-0007"
+    },
+    {
+      "date": "2026-03-11",
+      "journal_number": "JV-20260311-0011",
+      "reference_type": null,
+      "account_code": "1-1100",
+      "account_name": "Kas",
+      "debit": 166500.0,
+      "credit": 0,
+      "description": "Penjualan INV-20260311-0009"
+    },
+    {
+      "date": "2026-03-11",
+      "journal_number": "JV-20260311-0012",
+      "reference_type": null,
+      "account_code": "1-1100",
+      "account_name": "Kas",
+      "debit": 11100.000000000002,
+      "credit": 0,
+      "description": "Penjualan INV-20260311-0010"
+    },
+    {
+      "date": "2026-03-11",
+      "journal_number": "JV-20260311-0013",
+      "reference_type": null,
+      "account_code": "1-1100",
+      "account_name": "Kas",
+      "debit": 49950.00000000001,
+      "credit": 0,
+      "description": "Penjualan INV-20260311-0011"
+    },
+    {
+      "date": "2026-03-11",
+      "journal_number": "JV-20260311-0014",
+      "reference_type": null,
+      "account_code": "1-1100",
+      "account_name": "Kas",
+      "debit": 49950.00000000001,
+      "credit": 0,
+      "description": "Penjualan INV-20260311-0012"
+    },
+    {
+      "date": "2026-03-10",
+      "journal_number": "JV-DEP-20260310-A15C29",
+      "reference_type": "deposit",
+      "account_code": "1101",
+      "account_name": "Kas Kecil Pusat",
+      "debit": 3600000.0,
+      "credit": 0,
+      "description": "Setoran dari Headquarters - Oscar OCB"
+    },
+    {
+      "date": "2026-03-10",
+      "journal_number": "JV-DEP-20260310-A15C29",
+      "reference_type": "deposit",
+      "account_code": "1102",
+      "account_name": "Kas Cabang",
+      "debit": 0,
+      "credit": 3617212.5,
+      "description": "Setoran dari kasir Oscar OCB"
+    },
+    {
+      "date": "2026-03-10",
+      "journal_number": "JV-DEP-20260310-FB37A2",
+      "reference_type": "deposit",
+      "account_code": "1101",
+      "account_name": "Kas Kecil Pusat",
+      "debit": 589405.0,
+      "credit": 0,
+      "description": "Setoran dari Headquarters - Oscar OCB"
+    },
+    {
+      "date": "2026-03-10",
+      "journal_number": "JV-DEP-20260310-FB37A2",
+      "reference_type": "deposit",
+      "account_code": "1102",
+      "account_name": "Kas Cabang",
+      "debit": 0,
+      "credit": 594405.0,
+      "description": "Setoran dari kasir Oscar OCB"
+    },
+    {
+      "date": "2026-03-10",
+      "journal_number": "JV-ARP-20260310-DE0BF7",
+      "reference_type": "ar_payment",
+      "account_code": "1101",
+      "account_name": "Kas",
+      "debit": 2000000.0,
+      "credit": 0,
+      "description": "Pelunasan piutang AR-HQ-20260310-0001 - CV Berkah Abadi"
+    },
+    {
+      "date": "2026-03-10",
+      "journal_number": "JV-APP-20260310-887CF7",
+      "reference_type": "ap_payment",
+      "account_code": "1102",
+      "account_name": "Bank",
+      "debit": 0,
+      "credit": 5000000.0,
+      "description": "Pembayaran hutang AP-HQ-20260310-0001"
+    },
+    {
+      "date": "2026-03-10",
+      "journal_number": "JV-ARP-20260310-C13D11",
+      "reference_type": "ar_payment",
+      "account_code": "1101",
+      "account_name": "Kas",
+      "debit": 1000000.0,
+      "credit": 0,
+      "description": "Pelunasan piutang AR-HQ-20260310-0002 - CV Berkah Abadi"
+    },
+    {
+      "date": "2026-03-10",
+      "journal_number": "JV-APP-20260310-0797EC",
+      "reference_type": "ap_payment",
+      "account_code": "1102",
+      "account_name": "Bank",
+      "debit": 0,
+      "credit": 2000000.0,
+      "description": "Pembayaran hutang AP-HQ-20260310-0002"
+    },
+    {
+      "date": "2026-03-10",
+      "journal_number": "JV-ARP-20260310-A652C9",
+      "reference_type": "ar_payment",
+      "account_code": "1101",
+      "account_name": "Kas",
+      "debit": 1000000.0,
+      "credit": 0,
+      "description": "Pelunasan piutang AR-HQ-20260310-0003 - CV Berkah Abadi"
+    },
+    {
+      "date": "2026-03-10",
+      "journal_number": "JV-APP-20260310-90DA38",
+      "reference_type": "ap_payment",
+      "account_code": "1102",
+      "account_name": "Bank",
+      "debit": 0,
+      "credit": 2000000.0,
+      "description": "Pembayaran hutang AP-HQ-20260310-0003"
+    },
+    {
+      "date": "2026-03-10",
+      "journal_number": "JV-ARP-20260310-6F6CE3",
+      "reference_type": "ar_payment",
+      "account_code": "1101",
+      "account_name": "Kas",
+      "debit": 1000000.0,
+      "credit": 0,
+      "description": "Pelunasan piutang AR-HQ-20260310-0004 - CV Berkah Abadi"
+    },
+    {
+      "date": "2026-03-10",
+      "journal_number": "JV-APP-20260310-C92C1D",
+      "reference_type": "ap_payment",
+      "account_code": "1102",
+      "account_name": "Bank",
+      "debit": 0,
+      "credit": 2000000.0,
+      "description": "Pembayaran hutang AP-HQ-20260310-0004"
+    }
+  ]
+}

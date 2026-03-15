@@ -1,0 +1,418 @@
+{
+  "report_type": "AP Payment Journal Test",
+  "generated_at": "2026-03-15T07:18:09.821066+00:00",
+  "tenant_id": "ocb_titan",
+  "summary": {
+    "total_ap_payments": 13,
+    "total_ap_allocations": 5,
+    "total_ap_journals": 13,
+    "all_journals_balanced": true
+  },
+  "sample_payments": [
+    {
+      "id": "10497b62-5805-4879-8be0-4bee9db8a819",
+      "payment_no": "PAY-AP-20260315-0003",
+      "payment_date": "2026-03-15",
+      "supplier_id": "SUP-TEST-ALLOC-001",
+      "supplier_name": "PT Test Payment Allocation",
+      "total_amount": 1500000.0,
+      "discount_amount": 0.0,
+      "net_amount": 1500000.0,
+      "payment_method": "cash",
+      "bank_account_id": null,
+      "bank_account_code": null,
+      "reference_no": "CASH-AP-FULL-001",
+      "notes": "Full Payment Test - AP-ALLOC-002",
+      "branch_id": "0acd2ffd-c2d9-4324-b860-a4626840e80e",
+      "allocation_count": 1,
+      "status": "posted",
+      "journal_id": "JV-20260315-0019",
+      "created_by": "21e37a5c-3ebd-4182-bd6e-61f7dcf5d105",
+      "created_by_name": "Oscar OCB",
+      "created_at": "2026-03-15T07:16:16.305364+00:00"
+    },
+    {
+      "id": "d4d6c459-3d95-4fb5-9152-fcea45a7f0d7",
+      "payment_no": "PAY-AP-20260315-0002",
+      "payment_date": "2026-03-15",
+      "supplier_id": "SUP-TEST-ALLOC-001",
+      "supplier_name": "PT Test Payment Allocation",
+      "total_amount": 5000000.0,
+      "discount_amount": 0.0,
+      "net_amount": 5000000.0,
+      "payment_method": "transfer",
+      "bank_account_id": null,
+      "bank_account_code": "1-1200",
+      "reference_no": "TRF-AP-TEST-001",
+      "notes": "Test Payment Allocation - Multi Invoice",
+      "branch_id": "0acd2ffd-c2d9-4324-b860-a4626840e80e",
+      "allocation_count": 2,
+      "status": "posted",
+      "journal_id": "JV-20260315-0017",
+      "created_by": "21e37a5c-3ebd-4182-bd6e-61f7dcf5d105",
+      "created_by_name": "Oscar OCB",
+      "created_at": "2026-03-15T07:15:26.999179+00:00"
+    },
+    {
+      "id": "d9d3c5f8-31b9-4ce5-8d59-fe31aa606592",
+      "payment_no": "PAY-20260314-0006",
+      "payment_date": "2026-03-14",
+      "ap_id": "6f8365ad-f790-4e02-b63b-4619f94b7e05",
+      "ap_no": "AP-HQ-20260310-0002",
+      "supplier_id": "SUP-AUDIT-002",
+      "branch_id": "0acd2ffd-c2d9-4324-b860-a4626840e80e",
+      "amount": 4650000.0,
+      "payment_method": "transfer",
+      "bank_account_id": "COA-AUDIT-002",
+      "reference_no": "",
+      "notes": "",
+      "journal_id": "JV-20260314-0013",
+      "created_by": "21e37a5c-3ebd-4182-bd6e-61f7dcf5d105",
+      "created_by_name": "Oscar OCB",
+      "created_at": "2026-03-14T22:09:09.283878+00:00",
+      "reversal_journal_id": "JV-20260314-0015",
+      "status": "void",
+      "voided_at": "2026-03-14T22:41:55.515006+00:00",
+      "voided_by": "21e37a5c-3ebd-4182-bd6e-61f7dcf5d105",
+      "voided_by_name": "Oscar OCB"
+    },
+    {
+      "id": "b08762c4-52ee-4f5d-819f-ff4b34dd807a",
+      "payment_no": "PAY-AP-20260314-0001",
+      "payment_date": "2026-03-14",
+      "supplier_id": "SUP-AUDIT-002",
+      "supplier_name": "CV Mitra Aksesoris",
+      "total_amount": 800000.0,
+      "discount_amount": 0.0,
+      "net_amount": 800000.0,
+      "payment_method": "transfer",
+      "bank_account_id": null,
+      "bank_account_code": "1-1200",
+      "reference_no": "TEST-MULTI-002",
+      "notes": "Test multi-invoice payment allocation",
+      "branch_id": "0acd2ffd-c2d9-4324-b860-a4626840e80e",
+      "allocation_count": 2,
+      "status": "reversed",
+      "journal_id": "JV-20260314-0011",
+      "created_by": "21e37a5c-3ebd-4182-bd6e-61f7dcf5d105",
+      "created_by_name": "Oscar OCB",
+      "created_at": "2026-03-14T22:07:02.258765+00:00",
+      "reversal_journal_id": "JV-20260314-0012",
+      "reversed_at": "2026-03-14T22:08:35.575792+00:00",
+      "reversed_by": "21e37a5c-3ebd-4182-bd6e-61f7dcf5d105"
+    },
+    {
+      "id": "45c0ecf1-0e40-4bdc-b949-d1316c2b16b1",
+      "payment_no": "PAY-20260314-0005",
+      "payment_date": "2026-03-14",
+      "ap_id": "6f8365ad-f790-4e02-b63b-4619f94b7e05",
+      "ap_no": "AP-HQ-20260310-0002",
+      "supplier_id": "SUP-AUDIT-002",
+      "branch_id": "0acd2ffd-c2d9-4324-b860-a4626840e80e",
+      "amount": 100000.0,
+      "payment_method": "transfer",
+      "bank_account_id": "1-1002",
+      "reference_no": "TEST-001",
+      "notes": "Test payment",
+      "journal_id": "JV-20260314-0010",
+      "created_by": "21e37a5c-3ebd-4182-bd6e-61f7dcf5d105",
+      "created_by_name": "Oscar OCB",
+      "created_at": "2026-03-14T20:52:28.700106+00:00",
+      "reversal_journal_id": "JV-20260314-0016",
+      "reversed_at": "2026-03-14T22:46:40.885986+00:00",
+      "reversed_by": "21e37a5c-3ebd-4182-bd6e-61f7dcf5d105",
+      "status": "reversed"
+    }
+  ],
+  "sample_allocations": [
+    {
+      "id": "39693807-60e5-491a-9cf6-21c0a1f25467",
+      "payment_header_id": "10497b62-5805-4879-8be0-4bee9db8a819",
+      "payment_no": "PAY-AP-20260315-0003",
+      "invoice_id": "AP-TEST-51aea882-6bd7-409f-8fc2-e038f0a5d95f",
+      "invoice_no": "AP-ALLOC-002",
+      "original_amount": 3500000,
+      "allocated_amount": 1500000.0,
+      "discount_amount": 0.0,
+      "net_allocated": 1500000.0,
+      "notes": null,
+      "created_at": "2026-03-15T07:16:16.306445+00:00"
+    },
+    {
+      "id": "73fa9795-0fc8-4084-9076-ef2dabc7470e",
+      "payment_header_id": "d4d6c459-3d95-4fb5-9152-fcea45a7f0d7",
+      "payment_no": "PAY-AP-20260315-0002",
+      "invoice_id": "AP-TEST-51aea882-6bd7-409f-8fc2-e038f0a5d95f",
+      "invoice_no": "AP-ALLOC-002",
+      "original_amount": 3500000,
+      "allocated_amount": 2000000.0,
+      "discount_amount": 0.0,
+      "net_allocated": 2000000.0,
+      "notes": null,
+      "created_at": "2026-03-15T07:15:27.018092+00:00"
+    },
+    {
+      "id": "fd1acc51-305c-498b-803c-acae0740ca17",
+      "payment_header_id": "d4d6c459-3d95-4fb5-9152-fcea45a7f0d7",
+      "payment_no": "PAY-AP-20260315-0002",
+      "invoice_id": "AP-TEST-425b7038-a5e4-458e-84a1-f4dea40f95d0",
+      "invoice_no": "AP-ALLOC-001",
+      "original_amount": 5000000,
+      "allocated_amount": 3000000.0,
+      "discount_amount": 0.0,
+      "net_allocated": 3000000.0,
+      "notes": null,
+      "created_at": "2026-03-15T07:15:27.011436+00:00"
+    },
+    {
+      "id": "78c1e849-14a2-4e41-93d8-cf5456ec46f4",
+      "payment_header_id": "b08762c4-52ee-4f5d-819f-ff4b34dd807a",
+      "payment_no": "PAY-AP-20260314-0001",
+      "invoice_id": "a77667d7-4602-4005-8626-2d8f690fe71c",
+      "invoice_no": "AP-HQ-20260310-0003",
+      "original_amount": 7500000.0,
+      "allocated_amount": 300000.0,
+      "discount_amount": 0.0,
+      "net_allocated": 300000.0,
+      "notes": null,
+      "created_at": "2026-03-14T22:07:02.263285+00:00"
+    },
+    {
+      "id": "f95f6224-383a-430b-b9dd-9ab8812a744c",
+      "payment_header_id": "b08762c4-52ee-4f5d-819f-ff4b34dd807a",
+      "payment_no": "PAY-AP-20260314-0001",
+      "invoice_id": "6f8365ad-f790-4e02-b63b-4619f94b7e05",
+      "invoice_no": "AP-HQ-20260310-0002",
+      "original_amount": 7500000.0,
+      "allocated_amount": 500000.0,
+      "discount_amount": 0.0,
+      "net_allocated": 500000.0,
+      "notes": null,
+      "created_at": "2026-03-14T22:07:02.259879+00:00"
+    }
+  ],
+  "sample_journals": [
+    {
+      "id": "95759c63-d37f-42c8-8b90-193352f53bdd",
+      "journal_number": "JV-20260315-0019",
+      "journal_no": "JV-20260315-0019",
+      "journal_date": "2026-03-15T07:16:16.310944+00:00",
+      "posted_at": "2026-03-15T07:16:16.310950+00:00",
+      "reference_type": "ap_payment",
+      "reference_id": "10497b62-5805-4879-8be0-4bee9db8a819",
+      "reference_no": "PAY-AP-20260315-0003",
+      "memo": "Pembayaran Hutang PAY-AP-20260315-0003 - PT Test Payment Allocation",
+      "description": "Pembayaran Hutang PAY-AP-20260315-0003 - PT Test Payment Allocation",
+      "branch_id": "0acd2ffd-c2d9-4324-b860-a4626840e80e",
+      "entries": [
+        {
+          "account_code": "2-1100",
+          "account_name": "Hutang Dagang",
+          "debit": 1500000.0,
+          "credit": 0,
+          "description": "Pembayaran Hutang - PT Test Payment Allocation"
+        },
+        {
+          "account_code": "1-1100",
+          "account_name": "Kas",
+          "debit": 0,
+          "credit": 1500000.0,
+          "description": "Pembayaran Hutang - PT Test Payment Allocation"
+        }
+      ],
+      "lines": [
+        {
+          "account_code": "2-1100",
+          "account_name": "Hutang Dagang",
+          "debit": 1500000.0,
+          "credit": 0,
+          "description": "Pembayaran Hutang - PT Test Payment Allocation"
+        },
+        {
+          "account_code": "1-1100",
+          "account_name": "Kas",
+          "debit": 0,
+          "credit": 1500000.0,
+          "description": "Pembayaran Hutang - PT Test Payment Allocation"
+        }
+      ],
+      "total_debit": 1500000.0,
+      "total_credit": 1500000.0,
+      "is_balanced": true,
+      "status": "posted",
+      "created_by": "21e37a5c-3ebd-4182-bd6e-61f7dcf5d105",
+      "created_by_name": "Oscar OCB",
+      "created_at": "2026-03-15T07:16:16.310953+00:00"
+    },
+    {
+      "id": "d7409cf5-9339-4b80-8074-d29d0f864129",
+      "journal_number": "JV-20260315-0017",
+      "journal_no": "JV-20260315-0017",
+      "journal_date": "2026-03-15T07:15:27.026143+00:00",
+      "posted_at": "2026-03-15T07:15:27.026151+00:00",
+      "reference_type": "ap_payment",
+      "reference_id": "d4d6c459-3d95-4fb5-9152-fcea45a7f0d7",
+      "reference_no": "PAY-AP-20260315-0002",
+      "memo": "Pembayaran Hutang PAY-AP-20260315-0002 - PT Test Payment Allocation",
+      "description": "Pembayaran Hutang PAY-AP-20260315-0002 - PT Test Payment Allocation",
+      "branch_id": "0acd2ffd-c2d9-4324-b860-a4626840e80e",
+      "entries": [
+        {
+          "account_code": "2-1100",
+          "account_name": "Hutang Dagang",
+          "debit": 5000000.0,
+          "credit": 0,
+          "description": "Pembayaran Hutang - PT Test Payment Allocation"
+        },
+        {
+          "account_code": "1-1200",
+          "account_name": "Bank",
+          "debit": 0,
+          "credit": 5000000.0,
+          "description": "Pembayaran Hutang - PT Test Payment Allocation"
+        }
+      ],
+      "lines": [
+        {
+          "account_code": "2-1100",
+          "account_name": "Hutang Dagang",
+          "debit": 5000000.0,
+          "credit": 0,
+          "description": "Pembayaran Hutang - PT Test Payment Allocation"
+        },
+        {
+          "account_code": "1-1200",
+          "account_name": "Bank",
+          "debit": 0,
+          "credit": 5000000.0,
+          "description": "Pembayaran Hutang - PT Test Payment Allocation"
+        }
+      ],
+      "total_debit": 5000000.0,
+      "total_credit": 5000000.0,
+      "is_balanced": true,
+      "status": "posted",
+      "created_by": "21e37a5c-3ebd-4182-bd6e-61f7dcf5d105",
+      "created_by_name": "Oscar OCB",
+      "created_at": "2026-03-15T07:15:27.026155+00:00"
+    },
+    {
+      "id": "49f56afb-b3a3-43a3-862c-7770de0d8200",
+      "journal_number": "JV-20260314-0013",
+      "journal_date": "2026-03-14T22:09:09.290947+00:00",
+      "reference_type": "ap_payment",
+      "reference_id": "d9d3c5f8-31b9-4ce5-8d59-fe31aa606592",
+      "reference_number": "PAY-20260314-0006",
+      "description": "Pembayaran Hutang AP-HQ-20260310-0002 - CV Mitra Aksesoris",
+      "branch_id": "0acd2ffd-c2d9-4324-b860-a4626840e80e",
+      "entries": [
+        {
+          "account_code": "2-1100",
+          "account_name": "Hutang Dagang",
+          "debit": 4650000.0,
+          "credit": 0,
+          "description": "Pembayaran hutang AP-HQ-20260310-0002 - CV Mitra Aksesoris"
+        },
+        {
+          "account_code": "1-1200",
+          "account_name": "Bank",
+          "debit": 0,
+          "credit": 4650000.0,
+          "description": "Pembayaran hutang AP-HQ-20260310-0002"
+        }
+      ],
+      "total_debit": 4650000.0,
+      "total_credit": 4650000.0,
+      "is_balanced": true,
+      "status": "posted",
+      "created_by": "21e37a5c-3ebd-4182-bd6e-61f7dcf5d105",
+      "created_by_name": "Oscar OCB",
+      "created_at": "2026-03-14T22:09:09.290959+00:00"
+    },
+    {
+      "id": "c694725e-0ff2-42b7-85bd-55c108e6bab4",
+      "journal_number": "JV-20260314-0011",
+      "journal_no": "JV-20260314-0011",
+      "journal_date": "2026-03-14T22:07:02.289934+00:00",
+      "posted_at": "2026-03-14T22:07:02.289943+00:00",
+      "reference_type": "ap_payment",
+      "reference_id": "b08762c4-52ee-4f5d-819f-ff4b34dd807a",
+      "reference_no": "PAY-AP-20260314-0001",
+      "memo": "Pembayaran Hutang PAY-AP-20260314-0001 - CV Mitra Aksesoris",
+      "description": "Pembayaran Hutang PAY-AP-20260314-0001 - CV Mitra Aksesoris",
+      "branch_id": "0acd2ffd-c2d9-4324-b860-a4626840e80e",
+      "entries": [
+        {
+          "account_code": "2-1100",
+          "account_name": "Hutang Dagang",
+          "debit": 800000.0,
+          "credit": 0,
+          "description": "Pembayaran Hutang - CV Mitra Aksesoris"
+        },
+        {
+          "account_code": "1-1200",
+          "account_name": "Bank",
+          "debit": 0,
+          "credit": 800000.0,
+          "description": "Pembayaran Hutang - CV Mitra Aksesoris"
+        }
+      ],
+      "lines": [
+        {
+          "account_code": "2-1100",
+          "account_name": "Hutang Dagang",
+          "debit": 800000.0,
+          "credit": 0,
+          "description": "Pembayaran Hutang - CV Mitra Aksesoris"
+        },
+        {
+          "account_code": "1-1200",
+          "account_name": "Bank",
+          "debit": 0,
+          "credit": 800000.0,
+          "description": "Pembayaran Hutang - CV Mitra Aksesoris"
+        }
+      ],
+      "total_debit": 800000.0,
+      "total_credit": 800000.0,
+      "is_balanced": true,
+      "status": "posted",
+      "created_by": "21e37a5c-3ebd-4182-bd6e-61f7dcf5d105",
+      "created_by_name": "Oscar OCB",
+      "created_at": "2026-03-14T22:07:02.289947+00:00"
+    },
+    {
+      "id": "9dea720c-82d8-4ccc-8977-849713d53741",
+      "journal_number": "JV-20260314-0010",
+      "journal_date": "2026-03-14T20:52:28.731447+00:00",
+      "reference_type": "ap_payment",
+      "reference_id": "45c0ecf1-0e40-4bdc-b949-d1316c2b16b1",
+      "reference_number": "PAY-20260314-0005",
+      "description": "Pembayaran Hutang AP-HQ-20260310-0002 - CV Mitra Aksesoris",
+      "branch_id": "0acd2ffd-c2d9-4324-b860-a4626840e80e",
+      "entries": [
+        {
+          "account_code": "2-1100",
+          "account_name": "Hutang Dagang",
+          "debit": 100000.0,
+          "credit": 0,
+          "description": "Pembayaran hutang AP-HQ-20260310-0002 - CV Mitra Aksesoris"
+        },
+        {
+          "account_code": "1-1200",
+          "account_name": "Bank",
+          "debit": 0,
+          "credit": 100000.0,
+          "description": "Pembayaran hutang AP-HQ-20260310-0002"
+        }
+      ],
+      "total_debit": 100000.0,
+      "total_credit": 100000.0,
+      "is_balanced": true,
+      "status": "posted",
+      "created_by": "21e37a5c-3ebd-4182-bd6e-61f7dcf5d105",
+      "created_by_name": "Oscar OCB",
+      "created_at": "2026-03-14T20:52:28.731458+00:00"
+    }
+  ]
+}
