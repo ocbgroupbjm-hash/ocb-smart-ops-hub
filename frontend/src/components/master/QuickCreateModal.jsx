@@ -109,12 +109,12 @@ export function QuickCreateModal({
       // Reset form
       setFormData({ code: '', name: '', description: '', symbol: '', contact_person: '', phone: '', email: '', address: '' });
       
-      // Callback with new item
+      // Callback with new item - parent will handle closing
       if (onSuccess) {
         onSuccess(newItem);
       }
       
-      onClose();
+      // Note: Don't call onClose() here - parent (SearchableSelectWithCreate) will handle it
     } catch (err) {
       setError(err.message);
       toast.error(err.message);
@@ -141,8 +141,8 @@ export function QuickCreateModal({
           </button>
         </div>
         
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="p-4 space-y-4">
+        {/* Form - Using div instead of form to avoid nested form HTML violation */}
+        <div className="p-4 space-y-4">
           {/* Error message */}
           {error && (
             <div className="flex items-center gap-2 p-3 bg-red-900/30 border border-red-700 rounded-lg text-red-300 text-sm">
@@ -300,7 +300,8 @@ export function QuickCreateModal({
               Batal
             </button>
             <button
-              type="submit"
+              type="button"
+              onClick={handleSubmit}
               disabled={loading || !formData.name.trim()}
               className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm flex items-center justify-center gap-2 disabled:opacity-50"
               data-testid="quick-create-submit"
@@ -318,7 +319,7 @@ export function QuickCreateModal({
               )}
             </button>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   );
@@ -343,12 +344,14 @@ export function SearchableSelectWithCreate({
   const [search, setSearch] = useState('');
   const [showQuickCreate, setShowQuickCreate] = useState(false);
   
-  const filteredOptions = options.filter(opt => 
-    opt.label.toLowerCase().includes(search.toLowerCase()) ||
-    (opt.sublabel && opt.sublabel.toLowerCase().includes(search.toLowerCase()))
-  );
+  const filteredOptions = options.filter(opt => {
+    // Defensive check for undefined label (can happen during quick create)
+    if (!opt || !opt.label) return false;
+    return opt.label.toLowerCase().includes(search.toLowerCase()) ||
+      (opt.sublabel && opt.sublabel.toLowerCase().includes(search.toLowerCase()));
+  });
   
-  const selectedOption = options.find(opt => opt.value === value);
+  const selectedOption = options.find(opt => opt && opt.value === value);
   
   const handleQuickCreateSuccess = (newItem) => {
     // Format the new item as an option
@@ -389,8 +392,8 @@ export function SearchableSelectWithCreate({
           }`}
           data-testid={testId}
         >
-          <span className={selectedOption ? 'text-white text-sm' : 'text-gray-500 text-sm'}>
-            {selectedOption ? selectedOption.label : placeholder}
+          <span className={selectedOption?.label ? 'text-white text-sm' : 'text-gray-500 text-sm'}>
+            {selectedOption?.label || placeholder}
           </span>
           <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
