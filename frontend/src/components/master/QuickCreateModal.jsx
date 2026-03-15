@@ -361,16 +361,21 @@ export function SearchableSelectWithCreate({
       sublabel: newItem.code
     };
     
-    // Select the new item
-    onValueChange(newItem.id);
-    
-    // Notify parent to refresh options
+    // IMPORTANT: First notify parent to update options list
+    // This must happen BEFORE selecting the value so dropdown shows it
     if (onItemCreated) {
       onItemCreated(type, newItem);
     }
     
-    setShowQuickCreate(false);
-    setIsOpen(false);
+    // Small delay to ensure parent state updates before selecting
+    // This ensures the new option is available in the dropdown
+    setTimeout(() => {
+      // Select the new item AFTER parent has added it to options
+      onValueChange(newItem.id);
+      
+      setShowQuickCreate(false);
+      setIsOpen(false);
+    }, 50);
   };
   
   const typeLabels = {

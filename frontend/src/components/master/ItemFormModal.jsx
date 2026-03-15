@@ -69,17 +69,23 @@ export default function ItemFormModal({
     [allSuppliers]
   );
   
-  // Handler for quick create success - add to local state and optionally refresh parent
+  // Handler for quick create success - add to local state and auto-select
   const handleQuickCreateSuccess = useCallback((type, newItem) => {
     switch (type) {
       case 'category':
         setLocalCategories(prev => [...prev, newItem]);
+        // Auto-select the new category
+        setFormData(prev => ({ ...prev, category_id: newItem.id }));
         break;
       case 'unit':
         setLocalUnits(prev => [...prev, newItem]);
+        // Auto-select the new unit
+        setFormData(prev => ({ ...prev, unit_id: newItem.id }));
         break;
       case 'brand':
         setLocalBrands(prev => [...prev, newItem]);
+        // Auto-select the new brand
+        setFormData(prev => ({ ...prev, brand_id: newItem.id }));
         break;
       default:
         break;
