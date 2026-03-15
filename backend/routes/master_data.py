@@ -332,7 +332,16 @@ async def create_supplier(data: SupplierCreate, request: Request, user: dict = D
         request.client.host if request.client else ""
     )
     
-    return {"id": supplier.id, "message": "Supplier created"}
+    # Return full supplier object for frontend quick create display
+    return {
+        "id": supplier.id, 
+        "code": supplier.code, 
+        "name": supplier.name,
+        "contact_person": supplier.contact_person,
+        "phone": supplier.phone,
+        "email": supplier.email,
+        "address": supplier.address
+    }
 
 @router.put("/suppliers/{supplier_id}")
 async def update_supplier(supplier_id: str, data: SupplierUpdate, request: Request, user: dict = Depends(require_permission("master_supplier", "edit"))):

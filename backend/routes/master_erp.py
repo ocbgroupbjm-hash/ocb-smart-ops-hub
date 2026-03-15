@@ -332,7 +332,8 @@ async def create_category(data: CategoryCreate, user: dict = Depends(get_current
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     await categories.insert_one(category)
-    return {"id": category["id"], "message": "Kategori berhasil ditambahkan"}
+    # Return full category object for frontend quick create display
+    return {"id": category["id"], "code": category["code"], "name": category["name"], "description": category.get("description", "")}
 
 @router.put("/categories/{category_id}")
 async def update_category(category_id: str, data: CategoryUpdate, user: dict = Depends(get_current_user)):
@@ -363,11 +364,13 @@ async def delete_category(category_id: str, request: Request, user: dict = Depen
 class UnitCreate(BaseModel):
     code: str
     name: str
+    symbol: str = ""
     description: str = ""
 
 class UnitUpdate(BaseModel):
     code: Optional[str] = None
     name: Optional[str] = None
+    symbol: Optional[str] = None
     description: Optional[str] = None
 
 @router.get("/units")
@@ -393,7 +396,8 @@ async def create_unit(data: UnitCreate, user: dict = Depends(get_current_user)):
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     await units.insert_one(unit)
-    return {"id": unit["id"], "message": "Satuan berhasil ditambahkan"}
+    # Return full unit object for frontend quick create display
+    return {"id": unit["id"], "code": unit["code"], "name": unit["name"], "symbol": unit.get("symbol", ""), "description": unit.get("description", "")}
 
 @router.put("/units/{unit_id}")
 async def update_unit(unit_id: str, data: UnitUpdate, user: dict = Depends(get_current_user)):
@@ -450,7 +454,8 @@ async def create_brand(data: BrandCreate, user: dict = Depends(get_current_user)
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     await brands.insert_one(brand)
-    return {"id": brand["id"], "message": "Merk berhasil ditambahkan"}
+    # Return full brand object for frontend quick create display
+    return {"id": brand["id"], "code": brand["code"], "name": brand["name"], "description": brand.get("description", "")}
 
 @router.put("/brands/{brand_id}")
 async def update_brand(brand_id: str, data: BrandUpdate, user: dict = Depends(get_current_user)):

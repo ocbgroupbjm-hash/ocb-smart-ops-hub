@@ -5,7 +5,7 @@
 // langsung dari form Tambah Item tanpa harus keluar dari form.
 // ============================================================================
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { X, Plus, AlertCircle, Check, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -343,15 +343,29 @@ export function SearchableSelectWithCreate({
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [showQuickCreate, setShowQuickCreate] = useState(false);
+  // Local state to track newly created items that may not be in props yet
+  const [localOptions, setLocalOptions] = useState([]);
   
-  const filteredOptions = options.filter(opt => {
+  // Merge props options with local options (newly created)
+  const allOptions = useMemo(() => {
+    const merged = [...options];
+    // Add local options that aren't in props yet
+    localOptions.forEach(localOpt => {
+      if (!merged.some(opt => opt.value === localOpt.value)) {
+        merged.push(localOpt);
+      }
+    });
+    return merged;
+  }, [options, localOptions]);
+  
+  const filteredOptions = allOptions.filter(opt => {
     // Defensive check for undefined label (can happen during quick create)
     if (!opt || !opt.label) return false;
     return opt.label.toLowerCase().includes(search.toLowerCase()) ||
       (opt.sublabel && opt.sublabel.toLowerCase().includes(search.toLowerCase()));
   });
   
-  const selectedOption = options.find(opt => opt && opt.value === value);
+  const selectedOption = allOptions.find(opt => opt && opt.value === value);
   
   const handleQuickCreateSuccess = (newItem) => {
     // Format the new item as an option
@@ -361,21 +375,20 @@ export function SearchableSelectWithCreate({
       sublabel: newItem.code
     };
     
-    // IMPORTANT: First notify parent to update options list
-    // This must happen BEFORE selecting the value so dropdown shows it
+    // CRITICAL: Add to local options FIRST so it appears in dropdown immediately
+    setLocalOptions(prev => [...prev, newOption]);
+    
+    // Notify parent to update their options list
     if (onItemCreated) {
       onItemCreated(type, newItem);
     }
     
-    // Small delay to ensure parent state updates before selecting
-    // This ensures the new option is available in the dropdown
+    // Small delay then select the new value
     setTimeout(() => {
-      // Select the new item AFTER parent has added it to options
       onValueChange(newItem.id);
-      
       setShowQuickCreate(false);
       setIsOpen(false);
-    }, 50);
+    }, 100);
   };
   
   const typeLabels = {
