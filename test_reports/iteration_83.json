@@ -1,0 +1,95 @@
+{
+  "summary": "Assembly Voucher Module (Perakitan Voucher) - Full CRUD testing completed. Fixed critical bug in hard delete endpoint (NameError: get_db not defined). All 12 backend API tests passed. Frontend UI verified - all elements present and correctly renamed.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [],
+    "fixed": [
+      {
+        "endpoint": "DELETE /api/assembly-enterprise/formulas/v2/{id}/hard-delete",
+        "issue": "NameError: name 'get_db' is not defined - Line 613 in assembly_enterprise.py",
+        "fix": "Changed 'db = get_db()' to use existing 'audit_logs' collection reference",
+        "priority": "CRITICAL - FIXED"
+      }
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "ProductAssembly.jsx - Product select dropdown",
+        "issue": "React hydration warning: <span> cannot be child of <option>",
+        "selector": "select option elements",
+        "priority": "LOW - Cosmetic warning only"
+      }
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_assembly_voucher_module.py",
+    "/app/test_reports/pytest/pytest_assembly_voucher_iter83.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "FIXED: assembly_enterprise.py line 613 had undefined 'get_db()' function call",
+    "UI rename from 'Perakitan' to 'Perakitan Voucher' is complete",
+    "Route /inventory/assembly-voucher is the official single route",
+    "API uses /api/assembly-enterprise/* exclusively (no legacy fallbacks)",
+    "Hard delete validation correctly checks assembly_transactions before allowing delete"
+  ],
+  "updated_files": [
+    "/app/backend/routes/assembly_enterprise.py - Fixed hard delete audit logging (line 613)",
+    "/app/backend/tests/test_assembly_voucher_module.py - Created comprehensive test suite"
+  ],
+  "success_rate": {
+    "backend": "100% (12/12 passed)",
+    "frontend": "100%"
+  },
+  "test_credentials": {
+    "email": "ocbgroupbjm@gmail.com",
+    "password": "admin123",
+    "role": "owner",
+    "tenant": "ocb_titan"
+  },
+  "seed_data_creation": "Multiple test formulas created during API testing (TEST-VOUCHER-*, TEST-DELETE-ME-*, TEST-USED-*)",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Assembly Voucher module fully tested. Official route: /inventory/assembly-voucher. Official API: /api/assembly-enterprise/*. Hard delete validates if formula is used in transactions. Existing formula TEST-FORMULA-2-KOMPONEN has transactions so cannot be hard deleted.",
+  "features_verified": {
+    "ui_rename": {
+      "sidebar_menu": "✓ Shows 'Perakitan Voucher' with NEW badge",
+      "page_title": "✓ Shows 'Perakitan Voucher'",
+      "tab_labels": "✓ 'Formula Voucher' and 'Riwayat Transaksi'",
+      "add_button": "✓ 'Tambah Perakitan Voucher'",
+      "modal_title": "✓ 'Buat Voucher Perakitan' / 'Edit Voucher Perakitan'"
+    },
+    "route": {
+      "official": "/inventory/assembly-voucher",
+      "verified": "✓ Route loads correctly"
+    },
+    "api_crud": {
+      "list": "✓ GET /api/assembly-enterprise/formulas/v2?status=ALL",
+      "create": "✓ POST /api/assembly-enterprise/formulas/v2",
+      "edit": "✓ PUT /api/assembly-enterprise/formulas/v2/{id}",
+      "hard_delete_unused": "✓ DELETE /api/assembly-enterprise/formulas/v2/{id}/hard-delete - succeeds for unused",
+      "hard_delete_used": "✓ Returns 400 with 'Voucher sudah digunakan pada X transaksi dan tidak dapat dihapus'"
+    },
+    "assembly_execution": {
+      "execute": "✓ POST /api/assembly-enterprise/execute/v2",
+      "history": "✓ GET /api/assembly-enterprise/history/v2"
+    }
+  },
+  "api_tests_detail": {
+    "TestAuthSetup": "1/1 passed - Login returns valid token",
+    "TestAssemblyFormulaList": "3/3 passed - List returns array with pagination",
+    "TestAssemblyFormulaCRUD": "3/3 passed - Create/edit formulas work",
+    "TestAssemblyHardDelete": "2/2 passed - Unused deletes ok, used blocked with proper message",
+    "TestAssemblyTransactionHistory": "1/1 passed - History endpoint returns transactions",
+    "TestAssemblyEndpointSecurity": "2/2 passed - Unauthorized requests blocked"
+  },
+  "rca_of_the_issue": {
+    "symptom": "Hard delete endpoint returned 500 Internal Server Error",
+    "root_cause": "Line 613 in assembly_enterprise.py called 'get_db()' which is undefined. The code should use the existing 'audit_logs' collection reference defined at the top of the file.",
+    "fix_applied": "Changed 'db = get_db()' to directly use 'await audit_logs.insert_one(...)'",
+    "verification": "All 12 backend tests pass after fix"
+  }
+}

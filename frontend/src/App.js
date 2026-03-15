@@ -389,7 +389,6 @@ function App() {
             <Route path="inventory/mutations" element={<StockMovements />} />
             <Route path="inventory/opname" element={<StockOpname />} />
             <Route path="inventory/serial-numbers" element={<SerialNumbers />} />
-            <Route path="inventory/assemblies" element={<ProductAssembly />} />
             <Route path="inventory/assembly-voucher" element={<ProductAssembly />} />
             
             {/* Accounting Routes */}

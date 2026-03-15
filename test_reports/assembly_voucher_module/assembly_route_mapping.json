@@ -1,0 +1,65 @@
+{
+  "audit_date": "2026-03-15",
+  "blueprint_version": "v2.4.3",
+  "module_name": "PERAKITAN VOUCHER",
+  "consolidation_status": "IN_PROGRESS",
+  "routes": {
+    "frontend": {
+      "official_route": "/inventory/assembly-voucher",
+      "deprecated_routes": ["/inventory/assemblies"],
+      "component": "ProductAssembly.jsx"
+    },
+    "backend": {
+      "official_api_prefix": "/api/assembly-enterprise",
+      "legacy_api_prefix": "/api/assembly",
+      "official_router_file": "assembly_enterprise.py",
+      "legacy_router_file": "assembly.py"
+    }
+  },
+  "endpoints_mapping": {
+    "formulas": {
+      "list": {
+        "official": "GET /api/assembly-enterprise/formulas/v2",
+        "legacy": "GET /api/assembly/formulas"
+      },
+      "create": {
+        "official": "POST /api/assembly-enterprise/formulas/v2",
+        "legacy": "POST /api/assembly/formulas"
+      },
+      "update": {
+        "official": "PUT /api/assembly-enterprise/formulas/v2/{id}",
+        "legacy": "PUT /api/assembly/formulas/{id}"
+      },
+      "hard_delete": {
+        "official": "DELETE /api/assembly-enterprise/formulas/v2/{id}/hard-delete",
+        "legacy": "DELETE /api/assembly/formulas/{id}",
+        "validation": "Check assembly_transactions before delete"
+      },
+      "soft_delete": {
+        "official": "PATCH /api/assembly-enterprise/formulas/v2/{id}/deactivate"
+      }
+    },
+    "execution": {
+      "execute": {
+        "official": "POST /api/assembly-enterprise/execute/v2"
+      },
+      "post": {
+        "official": "POST /api/assembly-enterprise/execute/v2/post"
+      },
+      "reverse": {
+        "official": "POST /api/assembly-enterprise/execute/v2/reverse"
+      }
+    }
+  },
+  "ui_labels": {
+    "sidebar_menu": "Perakitan Voucher",
+    "page_title": "Perakitan Voucher",
+    "tab_formulas": "Voucher Formula",
+    "tab_history": "Riwayat Perakitan"
+  },
+  "collections_used": [
+    "assembly_formulas",
+    "assembly_components",
+    "assembly_transactions"
+  ]
+}

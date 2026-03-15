@@ -610,8 +610,7 @@ async def hard_delete_formula(formula_id: str, user: dict = Depends(get_current_
     })
     
     # Log action (store in audit_logs since formula is deleted)
-    db = get_db()
-    await db.audit_logs.insert_one({
+    await audit_logs.insert_one({
         "id": str(uuid.uuid4()),
         "action": "HARD_DELETE_FORMULA",
         "entity_type": "assembly_formula",

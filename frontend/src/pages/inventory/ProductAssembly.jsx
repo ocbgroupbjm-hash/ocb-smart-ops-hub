@@ -32,12 +32,11 @@ const ProductAssembly = () => {
   });
 
   // ============================================================
-  // ENTERPRISE ASSEMBLY API - Using /api/assembly-enterprise/*
-  // Legacy API /api/assembly/* still works for backward compatibility
+  // MODUL PERAKITAN VOUCHER - OCB TITAN ERP
+  // Single Source of Truth: /api/assembly-enterprise/*
   // ============================================================
   
-  const API_PREFIX = '/api/assembly-enterprise'; // Enterprise API
-  const API_LEGACY = '/api/assembly'; // Legacy fallback
+  const API_PREFIX = '/api/assembly-enterprise'; // Official API
 
   useEffect(() => {
     loadFormulas();
@@ -48,11 +47,7 @@ const ProductAssembly = () => {
   const loadFormulas = async () => {
     setLoading(true);
     try {
-      // Try enterprise API first, fallback to legacy
-      let res = await api(`${API_PREFIX}/formulas/v2?status=ALL`);
-      if (!res.ok) {
-        res = await api(`${API_LEGACY}/formulas`);
-      }
+      const res = await api(`${API_PREFIX}/formulas/v2?status=ALL`);
       if (res.ok) {
         const data = await res.json();
         setFormulas(data.formulas || []);
@@ -73,11 +68,7 @@ const ProductAssembly = () => {
 
   const loadTransactions = async () => {
     try {
-      // Try enterprise API first, fallback to legacy
-      let res = await api(`${API_PREFIX}/history/v2?status=ALL`);
-      if (!res.ok) {
-        res = await api(`${API_LEGACY}/transactions?limit=50`);
-      }
+      const res = await api(`${API_PREFIX}/history/v2?status=ALL`);
       if (res.ok) {
         const data = await res.json();
         setTransactions(data.transactions || []);
@@ -110,8 +101,12 @@ const ProductAssembly = () => {
   };
 
   const saveFormula = async () => {
-    if (!formData.name || !formData.result_product_id || formData.components.length === 0) {
-      toast.error('Lengkapi semua data');
+    if (!formData.name || !formData.result_product_id) {
+      toast.error('Lengkapi nama voucher dan produk hasil');
+      return;
+    }
+    if (formData.components.length < 1) {
+      toast.error('Minimal harus ada 1 komponen');
       return;
     }
     try {
@@ -184,22 +179,8 @@ const ProductAssembly = () => {
         loadFormulas();
       } else {
         const err = await res.json();
-        // Check if validation error (voucher used in transactions)
-        if (err.detail && err.detail.includes('digunakan pada transaksi')) {
-          toast.error(err.detail);
-        } else if (err.detail && err.detail.includes('used in')) {
-          toast.error('Voucher sudah digunakan pada transaksi dan tidak dapat dihapus.');
-        } else {
-          // Fallback to legacy delete
-          const legacyRes = await api(`${API_LEGACY}/formulas/${id}`, { method: 'DELETE' });
-          if (legacyRes.ok) {
-            toast.success('Formula voucher dihapus');
-            loadFormulas();
-          } else {
-            const legacyErr = await legacyRes.json();
-            toast.error(legacyErr.detail || 'Gagal menghapus formula voucher');
-          }
-        }
+        // Show validation error message
+        toast.error(err.detail || 'Gagal menghapus formula voucher');
       }
     } catch (err) { 
       toast.error('Gagal menghapus formula voucher'); 
@@ -214,17 +195,16 @@ const ProductAssembly = () => {
     try {
       // Use enterprise API for assembly execution
       const endpoint = isDisassembly 
-        ? `${API_LEGACY}/disassemble` // Disassembly still uses legacy for now
+        ? `${API_PREFIX}/execute/v2` // Disassembly also uses enterprise API
         : `${API_PREFIX}/execute/v2`;
       
-      const payload = isDisassembly 
-        ? { formula_id: selectedFormula.id, quantity: assemblyQty, notes: '' }
-        : { 
-            formula_id: selectedFormula.id, 
-            planned_qty: assemblyQty, 
-            notes: '',
-            save_as_draft: false // Direct POST instead of DRAFT
-          };
+      const payload = { 
+        formula_id: selectedFormula.id, 
+        planned_qty: assemblyQty, 
+        notes: '',
+        is_disassembly: isDisassembly,
+        save_as_draft: false // Direct POST instead of DRAFT
+      };
       
       const res = await api(endpoint, {
         method: 'POST',
@@ -428,11 +408,11 @@ const ProductAssembly = () => {
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
           <div className="bg-[#1a1214] border border-red-900/30 rounded-xl p-6 w-[600px] max-h-[90vh] overflow-y-auto">
             <h2 className="text-xl font-bold text-amber-100 mb-4">
-              {selectedFormula ? 'Edit Formula' : 'Buat Formula Rakitan'}
+              {selectedFormula ? 'Edit Voucher Perakitan' : 'Buat Voucher Perakitan'}
             </h2>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm text-gray-400 mb-1">Nama Formula *</label>
+                <label className="block text-sm text-gray-400 mb-1">Nama Voucher *</label>
                 <input
                   type="text"
                   value={formData.name}
