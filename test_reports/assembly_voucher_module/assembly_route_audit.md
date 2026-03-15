@@ -9,7 +9,7 @@
 ### Frontend Routes (App.js)
 | Route | Component | Status |
 |-------|-----------|--------|
-| `/inventory/assemblies` | ProductAssembly | **LEGACY - AKAN DIHAPUS** |
+| `/inventory/assemblies` | ProductAssembly | **LEGACY - DIHAPUS** |
 | `/inventory/assembly-voucher` | ProductAssembly | **RESMI - AKTIF** |
 
 ### Sidebar Menu
@@ -20,7 +20,7 @@
 ### Backend Router Files
 | File | Prefix | Status |
 |------|--------|--------|
-| `assembly.py` | `/api/assembly` | **LEGACY - UNTUK BACKWARD COMPAT** |
+| `assembly.py` | `/api/assembly` | **LEGACY - TETAP ADA UNTUK BACKWARD COMPAT** |
 | `assembly_enterprise.py` | `/api/assembly-enterprise` | **RESMI - AKTIF** |
 
 ### Backend Endpoints Enterprise (RESMI)
@@ -40,10 +40,10 @@
 ### Backend Endpoints Legacy (DEPRECATED)
 | Method | Endpoint | Status |
 |--------|----------|--------|
-| GET | `/api/assembly/formulas` | Deprecated |
-| POST | `/api/assembly/formulas` | Deprecated |
-| PUT | `/api/assembly/formulas/{id}` | Deprecated |
-| DELETE | `/api/assembly/formulas/{id}` | Deprecated |
+| GET | `/api/assembly/formulas` | Deprecated - tidak dipakai frontend |
+| POST | `/api/assembly/formulas` | Deprecated - tidak dipakai frontend |
+| PUT | `/api/assembly/formulas/{id}` | Deprecated - tidak dipakai frontend |
+| DELETE | `/api/assembly/formulas/{id}` | Deprecated - tidak dipakai frontend |
 
 ---
 
@@ -60,47 +60,48 @@
 ```
 
 ### Aksi Yang Dilakukan
-1. **HAPUS** route `/inventory/assemblies` dari App.js
-2. **UPDATE** frontend untuk HANYA menggunakan `/api/assembly-enterprise/*`
-3. **HAPUS** fallback ke legacy API di frontend
-4. **PERTAHANKAN** `assembly.py` di backend untuk backward compatibility external system
-5. **UPDATE** semua UI text ke "PERAKITAN VOUCHER"
+1. ✅ **HAPUS** route `/inventory/assemblies` dari App.js
+2. ✅ **UPDATE** frontend untuk HANYA menggunakan `/api/assembly-enterprise/*`
+3. ✅ **HAPUS** fallback ke legacy API di frontend
+4. ✅ **PERTAHANKAN** `assembly.py` di backend untuk backward compatibility external system
+5. ✅ **UPDATE** semua UI text ke "PERAKITAN VOUCHER"
 
 ---
 
-## 3. STATUS SETELAH KONSOLIDASI
+## 3. STATUS SETELAH KONSOLIDASI ✅
 
-### Frontend Routes (Target)
+### Frontend Routes (Final)
 | Route | Component | Status |
 |-------|-----------|--------|
 | `/inventory/assembly-voucher` | ProductAssembly | **SATU-SATUNYA ROUTE AKTIF** |
 
-### API (Target)
+### API (Final)
 | API | Status |
 |-----|--------|
-| `/api/assembly-enterprise/*` | **SATU-SATUNYA API AKTIF** |
+| `/api/assembly-enterprise/*` | **SATU-SATUNYA API AKTIF DI FRONTEND** |
 | `/api/assembly/*` | **TIDAK DIGUNAKAN FRONTEND** |
 
 ---
 
-## 4. CHECKLIST KONSOLIDASI
+## 4. CHECKLIST KONSOLIDASI ✅
 
-- [ ] Route lama `/inventory/assemblies` dihapus dari App.js
-- [ ] Frontend hanya menggunakan API enterprise
-- [ ] UI text konsisten "PERAKITAN VOUCHER"
-- [ ] Page title = "Perakitan Voucher"
-- [ ] Breadcrumb = "Perakitan Voucher"  
-- [ ] Tab labels konsisten
-- [ ] CRUD berfungsi penuh
-- [ ] Hard delete dengan validasi berfungsi
+- [x] Route lama `/inventory/assemblies` dihapus dari App.js
+- [x] Frontend hanya menggunakan API enterprise
+- [x] UI text konsisten "PERAKITAN VOUCHER"
+- [x] Page title = "Perakitan Voucher"
+- [x] Tab labels: "Formula Voucher", "Riwayat Transaksi"
+- [x] Button: "Tambah Perakitan Voucher"
+- [x] CRUD berfungsi penuh
+- [x] Hard delete dengan validasi berfungsi
+- [x] Audit log tersimpan untuk hard delete
 
 ---
 
-## 5. EVIDENCE REQUIRED
+## 5. EVIDENCE CREATED ✅
+- assembly_route_audit.md (this file)
 - assembly_route_mapping.json
-- create_voucher_test.json
-- edit_voucher_test.json
 - hard_delete_unused_voucher_test.json
 - hard_delete_used_voucher_rejected_test.json
 - assembly_voucher_ui.png
 - audit_log_proof.json
+- rollback_plan.md

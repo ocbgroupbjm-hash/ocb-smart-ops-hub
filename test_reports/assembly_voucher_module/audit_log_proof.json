@@ -1,0 +1,28 @@
+{
+  "test_date": "2026-03-15T23:16:09Z",
+  "test_type": "HARD_DELETE_FORMULA_AUDIT_LOG",
+  "result": "PASS",
+  "audit_log_entry": {
+    "id": "11c8111f-b63f-41c1-83a3-858e611b5776",
+    "action": "HARD_DELETE_FORMULA",
+    "entity_type": "assembly_formula",
+    "entity_id": "77ae3566-b675-4613-a9b8-562530bee896",
+    "entity_name": "TEST-AUDIT-DELETE-231559",
+    "user_id": "21e37a5c-3ebd-4182-bd6e-61f7dcf5d105",
+    "user_name": "Oscar OCB",
+    "old_value": {
+      "formula_name": "TEST-AUDIT-DELETE-231559",
+      "status": "ACTIVE",
+      "component_count": 1
+    },
+    "new_value": null,
+    "tenant_id": "ocb_titan",
+    "created_at": "2026-03-15T23:16:09.318361+00:00"
+  },
+  "verification": {
+    "formula_deleted": true,
+    "components_deleted": true,
+    "audit_log_created": true,
+    "tenant_id_correct": true
+  }
+}

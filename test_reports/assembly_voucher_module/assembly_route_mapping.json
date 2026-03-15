@@ -2,16 +2,18 @@
   "audit_date": "2026-03-15",
   "blueprint_version": "v2.4.3",
   "module_name": "PERAKITAN VOUCHER",
-  "consolidation_status": "IN_PROGRESS",
+  "consolidation_status": "COMPLETED",
   "routes": {
     "frontend": {
       "official_route": "/inventory/assembly-voucher",
-      "deprecated_routes": ["/inventory/assemblies"],
+      "deprecated_routes": [],
+      "removed_routes": ["/inventory/assemblies"],
       "component": "ProductAssembly.jsx"
     },
     "backend": {
       "official_api_prefix": "/api/assembly-enterprise",
       "legacy_api_prefix": "/api/assembly",
+      "legacy_status": "Retained for external backward compatibility, not used by frontend",
       "official_router_file": "assembly_enterprise.py",
       "legacy_router_file": "assembly.py"
     }

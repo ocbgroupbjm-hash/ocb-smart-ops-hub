@@ -1,0 +1,23 @@
+{
+  "test_date": "2026-03-15T23:13:49Z",
+  "test_type": "HARD_DELETE_USED_VOUCHER_REJECTED",
+  "result": "PASS",
+  "test_details": {
+    "formula_id": "390b75e9-3fdf-474e-b789-e5008dc4fcd8",
+    "formula_name": "TEST-USED-230632",
+    "transaction_count": 1,
+    "api_endpoint": "DELETE /api/assembly-enterprise/formulas/v2/{id}/hard-delete",
+    "http_status": 400,
+    "response": {
+      "detail": "Voucher sudah digunakan pada 1 transaksi dan tidak dapat dihapus."
+    }
+  },
+  "verification": {
+    "delete_blocked": true,
+    "error_message_correct": true,
+    "formula_preserved_in_db": true,
+    "components_preserved_in_db": true,
+    "data_integrity_maintained": true
+  },
+  "business_rule": "Hard delete DILARANG jika voucher sudah pernah dipakai transaksi. Sistem wajib menampilkan pesan: 'Voucher sudah digunakan pada X transaksi dan tidak dapat dihapus.'"
+}

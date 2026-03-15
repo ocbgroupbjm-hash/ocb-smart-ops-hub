@@ -16,6 +16,47 @@ Membangun sistem ERP retail komprehensif (OCB TITAN) dengan fitur POS, Inventory
 
 ## What's Been Implemented
 
+
+#### PERAKITAN VOUCHER MODULE CONSOLIDATION ✅ COMPLETE
+**Date Completed:** 2026-03-15
+**Blueprint Version:** v2.4.3
+
+**What Was Done:**
+1. **UI Rename:** "Perakitan" → "Perakitan Voucher" across all UI
+2. **Route Consolidation:** Single route `/inventory/assembly-voucher`
+3. **API Consolidation:** Frontend uses only `/api/assembly-enterprise/*`
+4. **Hard Delete Implementation:** With transaction validation
+5. **Audit Logging:** HARD_DELETE_FORMULA actions logged
+
+**Route Changes:**
+- REMOVED: `/inventory/assemblies`
+- KEPT: `/inventory/assembly-voucher` (official)
+- Legacy API `/api/assembly/*` retained for backward compatibility (not used by frontend)
+
+**Hard Delete Business Rules:**
+- ✅ ALLOWED: If voucher has 0 transactions
+- ❌ BLOCKED: If voucher has any transactions
+- Error message: "Voucher sudah digunakan pada X transaksi dan tidak dapat dihapus."
+
+**Testing (Iteration 83):**
+- Backend: 100% (12/12 tests)
+- Frontend: 100% (All UI verified)
+- Hard Delete Validation: PASS
+- Audit Logging: PASS
+
+**Evidence Location:**
+`/app/test_reports/assembly_voucher_module/`
+- assembly_route_audit.md
+- assembly_route_mapping.json
+- create_voucher_test.json
+- edit_voucher_test.json
+- hard_delete_unused_voucher_test.json
+- hard_delete_used_voucher_rejected_test.json
+- audit_log_proof.json
+- rollback_plan.md
+
+---
+
 ### Latest Updates (2026-03-15 Session 7 - Final)
 
 #### HR PHASE 3: LEAVE MANAGEMENT ✅ COMPLETE

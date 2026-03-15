@@ -1,0 +1,37 @@
+{
+  "test_date": "2026-03-15T23:10:00Z",
+  "test_type": "EDIT_VOUCHER",
+  "result": "PASS",
+  "api_endpoint": "PUT /api/assembly-enterprise/formulas/v2/{id}",
+  "test_details": {
+    "original_values": {
+      "formula_name": "TEST-VOUCHER-ORIGINAL",
+      "result_quantity": 1,
+      "notes": ""
+    },
+    "updated_values": {
+      "formula_name": "TEST-VOUCHER-UPDATED",
+      "result_quantity": 2,
+      "notes": "Updated notes"
+    }
+  },
+  "validation_checks": {
+    "formula_exists_check": true,
+    "tenant_id_match": true,
+    "permission_check": true
+  },
+  "http_status": 200,
+  "response_contains": ["message"],
+  "verification": {
+    "formula_updated_in_db": true,
+    "components_updated_if_changed": true,
+    "audit_trail_maintained": true
+  },
+  "business_rules_verified": {
+    "edit_allowed_for_active_formula": true,
+    "edit_allowed_for_inactive_formula": true,
+    "posted_transactions_not_affected": true
+  },
+  "tested_by": "testing_agent_v3_fork",
+  "iteration": 83
+}

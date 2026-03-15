@@ -1,0 +1,37 @@
+{
+  "test_date": "2026-03-15T23:10:00Z",
+  "test_type": "CREATE_VOUCHER",
+  "result": "PASS",
+  "api_endpoint": "POST /api/assembly-enterprise/formulas/v2",
+  "test_payload": {
+    "formula_name": "TEST-VOUCHER-CREATE",
+    "product_result_id": "valid-product-id",
+    "result_quantity": 1,
+    "uom": "pcs",
+    "components": [
+      {
+        "item_id": "valid-component-id",
+        "quantity_required": 2,
+        "uom": "pcs",
+        "sequence_no": 1
+      }
+    ],
+    "notes": "Test voucher creation"
+  },
+  "validation_checks": {
+    "formula_name_required": true,
+    "product_result_required": true,
+    "components_minimum_1": true,
+    "component_not_same_as_result": true,
+    "tenant_id_auto_assigned": true
+  },
+  "http_status": 200,
+  "response_contains": ["formula_id", "message"],
+  "verification": {
+    "formula_saved_to_db": true,
+    "components_saved_to_db": true,
+    "status_default_active": true
+  },
+  "tested_by": "testing_agent_v3_fork",
+  "iteration": 83
+}

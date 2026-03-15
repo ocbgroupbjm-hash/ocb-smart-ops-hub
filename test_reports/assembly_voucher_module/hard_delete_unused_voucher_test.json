@@ -1,0 +1,22 @@
+{
+  "test_date": "2026-03-15T23:13:49Z",
+  "test_type": "HARD_DELETE_UNUSED_VOUCHER",
+  "result": "PASS",
+  "test_details": {
+    "formula_id": "0165b3cf-7cc8-43c6-93c2-bc3e85fd9dfc",
+    "formula_name": "TEST-VOUCHER-230630",
+    "transaction_count_before_delete": 0,
+    "api_endpoint": "DELETE /api/assembly-enterprise/formulas/v2/{id}/hard-delete",
+    "http_status": 200,
+    "response": {
+      "message": "Formula voucher 'TEST-VOUCHER-230630' berhasil dihapus permanen",
+      "deleted_formula_id": "0165b3cf-7cc8-43c6-93c2-bc3e85fd9dfc",
+      "deleted_formula_name": "TEST-VOUCHER-230630"
+    }
+  },
+  "verification": {
+    "formula_removed_from_db": true,
+    "components_removed_from_db": true,
+    "no_orphan_records": true
+  }
+}

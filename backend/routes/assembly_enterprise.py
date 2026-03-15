@@ -610,23 +610,26 @@ async def hard_delete_formula(formula_id: str, user: dict = Depends(get_current_
     })
     
     # Log action (store in audit_logs since formula is deleted)
-    await audit_logs.insert_one({
-        "id": str(uuid.uuid4()),
-        "action": "HARD_DELETE_FORMULA",
-        "entity_type": "assembly_formula",
-        "entity_id": formula_id,
-        "entity_name": formula_name,
-        "user_id": user_id,
-        "user_name": user_name,
-        "old_value": {
-            "formula_name": formula_name,
-            "status": formula.get("status"),
-            "component_count": component_count
-        },
-        "new_value": None,
-        "tenant_id": tenant_id,
-        "created_at": datetime.now(timezone.utc).isoformat()
-    })
+    try:
+        await audit_logs.insert_one({
+            "id": str(uuid.uuid4()),
+            "action": "HARD_DELETE_FORMULA",
+            "entity_type": "assembly_formula",
+            "entity_id": formula_id,
+            "entity_name": formula_name,
+            "user_id": user_id,
+            "user_name": user_name,
+            "old_value": {
+                "formula_name": formula_name,
+                "status": formula.get("status"),
+                "component_count": component_count
+            },
+            "new_value": None,
+            "tenant_id": tenant_id,
+            "created_at": datetime.now(timezone.utc).isoformat()
+        })
+    except Exception as e:
+        print(f"Error saving audit log: {e}")
     
     return {
         "message": f"Formula voucher '{formula_name}' berhasil dihapus permanen",
