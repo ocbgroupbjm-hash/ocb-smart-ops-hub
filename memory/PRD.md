@@ -18,6 +18,39 @@ Membangun sistem ERP retail komprehensif (OCB TITAN) dengan fitur POS, Inventory
 
 ### Latest Updates (2026-03-15 Session 7)
 
+#### HR PHASE 2: ATTENDANCE SYSTEM ✅ COMPLETE
+**Date Completed:** 2026-03-15
+**Blueprint Version:** v2.4.2
+
+**Database Schema:**
+- `attendance_logs` collection
+- Fields: employee_id, check_in, check_out, attendance_date, branch_id, status, work_hours
+- Status types: PRESENT, LATE, ABSENT, LEAVE, SICK
+
+**API Endpoints:**
+- `POST /api/hr/attendance/checkin` - Check-in employee
+- `POST /api/hr/attendance/checkout` - Check-out employee
+- `GET /api/hr/attendance/today` - Today's summary
+- `GET /api/hr/attendance/report` - Daily/Weekly/Monthly report
+- `GET /api/hr/attendance/employee/{id}` - Employee history
+- `GET /api/hr/attendance/shifts` - List shifts
+
+**Testing (Iteration 79):**
+- Backend: 100% (9/9 tests)
+- Frontend: 100% (All UI verified)
+- Evidence: `/app/test_reports/hr_phase2_attendance/`
+
+---
+
+#### BUG FIX: ITEM QUICK CREATE ✅ FIXED
+**Issue:** Form tertutup setelah quick create category/unit/brand/supplier
+**Root Cause:** Nested `<form>` elements violating HTML spec
+**Fix:** Changed `<form>` to `<div>` in QuickCreateModal.jsx
+**Testing (Iteration 78):** PASS
+**Evidence:** `/app/test_reports/item_quick_create_fix/`
+
+---
+
 #### HR PHASE 1: EMPLOYEE MASTER ✅ COMPLETE
 **Date Completed:** 2026-03-15
 **Blueprint Version:** v2.4.1
