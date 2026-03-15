@@ -2,11 +2,12 @@
 // Blueprint: SUPER DUPER DEWA
 // Dark Theme Enterprise UI
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   Users, Plus, Edit2, Trash2, Search, Filter, Download,
   Building2, Briefcase, Mail, Phone, Calendar, DollarSign,
-  UserCheck, UserX, ChevronLeft, ChevronRight, Eye, RefreshCw
+  UserCheck, UserX, ChevronLeft, ChevronRight, Eye, RefreshCw,
+  Upload, FileText, Image, X
 } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
@@ -30,6 +31,183 @@ const StatusBadge = ({ status }) => {
     <span className={`px-2 py-1 text-xs rounded-full border ${config.class}`}>
       {config.label}
     </span>
+  );
+};
+
+// Document Upload Component
+const DocumentUploadSection = ({ employeeId, token, onRefresh }) => {
+  const [documents, setDocuments] = useState([]);
+  const [uploading, setUploading] = useState(false);
+  const [selectedType, setSelectedType] = useState('ktp');
+  const fileInputRef = useRef(null);
+  
+  const documentTypes = [
+    { code: 'ktp', name: 'KTP' },
+    { code: 'npwp', name: 'NPWP' },
+    { code: 'contract', name: 'Kontrak Kerja' },
+    { code: 'photo', name: 'Foto' },
+    { code: 'other', name: 'Lainnya' }
+  ];
+  
+  const fetchDocuments = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_URL}/api/hr/employees/${employeeId}/documents`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setDocuments(data.documents || []);
+      }
+    } catch (error) {
+      console.error('Error fetching documents:', error);
+    }
+  }, [employeeId, token]);
+  
+  useEffect(() => {
+    if (employeeId) {
+      fetchDocuments();
+    }
+  }, [employeeId, fetchDocuments]);
+  
+  const handleUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    // Validate file size (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Ukuran file melebihi 5MB');
+      return;
+    }
+    
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/png', 'application/pdf'];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error('Format file tidak didukung. Gunakan JPG, PNG, atau PDF');
+      return;
+    }
+    
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const res = await fetch(
+        `${API_URL}/api/hr/employees/${employeeId}/documents?document_type=${selectedType}`,
+        {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` },
+          body: formData
+        }
+      );
+      
+      if (res.ok) {
+        toast.success('Dokumen berhasil diupload');
+        fetchDocuments();
+        if (onRefresh) onRefresh();
+      } else {
+        const error = await res.json();
+        toast.error(error.detail || 'Gagal upload dokumen');
+      }
+    } catch (error) {
+      toast.error('Error uploading document');
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+  
+  const handleDelete = async (documentId) => {
+    if (!window.confirm('Hapus dokumen ini?')) return;
+    
+    try {
+      const res = await fetch(
+        `${API_URL}/api/hr/employees/${employeeId}/documents/${documentId}`,
+        {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${token}` }
+        }
+      );
+      
+      if (res.ok) {
+        toast.success('Dokumen dihapus');
+        fetchDocuments();
+      }
+    } catch (error) {
+      toast.error('Error deleting document');
+    }
+  };
+  
+  const getDocIcon = (type) => {
+    if (type === 'photo') return <Image className="w-4 h-4" />;
+    return <FileText className="w-4 h-4" />;
+  };
+  
+  return (
+    <div className="mt-4 pt-4 border-t border-slate-700">
+      <h3 className="text-sm font-medium text-white mb-3 flex items-center gap-2">
+        <FileText className="w-4 h-4 text-orange-500" />
+        Dokumen Karyawan
+      </h3>
+      
+      {/* Upload Form */}
+      <div className="flex gap-2 mb-3">
+        <select
+          value={selectedType}
+          onChange={(e) => setSelectedType(e.target.value)}
+          className="px-2 py-1.5 bg-slate-900 border border-slate-700 rounded text-sm text-white"
+          data-testid="document-type-select"
+        >
+          {documentTypes.map(t => (
+            <option key={t.code} value={t.code}>{t.name}</option>
+          ))}
+        </select>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".jpg,.jpeg,.png,.pdf"
+          onChange={handleUpload}
+          className="hidden"
+          data-testid="document-file-input"
+        />
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={uploading}
+          className="border-orange-500 text-orange-400 hover:bg-orange-500/10"
+          data-testid="upload-document-btn"
+        >
+          <Upload className="w-4 h-4 mr-1" />
+          {uploading ? 'Uploading...' : 'Upload'}
+        </Button>
+      </div>
+      
+      {/* Document List */}
+      {documents.length > 0 ? (
+        <div className="space-y-2">
+          {documents.map(doc => (
+            <div key={doc.id} className="flex items-center justify-between bg-slate-900 rounded px-3 py-2">
+              <div className="flex items-center gap-2">
+                {getDocIcon(doc.type)}
+                <div>
+                  <p className="text-sm text-white">{doc.type.toUpperCase()}</p>
+                  <p className="text-xs text-slate-400">{doc.original_filename}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => handleDelete(doc.id)}
+                className="text-slate-400 hover:text-red-400"
+                data-testid={`delete-doc-${doc.id}`}
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="text-sm text-slate-500">Belum ada dokumen</p>
+      )}
+    </div>
   );
 };
 
@@ -748,6 +926,13 @@ const HREmployees = () => {
                   </div>
                 </div>
               )}
+              
+              {/* Document Upload Section */}
+              <DocumentUploadSection 
+                employeeId={detailEmployee.id}
+                token={localStorage.getItem('token')}
+                onRefresh={() => {}}
+              />
             </div>
           </div>
         </div>

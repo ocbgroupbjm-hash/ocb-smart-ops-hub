@@ -1,0 +1,13 @@
+{
+  "test_date": "2026-03-15",
+  "endpoints_with_rbac": [
+    {"endpoint": "GET /api/hr/employees", "permission": "get_current_user"},
+    {"endpoint": "POST /api/hr/employees", "permission": "get_current_user"},
+    {"endpoint": "PUT /api/hr/employees/{id}", "permission": "get_current_user"},
+    {"endpoint": "GET /api/erp/employees", "permission": "require_permission('hr_management', 'view')"},
+    {"endpoint": "PUT /api/erp/employees/{id}/set-sales", "permission": "require_permission('hr_management', 'edit')"}
+  ],
+  "audit_log_collection": "audit_logs",
+  "activity_logging": true,
+  "status": "PASS"
+}

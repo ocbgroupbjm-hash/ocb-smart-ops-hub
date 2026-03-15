@@ -1,0 +1,15 @@
+{
+  "test_date": "2026-03-15",
+  "endpoint": "POST /api/hr/employees/{id}/documents",
+  "supported_types": ["ktp", "npwp", "contract", "photo", "other"],
+  "allowed_formats": [".jpg", ".jpeg", ".png", ".pdf"],
+  "max_size": "5MB",
+  "storage_location": "/app/backend/uploads/documents/employees/{employee_id}/",
+  "features": [
+    "Upload document with type classification",
+    "List employee documents",
+    "Delete documents",
+    "Audit logging for all operations"
+  ],
+  "status": "IMPLEMENTED"
+}

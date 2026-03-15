@@ -2,7 +2,7 @@
 # Blueprint: HR SUPER DUPER DEWA
 # Employee Master Module - SSOT for all HR data
 
-from fastapi import APIRouter, HTTPException, Depends, Request, Query
+from fastapi import APIRouter, HTTPException, Depends, Request, Query, UploadFile, File
 from pydantic import BaseModel, Field, validator
 from typing import Optional, List, Dict, Any
 from datetime import datetime, timezone, date
@@ -11,6 +11,8 @@ from utils.auth import get_current_user
 from routes.rbac_system import check_permission, log_activity
 import uuid
 import re
+import os
+import shutil
 
 router = APIRouter(prefix="/api/hr", tags=["HR Enterprise System"])
 
@@ -540,4 +542,181 @@ async def get_hr_statistics(user: dict = Depends(get_current_user)):
             "probation": probation
         },
         "by_department": dept_stats
+    }
+
+
+# ==================== DOCUMENT UPLOAD ====================
+
+UPLOAD_DIR = "/app/backend/uploads/documents/employees"
+ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".pdf"}
+MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
+
+@router.post("/employees/{employee_id}/documents")
+async def upload_employee_document(
+    employee_id: str,
+    document_type: str = Query(..., description="ktp, npwp, contract, photo, other"),
+    file: UploadFile = File(...),
+    request: Request = None,
+    user: dict = Depends(get_current_user)
+):
+    """
+    Upload employee document
+    Supported types: ktp, npwp, contract, photo, other
+    Allowed formats: jpg, jpeg, png, pdf
+    Max size: 5MB
+    """
+    user_id = user.get("user_id", user.get("id", ""))
+    user_name = user.get("name", "")
+    
+    # Validate employee exists
+    employee = await employees_collection.find_one({"id": employee_id})
+    if not employee:
+        raise HTTPException(status_code=404, detail="Karyawan tidak ditemukan")
+    
+    # Validate document type
+    valid_types = ["ktp", "npwp", "contract", "photo", "other"]
+    if document_type.lower() not in valid_types:
+        raise HTTPException(status_code=400, detail=f"Document type harus salah satu dari: {', '.join(valid_types)}")
+    
+    # Validate file extension
+    file_ext = os.path.splitext(file.filename)[1].lower()
+    if file_ext not in ALLOWED_EXTENSIONS:
+        raise HTTPException(status_code=400, detail=f"Format file tidak didukung. Gunakan: {', '.join(ALLOWED_EXTENSIONS)}")
+    
+    # Check file size
+    contents = await file.read()
+    if len(contents) > MAX_FILE_SIZE:
+        raise HTTPException(status_code=400, detail="Ukuran file melebihi 5MB")
+    
+    # Create directory if not exists
+    employee_dir = os.path.join(UPLOAD_DIR, employee_id)
+    os.makedirs(employee_dir, exist_ok=True)
+    
+    # Generate unique filename
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    filename = f"{document_type}_{timestamp}{file_ext}"
+    filepath = os.path.join(employee_dir, filename)
+    
+    # Save file
+    with open(filepath, "wb") as f:
+        f.write(contents)
+    
+    # Update employee documents
+    document_info = {
+        "id": str(uuid.uuid4()),
+        "type": document_type.lower(),
+        "filename": filename,
+        "original_filename": file.filename,
+        "path": filepath,
+        "size": len(contents),
+        "uploaded_by": user_id,
+        "uploaded_by_name": user_name,
+        "uploaded_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await employees_collection.update_one(
+        {"id": employee_id},
+        {"$push": {"documents": document_info}}
+    )
+    
+    # Audit log
+    await log_activity(
+        db, user_id, user_name,
+        "upload_document", "employee",
+        f"Document {document_type} uploaded for {employee.get('name', employee_id)}",
+        request.client.host if request and request.client else "",
+        user.get("branch_id", "")
+    )
+    
+    return {
+        "status": "success",
+        "message": f"Dokumen {document_type} berhasil diupload",
+        "document": document_info
+    }
+
+@router.get("/employees/{employee_id}/documents")
+async def get_employee_documents(
+    employee_id: str,
+    user: dict = Depends(get_current_user)
+):
+    """Get all documents for an employee"""
+    employee = await employees_collection.find_one({"id": employee_id}, {"_id": 0, "documents": 1})
+    if not employee:
+        raise HTTPException(status_code=404, detail="Karyawan tidak ditemukan")
+    
+    documents = employee.get("documents", [])
+    return {"documents": documents, "total": len(documents)}
+
+@router.delete("/employees/{employee_id}/documents/{document_id}")
+async def delete_employee_document(
+    employee_id: str,
+    document_id: str,
+    request: Request,
+    user: dict = Depends(get_current_user)
+):
+    """Delete an employee document"""
+    user_id = user.get("user_id", user.get("id", ""))
+    user_name = user.get("name", "")
+    
+    employee = await employees_collection.find_one({"id": employee_id})
+    if not employee:
+        raise HTTPException(status_code=404, detail="Karyawan tidak ditemukan")
+    
+    # Find document
+    documents = employee.get("documents", [])
+    doc_to_delete = next((d for d in documents if d.get("id") == document_id), None)
+    
+    if not doc_to_delete:
+        raise HTTPException(status_code=404, detail="Dokumen tidak ditemukan")
+    
+    # Delete file from disk
+    filepath = doc_to_delete.get("path")
+    if filepath and os.path.exists(filepath):
+        os.remove(filepath)
+    
+    # Remove from database
+    await employees_collection.update_one(
+        {"id": employee_id},
+        {"$pull": {"documents": {"id": document_id}}}
+    )
+    
+    # Audit log
+    await log_activity(
+        db, user_id, user_name,
+        "delete_document", "employee",
+        f"Document {doc_to_delete.get('type')} deleted for {employee.get('name', employee_id)}",
+        request.client.host if request.client else "",
+        user.get("branch_id", "")
+    )
+    
+    return {"status": "success", "message": "Dokumen berhasil dihapus"}
+
+
+# ==================== EMPLOYEE TYPE CONSTANTS ====================
+
+EMPLOYEE_TYPES = ["permanent", "contract", "probation", "freelance"]
+EMPLOYEE_STATUS = ["active", "inactive", "resigned", "terminated"]
+
+@router.get("/employee-types")
+async def get_employee_types():
+    """Get list of employee types"""
+    return {
+        "types": [
+            {"code": "permanent", "name": "Karyawan Tetap"},
+            {"code": "contract", "name": "Karyawan Kontrak"},
+            {"code": "probation", "name": "Masa Percobaan"},
+            {"code": "freelance", "name": "Freelance"}
+        ]
+    }
+
+@router.get("/employee-status-types")
+async def get_employee_status_types():
+    """Get list of employee status"""
+    return {
+        "statuses": [
+            {"code": "active", "name": "Aktif"},
+            {"code": "inactive", "name": "Tidak Aktif"},
+            {"code": "resigned", "name": "Mengundurkan Diri"},
+            {"code": "terminated", "name": "Diberhentikan"}
+        ]
     }
