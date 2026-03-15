@@ -1,0 +1,23 @@
+{
+  "test_date": "2026-03-15",
+  "collection": "leave_types",
+  "fields": {
+    "id": "UUID",
+    "code": "ANNUAL, SICK, MATERNITY, PATERNITY, UNPAID, SPECIAL",
+    "name": "Nama tipe cuti",
+    "max_days": "Maksimal hari per tahun",
+    "is_paid": "Boolean - dibayar atau tidak",
+    "requires_approval": "Boolean",
+    "is_active": "Boolean"
+  },
+  "default_types": [
+    {"code": "ANNUAL", "name": "Cuti Tahunan", "max_days": 12},
+    {"code": "SICK", "name": "Cuti Sakit", "max_days": 14},
+    {"code": "MATERNITY", "name": "Cuti Melahirkan", "max_days": 90},
+    {"code": "PATERNITY", "name": "Cuti Kelahiran (Ayah)", "max_days": 3},
+    {"code": "UNPAID", "name": "Cuti Tanpa Gaji", "max_days": 30},
+    {"code": "SPECIAL", "name": "Cuti Khusus", "max_days": 5}
+  ],
+  "api_endpoint": "GET /api/hr/leave/types",
+  "status": "PASS"
+}

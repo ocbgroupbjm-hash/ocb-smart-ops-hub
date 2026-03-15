@@ -1,0 +1,16 @@
+{
+  "test_date": "2026-03-15",
+  "test_name": "Category Dropdown Quick Create Fix",
+  "flow": [
+    "1. Open Form Tambah Item",
+    "2. Click Category dropdown",
+    "3. Click + Tambah Category",
+    "4. Fill name and save",
+    "5. New category appears in dropdown",
+    "6. New category is auto-selected"
+  ],
+  "api_endpoint": "POST /api/master/categorys (or /api/suppliers for supplier)",
+  "api_response_before": "{\"id\": \"uuid\", \"message\": \"...\"}",
+  "api_response_after": "{\"id\": \"uuid\", \"code\": \"...\", \"name\": \"...\", ...}",
+  "status": "FIXED"
+}

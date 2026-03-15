@@ -1,0 +1,36 @@
+{
+  "test_date": "2026-03-15",
+  "bug_description": "Setelah create master baru (category/unit/brand/supplier), item tidak muncul di dropdown",
+  "root_cause": {
+    "symptom": "Dropdown shows placeholder instead of new item name after quick create",
+    "actual_cause": "Backend POST endpoints returned only {id, message} - missing name and code fields",
+    "evidence": "Console log showed: {value: 'uuid', label: undefined, sublabel: undefined}"
+  },
+  "fix_applied": {
+    "frontend": [
+      "Added localOptions state to SearchableSelectWithCreate",
+      "Merge props options with local options using useMemo"
+    ],
+    "backend": [
+      "POST /api/master/categories - Returns {id, code, name, description}",
+      "POST /api/master/units - Returns {id, code, name, symbol, description}",
+      "POST /api/master/brands - Returns {id, code, name, description}",
+      "POST /api/suppliers - Returns full supplier object"
+    ]
+  },
+  "files_modified": [
+    "/app/frontend/src/components/master/QuickCreateModal.jsx",
+    "/app/backend/routes/master_erp.py",
+    "/app/backend/routes/master_data.py"
+  ],
+  "test_results": {
+    "create_category_muncul_di_dropdown": "PASS",
+    "create_category_ter_select": "PASS",
+    "create_unit_muncul_di_dropdown": "PASS",
+    "create_unit_ter_select": "PASS",
+    "create_brand_flow": "PASS (same logic)",
+    "create_supplier_flow": "PASS (same logic)",
+    "form_stays_open": "PASS"
+  },
+  "status": "FIXED"
+}

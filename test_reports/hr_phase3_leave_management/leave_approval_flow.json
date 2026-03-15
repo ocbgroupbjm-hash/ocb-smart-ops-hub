@@ -1,0 +1,23 @@
+{
+  "test_date": "2026-03-15",
+  "approval_workflow": {
+    "step_1": {
+      "action": "Employee submits leave request",
+      "status": "pending",
+      "endpoint": "POST /api/hr/leave/requests"
+    },
+    "step_2": {
+      "action": "Manager approves",
+      "status": "manager_approved",
+      "endpoint": "PUT /api/hr/leave/requests/{id}/approve"
+    },
+    "step_3": {
+      "action": "HR approves (if required)",
+      "status": "approved",
+      "endpoint": "PUT /api/hr/leave/requests/{id}/approve"
+    }
+  },
+  "status_values": ["pending", "manager_approved", "approved", "rejected", "cancelled"],
+  "cancellation": "PUT /api/hr/leave/requests/{id}/cancel",
+  "status": "IMPLEMENTED"
+}

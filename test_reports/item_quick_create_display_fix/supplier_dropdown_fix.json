@@ -1,0 +1,16 @@
+{
+  "test_date": "2026-03-15",
+  "test_name": "Supplier Dropdown Quick Create Fix",
+  "flow": [
+    "1. Open Form Tambah Item",
+    "2. Click Supplier dropdown",
+    "3. Click + Tambah Supplier",
+    "4. Fill name and save",
+    "5. New supplier appears in dropdown",
+    "6. New supplier is auto-selected"
+  ],
+  "api_endpoint": "POST /api/master/suppliers (or /api/suppliers for supplier)",
+  "api_response_before": "{\"id\": \"uuid\", \"message\": \"...\"}",
+  "api_response_after": "{\"id\": \"uuid\", \"code\": \"...\", \"name\": \"...\", ...}",
+  "status": "FIXED"
+}

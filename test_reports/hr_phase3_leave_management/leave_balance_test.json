@@ -1,0 +1,14 @@
+{
+  "test_date": "2026-03-15",
+  "feature": "Leave Balance Tracking",
+  "location": "employees.leave_balance",
+  "fields": {
+    "annual": "Remaining annual leave days",
+    "sick": "Remaining sick leave days",
+    "maternity": "Remaining maternity days",
+    "unpaid": "Unlimited (tracked for reporting)"
+  },
+  "deduction_on_approval": true,
+  "carry_over_supported": true,
+  "status": "IMPLEMENTED"
+}

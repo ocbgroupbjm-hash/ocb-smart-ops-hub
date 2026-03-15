@@ -1,0 +1,23 @@
+{
+  "test_date": "2026-03-15",
+  "collection": "leave_requests",
+  "fields": {
+    "id": "UUID",
+    "request_no": "Auto-generated (LV-YYYYMMDD-NNNN)",
+    "employee_id": "Reference ke employees",
+    "leave_type_id": "Reference ke leave_types",
+    "start_date": "YYYY-MM-DD",
+    "end_date": "YYYY-MM-DD",
+    "leave_days": "Calculated (excluding weekends)",
+    "reason": "String",
+    "status": "pending, approved, rejected, cancelled",
+    "approved_by": "Approver ID",
+    "approved_at": "ISO datetime"
+  },
+  "test_results": {
+    "create_request": "PASS - LV-20260315-0001 created",
+    "get_requests": "PASS - Returns paginated list",
+    "approve_flow": "Available"
+  },
+  "status": "PASS"
+}
