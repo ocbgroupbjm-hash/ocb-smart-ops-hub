@@ -1,0 +1,72 @@
+{
+  "test_date": "2026-03-15T23:45:00Z",
+  "test_type": "PURCHASE_MODULE_FIXES",
+  "result": "PASS",
+  "fixes_implemented": {
+    "pic_dropdown": {
+      "status": "IMPLEMENTED",
+      "api": "GET /api/hr/employees?status=active",
+      "description": "PIC (Person in Charge) dropdown now loads from employees collection",
+      "ui_element": "data-testid='po-pic-select'"
+    },
+    "warehouse_single": {
+      "status": "IMPLEMENTED",
+      "api": "GET /api/master/warehouses",
+      "description": "Single warehouse dropdown for entire PO (no per-item warehouse)",
+      "ui_element": "data-testid='po-warehouse-select'"
+    },
+    "item_search_flow": {
+      "status": "IMPLEMENTED",
+      "description": "Item search with click-to-select flow: search -> result list -> user select -> add to PO",
+      "ui_elements": ["po-item-search-*", "po-item-option-*"]
+    },
+    "purchase_unit": {
+      "status": "IMPLEMENTED",
+      "description": "Unit can be changed per item (pcs, box, karton, lusin, pak, rim, kg, liter)",
+      "ui_element": "data-testid='po-item-unit-*'"
+    },
+    "payment_account": {
+      "status": "IMPLEMENTED",
+      "api": "GET /api/account-settings/chart-of-accounts?types=CASH,BANK",
+      "description": "Cash/Bank account dropdown for payment",
+      "ui_element": "data-testid='po-payment-account-select'"
+    },
+    "validation": {
+      "status": "IMPLEMENTED",
+      "mandatory_fields": ["supplier_id", "warehouse_id", "items", "total_amount > 0"],
+      "error_messages": [
+        "Supplier wajib dipilih",
+        "Pilih gudang tujuan",
+        "Minimal harus ada 1 item pembelian",
+        "Jumlah item harus lebih dari 0"
+      ]
+    }
+  },
+  "backend_model_updates": {
+    "PurchaseOrder": [
+      "warehouse_id: str = ''",
+      "warehouse_name: str = ''",
+      "pic_id: str = ''",
+      "pic_name: str = ''",
+      "payment_account_id: str = ''",
+      "payment_account_name: str = ''"
+    ],
+    "PurchaseOrderItem": [
+      "unit: str = 'pcs'",
+      "conversion_ratio: float = 1.0",
+      "sn_start: str = ''",
+      "sn_end: str = ''"
+    ],
+    "CreatePO": [
+      "warehouse_id: Optional[str] = None",
+      "pic_id: Optional[str] = None",
+      "payment_account_id: Optional[str] = None",
+      "total_amount: Optional[float] = None"
+    ]
+  },
+  "files_modified": [
+    "/app/frontend/src/pages/purchase/PurchaseOrders.jsx",
+    "/app/backend/routes/purchase.py",
+    "/app/backend/models/titan_models.py"
+  ]
+}

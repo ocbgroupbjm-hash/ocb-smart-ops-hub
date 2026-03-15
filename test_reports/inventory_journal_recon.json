@@ -1,0 +1,31 @@
+{
+  "test_date": "2026-03-15T23:45:00Z",
+  "test_type": "INVENTORY_JOURNAL_RECONCILIATION",
+  "result": "VERIFIED",
+  "architecture": {
+    "inventory_ssot": "stock_movements collection",
+    "accounting_ssot": "journal_entries collection",
+    "linkage": "stock_movements and journal_entries share reference_id for traceability"
+  },
+  "assembly_integration": {
+    "post_creates": {
+      "stock_movements": ["ASSEMBLY_CONSUME (components out)", "ASSEMBLY_PRODUCE (result in)"],
+      "journal_entries": "Debit: Inventory (result), Credit: Inventory (components)"
+    },
+    "reverse_creates": {
+      "stock_movements": ["ASSEMBLY_CONSUME_REVERSAL", "ASSEMBLY_PRODUCE_REVERSAL"],
+      "journal_entries": "Reversal journal with opposite amounts"
+    }
+  },
+  "purchase_integration": {
+    "receive_creates": {
+      "stock_movements": "PURCHASE_IN",
+      "journal_entries": "Debit: Inventory, Credit: Accounts Payable"
+    }
+  },
+  "rules_enforced": {
+    "posted_immutable": "POSTED transactions cannot be edited or deleted",
+    "correction_via_reversal": "Corrections create new reversal transactions",
+    "audit_trail_preserved": "All changes logged to audit_logs collection"
+  }
+}

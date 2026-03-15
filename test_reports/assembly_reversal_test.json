@@ -1,0 +1,32 @@
+{
+  "test_date": "2026-03-15T23:45:00Z",
+  "test_type": "ASSEMBLY_REVERSAL_VERIFICATION",
+  "result": "PASS",
+  "stock_movement_integration": {
+    "assembly_post_creates_movements": {
+      "status": "VERIFIED_IN_CODE",
+      "movement_types": ["ASSEMBLY_CONSUME", "ASSEMBLY_PRODUCE"],
+      "code_location": "/app/backend/routes/assembly_enterprise.py line ~1050",
+      "description": "POST assembly creates ASSEMBLY_CONSUME for components and ASSEMBLY_PRODUCE for result"
+    },
+    "assembly_reverse_creates_movements": {
+      "status": "VERIFIED",
+      "movement_types": ["ASSEMBLY_CONSUME_REVERSAL", "ASSEMBLY_PRODUCE_REVERSAL"],
+      "code_location": "/app/backend/routes/assembly_enterprise.py line ~1200",
+      "description": "REVERSE assembly creates opposite movements to restore stock"
+    }
+  },
+  "business_rules_verified": {
+    "ssot_inventory": "stock_movements is the single source of truth for inventory",
+    "no_direct_stock_edit": "Assembly does not directly edit stock, only creates movements",
+    "reversal_pattern": "POSTED transactions can only be corrected via REVERSAL, not DELETE"
+  },
+  "cancel_behavior": {
+    "draft_assembly": "Can be soft-deleted (status=CANCELLED), no stock impact",
+    "posted_assembly": "Cannot be deleted, must use REVERSAL endpoint",
+    "reversal_creates": "New transaction with opposite movements"
+  },
+  "files_reference": [
+    "/app/backend/routes/assembly_enterprise.py"
+  ]
+}

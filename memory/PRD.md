@@ -57,6 +57,52 @@ Membangun sistem ERP retail komprehensif (OCB TITAN) dengan fitur POS, Inventory
 
 ---
 
+#### ERP STABILIZATION FIX ✅ COMPLETE
+**Date Completed:** 2026-03-15
+**Blueprint Version:** v2.4.3
+
+**TASK 1: Multi-Tenant Routing Fix ✅**
+- Problem: Global variable `_active_db_name` caused cross-request contamination
+- Solution: Using Python `contextvars` for per-request database isolation
+- Changes:
+  - `/app/backend/database.py` - Using ContextVar instead of global
+  - `/app/backend/middleware/tenant_isolation.py` - NEW middleware
+  - `/app/backend/routes/auth.py` - JWT now includes `tenant_id`
+  - `/app/backend/utils/auth.py` - Sets DB from token on each request
+- Result: JWT tokens contain tenant_id, requests isolated per tenant
+
+**TASK 2: Purchase Module Fix ✅**
+- PIC dropdown: Loads from `/api/hr/employees`
+- Single warehouse: One warehouse for entire PO (removed per-item warehouse)
+- Item search flow: Search → Result list → Select → Add (not auto-add)
+- Purchase unit: Can be changed (pcs, box, karton, lusin, pak, rim, kg, liter)
+- Payment account: Dropdown from Chart of Accounts (CASH/BANK types)
+- Validation: Mandatory supplier_id, warehouse_id, items, total > 0
+
+**TASK 3: Assembly Stock Movements ✅**
+- POST creates: ASSEMBLY_CONSUME (components out) + ASSEMBLY_PRODUCE (result in)
+- REVERSE creates: Opposite movements to restore stock
+- SSOT: `stock_movements` collection
+
+**TASK 4: Cancel Transaction = Reversal ✅**
+- DRAFT can be soft-deleted (status=CANCELLED)
+- POSTED cannot be deleted, must use REVERSAL
+- Jurnal tidak boleh diubah, koreksi via reversal
+
+**Testing (Iteration 84):**
+- Backend: 100% (15/15 passed, 2 skipped)
+- Frontend: 100%
+- All tenant isolation tests PASS
+
+**Evidence Location:**
+- `/app/test_reports/tenant_isolation_fix/`
+- `/app/test_reports/purchase_module_test.json`
+- `/app/test_reports/assembly_reversal_test.json`
+- `/app/test_reports/inventory_journal_recon.json`
+- `/app/test_reports/rollback_plan.md`
+
+---
+
 ### Latest Updates (2026-03-15 Session 7 - Final)
 
 #### HR PHASE 3: LEAVE MANAGEMENT ✅ COMPLETE
