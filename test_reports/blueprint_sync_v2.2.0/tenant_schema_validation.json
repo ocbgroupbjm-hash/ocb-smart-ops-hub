@@ -1,0 +1,48 @@
+{
+  "report_type": "Tenant Schema Validation",
+  "generated_at": "2026-03-15T17:30:55.218390+00:00",
+  "required_collections": [
+    "journal_entries",
+    "accounts",
+    "ap_payments",
+    "ap_payment_allocations",
+    "ar_payments",
+    "ar_payment_allocations",
+    "employees",
+    "attendance_logs",
+    "payroll",
+    "leave_requests",
+    "kpi_targets",
+    "kpi_results",
+    "inventory_serial_numbers",
+    "stock_movements",
+    "products"
+  ],
+  "validation_results": [
+    {
+      "db_name": "ocb_titan",
+      "total_collections": 149,
+      "required_present": 15,
+      "required_missing": 0,
+      "missing_collections": [],
+      "schema_valid": true
+    },
+    {
+      "db_name": "ocb_unit_4",
+      "total_collections": 56,
+      "required_present": 15,
+      "required_missing": 0,
+      "missing_collections": [],
+      "schema_valid": true
+    },
+    {
+      "db_name": "ocb_unt_1",
+      "total_collections": 58,
+      "required_present": 15,
+      "required_missing": 0,
+      "missing_collections": [],
+      "schema_valid": true
+    }
+  ],
+  "all_valid": true
+}

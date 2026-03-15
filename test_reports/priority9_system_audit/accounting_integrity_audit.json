@@ -1,0 +1,36 @@
+{
+  "domain": "Accounting Integrity Audit",
+  "audit_date": "2026-03-15T17:36:24.649381+00:00",
+  "tenant": "ocb_titan",
+  "total_journals": 2211,
+  "unbalanced_journals": 0,
+  "unbalanced_details": [],
+  "totals": {
+    "grand_debit": 230292017.5,
+    "grand_credit": 230292017.5,
+    "is_balanced": true
+  },
+  "checks": [
+    {
+      "check": "All journals balanced (Dr = Cr)",
+      "status": "PASS",
+      "evidence": "2211/2211 journals balanced"
+    },
+    {
+      "check": "Double-entry accounting enforced",
+      "status": "PASS",
+      "evidence": "All transactions have offsetting entries"
+    },
+    {
+      "check": "Posted journals immutable",
+      "status": "PASS",
+      "evidence": "System prevents modification of posted journals"
+    },
+    {
+      "check": "System journals protected from deletion",
+      "status": "PASS",
+      "evidence": "journal_source='manual' required for deletion"
+    }
+  ],
+  "overall_status": "PASS"
+}

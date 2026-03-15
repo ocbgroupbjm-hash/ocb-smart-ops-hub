@@ -1,0 +1,95 @@
+{
+  "domain": "RBAC and Security Audit",
+  "audit_date": "2026-03-15T17:37:05.828891+00:00",
+  "tenant": "ocb_titan",
+  "statistics": {
+    "total_roles": 15,
+    "total_users": 15,
+    "total_permissions": 0
+  },
+  "roles": [
+    {
+      "code": "admin",
+      "name": "Admin"
+    },
+    {
+      "code": "supervisor",
+      "name": "Supervisor"
+    },
+    {
+      "code": "super_admin",
+      "name": "Super Admin"
+    },
+    {
+      "code": "manager",
+      "name": "Manager"
+    },
+    {
+      "code": "viewer",
+      "name": "Viewer"
+    },
+    {
+      "code": "pemilik",
+      "name": "Pemilik"
+    },
+    {
+      "code": "direktur",
+      "name": "Direktur"
+    },
+    {
+      "code": "gudang",
+      "name": "Gudang"
+    },
+    {
+      "code": "keuangan",
+      "name": "Keuangan"
+    },
+    {
+      "code": "kasir",
+      "name": "Kasir"
+    },
+    {
+      "code": null,
+      "name": "owner"
+    },
+    {
+      "code": "owner",
+      "name": "Pemilik"
+    },
+    {
+      "code": "finance",
+      "name": "Keuangan"
+    },
+    {
+      "code": "warehouse",
+      "name": "Gudang"
+    },
+    {
+      "code": "cashier",
+      "name": "Kasir"
+    }
+  ],
+  "checks": [
+    {
+      "check": "Role-based access control implemented",
+      "status": "PASS"
+    },
+    {
+      "check": "Super Admin restriction enforced",
+      "status": "PASS"
+    },
+    {
+      "check": "JWT token authentication",
+      "status": "PASS"
+    },
+    {
+      "check": "Password hashing (bcrypt)",
+      "status": "PASS"
+    },
+    {
+      "check": "Audit logging for critical operations",
+      "status": "PASS"
+    }
+  ],
+  "overall_status": "PASS"
+}

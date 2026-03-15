@@ -1,0 +1,49 @@
+{
+  "report_type": "Tenant Smoke Test Report",
+  "generated_at": "2026-03-15T17:30:55.242294+00:00",
+  "test_version": "2.2.0",
+  "total_tenants": 3,
+  "passed": 3,
+  "failed": 0,
+  "results": [
+    {
+      "db_name": "ocb_titan",
+      "tests": {
+        "database_accessible": true,
+        "collection_count": 149,
+        "journal_entries": 2211,
+        "accounts": 39,
+        "products": 63,
+        "ap_payment_allocations": 5,
+        "ar_payment_allocations": 2
+      },
+      "status": "PASS"
+    },
+    {
+      "db_name": "ocb_unit_4",
+      "tests": {
+        "database_accessible": true,
+        "collection_count": 56,
+        "journal_entries": 0,
+        "accounts": 56,
+        "products": 0,
+        "ap_payment_allocations": 0,
+        "ar_payment_allocations": 0
+      },
+      "status": "PASS"
+    },
+    {
+      "db_name": "ocb_unt_1",
+      "tests": {
+        "database_accessible": true,
+        "collection_count": 58,
+        "journal_entries": 1,
+        "accounts": 53,
+        "products": 21,
+        "ap_payment_allocations": 0,
+        "ar_payment_allocations": 0
+      },
+      "status": "PASS"
+    }
+  ]
+}

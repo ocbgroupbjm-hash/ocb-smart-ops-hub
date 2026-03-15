@@ -1,0 +1,27 @@
+{
+  "report_type": "System Health Metrics",
+  "generated_at": "2026-03-15T17:35:47.247615+00:00",
+  "system_status": "healthy",
+  "metrics": {
+    "cpu": {
+      "percent": 10.1,
+      "status": "healthy"
+    },
+    "memory": {
+      "total_gb": 15.6,
+      "used_gb": 10.0,
+      "percent": 64.1,
+      "status": "healthy"
+    },
+    "disk": {
+      "total_gb": 94.19,
+      "used_gb": 16.74,
+      "percent": 17.8,
+      "status": "healthy"
+    }
+  },
+  "database_health": {
+    "mongodb_connected": true,
+    "total_tenant_dbs": 3
+  }
+}

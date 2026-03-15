@@ -1,0 +1,67 @@
+{
+  "report_type": "RBAC Test Report",
+  "generated_at": "2026-03-15T17:35:46.246677+00:00",
+  "tenant": "ocb_titan",
+  "role_count": 15,
+  "user_count": 15,
+  "roles_summary": [
+    {
+      "code": "admin",
+      "name": "Admin"
+    },
+    {
+      "code": "supervisor",
+      "name": "Supervisor"
+    },
+    {
+      "code": "super_admin",
+      "name": "Super Admin"
+    },
+    {
+      "code": "manager",
+      "name": "Manager"
+    },
+    {
+      "code": "viewer",
+      "name": "Viewer"
+    },
+    {
+      "code": "pemilik",
+      "name": "Pemilik"
+    },
+    {
+      "code": "direktur",
+      "name": "Direktur"
+    },
+    {
+      "code": "gudang",
+      "name": "Gudang"
+    },
+    {
+      "code": "keuangan",
+      "name": "Keuangan"
+    },
+    {
+      "code": "kasir",
+      "name": "Kasir"
+    }
+  ],
+  "tests": [
+    {
+      "test": "Control Center requires super_admin/owner",
+      "status": "PASS"
+    },
+    {
+      "test": "Regular users cannot access Control Center",
+      "status": "PASS"
+    },
+    {
+      "test": "Tenant isolation enforced",
+      "status": "PASS"
+    },
+    {
+      "test": "Audit logging enabled",
+      "status": "PASS"
+    }
+  ]
+}

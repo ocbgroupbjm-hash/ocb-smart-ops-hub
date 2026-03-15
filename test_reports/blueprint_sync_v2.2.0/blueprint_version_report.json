@@ -1,0 +1,54 @@
+{
+  "report_type": "Blueprint Version Report",
+  "generated_at": "2026-03-15T17:30:55.213446+00:00",
+  "current_version": "2.2.0",
+  "previous_version": "2.1.0",
+  "version_history": [
+    {
+      "version": "2.2.0",
+      "locked_at": "2026-03-15T17:30:14.811580+00:00",
+      "locked_by": "21e37a5c-3ebd-4182-bd6e-61f7dcf5d105",
+      "locked_by_name": "Oscar OCB",
+      "status": "locked",
+      "features": [
+        "PRIORITAS 1: Journal Security - System journals protected",
+        "PRIORITAS 2: GL Search Improvement - Single letter search",
+        "PRIORITAS 3: Date Format DD/MM/YYYY",
+        "PRIORITAS 4: Purchase Export to Excel",
+        "PRIORITAS 5: Serial Number Range",
+        "PRIORITAS 6: Blueprint Sync v2.1.0",
+        "PRIORITAS 7: AP/AR Payment Allocation Engine (Enterprise)",
+        "HR KPI Engine UI",
+        "HR Analytics Dashboard"
+      ]
+    },
+    {
+      "version": "2.1.0",
+      "locked_at": "2026-03-14T23:37:16.387226+00:00",
+      "locked_by": "21e37a5c-3ebd-4182-bd6e-61f7dcf5d105",
+      "locked_by_name": "Oscar OCB",
+      "status": "locked",
+      "features": [
+        "PRIORITAS 1: Journal Security - System journals protected",
+        "PRIORITAS 2: GL Search Improvement - Single letter search",
+        "PRIORITAS 3: Date Format DD/MM/YYYY",
+        "PRIORITAS 4: Purchase Export to Excel",
+        "PRIORITAS 5: Serial Number Range",
+        "HR KPI Engine UI",
+        "HR Analytics Dashboard",
+        "AP/AR Payment Allocation Engine"
+      ]
+    }
+  ],
+  "features_in_2.2.0": [
+    "PRIORITAS 1: Journal Security - System journals protected",
+    "PRIORITAS 2: GL Search Improvement - Single letter search",
+    "PRIORITAS 3: Date Format DD/MM/YYYY",
+    "PRIORITAS 4: Purchase Export to Excel",
+    "PRIORITAS 5: Serial Number Range",
+    "PRIORITAS 6: Blueprint Sync v2.1.0",
+    "PRIORITAS 7: AP/AR Payment Allocation Engine (Enterprise)",
+    "HR KPI Engine UI",
+    "HR Analytics Dashboard"
+  ]
+}

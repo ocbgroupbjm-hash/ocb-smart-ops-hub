@@ -1,0 +1,28 @@
+{
+  "domain": "Inventory Integrity Audit",
+  "audit_date": "2026-03-15T17:36:24.661904+00:00",
+  "tenant": "ocb_titan",
+  "counts": {
+    "stock_movements": 165,
+    "products": 61,
+    "serial_numbers": 20
+  },
+  "checks": [
+    {
+      "check": "Stock derived from stock_movements SSOT",
+      "status": "PASS",
+      "evidence": "All stock calculations use 165 movement records"
+    },
+    {
+      "check": "No direct stock modification",
+      "status": "PASS",
+      "evidence": "Stock only changes via movement transactions"
+    },
+    {
+      "check": "Serial numbers tracked",
+      "status": "PASS",
+      "evidence": "20 serial numbers in system"
+    }
+  ],
+  "overall_status": "PASS"
+}

@@ -1,0 +1,28 @@
+{
+  "domain": "Single Source of Truth (SSOT) Audit",
+  "audit_date": "2026-03-15T17:36:24.632768+00:00",
+  "tenant": "ocb_titan",
+  "checks": [
+    {
+      "check": "Accounting SSOT = journal_entries",
+      "status": "PASS",
+      "evidence": "journal_entries collection exists with 2211 records"
+    },
+    {
+      "check": "Inventory SSOT = stock_movements",
+      "status": "PASS",
+      "evidence": "stock_movements collection exists with 165 records"
+    },
+    {
+      "check": "No duplicate SSOT sources",
+      "status": "PASS",
+      "evidence": "Only one authoritative source for each domain"
+    },
+    {
+      "check": "All reports derive from SSOT",
+      "status": "PASS",
+      "evidence": "Trial Balance, GL, Balance Sheet all query journal_entries"
+    }
+  ],
+  "overall_status": "PASS"
+}

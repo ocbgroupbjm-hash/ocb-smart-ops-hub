@@ -45,6 +45,7 @@ import GlobalMap from './pages/GlobalMap';
 import DataExport from './pages/DataExport';
 import KPIPerformance from './pages/KPIPerformance';
 import AICommandCenter from './pages/AICommandCenter';
+import ControlCenterDashboard from './pages/ControlCenterDashboard';
 import CRMAI from './pages/CRMAI';
 import CRM from './pages/CRM';
 import Analytics from './pages/Analytics';
@@ -229,6 +230,7 @@ function App() {
             <Route path="data-export" element={<DataExport />} />
             <Route path="kpi-performance" element={<KPIPerformance />} />
             <Route path="ai-command-center" element={<AICommandCenter />} />
+            <Route path="control-center" element={<ControlCenterDashboard />} />
             <Route path="crm-ai" element={<CRMAI />} />
             <Route path="crm" element={<CRM />} />
             <Route path="analytics" element={<Analytics />} />

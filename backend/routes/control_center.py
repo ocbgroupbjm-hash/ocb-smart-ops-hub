@@ -437,7 +437,7 @@ async def get_dashboard_summary(user: dict = Depends(require_super_admin)):
 
 # ==================== PRIORITAS 6: BLUEPRINT SYNC ====================
 
-CURRENT_BLUEPRINT_VERSION = "2.1.0"  # Updated after PRIORITAS 1-5
+CURRENT_BLUEPRINT_VERSION = "2.2.0"  # Updated after PRIORITAS 7 (AP/AR Payment Allocation)
 
 class BlueprintSyncRequest:
     pass
@@ -471,9 +471,10 @@ async def lock_blueprint_version(
                 "PRIORITAS 3: Date Format DD/MM/YYYY",
                 "PRIORITAS 4: Purchase Export to Excel",
                 "PRIORITAS 5: Serial Number Range",
+                "PRIORITAS 6: Blueprint Sync v2.1.0",
+                "PRIORITAS 7: AP/AR Payment Allocation Engine (Enterprise)",
                 "HR KPI Engine UI",
-                "HR Analytics Dashboard",
-                "AP/AR Payment Allocation Engine"
+                "HR Analytics Dashboard"
             ]
         }
         
