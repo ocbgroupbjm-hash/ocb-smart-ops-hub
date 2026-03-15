@@ -250,12 +250,82 @@ async def process_assembly(data: AssemblyTransaction, user: dict = Depends(get_c
     }
     await assembly_transactions_collection.insert_one(transaction)
     
+    # ============ CREATE JOURNAL ENTRY (Accounting SSOT) ============
+    # Debit: Persediaan Barang Jadi (Produk Hasil)
+    # Credit: Persediaan Komponen
+    
+    journal_entries_list = []
+    
+    # DEBIT: Inventory of Finished Product
+    journal_entries_list.append({
+        "account_code": "1-1400",
+        "account_name": f"Persediaan - {formula.get('result_product_name', 'Barang Jadi')}",
+        "description": f"Assembly: {formula['name']} ({result_qty} unit)",
+        "debit": total_cost,
+        "credit": 0
+    })
+    
+    # CREDIT: Inventory of each Component
+    for i, comp in enumerate(formula.get("components", [])):
+        qty_used = comp["quantity"] * data.quantity
+        product = await products_collection.find_one({"id": comp["product_id"]}, {"_id": 0})
+        unit_cost = product.get("cost_price", 0) if product else 0
+        comp_cost = unit_cost * qty_used
+        
+        journal_entries_list.append({
+            "account_code": "1-1400",
+            "account_name": f"Persediaan - {comp.get('product_name', 'Komponen')}",
+            "description": f"Komponen untuk assembly: {comp.get('product_name')} ({qty_used} unit)",
+            "debit": 0,
+            "credit": comp_cost
+        })
+    
+    # Create journal entry document
+    journal_number = f"JV-{datetime.now(timezone.utc).strftime('%Y%m%d')}-{assembly_number}"
+    
+    total_debit = sum(e["debit"] for e in journal_entries_list)
+    total_credit = sum(e["credit"] for e in journal_entries_list)
+    
+    # Only create journal if costs are valid
+    if total_cost > 0:
+        journal_doc = {
+            "id": str(uuid.uuid4()),
+            "journal_number": journal_number,
+            "journal_date": datetime.now(timezone.utc).strftime('%Y-%m-%d'),
+            "reference_type": "assembly",
+            "reference_no": assembly_number,
+            "description": f"Assembly: {formula['name']} ({result_qty} unit)",
+            "entries": journal_entries_list,
+            "total_debit": total_debit,
+            "total_credit": total_credit,
+            "status": "posted",
+            "journal_source": "assembly",  # System-generated, protected from deletion
+            "tenant_id": user.get("tenant_id", "ocb_titan"),
+            "branch_id": branch_id,
+            "created_by": user.get("user_id", ""),
+            "created_by_name": user.get("name", ""),
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        
+        # Import db for journal entries
+        from database import db as main_db
+        journal_collection = main_db["journal_entries"]
+        await journal_collection.insert_one(journal_doc)
+        
+        transaction["journal_number"] = journal_number
+        await assembly_transactions_collection.update_one(
+            {"id": transaction_id},
+            {"$set": {"journal_number": journal_number}}
+        )
+    
     return {
         "id": transaction_id,
         "assembly_number": assembly_number,
         "message": f"Rakitan berhasil. {result_qty} {formula.get('result_product_name')} ditambahkan ke stok",
         "result_quantity": result_qty,
-        "total_cost": total_cost
+        "total_cost": total_cost,
+        "journal_number": journal_number if total_cost > 0 else None,
+        "journal_balanced": abs(total_debit - total_credit) < 0.01 if total_cost > 0 else True
     }
 
 @router.post("/disassemble")
@@ -341,10 +411,82 @@ async def process_disassembly(data: AssemblyTransaction, user: dict = Depends(ge
     }
     await assembly_transactions_collection.insert_one(transaction)
     
+    # ============ CREATE JOURNAL ENTRY FOR DISASSEMBLY ============
+    # Debit: Persediaan Komponen (yang dihasilkan)
+    # Credit: Persediaan Barang Jadi (yang dibongkar)
+    
+    journal_entries_list = []
+    total_comp_cost = 0
+    
+    # DEBIT: Each Component gained
+    for comp in formula.get("components", []):
+        qty_gained = comp["quantity"] * data.quantity
+        product = await products_collection.find_one({"id": comp["product_id"]}, {"_id": 0})
+        unit_cost = product.get("cost_price", 0) if product else 0
+        comp_cost = unit_cost * qty_gained
+        total_comp_cost += comp_cost
+        
+        journal_entries_list.append({
+            "account_code": "1-1400",
+            "account_name": f"Persediaan - {comp.get('product_name', 'Komponen')}",
+            "description": f"Komponen dari disassembly: {comp.get('product_name')} ({qty_gained} unit)",
+            "debit": comp_cost,
+            "credit": 0
+        })
+    
+    # CREDIT: Finished Product consumed
+    finished_product = await products_collection.find_one({"id": formula["result_product_id"]}, {"_id": 0})
+    finished_cost = (finished_product.get("cost_price", 0) if finished_product else 0) * result_qty_needed
+    if finished_cost == 0:
+        finished_cost = total_comp_cost  # Use component cost if no cost set
+    
+    journal_entries_list.append({
+        "account_code": "1-1400",
+        "account_name": f"Persediaan - {formula.get('result_product_name', 'Barang Jadi')}",
+        "description": f"Disassembly: {formula['name']} ({result_qty_needed} unit)",
+        "debit": 0,
+        "credit": total_comp_cost  # Use total component cost to balance
+    })
+    
+    journal_number = f"JV-{datetime.now(timezone.utc).strftime('%Y%m%d')}-{disassembly_number}"
+    
+    total_debit = sum(e["debit"] for e in journal_entries_list)
+    total_credit = sum(e["credit"] for e in journal_entries_list)
+    
+    if total_comp_cost > 0:
+        journal_doc = {
+            "id": str(uuid.uuid4()),
+            "journal_number": journal_number,
+            "journal_date": datetime.now(timezone.utc).strftime('%Y-%m-%d'),
+            "reference_type": "disassembly",
+            "reference_no": disassembly_number,
+            "description": f"Disassembly: {formula['name']} ({result_qty_needed} unit)",
+            "entries": journal_entries_list,
+            "total_debit": total_debit,
+            "total_credit": total_credit,
+            "status": "posted",
+            "journal_source": "disassembly",
+            "tenant_id": user.get("tenant_id", "ocb_titan"),
+            "branch_id": branch_id,
+            "created_by": user.get("user_id", ""),
+            "created_by_name": user.get("name", ""),
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        
+        from database import db as main_db
+        journal_collection = main_db["journal_entries"]
+        await journal_collection.insert_one(journal_doc)
+        
+        await assembly_transactions_collection.update_one(
+            {"id": transaction_id},
+            {"$set": {"journal_number": journal_number}}
+        )
+    
     return {
         "id": transaction_id,
         "assembly_number": disassembly_number,
-        "message": "Pembongkaran berhasil. Komponen ditambahkan ke stok"
+        "message": "Pembongkaran berhasil. Komponen ditambahkan ke stok",
+        "journal_number": journal_number if total_comp_cost > 0 else None
     }
 
 @router.get("/transactions")

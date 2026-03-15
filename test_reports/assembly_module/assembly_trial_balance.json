@@ -1,0 +1,12 @@
+{
+  "report_type": "Assembly Trial Balance Verification",
+  "generated_at": "2026-03-15T17:45:29.088003+00:00",
+  "tenant": "ocb_titan",
+  "journal_count": 2212,
+  "totals": {
+    "total_debit": 230352017.5,
+    "total_credit": 230352017.5,
+    "is_balanced": true
+  },
+  "test_result": "PASS - Trial Balance remains balanced after assembly operations"
+}
