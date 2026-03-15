@@ -10,12 +10,45 @@ Membangun sistem ERP retail komprehensif (OCB TITAN) dengan fitur POS, Inventory
 4. **Audit Trail** - Logging semua perubahan data penting
 5. **Standard ERP UI** - Toolbar konsisten di semua modul
 6. **HR Enterprise System** - Employee Master, Attendance, Leave, Payroll dengan integrasi Accounting
+7. **Employee = Sales SSOT** - Sales adalah role/jabatan dari Employee, bukan master terpisah
 
 ---
 
 ## What's Been Implemented
 
-### Latest Updates (2026-03-15 Session 6 - Enterprise Stabilization v2.4.0)
+### Latest Updates (2026-03-15 Session 7 - Post Stabilization P0)
+
+#### POST STABILIZATION P0 ✅ COMPLETE
+**Date Completed:** 2026-03-15
+
+**P0-1: Employee = Sales Mapping (SSOT)**
+- Added sales fields to employees: `is_sales`, `sales_code`, `sales_commission_rate`, `sales_effective_date`, `sales_end_date`
+- New API endpoints: `GET /api/erp/sales`, `PUT /api/erp/employees/{id}/set-sales`, `PUT /api/erp/employees/{id}/remove-sales`
+- Sales dropdown reads from employees collection (is_sales=True)
+- Unique sales_code enforcement per tenant
+- Evidence: `/app/test_reports/employee_sales_mapping/`
+
+**P0-2: Fix Data Sheet Karyawan**
+- Fixed database switching via auth login (db_name parameter)
+- Data Sheet Karyawan now properly reads from employees collection
+- 21 employees displayed with NIK, Nama, Email, Telepon, Jabatan, Department
+- Evidence: `/app/test_reports/datasheet_employee_binding/`
+
+**P0-3: Full Edit Capability Data Sheet**
+- All 4 tabs editable: Items, Customers, Suppliers, Employees
+- Server-side validation active
+- Audit logging for all edits
+- Evidence: `/app/test_reports/datasheet_full_edit/`
+
+**Testing Agent Verification (Iteration 75):**
+- Backend: 100% PASS
+- Frontend: 100% PASS
+- Data Sheet tabs verified: Produk (64), Pelanggan (15), Supplier (13), Karyawan (21)
+- Inline edit + toast notification working
+
+---
+
+### Previous Updates (2026-03-15 Session 6 - Enterprise Stabilization v2.4.0)
 
 #### ENTERPRISE STABILIZATION v2.4.0 ✅ COMPLETE
 **Date Completed:** 2026-03-15
