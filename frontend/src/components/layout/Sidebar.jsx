@@ -12,7 +12,7 @@ import {
   Activity, Bot, MessageSquare, Target, Megaphone, Banknote, UserPlus,
   CalendarCheck, Briefcase, BadgeDollarSign, Bell, Eye, Fingerprint, FileBarChart,
   Globe, Plus, List, ChevronsRight, Send, Table, QrCode, Calendar, Award, Grid,
-  RefreshCcw, BanknoteIcon, AlertTriangle
+  RefreshCcw, BanknoteIcon, AlertTriangle, Puzzle
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { usePermission } from '../../contexts/PermissionContext';
@@ -104,7 +104,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       submenu: [
         { name: 'Daftar Item', icon: Package, path: '/master/items' },
         { name: 'Item Baru', icon: Plus, path: '/master/items?new=true' },
-        { name: 'Data Sheet', icon: Table, path: '/master/datasheet' }, // RESTORED: TASK 2 - 2026-03-15
+        { name: 'Data Sheet', icon: Table, path: '/master/datasheet', badge: 'NEW' }, // RESTORED: TASK 2 - 2026-03-15
         // Kartu Stok dipindahkan ke menu Inventory (menghindari duplicate)
         { name: 'Barcode', icon: QrCode, path: '/master/barcode' },
         { divider: true, label: 'Promosi & Diskon' },
@@ -206,6 +206,8 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
         { name: 'Transfer Gudang', icon: ArrowLeftRight, path: '/inventory/transfer' },
         { name: 'Stock Opname', icon: ClipboardList, path: '/inventory/opname' },
         { name: 'Penyesuaian Stok', icon: Settings, path: '/inventory/adjustment' },
+        { divider: true, label: 'Manufaktur' },
+        { name: 'Perakitan (BOM)', icon: Puzzle, path: '/inventory/assemblies', badge: 'NEW' }, // TASK 2 - 2026-03-15
       ]
     },
 
@@ -543,6 +545,11 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                   >
                     <subItem.icon className="h-4 w-4" />
                     <span>{subItem.name}</span>
+                    {subItem.badge && (
+                      <span className="ml-auto px-1.5 py-0.5 text-[10px] font-bold bg-green-600 text-white rounded">
+                        {subItem.badge}
+                      </span>
+                    )}
                   </NavLink>
                 );
               })}

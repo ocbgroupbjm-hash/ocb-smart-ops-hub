@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Table, Search, Download, Upload, Edit2, Trash2, Save, X, Filter, CheckSquare, RefreshCw } from 'lucide-react';
+import { Table, Search, Download, Upload, Edit2, Trash2, Save, X, Filter, CheckSquare, RefreshCw, Plus, AlertCircle } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../components/ui/dialog';
+import { Label } from '../../components/ui/label';
 import { toast } from 'sonner';
 import axios from 'axios';
 
@@ -31,6 +33,23 @@ const MasterDatasheet = () => {
   const [bulkEditMode, setBulkEditMode] = useState(false);
   const [bulkEditField, setBulkEditField] = useState('');
   const [bulkEditValue, setBulkEditValue] = useState('');
+  
+  // Create item state
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [createLoading, setCreateLoading] = useState(false);
+  const [newItem, setNewItem] = useState({
+    code: '',
+    name: '',
+    barcode: '',
+    category_id: '',
+    brand_id: '',
+    unit_id: '',
+    cost_price: 0,
+    selling_price: 0,
+    min_stock: 0,
+    description: ''
+  });
+  const [validationErrors, setValidationErrors] = useState({});
 
   const getAuthHeaders = useCallback(() => {
     const token = localStorage.getItem('token');
@@ -413,14 +432,322 @@ const MasterDatasheet = () => {
     }
   };
 
+  // ============ CREATE ITEM FUNCTIONS ============
+  
+  const resetNewItem = () => {
+    setNewItem({
+      code: '',
+      name: '',
+      barcode: '',
+      category_id: '',
+      brand_id: '',
+      unit_id: '',
+      cost_price: 0,
+      selling_price: 0,
+      min_stock: 0,
+      description: ''
+    });
+    setValidationErrors({});
+  };
+
+  const validateNewItem = () => {
+    const errors = {};
+    
+    if (!newItem.code?.trim()) errors.code = 'Kode item wajib diisi';
+    if (!newItem.name?.trim()) errors.name = 'Nama item wajib diisi';
+    if (!newItem.category_id) errors.category_id = 'Kategori wajib dipilih';
+    if (!newItem.unit_id) errors.unit_id = 'Satuan wajib dipilih';
+    
+    // Check if code already exists
+    const existingCode = products.find(p => 
+      p.code?.toLowerCase() === newItem.code?.toLowerCase()
+    );
+    if (existingCode) errors.code = 'Kode item sudah digunakan';
+    
+    // Check barcode uniqueness if provided
+    if (newItem.barcode?.trim()) {
+      const existingBarcode = products.find(p => 
+        p.barcode?.toLowerCase() === newItem.barcode?.toLowerCase()
+      );
+      if (existingBarcode) errors.barcode = 'Barcode sudah digunakan';
+    }
+    
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleCreateItem = async () => {
+    if (!validateNewItem()) {
+      toast.error('Mohon lengkapi data yang wajib diisi');
+      return;
+    }
+    
+    setCreateLoading(true);
+    try {
+      const payload = {
+        code: newItem.code.trim(),
+        name: newItem.name.trim(),
+        barcode: newItem.barcode?.trim() || null,
+        category_id: newItem.category_id || null,
+        brand_id: newItem.brand_id || null,
+        unit_id: newItem.unit_id || null,
+        cost_price: parseFloat(newItem.cost_price) || 0,
+        selling_price: parseFloat(newItem.selling_price) || 0,
+        min_stock: parseInt(newItem.min_stock) || 0,
+        description: newItem.description?.trim() || '',
+        is_active: true
+        // NOTE: stock tidak ditulis langsung, harus via stock_movements
+      };
+      
+      const response = await axios.post(
+        `${API_URL}/api/products`,
+        payload,
+        getAuthHeaders()
+      );
+      
+      toast.success(`Item "${newItem.name}" berhasil dibuat`);
+      setShowCreateModal(false);
+      resetNewItem();
+      await fetchAll(); // Refresh data
+      
+    } catch (err) {
+      const errorMsg = err.response?.data?.detail || 'Gagal membuat item baru';
+      toast.error(errorMsg);
+      
+      // Check for specific validation errors from server
+      if (err.response?.status === 400) {
+        if (errorMsg.toLowerCase().includes('code')) {
+          setValidationErrors(prev => ({ ...prev, code: errorMsg }));
+        } else if (errorMsg.toLowerCase().includes('barcode')) {
+          setValidationErrors(prev => ({ ...prev, barcode: errorMsg }));
+        }
+      }
+    } finally {
+      setCreateLoading(false);
+    }
+  };
+
+  // ============ CREATE ITEM MODAL COMPONENT ============
+  
+  const CreateItemModal = () => (
+    <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
+      <DialogContent className="bg-gray-900 border-gray-700 max-w-2xl">
+        <DialogHeader>
+          <DialogTitle className="text-white flex items-center gap-2">
+            <Plus className="w-5 h-5 text-green-400" />
+            Buat Item Baru
+          </DialogTitle>
+        </DialogHeader>
+        
+        <div className="grid grid-cols-2 gap-4 py-4">
+          {/* Kode Item */}
+          <div>
+            <Label className="text-gray-300">Kode Item *</Label>
+            <Input
+              value={newItem.code}
+              onChange={(e) => setNewItem({ ...newItem, code: e.target.value })}
+              placeholder="Contoh: PRD-001"
+              className={`bg-gray-800 border-gray-600 ${validationErrors.code ? 'border-red-500' : ''}`}
+              data-testid="create-item-code"
+            />
+            {validationErrors.code && (
+              <p className="text-red-400 text-xs mt-1 flex items-center gap-1">
+                <AlertCircle className="w-3 h-3" /> {validationErrors.code}
+              </p>
+            )}
+          </div>
+          
+          {/* Nama Item */}
+          <div>
+            <Label className="text-gray-300">Nama Item *</Label>
+            <Input
+              value={newItem.name}
+              onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
+              placeholder="Nama produk"
+              className={`bg-gray-800 border-gray-600 ${validationErrors.name ? 'border-red-500' : ''}`}
+              data-testid="create-item-name"
+            />
+            {validationErrors.name && (
+              <p className="text-red-400 text-xs mt-1 flex items-center gap-1">
+                <AlertCircle className="w-3 h-3" /> {validationErrors.name}
+              </p>
+            )}
+          </div>
+          
+          {/* Barcode */}
+          <div>
+            <Label className="text-gray-300">Barcode</Label>
+            <Input
+              value={newItem.barcode}
+              onChange={(e) => setNewItem({ ...newItem, barcode: e.target.value })}
+              placeholder="Barcode (opsional)"
+              className={`bg-gray-800 border-gray-600 ${validationErrors.barcode ? 'border-red-500' : ''}`}
+              data-testid="create-item-barcode"
+            />
+            {validationErrors.barcode && (
+              <p className="text-red-400 text-xs mt-1 flex items-center gap-1">
+                <AlertCircle className="w-3 h-3" /> {validationErrors.barcode}
+              </p>
+            )}
+          </div>
+          
+          {/* Kategori */}
+          <div>
+            <Label className="text-gray-300">Kategori *</Label>
+            <Select
+              value={newItem.category_id || 'none'}
+              onValueChange={(v) => setNewItem({ ...newItem, category_id: v === 'none' ? '' : v })}
+            >
+              <SelectTrigger className={`bg-gray-800 border-gray-600 ${validationErrors.category_id ? 'border-red-500' : ''}`} data-testid="create-item-category">
+                <SelectValue placeholder="Pilih kategori" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">-- Pilih Kategori --</SelectItem>
+                {categories.map(c => (
+                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {validationErrors.category_id && (
+              <p className="text-red-400 text-xs mt-1 flex items-center gap-1">
+                <AlertCircle className="w-3 h-3" /> {validationErrors.category_id}
+              </p>
+            )}
+          </div>
+          
+          {/* Merk */}
+          <div>
+            <Label className="text-gray-300">Merk</Label>
+            <Select
+              value={newItem.brand_id || 'none'}
+              onValueChange={(v) => setNewItem({ ...newItem, brand_id: v === 'none' ? '' : v })}
+            >
+              <SelectTrigger className="bg-gray-800 border-gray-600" data-testid="create-item-brand">
+                <SelectValue placeholder="Pilih merk (opsional)" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">-- Tanpa Merk --</SelectItem>
+                {brands.map(b => (
+                  <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          
+          {/* Satuan */}
+          <div>
+            <Label className="text-gray-300">Satuan *</Label>
+            <Select
+              value={newItem.unit_id || 'none'}
+              onValueChange={(v) => setNewItem({ ...newItem, unit_id: v === 'none' ? '' : v })}
+            >
+              <SelectTrigger className={`bg-gray-800 border-gray-600 ${validationErrors.unit_id ? 'border-red-500' : ''}`} data-testid="create-item-unit">
+                <SelectValue placeholder="Pilih satuan" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">-- Pilih Satuan --</SelectItem>
+                {units.map(u => (
+                  <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {validationErrors.unit_id && (
+              <p className="text-red-400 text-xs mt-1 flex items-center gap-1">
+                <AlertCircle className="w-3 h-3" /> {validationErrors.unit_id}
+              </p>
+            )}
+          </div>
+          
+          {/* Harga Beli */}
+          <div>
+            <Label className="text-gray-300">Harga Beli</Label>
+            <Input
+              type="number"
+              value={newItem.cost_price}
+              onChange={(e) => setNewItem({ ...newItem, cost_price: e.target.value })}
+              placeholder="0"
+              className="bg-gray-800 border-gray-600"
+              data-testid="create-item-cost"
+            />
+          </div>
+          
+          {/* Harga Jual */}
+          <div>
+            <Label className="text-gray-300">Harga Jual</Label>
+            <Input
+              type="number"
+              value={newItem.selling_price}
+              onChange={(e) => setNewItem({ ...newItem, selling_price: e.target.value })}
+              placeholder="0"
+              className="bg-gray-800 border-gray-600"
+              data-testid="create-item-price"
+            />
+          </div>
+          
+          {/* Min Stok */}
+          <div>
+            <Label className="text-gray-300">Min Stok</Label>
+            <Input
+              type="number"
+              value={newItem.min_stock}
+              onChange={(e) => setNewItem({ ...newItem, min_stock: e.target.value })}
+              placeholder="0"
+              className="bg-gray-800 border-gray-600"
+              data-testid="create-item-minstock"
+            />
+          </div>
+          
+          {/* Deskripsi */}
+          <div>
+            <Label className="text-gray-300">Deskripsi</Label>
+            <Input
+              value={newItem.description}
+              onChange={(e) => setNewItem({ ...newItem, description: e.target.value })}
+              placeholder="Deskripsi (opsional)"
+              className="bg-gray-800 border-gray-600"
+              data-testid="create-item-desc"
+            />
+          </div>
+        </div>
+        
+        {/* Info Banner */}
+        <div className="bg-blue-900/30 border border-blue-700 rounded p-3 text-sm">
+          <p className="text-blue-300">
+            <strong>Info:</strong> Stok awal harus diinput melalui menu <strong>Inventory → Adjustment</strong> 
+            atau <strong>Opening Balance</strong> untuk memastikan jejak transaksi yang benar.
+          </p>
+        </div>
+        
+        <DialogFooter className="gap-2">
+          <Button variant="outline" onClick={() => { setShowCreateModal(false); resetNewItem(); }} className="border-gray-600">
+            Batal
+          </Button>
+          <Button onClick={handleCreateItem} disabled={createLoading} className="bg-green-600 hover:bg-green-700" data-testid="create-item-submit">
+            {createLoading ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Plus className="w-4 h-4 mr-2" />}
+            Buat Item
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+
   return (
     <div className="p-6" data-testid="master-datasheet">
+      {/* Create Item Modal */}
+      <CreateItemModal />
+      
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-white flex items-center gap-2">
           <Table className="w-6 h-6 text-yellow-500" />
           Data Sheet
+          <span className="ml-2 px-2 py-0.5 text-xs font-medium bg-green-600 text-white rounded">NEW</span>
         </h1>
         <div className="flex gap-2">
+          {dataType === 'products' && (
+            <Button onClick={() => setShowCreateModal(true)} className="bg-green-600 hover:bg-green-700" data-testid="btn-create-item">
+              <Plus className="w-4 h-4 mr-2" /> Buat Item Baru
+            </Button>
+          )}
           <Button onClick={fetchAll} variant="outline" className="border-gray-600" disabled={loading}>
             <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} /> Refresh
           </Button>
