@@ -37,6 +37,13 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     payload = decode_token(token)
     if not payload:
         raise HTTPException(status_code=401, detail="Invalid token")
+    
+    # Ensure database is set to user's tenant for this request
+    tenant_id = payload.get('tenant_id')
+    if tenant_id:
+        from database import set_active_db_name
+        set_active_db_name(tenant_id)
+    
     return payload
 
 def require_roles(*roles):

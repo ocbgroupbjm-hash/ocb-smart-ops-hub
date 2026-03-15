@@ -1,0 +1,40 @@
+{
+  "test_date": "2026-03-15T23:30:00Z",
+  "test_type": "TENANT_ISOLATION_VERIFICATION",
+  "result": "PASS",
+  "scenarios_tested": [
+    {
+      "scenario": "Login to ocb_titan",
+      "action": "POST /api/auth/login with db_name=ocb_titan",
+      "expected": "JWT contains tenant_id: ocb_titan",
+      "actual": "JWT contains tenant_id: ocb_titan",
+      "status": "PASS"
+    },
+    {
+      "scenario": "Login to ocb_unt_1",
+      "action": "POST /api/auth/login with db_name=ocb_unt_1",
+      "expected": "JWT contains tenant_id: ocb_unt_1",
+      "actual": "JWT contains tenant_id: ocb_unt_1",
+      "status": "PASS"
+    },
+    {
+      "scenario": "Cross-request isolation",
+      "action": "Use ocb_titan token after server switches to ocb_unt_1",
+      "expected": "Request still uses ocb_titan database",
+      "actual": "Request uses ocb_titan database (from token)",
+      "status": "PASS"
+    },
+    {
+      "scenario": "API data isolation",
+      "action": "GET /api/products with different tenant tokens",
+      "expected": "Each returns data from their respective database",
+      "actual": "Data correctly isolated per tenant",
+      "status": "PASS"
+    }
+  ],
+  "business_rule_compliance": {
+    "tenant_data_isolation": true,
+    "no_cross_tenant_data_leak": true,
+    "jwt_carries_tenant_identity": true
+  }
+}

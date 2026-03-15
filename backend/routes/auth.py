@@ -98,13 +98,20 @@ async def login(data: LoginRequest):
     if user.get("branch_id"):
         branch = await branches.find_one({"id": user["branch_id"]}, {"_id": 0, "id": 1, "name": 1, "code": 1})
     
+    # ============================================================
+    # MULTI-TENANT: Include tenant_id in JWT token for isolation
+    # ============================================================
+    from database import get_active_db_name
+    current_tenant = get_active_db_name()
+    
     token_data = {
         "user_id": user["id"],
         "email": user["email"],
         "name": user["name"],
         "role": user.get("role", "cashier"),
         "branch_id": user.get("branch_id"),
-        "branch_ids": user.get("branch_ids", [])
+        "branch_ids": user.get("branch_ids", []),
+        "tenant_id": current_tenant  # CRITICAL: Store tenant in token
     }
     
     token = create_token(token_data)
@@ -118,7 +125,8 @@ async def login(data: LoginRequest):
             "role": user.get("role", "cashier"),
             "branch_id": user.get("branch_id"),
             "branch": branch,
-            "permissions": user.get("permissions", [])
+            "permissions": user.get("permissions", []),
+            "tenant_id": current_tenant  # Also include in user response
         }
     )
 

@@ -2,6 +2,7 @@
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 from dotenv import load_dotenv
+from contextvars import ContextVar
 
 load_dotenv()
 
@@ -10,21 +11,40 @@ mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
 # Global MongoDB client (shared across all databases)
 client = AsyncIOMotorClient(mongo_url)
 
-# Active database name - can be changed at runtime
-_active_db_name = os.environ.get('DB_NAME', 'ocb_titan')
+# Default database name from environment
+_default_db_name = os.environ.get('DB_NAME', 'ocb_titan')
+
+# ============================================================
+# MULTI-TENANT ISOLATION FIX
+# Using contextvars for per-request database isolation
+# This ensures each request uses the correct tenant database
+# ============================================================
+_request_db_name: ContextVar[str] = ContextVar('request_db_name', default=_default_db_name)
 
 def get_active_db_name() -> str:
-    """Get the currently active database name"""
-    return _active_db_name
+    """Get the currently active database name for this request"""
+    return _request_db_name.get()
 
 def set_active_db_name(db_name: str):
-    """Set the active database name (called when switching business)"""
-    global _active_db_name
-    _active_db_name = db_name
+    """Set the active database name for this request context"""
+    _request_db_name.set(db_name)
+
+def get_default_db_name() -> str:
+    """Get the default database name from environment"""
+    return _default_db_name
+
+def set_default_db_name(db_name: str):
+    """Set the default database name (updates global default)"""
+    global _default_db_name
+    _default_db_name = db_name
 
 def get_db():
-    """Get the currently active database object"""
-    return client[_active_db_name]
+    """Get the currently active database object for this request"""
+    return client[_request_db_name.get()]
+
+def get_db_for_tenant(tenant_id: str):
+    """Get database object for a specific tenant (explicit)"""
+    return client[tenant_id]
 
 # ==================== DYNAMIC COLLECTION GETTERS ====================
 

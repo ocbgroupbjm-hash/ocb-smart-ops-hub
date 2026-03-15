@@ -318,6 +318,10 @@ class PurchaseOrderItem(BaseModel):
     unit_cost: float
     discount_percent: float = 0.0
     subtotal: float
+    unit: str = "pcs"  # Purchase unit
+    conversion_ratio: float = 1.0  # Conversion to base unit
+    sn_start: str = ""  # Serial number start
+    sn_end: str = ""  # Serial number end
 
 class PurchaseOrder(BaseModel):
     id: str = Field(default_factory=gen_id)
@@ -325,6 +329,12 @@ class PurchaseOrder(BaseModel):
     supplier_id: str
     supplier_name: str
     branch_id: str
+    warehouse_id: str = ""  # Single warehouse for all items
+    warehouse_name: str = ""
+    pic_id: str = ""  # Person in Charge
+    pic_name: str = ""
+    payment_account_id: str = ""  # Cash/Bank account
+    payment_account_name: str = ""
     
     items: List[PurchaseOrderItem] = []
     

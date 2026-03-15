@@ -32,6 +32,14 @@ app.add_middleware(
 from routes.request_trace_middleware import RequestTraceMiddleware
 app.add_middleware(RequestTraceMiddleware)
 
+# ============================================================
+# MULTI-TENANT ISOLATION MIDDLEWARE
+# Must be added AFTER CORS and BEFORE route handlers
+# Ensures each request uses the correct tenant database
+# ============================================================
+from middleware.tenant_isolation import TenantIsolationMiddleware
+app.add_middleware(TenantIsolationMiddleware)
+
 # Import and include routers - Core ERP
 from routes.auth import router as auth_router
 from routes.products import router as products_router

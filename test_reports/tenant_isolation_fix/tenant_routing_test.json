@@ -1,0 +1,36 @@
+{
+  "test_date": "2026-03-15T23:31:18+00:00",
+  "test_type": "TENANT_ISOLATION_ROUTING",
+  "result": "PASS",
+  "tests": [
+    {
+      "name": "JWT Token includes tenant_id",
+      "status": "PASS",
+      "details": "Token payload now contains tenant_id field"
+    },
+    {
+      "name": "Token-based database routing",
+      "status": "PASS",
+      "details": "get_current_user() sets database based on token tenant_id"
+    },
+    {
+      "name": "Middleware sets request context",
+      "status": "PASS", 
+      "details": "TenantIsolationMiddleware extracts tenant from JWT and sets contextvars"
+    },
+    {
+      "name": "Cross-tenant isolation",
+      "status": "PASS",
+      "details": "Using ocb_titan token after switching to ocb_unt_1 still accesses ocb_titan data"
+    }
+  ],
+  "implementation": {
+    "middleware": "/app/backend/middleware/tenant_isolation.py",
+    "database_fix": "contextvars for per-request isolation",
+    "token_enhancement": "tenant_id added to JWT payload in auth.py"
+  },
+  "sample_tokens": {
+    "ocb_titan_tenant_in_token": true,
+    "ocb_unt_1_tenant_in_token": true
+  }
+}

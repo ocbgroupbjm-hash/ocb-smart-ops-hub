@@ -1,0 +1,30 @@
+{
+  "test_date": "2026-03-15T23:30:00Z",
+  "test_type": "DB_CONNECTION_ISOLATION",
+  "result": "PASS",
+  "mechanism": {
+    "before_fix": {
+      "problem": "Global variable _active_db_name shared across all requests",
+      "impact": "User A login to ocb_titan, User B login to ocb_unt_1, both affected by last switch",
+      "root_cause": "set_active_db_name() modifies global state"
+    },
+    "after_fix": {
+      "solution": "Using Python contextvars for per-request database isolation",
+      "implementation": [
+        "database.py: _request_db_name = ContextVar('request_db_name')",
+        "middleware/tenant_isolation.py: Sets context from JWT token",
+        "auth.py: Stores tenant_id in JWT token on login",
+        "utils/auth.py: get_current_user() sets context from token"
+      ],
+      "flow": "Request -> Middleware extracts tenant_id from JWT -> Sets ContextVar -> All DB operations use correct tenant"
+    }
+  },
+  "files_modified": [
+    "/app/backend/database.py",
+    "/app/backend/middleware/tenant_isolation.py (NEW)",
+    "/app/backend/server.py",
+    "/app/backend/routes/auth.py",
+    "/app/backend/routes/business.py",
+    "/app/backend/utils/auth.py"
+  ]
+}

@@ -171,8 +171,12 @@ async def switch_business(db_name: str):
     if not business:
         raise HTTPException(status_code=404, detail="Database bisnis tidak ditemukan")
     
-    # Update active database in memory (RUNTIME SWITCH - no restart needed!)
+    # Update active database in memory for this request context
     set_active_db_name(db_name)
+    
+    # Also update default database for new logins
+    from database import set_default_db_name
+    set_default_db_name(db_name)
     
     # Also update .env file for persistence across restarts
     env_path = "/app/backend/.env"
@@ -199,8 +203,10 @@ async def switch_business(db_name: str):
         return {
             "message": f"Berhasil switch ke bisnis '{business['name']}'",
             "db_name": db_name,
+            "tenant_id": db_name,  # Include tenant_id in response
             "business": business,
-            "restart_required": False  # No restart needed anymore!
+            "restart_required": False,
+            "note": "Token baru akan berisi tenant_id setelah login ulang"
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Gagal switch database: {str(e)}")

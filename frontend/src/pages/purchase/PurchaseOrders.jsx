@@ -20,6 +20,13 @@ const PurchaseOrders = () => {
   const [selectedItem, setSelectedItem] = useState(null); // For toolbar selection
   const [suppliers, setSuppliers] = useState([]);
   const [products, setProducts] = useState([]);
+  const [warehouses, setWarehouses] = useState([]);
+  const [employees, setEmployees] = useState([]);
+  const [cashBankAccounts, setCashBankAccounts] = useState([]);
+  const [itemSearchTerm, setItemSearchTerm] = useState('');
+  const [showItemSearch, setShowItemSearch] = useState(false);
+  const [searchResults, setSearchResults] = useState([]);
+  const [activeItemIndex, setActiveItemIndex] = useState(null);
   
   // Owner Edit States
   const [showOwnerEditModal, setShowOwnerEditModal] = useState(false);
@@ -27,8 +34,11 @@ const PurchaseOrders = () => {
   
   const [formData, setFormData] = useState({
     supplier_id: '',
+    warehouse_id: '',
+    pic_id: '',
+    payment_account_id: '',
     notes: '',
-    items: [{ product_id: '', quantity: 1, unit_cost: 0, discount_percent: 0, sn_start: '', sn_end: '' }]
+    items: [{ product_id: '', product_name: '', quantity: 1, unit_cost: 0, discount_percent: 0, purchase_unit: '', conversion_ratio: 1, sn_start: '', sn_end: '' }]
   });
 
   const loadOrders = useCallback(async () => {
@@ -52,9 +62,12 @@ const PurchaseOrders = () => {
 
   const loadMasterData = useCallback(async () => {
     try {
-      const [supRes, prodRes] = await Promise.all([
+      const [supRes, prodRes, whRes, empRes, coaRes] = await Promise.all([
         api('/api/suppliers'),
-        api('/api/products')
+        api('/api/products'),
+        api('/api/master/warehouses'),
+        api('/api/hr/employees?status=active'),
+        api('/api/account-settings/chart-of-accounts?types=CASH,BANK')
       ]);
       if (supRes.ok) {
         const data = await supRes.json();
@@ -63,6 +76,18 @@ const PurchaseOrders = () => {
       if (prodRes.ok) {
         const data = await prodRes.json();
         setProducts(data.items || data || []);
+      }
+      if (whRes.ok) {
+        const data = await whRes.json();
+        setWarehouses(data.items || data.warehouses || data || []);
+      }
+      if (empRes.ok) {
+        const data = await empRes.json();
+        setEmployees(data.employees || data.items || data || []);
+      }
+      if (coaRes.ok) {
+        const data = await coaRes.json();
+        setCashBankAccounts(data.accounts || data.items || data || []);
       }
     } catch (err) {
       console.error('Error loading master data');
@@ -76,19 +101,38 @@ const PurchaseOrders = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Validasi mandatory fields
     if (!formData.supplier_id) {
       toast.error('Pilih supplier terlebih dahulu');
       return;
     }
-    if (formData.items.some(i => !i.product_id || i.quantity <= 0)) {
-      toast.error('Lengkapi data item');
+    if (!formData.warehouse_id) {
+      toast.error('Pilih gudang tujuan');
       return;
     }
+    if (formData.items.length === 0 || formData.items.every(i => !i.product_id)) {
+      toast.error('Minimal harus ada 1 item');
+      return;
+    }
+    if (formData.items.some(i => i.product_id && i.quantity <= 0)) {
+      toast.error('Jumlah item harus lebih dari 0');
+      return;
+    }
+
+    // Calculate total
+    const total = calculateTotal();
+    
+    const payload = {
+      ...formData,
+      total_amount: total,
+      items: formData.items.filter(i => i.product_id) // Only include items with product
+    };
 
     try {
       const res = await api('/api/purchase/orders', {
         method: 'POST',
-        body: JSON.stringify(formData)
+        body: JSON.stringify(payload)
       });
       if (res.ok) {
         toast.success('Purchase Order berhasil dibuat');
@@ -215,16 +259,22 @@ const PurchaseOrders = () => {
   const resetForm = () => {
     setFormData({
       supplier_id: '',
+      warehouse_id: '',
+      pic_id: '',
+      payment_account_id: '',
       notes: '',
-      items: [{ product_id: '', quantity: 1, unit_cost: 0, discount_percent: 0 }]
+      items: [{ product_id: '', product_name: '', quantity: 1, unit_cost: 0, discount_percent: 0, purchase_unit: '', conversion_ratio: 1, sn_start: '', sn_end: '' }]
     });
     setSelectedOrder(null);
+    setItemSearchTerm('');
+    setSearchResults([]);
+    setShowItemSearch(false);
   };
 
   const addItem = () => {
     setFormData(prev => ({
       ...prev,
-      items: [...prev.items, { product_id: '', quantity: 1, unit_cost: 0, discount_percent: 0, sn_start: '', sn_end: '' }]
+      items: [...prev.items, { product_id: '', product_name: '', quantity: 1, unit_cost: 0, discount_percent: 0, purchase_unit: '', conversion_ratio: 1, sn_start: '', sn_end: '' }]
     }));
   };
 
@@ -240,15 +290,53 @@ const PurchaseOrders = () => {
     const newItems = [...formData.items];
     newItems[index][field] = value;
     
-    // Auto-fill price when product selected
+    // Auto-fill price and unit when product selected
     if (field === 'product_id') {
       const product = products.find(p => p.id === value);
       if (product) {
         newItems[index].unit_cost = product.cost_price || 0;
+        newItems[index].product_name = product.name || '';
+        newItems[index].purchase_unit = product.unit || 'pcs';
+        newItems[index].conversion_ratio = 1;
       }
     }
     
     setFormData(prev => ({ ...prev, items: newItems }));
+  };
+
+  // Item search handler - search then select flow
+  const handleItemSearch = (term) => {
+    setItemSearchTerm(term);
+    if (term.length >= 2) {
+      const results = products.filter(p => 
+        p.name?.toLowerCase().includes(term.toLowerCase()) ||
+        p.code?.toLowerCase().includes(term.toLowerCase()) ||
+        p.barcode?.includes(term)
+      ).slice(0, 10);
+      setSearchResults(results);
+      setShowItemSearch(true);
+    } else {
+      setSearchResults([]);
+      setShowItemSearch(false);
+    }
+  };
+
+  // Select item from search results
+  const selectSearchItem = (product, itemIndex) => {
+    const newItems = [...formData.items];
+    newItems[itemIndex] = {
+      ...newItems[itemIndex],
+      product_id: product.id,
+      product_name: product.name,
+      unit_cost: product.cost_price || 0,
+      purchase_unit: product.unit || 'pcs',
+      conversion_ratio: 1
+    };
+    setFormData(prev => ({ ...prev, items: newItems }));
+    setShowItemSearch(false);
+    setItemSearchTerm('');
+    setSearchResults([]);
+    setActiveItemIndex(null);
   };
 
   const getStatusBadge = (status) => {
@@ -449,6 +537,7 @@ const PurchaseOrders = () => {
               </button>
             </div>
             <form onSubmit={handleSubmit} className="p-4 space-y-4">
+              {/* Row 1: Supplier & Warehouse */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm text-gray-400 mb-1">Supplier *</label>
@@ -457,6 +546,7 @@ const PurchaseOrders = () => {
                     onChange={(e) => setFormData({ ...formData, supplier_id: e.target.value })}
                     className="w-full px-3 py-2 bg-[#0a0608] border border-red-900/30 rounded-lg"
                     required
+                    data-testid="po-supplier-select"
                   >
                     <option value="">Pilih Supplier</option>
                     {suppliers.map(s => (
@@ -465,22 +555,72 @@ const PurchaseOrders = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm text-gray-400 mb-1">Catatan</label>
-                  <input
-                    type="text"
-                    value={formData.notes}
-                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                  <label className="block text-sm text-gray-400 mb-1">Gudang Tujuan *</label>
+                  <select
+                    value={formData.warehouse_id}
+                    onChange={(e) => setFormData({ ...formData, warehouse_id: e.target.value })}
                     className="w-full px-3 py-2 bg-[#0a0608] border border-red-900/30 rounded-lg"
-                    placeholder="Catatan tambahan..."
-                  />
+                    required
+                    data-testid="po-warehouse-select"
+                  >
+                    <option value="">Pilih Gudang</option>
+                    {warehouses.map(w => (
+                      <option key={w.id} value={w.id}>{w.name}</option>
+                    ))}
+                  </select>
                 </div>
+              </div>
+
+              {/* Row 2: PIC & Payment Account */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">PIC (Person in Charge)</label>
+                  <select
+                    value={formData.pic_id}
+                    onChange={(e) => setFormData({ ...formData, pic_id: e.target.value })}
+                    className="w-full px-3 py-2 bg-[#0a0608] border border-red-900/30 rounded-lg"
+                    data-testid="po-pic-select"
+                  >
+                    <option value="">Pilih PIC</option>
+                    {employees.map(emp => (
+                      <option key={emp.id} value={emp.id}>{emp.name} - {emp.position || 'Staff'}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">Akun Pembayaran</label>
+                  <select
+                    value={formData.payment_account_id}
+                    onChange={(e) => setFormData({ ...formData, payment_account_id: e.target.value })}
+                    className="w-full px-3 py-2 bg-[#0a0608] border border-red-900/30 rounded-lg"
+                    data-testid="po-payment-account-select"
+                  >
+                    <option value="">Pilih Akun Kas/Bank</option>
+                    {cashBankAccounts.map(acc => (
+                      <option key={acc.id} value={acc.id}>{acc.code} - {acc.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Row 3: Notes */}
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Catatan</label>
+                <input
+                  type="text"
+                  value={formData.notes}
+                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                  className="w-full px-3 py-2 bg-[#0a0608] border border-red-900/30 rounded-lg"
+                  placeholder="Catatan tambahan..."
+                  data-testid="po-notes-input"
+                />
               </div>
 
               {/* Items */}
               <div className="border border-red-900/30 rounded-lg overflow-hidden">
                 <div className="bg-red-900/20 px-4 py-2 flex items-center justify-between">
                   <span className="font-medium text-amber-200">Item Pembelian</span>
-                  <button type="button" onClick={addItem} className="text-sm text-amber-400 hover:text-amber-300">
+                  <button type="button" onClick={addItem} className="text-sm text-amber-400 hover:text-amber-300" data-testid="po-add-item-btn">
                     + Tambah Item
                   </button>
                 </div>
@@ -488,35 +628,66 @@ const PurchaseOrders = () => {
                   <thead className="bg-red-900/10">
                     <tr>
                       <th className="px-4 py-2 text-left text-xs text-gray-400">PRODUK</th>
-                      <th className="px-4 py-2 text-center text-xs text-gray-400 w-24">QTY</th>
-                      <th className="px-4 py-2 text-right text-xs text-gray-400 w-32">HARGA</th>
-                      <th className="px-4 py-2 text-center text-xs text-gray-400 w-20">DISK %</th>
-                      {/* PRIORITAS 5: Serial Number Range */}
-                      <th className="px-4 py-2 text-center text-xs text-gray-400 w-28">SN AWAL</th>
-                      <th className="px-4 py-2 text-center text-xs text-gray-400 w-28">SN AKHIR</th>
-                      <th className="px-4 py-2 text-right text-xs text-gray-400 w-36">SUBTOTAL</th>
-                      <th className="px-4 py-2 w-12"></th>
+                      <th className="px-4 py-2 text-center text-xs text-gray-400 w-20">QTY</th>
+                      <th className="px-4 py-2 text-center text-xs text-gray-400 w-20">SATUAN</th>
+                      <th className="px-4 py-2 text-right text-xs text-gray-400 w-28">HARGA</th>
+                      <th className="px-4 py-2 text-center text-xs text-gray-400 w-16">DISK %</th>
+                      <th className="px-4 py-2 text-center text-xs text-gray-400 w-24">SN AWAL</th>
+                      <th className="px-4 py-2 text-center text-xs text-gray-400 w-24">SN AKHIR</th>
+                      <th className="px-4 py-2 text-right text-xs text-gray-400 w-28">SUBTOTAL</th>
+                      <th className="px-4 py-2 w-10"></th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-red-900/20">
                     {formData.items.map((item, idx) => {
                       const subtotal = item.quantity * item.unit_cost * (1 - item.discount_percent/100);
-                      // PRIORITAS 5: Calculate SN count
                       const snCount = (item.sn_start && item.sn_end) ? 
                         Math.max(0, parseInt(item.sn_end) - parseInt(item.sn_start) + 1) : 0;
                       return (
                         <tr key={idx}>
-                          <td className="px-4 py-2">
-                            <select
-                              value={item.product_id}
-                              onChange={(e) => updateItem(idx, 'product_id', e.target.value)}
-                              className="w-full px-2 py-1 bg-[#0a0608] border border-red-900/30 rounded text-sm"
-                            >
-                              <option value="">Pilih Produk</option>
-                              {products.map(p => (
-                                <option key={p.id} value={p.id}>{p.name}</option>
-                              ))}
-                            </select>
+                          {/* Product Search with Click-to-Select Flow */}
+                          <td className="px-4 py-2 relative">
+                            {item.product_id ? (
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm text-gray-200 flex-1">{item.product_name || products.find(p => p.id === item.product_id)?.name || 'Product'}</span>
+                                <button 
+                                  type="button" 
+                                  onClick={() => updateItem(idx, 'product_id', '')} 
+                                  className="text-red-400 hover:text-red-300 text-xs"
+                                >
+                                  <X className="h-3 w-3" />
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="relative">
+                                <input
+                                  type="text"
+                                  placeholder="Cari produk..."
+                                  value={activeItemIndex === idx ? itemSearchTerm : ''}
+                                  onChange={(e) => { setActiveItemIndex(idx); handleItemSearch(e.target.value); }}
+                                  onFocus={() => setActiveItemIndex(idx)}
+                                  className="w-full px-2 py-1 bg-[#0a0608] border border-red-900/30 rounded text-sm"
+                                  data-testid={`po-item-search-${idx}`}
+                                />
+                                {/* Search Results Dropdown */}
+                                {showItemSearch && activeItemIndex === idx && searchResults.length > 0 && (
+                                  <div className="absolute z-10 w-full mt-1 bg-[#1a1214] border border-red-900/30 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                                    {searchResults.map(p => (
+                                      <button
+                                        key={p.id}
+                                        type="button"
+                                        onClick={() => selectSearchItem(p, idx)}
+                                        className="w-full px-3 py-2 text-left text-sm hover:bg-red-900/20 flex justify-between"
+                                        data-testid={`po-item-option-${p.id}`}
+                                      >
+                                        <span>{p.name}</span>
+                                        <span className="text-gray-500">{p.code}</span>
+                                      </button>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            )}
                           </td>
                           <td className="px-4 py-2">
                             <input
@@ -525,7 +696,26 @@ const PurchaseOrders = () => {
                               value={item.quantity}
                               onChange={(e) => updateItem(idx, 'quantity', Number(e.target.value))}
                               className="w-full px-2 py-1 bg-[#0a0608] border border-red-900/30 rounded text-sm text-center"
+                              data-testid={`po-item-qty-${idx}`}
                             />
+                          </td>
+                          {/* Purchase Unit - Can be changed */}
+                          <td className="px-4 py-2">
+                            <select
+                              value={item.purchase_unit || 'pcs'}
+                              onChange={(e) => updateItem(idx, 'purchase_unit', e.target.value)}
+                              className="w-full px-1 py-1 bg-[#0a0608] border border-red-900/30 rounded text-sm text-center"
+                              data-testid={`po-item-unit-${idx}`}
+                            >
+                              <option value="pcs">pcs</option>
+                              <option value="box">box</option>
+                              <option value="karton">karton</option>
+                              <option value="lusin">lusin</option>
+                              <option value="pak">pak</option>
+                              <option value="rim">rim</option>
+                              <option value="kg">kg</option>
+                              <option value="liter">liter</option>
+                            </select>
                           </td>
                           <td className="px-4 py-2">
                             <input
@@ -534,6 +724,7 @@ const PurchaseOrders = () => {
                               value={item.unit_cost}
                               onChange={(e) => updateItem(idx, 'unit_cost', Number(e.target.value))}
                               className="w-full px-2 py-1 bg-[#0a0608] border border-red-900/30 rounded text-sm text-right"
+                              data-testid={`po-item-price-${idx}`}
                             />
                           </td>
                           <td className="px-4 py-2">
@@ -543,7 +734,8 @@ const PurchaseOrders = () => {
                               max="100"
                               value={item.discount_percent}
                               onChange={(e) => updateItem(idx, 'discount_percent', Number(e.target.value))}
-                              className="w-full px-2 py-1 bg-[#0a0608] border border-red-900/30 rounded text-sm text-center"
+                              className="w-full px-1 py-1 bg-[#0a0608] border border-red-900/30 rounded text-sm text-center"
+                              data-testid={`po-item-discount-${idx}`}
                             />
                           </td>
                           {/* PRIORITAS 5: SN Awal */}

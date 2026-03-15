@@ -107,9 +107,14 @@ async def derive_purchase_account(db, account_key: str, branch_id: str = None,
 
 class POItemInput(BaseModel):
     product_id: str
+    product_name: Optional[str] = ""
     quantity: int
     unit_cost: float
     discount_percent: float = 0
+    purchase_unit: Optional[str] = "pcs"  # Unit for purchase
+    conversion_ratio: Optional[float] = 1  # Conversion to base unit
+    sn_start: Optional[str] = ""  # Serial number start
+    sn_end: Optional[str] = ""  # Serial number end
 
 class POItemUpdate(BaseModel):
     product_id: str
@@ -132,9 +137,13 @@ class UpdateDraftPO(BaseModel):
 class CreatePO(BaseModel):
     supplier_id: str
     branch_id: Optional[str] = None
+    warehouse_id: Optional[str] = None  # Single warehouse for all items
+    pic_id: Optional[str] = None  # Person in Charge
+    payment_account_id: Optional[str] = None  # Cash/Bank account for payment
     items: List[POItemInput]
     expected_date: Optional[str] = None
     notes: str = ""
+    total_amount: Optional[float] = None  # Calculated total
     # AP integration fields
     is_credit: bool = True  # Most purchases are on credit
     credit_due_days: int = 30  # Days until payment due
@@ -344,9 +353,39 @@ async def get_po_print_data(po_id: str, user: dict = Depends(require_permission(
 @router.post("/orders")
 async def create_purchase_order(data: CreatePO, request: Request, user: dict = Depends(require_permission("purchase", "create"))):
     """Create purchase order - Requires purchase.create permission"""
+    # ============================================================
+    # VALIDATION: Mandatory fields per System Architect requirement
+    # ============================================================
+    if not data.supplier_id:
+        raise HTTPException(status_code=400, detail="Supplier wajib dipilih")
+    
     supplier = await suppliers.find_one({"id": data.supplier_id}, {"_id": 0})
     if not supplier:
-        raise HTTPException(status_code=400, detail="Supplier not found")
+        raise HTTPException(status_code=400, detail="Supplier tidak ditemukan")
+    
+    if not data.items or len(data.items) == 0:
+        raise HTTPException(status_code=400, detail="Minimal harus ada 1 item pembelian")
+    
+    # Validate warehouse if provided
+    warehouse_name = ""
+    if data.warehouse_id:
+        warehouse = await get_db().warehouses.find_one({"id": data.warehouse_id}, {"_id": 0})
+        if warehouse:
+            warehouse_name = warehouse.get("name", "")
+    
+    # Validate PIC if provided
+    pic_name = ""
+    if data.pic_id:
+        employee = await get_db().employees.find_one({"id": data.pic_id}, {"_id": 0})
+        if employee:
+            pic_name = employee.get("name", "")
+    
+    # Validate payment account if provided
+    payment_account_name = ""
+    if data.payment_account_id:
+        account = await get_db().chart_of_accounts.find_one({"id": data.payment_account_id}, {"_id": 0})
+        if account:
+            payment_account_name = f"{account.get('code', '')} - {account.get('name', '')}"
     
     branch_id = data.branch_id or user.get("branch_id")
     
@@ -357,7 +396,10 @@ async def create_purchase_order(data: CreatePO, request: Request, user: dict = D
     for item in data.items:
         product = await products.find_one({"id": item.product_id}, {"_id": 0})
         if not product:
-            raise HTTPException(status_code=400, detail=f"Product not found: {item.product_id}")
+            raise HTTPException(status_code=400, detail=f"Product tidak ditemukan: {item.product_id}")
+        
+        if item.quantity <= 0:
+            raise HTTPException(status_code=400, detail=f"Jumlah item {product.get('name')} harus lebih dari 0")
         
         item_subtotal = item.unit_cost * item.quantity
         if item.discount_percent > 0:
@@ -366,15 +408,23 @@ async def create_purchase_order(data: CreatePO, request: Request, user: dict = D
         po_item = PurchaseOrderItem(
             product_id=item.product_id,
             product_code=product.get("code", ""),
-            product_name=product.get("name", ""),
+            product_name=item.product_name or product.get("name", ""),
             quantity=item.quantity,
             unit_cost=item.unit_cost,
             discount_percent=item.discount_percent,
-            subtotal=item_subtotal
+            subtotal=item_subtotal,
+            unit=item.purchase_unit or product.get("unit", "pcs"),
+            conversion_ratio=item.conversion_ratio or 1,
+            sn_start=item.sn_start or "",
+            sn_end=item.sn_end or ""
         )
         
         po_items.append(po_item)
         subtotal += item_subtotal
+    
+    # Final total validation
+    if subtotal <= 0:
+        raise HTTPException(status_code=400, detail="Total pembelian harus lebih dari 0")
     
     po_number = await get_next_sequence("po_number", "PO")
     
@@ -383,6 +433,12 @@ async def create_purchase_order(data: CreatePO, request: Request, user: dict = D
         supplier_id=data.supplier_id,
         supplier_name=supplier.get("name", ""),
         branch_id=branch_id,
+        warehouse_id=data.warehouse_id or "",
+        warehouse_name=warehouse_name,
+        pic_id=data.pic_id or "",
+        pic_name=pic_name,
+        payment_account_id=data.payment_account_id or "",
+        payment_account_name=payment_account_name,
         items=[item.model_dump() for item in po_items],
         subtotal=subtotal,
         total=subtotal,
