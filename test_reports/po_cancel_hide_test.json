@@ -1,0 +1,23 @@
+{
+  "test_name": "PO Cancel Hide Test",
+  "test_date": "2026-03-17",
+  "status": "PASS",
+  "test_case": {
+    "po_number": "PO000033",
+    "initial_status": "partial",
+    "has_receiving": true,
+    "has_stock_movement": true,
+    "has_ap_record": false,
+    "has_journal": false
+  },
+  "delete_result": {
+    "delete_mode": "CANCEL_HIDE",
+    "new_status": "cancelled",
+    "is_deleted": true,
+    "in_default_list": false,
+    "in_deleted_filter": true,
+    "audit_logged": true,
+    "stock_movement_preserved": true,
+    "trail_safe": true
+  }
+}

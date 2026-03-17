@@ -1,0 +1,21 @@
+{
+  "test_name": "PO Soft Delete Test",
+  "test_date": "2026-03-17",
+  "status": "PASS",
+  "test_case": {
+    "po_number": "PO000032",
+    "initial_status": "draft",
+    "has_receiving": false,
+    "has_stock_movement": false,
+    "has_ap_record": false,
+    "has_journal": false
+  },
+  "delete_result": {
+    "delete_mode": "SOFT_DELETE",
+    "new_status": "deleted",
+    "is_deleted": true,
+    "in_default_list": false,
+    "in_deleted_filter": true,
+    "audit_logged": true
+  }
+}

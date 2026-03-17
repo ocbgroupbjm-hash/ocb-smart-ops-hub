@@ -156,27 +156,58 @@ class ReceivePO(BaseModel):
     items: List[ReceiveItem]
     notes: str = ""
 
+class DeletePORequest(BaseModel):
+    """Request body for PO deletion"""
+    reason: str = ""  # Alasan penghapusan (optional/required based on policy)
+
+# Delete mode constants
+class DeleteMode:
+    SOFT_DELETE = "SOFT_DELETE"  # For PO without any transaction impact
+    CANCEL_HIDE = "CANCEL_HIDE"  # For PO with receiving/AP/journal impact
+
 # ==================== PURCHASE ORDERS ====================
 
 @router.get("/orders")
 async def list_purchase_orders(
     status: str = "",
     supplier_id: str = "",
+    include_deleted: bool = False,  # Filter untuk tampilkan deleted PO
+    only_deleted: bool = False,  # Filter untuk hanya tampilkan deleted PO
     skip: int = 0,
     limit: int = 50,
     user: dict = Depends(require_permission("purchase", "view"))
 ):
-    """List purchase orders - Requires purchase.view permission"""
+    """
+    List purchase orders - Requires purchase.view permission
+    
+    Filters:
+    - include_deleted: false (default) = hide deleted, true = show all
+    - only_deleted: true = show only deleted POs
+    """
     query = {}
     
+    # Default: exclude deleted POs (is_deleted != true)
+    if only_deleted:
+        query["is_deleted"] = True
+    elif not include_deleted:
+        query["$or"] = [
+            {"is_deleted": {"$exists": False}},
+            {"is_deleted": False}
+        ]
+    
     if status:
-        query["status"] = status
+        # Support multiple statuses (comma-separated)
+        if "," in status:
+            query["status"] = {"$in": status.split(",")}
+        else:
+            query["status"] = status
     
     if supplier_id:
         query["supplier_id"] = supplier_id
     
     items = await purchase_orders.find(query, {"_id": 0}).sort("created_at", -1).skip(skip).limit(limit).to_list(limit)
     total = await purchase_orders.count_documents(query)
+    
     
     return {"items": items, "total": total}
 
@@ -775,6 +806,209 @@ async def cancel_purchase_order(po_id: str, request: Request, user: dict = Depen
     )
     
     return {"message": "Purchase order cancelled"}
+
+
+# ==================== SAFE DELETE POLICY ====================
+
+@router.delete("/orders/{po_id}")
+async def delete_purchase_order(
+    po_id: str, 
+    request: Request, 
+    reason: str = "",
+    user: dict = Depends(require_permission("purchase", "delete"))
+):
+    """
+    Safe Delete Purchase Order - Requires purchase.delete permission
+    
+    DELETE POLICY:
+    - PO without receiving/AP/journal → SOFT_DELETE (is_deleted=true, status=deleted)
+    - PO with receiving/AP/journal → CANCEL_HIDE (is_deleted=true, status=cancelled, preserves trail)
+    
+    Both cases: PO will NOT appear in default list anymore
+    """
+    db = get_db()
+    user_id = user.get("user_id", user.get("id", ""))
+    user_name = user.get("name", "")
+    
+    # Get PO
+    po = await purchase_orders.find_one({"id": po_id}, {"_id": 0})
+    if not po:
+        raise HTTPException(status_code=404, detail="Purchase order tidak ditemukan")
+    
+    # Check if already deleted
+    if po.get("is_deleted"):
+        raise HTTPException(status_code=400, detail="Purchase order sudah dihapus sebelumnya")
+    
+    old_status = po.get("status")
+    po_number = po.get("po_number", po_id)
+    
+    # ============ CHECK TRANSACTION IMPACT ============
+    has_receiving = False
+    has_stock_movement = False
+    has_ap_record = False
+    has_journal = False
+    
+    # Check if any item has been received
+    for item in po.get("items", []):
+        if item.get("received_qty", 0) > 0:
+            has_receiving = True
+            break
+    
+    # Check stock movements related to this PO
+    movement_count = await stock_movements.count_documents({
+        "reference_id": po_id,
+        "reference_type": "purchase_order"
+    })
+    has_stock_movement = movement_count > 0
+    
+    # Check AP records
+    ap_collection = db["accounts_payable"]
+    ap_count = await ap_collection.count_documents({"po_id": po_id})
+    has_ap_record = ap_count > 0
+    
+    # Check journal entries
+    journal_collection = db["journal_entries"]
+    journal_count = await journal_collection.count_documents({
+        "$or": [
+            {"reference_id": po_id},
+            {"reference_no": po_number}
+        ]
+    })
+    has_journal = journal_count > 0
+    
+    # ============ DETERMINE DELETE MODE ============
+    has_any_impact = has_receiving or has_stock_movement or has_ap_record or has_journal
+    
+    if has_any_impact:
+        # CASE 2: PO with transaction impact → CANCEL_HIDE
+        delete_mode = DeleteMode.CANCEL_HIDE
+        new_status = "cancelled"
+        audit_action = "PO_CANCEL_HIDE"
+        message = f"PO {po_number} dihapus dari daftar aktif (cancel_hide - transaksi tetap tersimpan)"
+    else:
+        # CASE 1: PO without transaction impact → SOFT_DELETE
+        delete_mode = DeleteMode.SOFT_DELETE
+        new_status = "deleted"
+        audit_action = "PO_SOFT_DELETED"
+        message = f"PO {po_number} berhasil dihapus"
+    
+    # ============ UPDATE PO ============
+    update_data = {
+        "is_deleted": True,
+        "deleted_at": datetime.now(timezone.utc).isoformat(),
+        "deleted_by": user_id,
+        "deleted_by_name": user_name,
+        "delete_reason": reason,
+        "delete_mode": delete_mode,
+        "status": new_status,
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await purchase_orders.update_one({"id": po_id}, {"$set": update_data})
+    
+    # ============ AUDIT LOG ============
+    await log_security_event(
+        db, user_id, user_name,
+        "delete", "purchase",
+        f"{audit_action}: {po_number} | Mode: {delete_mode} | Old Status: {old_status} | Reason: {reason or 'No reason provided'}",
+        request.client.host if request.client else "",
+        document_no=po_number,
+        severity="warning"
+    )
+    
+    # Save detailed audit record
+    audit_detail = {
+        "id": str(uuid.uuid4()),
+        "event_type": audit_action,
+        "tenant_id": db.name,
+        "po_id": po_id,
+        "po_number": po_number,
+        "user_id": user_id,
+        "user_name": user_name,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "old_status": old_status,
+        "new_status": new_status,
+        "delete_mode": delete_mode,
+        "reason": reason,
+        "impact_check": {
+            "has_receiving": has_receiving,
+            "has_stock_movement": has_stock_movement,
+            "has_ap_record": has_ap_record,
+            "has_journal": has_journal
+        },
+        "ip_address": request.client.host if request.client else ""
+    }
+    
+    audit_logs = db["audit_logs"]
+    await audit_logs.insert_one(audit_detail)
+    
+    return {
+        "success": True,
+        "message": message,
+        "po_number": po_number,
+        "delete_mode": delete_mode,
+        "old_status": old_status,
+        "new_status": new_status,
+        "impact_preserved": has_any_impact
+    }
+
+
+@router.get("/orders/{po_id}/delete-preview")
+async def preview_delete_po(
+    po_id: str,
+    user: dict = Depends(require_permission("purchase", "view"))
+):
+    """
+    Preview what will happen if PO is deleted
+    Shows impact analysis before actual deletion
+    """
+    db = get_db()
+    
+    po = await purchase_orders.find_one({"id": po_id}, {"_id": 0})
+    if not po:
+        raise HTTPException(status_code=404, detail="Purchase order tidak ditemukan")
+    
+    po_number = po.get("po_number", po_id)
+    
+    # Check impacts
+    has_receiving = any(item.get("received_qty", 0) > 0 for item in po.get("items", []))
+    
+    movement_count = await stock_movements.count_documents({
+        "reference_id": po_id,
+        "reference_type": "purchase_order"
+    })
+    
+    ap_collection = db["accounts_payable"]
+    ap_count = await ap_collection.count_documents({"po_id": po_id})
+    
+    journal_collection = db["journal_entries"]
+    journal_count = await journal_collection.count_documents({
+        "$or": [{"reference_id": po_id}, {"reference_no": po_number}]
+    })
+    
+    has_any_impact = has_receiving or movement_count > 0 or ap_count > 0 or journal_count > 0
+    
+    return {
+        "po_id": po_id,
+        "po_number": po_number,
+        "current_status": po.get("status"),
+        "is_already_deleted": po.get("is_deleted", False),
+        "impact_analysis": {
+            "has_receiving": has_receiving,
+            "stock_movements_count": movement_count,
+            "ap_records_count": ap_count,
+            "journal_entries_count": journal_count,
+            "has_any_impact": has_any_impact
+        },
+        "delete_preview": {
+            "delete_mode": DeleteMode.CANCEL_HIDE if has_any_impact else DeleteMode.SOFT_DELETE,
+            "new_status": "cancelled" if has_any_impact else "deleted",
+            "data_preserved": has_any_impact,
+            "will_appear_in_default_list": False,
+            "message": "PO akan disembunyikan dari daftar aktif. Jejak transaksi tetap aman." if has_any_impact else "PO akan dihapus secara soft delete."
+        }
+    }
+
 
 # ==================== PURCHASE PAYMENTS ====================
 

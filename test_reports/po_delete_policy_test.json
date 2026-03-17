@@ -1,0 +1,31 @@
+{
+  "test_name": "PO Delete Policy Test",
+  "test_date": "2026-03-17",
+  "blueprint_version": "v2.4.4",
+  "status": "PASS",
+  "policy": {
+    "SOFT_DELETE": {
+      "condition": "PO without receiving/stock/AP/journal impact",
+      "new_status": "deleted",
+      "preserves_data": false,
+      "row_deleted": false,
+      "appears_in_default_list": false
+    },
+    "CANCEL_HIDE": {
+      "condition": "PO with receiving/stock/AP/journal impact",
+      "new_status": "cancelled",
+      "preserves_data": true,
+      "row_deleted": false,
+      "appears_in_default_list": false,
+      "trail_preserved": true
+    }
+  },
+  "fields_added": [
+    "is_deleted",
+    "deleted_at",
+    "deleted_by",
+    "deleted_by_name",
+    "delete_reason",
+    "delete_mode"
+  ]
+}

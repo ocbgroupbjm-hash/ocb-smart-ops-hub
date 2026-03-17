@@ -1,0 +1,17 @@
+{
+  "test_name": "PO Delete Stock Safeguard Test",
+  "test_date": "2026-03-17",
+  "status": "PASS",
+  "test_case": {
+    "po_number": "PO000033",
+    "stock_movements_before_delete": 1,
+    "delete_mode": "CANCEL_HIDE"
+  },
+  "verification": {
+    "stock_movements_after_delete": 1,
+    "movement_preserved": true,
+    "movement_type": "stock_in",
+    "movement_quantity": 5,
+    "conclusion": "Stock movement NOT deleted - trail safe"
+  }
+}

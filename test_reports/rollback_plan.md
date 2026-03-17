@@ -1,61 +1,51 @@
-# Rollback Plan - Purchase Consolidation
+# Rollback Plan - PO Delete Policy
 
 ## Date: 2026-03-17
-## Blueprint Version: v2.4.4
+## Blueprint Version: v2.4.5
 
 ---
 
 ## Changes Made
 
-### 1. Menu Consolidation (Sidebar.jsx)
-- Removed "Daftar Pembelian" menu
-- Removed "Tambah Pembelian" menu
-- Renamed "Pesanan Pembelian" → "Daftar PO Pembelian"
-- Renamed "Tambah Pesanan Pembelian" → "Buat PO Pembelian"
-- Added "Terima Barang" direct link
+### 1. Backend (purchase.py)
+- Added DELETE endpoint `/api/purchase/orders/{po_id}`
+- Added delete preview endpoint `/api/purchase/orders/{po_id}/delete-preview`
+- Added delete filter params to list endpoint (include_deleted, only_deleted)
+- Added DeleteMode constants (SOFT_DELETE, CANCEL_HIDE)
 
-### 2. Route Consolidation (App.js)
-- Added redirect: /purchase/list → /purchase/orders
-- Added redirect: /purchase/add → /purchase/orders/add
+### 2. Frontend (PurchaseOrders.jsx)
+- Added delete filter dropdown (Aktif Saja, Dihapus Saja, Semua)
+- Added delete confirmation modal with preview
+- Updated status badge to show "🗑️ Dihapus" with strikethrough
+- Added tombol Hapus for all PO statuses
 
-### 3. Business Rules (LOCKED)
-- Stock changes ONLY on receiving
-- AP created ONLY on full receipt
+### 3. Database Schema
+New fields on PO documents:
+- is_deleted (boolean)
+- deleted_at (datetime)
+- deleted_by (user_id)
+- deleted_by_name (string)
+- delete_reason (string)
+- delete_mode (SOFT_DELETE | CANCEL_HIDE)
 
 ---
 
 ## Rollback Procedure
 
-If issues occur after sync:
+### Option 1: Emergent Platform Rollback
+1. Go to Emergent Platform
+2. Click "Rollback"
+3. Select checkpoint before v2.4.5
 
-1. **Use Emergent Rollback Feature**
-   - Go to Emergent Platform
-   - Click "Rollback" option
-   - Select checkpoint before v2.4.4
-
-2. **Manual Rollback** (if needed)
-   - Restore Sidebar.jsx from git
-   - Restore App.js from git
-   - Restart frontend
+### Option 2: Manual Rollback
+1. Revert purchase.py to remove DELETE endpoint
+2. Revert PurchaseOrders.jsx to remove delete filter and modal
+3. Note: Deleted PO documents will remain with is_deleted=true
 
 ---
 
-## Verification After Rollback
-
-1. Login to each tenant
-2. Check menu structure restored
-3. Check both routes work:
-   - /purchase/orders
-   - /purchase/list
-4. Check both add routes work:
-   - /purchase/orders/add
-   - /purchase/add
-
----
-
-## Contact
-
-For issues, check:
-- `/app/test_reports/` for all evidence files
-- PRD.md for architecture decisions
+## Post-Rollback Notes
+- POs with is_deleted=true will appear in list again (no filter)
+- Stock movements and AP records are never affected
+- Audit logs are preserved
 

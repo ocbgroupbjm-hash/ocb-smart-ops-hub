@@ -1,0 +1,30 @@
+{
+  "test_name": "PO Delete List Visibility Test",
+  "test_date": "2026-03-17",
+  "status": "PASS",
+  "filters": {
+    "default_no_param": {
+      "shows_deleted": false,
+      "description": "Default list excludes deleted POs"
+    },
+    "include_deleted_true": {
+      "shows_deleted": true,
+      "description": "Shows all POs including deleted"
+    },
+    "only_deleted_true": {
+      "shows_deleted": true,
+      "shows_active": false,
+      "description": "Shows only deleted POs"
+    }
+  },
+  "verified": {
+    "PO000032": {
+      "in_default": false,
+      "in_deleted_filter": true
+    },
+    "PO000033": {
+      "in_default": false,
+      "in_deleted_filter": true
+    }
+  }
+}

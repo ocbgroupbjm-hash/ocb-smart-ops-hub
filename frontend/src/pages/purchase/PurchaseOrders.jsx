@@ -14,8 +14,13 @@ const PurchaseOrders = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [deleteFilter, setDeleteFilter] = useState('active'); // 'active', 'deleted', 'all'
   const [showModal, setShowModal] = useState(false);
   const [showReceiveModal, setShowReceiveModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleteReason, setDeleteReason] = useState('');
+  const [deletePreview, setDeletePreview] = useState(null);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [selectedItem, setSelectedItem] = useState(null); // For toolbar selection
   const [suppliers, setSuppliers] = useState([]);
@@ -46,7 +51,11 @@ const PurchaseOrders = () => {
     try {
       const params = new URLSearchParams({
         ...(searchTerm && { search: searchTerm }),
-        ...(statusFilter && { status: statusFilter })
+        ...(statusFilter && { status: statusFilter }),
+        // Delete filter
+        ...(deleteFilter === 'deleted' && { only_deleted: 'true' }),
+        ...(deleteFilter === 'all' && { include_deleted: 'true' })
+        // 'active' is default - no extra param needed
       });
       const res = await api(`/api/purchase/orders?${params}`);
       if (res.ok) {
@@ -58,7 +67,7 @@ const PurchaseOrders = () => {
     } finally {
       setLoading(false);
     }
-  }, [api, searchTerm, statusFilter]);
+  }, [api, searchTerm, statusFilter, deleteFilter]);
 
   const loadMasterData = useCallback(async () => {
     try {
@@ -198,23 +207,52 @@ const PurchaseOrders = () => {
     }
   };
 
-  // Delete PO handler
-  const handleDelete = async (order) => {
-    if (order.status !== 'draft') {
-      toast.error('Hanya PO dengan status Draft yang bisa dihapus');
-      return;
-    }
-    if (!confirm(`Hapus PO ${order.po_number}?`)) return;
+  // Delete PO handler - Safe Delete with preview
+  const handleDeleteClick = async (order) => {
     try {
-      const res = await api(`/api/purchase/orders/${order.id}`, { method: 'DELETE' });
+      // Get delete preview
+      const res = await api(`/api/purchase/orders/${order.id}/delete-preview`);
       if (res.ok) {
-        toast.success('PO berhasil dihapus');
+        const preview = await res.json();
+        setDeleteTarget(order);
+        setDeletePreview(preview);
+        setDeleteReason('');
+        setShowDeleteModal(true);
+      } else {
+        toast.error('Gagal memuat preview hapus');
+      }
+    } catch (err) {
+      toast.error('Gagal memuat preview');
+    }
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget) return;
+    try {
+      const res = await api(`/api/purchase/orders/${deleteTarget.id}?reason=${encodeURIComponent(deleteReason)}`, { 
+        method: 'DELETE' 
+      });
+      if (res.ok) {
+        const data = await res.json();
+        toast.success(data.message || 'PO berhasil dihapus dari daftar aktif');
+        setShowDeleteModal(false);
+        setDeleteTarget(null);
+        setDeletePreview(null);
+        setDeleteReason('');
         setSelectedItem(null);
         loadOrders();
+      } else {
+        const err = await res.json();
+        toast.error(err.detail || 'Gagal menghapus PO');
       }
     } catch (err) {
       toast.error('Gagal menghapus PO');
     }
+  };
+
+  // Legacy delete handler for backward compatibility
+  const handleDelete = async (order) => {
+    handleDeleteClick(order);
   };
 
   // Edit PO handler - open form with existing data
@@ -339,21 +377,35 @@ const PurchaseOrders = () => {
     setActiveItemIndex(null);
   };
 
-  const getStatusBadge = (status) => {
+  const getStatusBadge = (status, isDeleted = false) => {
     const badges = {
       draft: 'bg-gray-600/20 text-gray-400',
       submitted: 'bg-blue-600/20 text-blue-400',
+      ordered: 'bg-blue-600/20 text-blue-400',
       partial: 'bg-yellow-600/20 text-yellow-400',
       received: 'bg-green-600/20 text-green-400',
-      cancelled: 'bg-red-600/20 text-red-400'
+      cancelled: 'bg-red-600/20 text-red-400',
+      deleted: 'bg-red-800/30 text-red-300 line-through'
     };
     const labels = {
       draft: 'Draft',
       submitted: 'Disubmit',
+      ordered: 'Dipesan',
       partial: 'Sebagian',
       received: 'Diterima',
-      cancelled: 'Dibatalkan'
+      cancelled: 'Dibatalkan',
+      deleted: 'Dihapus'
     };
+    
+    // If deleted, show deleted badge
+    if (isDeleted || status === 'deleted') {
+      return (
+        <span className={`px-2 py-1 rounded-full text-xs ${badges.deleted}`}>
+          🗑️ {labels.deleted}
+        </span>
+      );
+    }
+    
     return (
       <span className={`px-2 py-1 rounded-full text-xs ${badges[status] || badges.draft}`}>
         {labels[status] || status}
@@ -400,9 +452,21 @@ const PurchaseOrders = () => {
             <option value="">Semua Status</option>
             <option value="draft">Draft</option>
             <option value="submitted">Disubmit</option>
+            <option value="ordered">Dipesan</option>
             <option value="partial">Sebagian Diterima</option>
             <option value="received">Diterima</option>
             <option value="cancelled">Dibatalkan</option>
+            <option value="deleted">Dihapus</option>
+          </select>
+          <select
+            value={deleteFilter}
+            onChange={(e) => setDeleteFilter(e.target.value)}
+            className="px-4 py-2 bg-[#0a0608] border border-red-900/30 rounded-lg text-gray-200"
+            data-testid="delete-filter"
+          >
+            <option value="active">Aktif Saja</option>
+            <option value="deleted">Dihapus Saja</option>
+            <option value="all">Semua (Termasuk Dihapus)</option>
           </select>
         </div>
       </div>
@@ -475,35 +539,42 @@ const PurchaseOrders = () => {
                   <td className="px-4 py-3 text-sm text-right text-green-400 font-medium">
                     Rp {(order.total || 0).toLocaleString('id-ID')}
                   </td>
-                  <td className="px-4 py-3 text-center">{getStatusBadge(order.status)}</td>
+                  <td className="px-4 py-3 text-center">{getStatusBadge(order.status, order.is_deleted)}</td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-center gap-1">
-                      {order.status === 'draft' && (
-                        <button 
-                          onClick={() => handleSubmitPO(order)}
-                          className="p-1.5 hover:bg-blue-600/20 rounded text-blue-400"
-                          title="Submit ke Supplier"
-                        >
-                          <Truck className="h-4 w-4" />
-                        </button>
+                      {/* Show actions only if not deleted */}
+                      {!order.is_deleted && (
+                        <>
+                          {order.status === 'draft' && (
+                            <button 
+                              onClick={() => handleSubmitPO(order)}
+                              className="p-1.5 hover:bg-blue-600/20 rounded text-blue-400"
+                              title="Submit ke Supplier"
+                            >
+                              <Truck className="h-4 w-4" />
+                            </button>
+                          )}
+                          {(order.status === 'submitted' || order.status === 'partial' || order.status === 'ordered') && (
+                            <button 
+                              onClick={() => { setSelectedOrder(order); setShowReceiveModal(true); }}
+                              className="p-1.5 hover:bg-green-600/20 rounded text-green-400"
+                              title="Terima Barang"
+                            >
+                              <Check className="h-4 w-4" />
+                            </button>
+                          )}
+                          <button 
+                            onClick={() => handleDeleteClick(order)}
+                            className="p-1.5 hover:bg-red-600/20 rounded text-red-400"
+                            title="Hapus PO"
+                            data-testid={`delete-btn-${order.po_number}`}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </>
                       )}
-                      {(order.status === 'submitted' || order.status === 'partial') && (
-                        <button 
-                          onClick={() => { setSelectedOrder(order); setShowReceiveModal(true); }}
-                          className="p-1.5 hover:bg-green-600/20 rounded text-green-400"
-                          title="Terima Barang"
-                        >
-                          <Check className="h-4 w-4" />
-                        </button>
-                      )}
-                      {order.status !== 'received' && order.status !== 'cancelled' && (
-                        <button 
-                          onClick={() => handleCancel(order)}
-                          className="p-1.5 hover:bg-red-600/20 rounded text-red-400"
-                          title="Batalkan"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
+                      {order.is_deleted && (
+                        <span className="text-xs text-gray-500 italic">Dihapus</span>
                       )}
                       <button className="p-1.5 hover:bg-gray-600/20 rounded text-gray-400" title="Print">
                         <Printer className="h-4 w-4" />
@@ -856,6 +927,95 @@ const PurchaseOrders = () => {
                   className="px-4 py-2 bg-green-600 text-white rounded-lg flex items-center gap-2"
                 >
                   <Check className="h-4 w-4" /> Terima Semua Sisa
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && deleteTarget && (
+        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+          <div className="bg-[#1a1214] border border-red-900/30 rounded-xl w-full max-w-lg" data-testid="delete-modal">
+            <div className="p-4 border-b border-red-900/30 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-amber-100">
+                Hapus PO - {deleteTarget.po_number}
+              </h2>
+              <button onClick={() => setShowDeleteModal(false)} className="p-1 hover:bg-red-900/20 rounded">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="p-4 space-y-4">
+              {/* Delete Preview Info */}
+              {deletePreview && (
+                <div className="space-y-3">
+                  <div className="p-3 rounded-lg bg-amber-900/20 border border-amber-600/30">
+                    <p className="text-sm text-amber-200 font-medium mb-2">Mode Penghapusan:</p>
+                    <p className="text-amber-100">
+                      {deletePreview.delete_preview?.delete_mode === 'SOFT_DELETE' 
+                        ? '📝 Soft Delete - PO akan dihapus tanpa dampak transaksi' 
+                        : '🔒 Cancel & Hide - PO akan disembunyikan, jejak transaksi tetap aman'}
+                    </p>
+                  </div>
+                  
+                  {deletePreview.impact_analysis?.has_any_impact && (
+                    <div className="p-3 rounded-lg bg-red-900/20 border border-red-600/30">
+                      <p className="text-sm text-red-200 font-medium mb-2">⚠️ Dampak Transaksi Terdeteksi:</p>
+                      <ul className="text-sm text-gray-300 space-y-1">
+                        {deletePreview.impact_analysis.has_receiving && (
+                          <li>• Sudah ada penerimaan barang</li>
+                        )}
+                        {deletePreview.impact_analysis.stock_movements_count > 0 && (
+                          <li>• {deletePreview.impact_analysis.stock_movements_count} pergerakan stok</li>
+                        )}
+                        {deletePreview.impact_analysis.ap_records_count > 0 && (
+                          <li>• {deletePreview.impact_analysis.ap_records_count} catatan hutang (AP)</li>
+                        )}
+                        {deletePreview.impact_analysis.journal_entries_count > 0 && (
+                          <li>• {deletePreview.impact_analysis.journal_entries_count} jurnal akuntansi</li>
+                        )}
+                      </ul>
+                      <p className="text-xs text-gray-400 mt-2">
+                        Data transaksi akan tetap tersimpan untuk audit trail.
+                      </p>
+                    </div>
+                  )}
+                  
+                  <div className="p-3 rounded-lg bg-gray-800/50 border border-gray-700">
+                    <p className="text-sm text-gray-300">
+                      {deletePreview.delete_preview?.message}
+                    </p>
+                  </div>
+                </div>
+              )}
+              
+              {/* Delete Reason */}
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Alasan Penghapusan (opsional)</label>
+                <textarea
+                  value={deleteReason}
+                  onChange={(e) => setDeleteReason(e.target.value)}
+                  placeholder="Masukkan alasan penghapusan..."
+                  className="w-full px-3 py-2 bg-[#0a0608] border border-red-900/30 rounded-lg text-gray-200 resize-none"
+                  rows={2}
+                  data-testid="delete-reason-input"
+                />
+              </div>
+              
+              <div className="flex justify-end gap-3 pt-2">
+                <button 
+                  onClick={() => setShowDeleteModal(false)} 
+                  className="px-4 py-2 border border-red-900/30 rounded-lg text-gray-300 hover:bg-red-900/20"
+                >
+                  Batal
+                </button>
+                <button 
+                  onClick={handleDeleteConfirm}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg flex items-center gap-2 hover:bg-red-700"
+                  data-testid="confirm-delete-btn"
+                >
+                  <Trash2 className="h-4 w-4" /> Hapus PO
                 </button>
               </div>
             </div>

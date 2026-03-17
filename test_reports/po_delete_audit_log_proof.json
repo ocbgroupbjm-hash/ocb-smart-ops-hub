@@ -1,0 +1,35 @@
+{
+  "test_name": "PO Delete Audit Log Proof",
+  "test_date": "2026-03-17",
+  "status": "PASS",
+  "audit_events_logged": [
+    {
+      "event_type": "PO_SOFT_DELETED",
+      "po_number": "PO000032",
+      "old_status": "draft",
+      "new_status": "deleted",
+      "reason": "Test soft delete"
+    },
+    {
+      "event_type": "PO_CANCEL_HIDE",
+      "po_number": "PO000033",
+      "old_status": "partial",
+      "new_status": "cancelled",
+      "reason": "Test cancel hide"
+    }
+  ],
+  "audit_fields": [
+    "tenant_id",
+    "po_id",
+    "po_number",
+    "user_id",
+    "user_name",
+    "timestamp",
+    "old_status",
+    "new_status",
+    "delete_mode",
+    "reason",
+    "impact_check",
+    "ip_address"
+  ]
+}

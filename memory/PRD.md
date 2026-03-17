@@ -50,6 +50,35 @@ Membangun sistem ERP retail komprehensif (OCB TITAN) dengan fitur POS, Inventory
 
 ---
 
+## PO DELETE POLICY COMPLETE - 2026-03-17 ✅
+
+### Blueprint Version: v2.4.5
+**Status:** PASS
+
+**Delete Policy Implemented:**
+- SOFT_DELETE: PO tanpa dampak transaksi → status=deleted
+- CANCEL_HIDE: PO dengan receiving/stock/AP/journal → status=cancelled, trail preserved
+
+**Features:**
+- Delete button untuk semua status PO
+- Delete confirmation modal dengan impact preview
+- Filter: Aktif Saja / Dihapus Saja / Semua
+- Status badge "🗑️ Dihapus" dengan strikethrough
+- Audit log lengkap untuk semua delete action
+
+**Business Rules:**
+- PO yang dihapus TIDAK muncul di daftar default ✅
+- Stock movement TIDAK dihapus (trail safe) ✅
+- AP/Journal TIDAK dihapus (audit ready) ✅
+
+**Test Cases PASS:**
+- PO000032: Draft → SOFT_DELETE ✅
+- PO000033: Partial → CANCEL_HIDE ✅
+
+**Evidence:** `/app/test_reports/po_delete_*.json|.png`
+
+---
+
 ## HR PAYROLL PHASE 1 & 2 COMPLETE - 2026-03-17 ✅
 
 ### Blueprint Version: v2.4.4

@@ -1,0 +1,15 @@
+{
+  "test_name": "PO Delete Filter Test",
+  "test_date": "2026-03-17",
+  "status": "PASS",
+  "ui_filters": [
+    {"value": "active", "label": "Aktif Saja", "shows_deleted": false},
+    {"value": "deleted", "label": "Dihapus Saja", "shows_deleted": true, "shows_active": false},
+    {"value": "all", "label": "Semua (Termasuk Dihapus)", "shows_deleted": true, "shows_active": true}
+  ],
+  "api_params": {
+    "default": "is_deleted != true (excludes deleted)",
+    "only_deleted=true": "is_deleted = true",
+    "include_deleted=true": "no filter on is_deleted"
+  }
+}

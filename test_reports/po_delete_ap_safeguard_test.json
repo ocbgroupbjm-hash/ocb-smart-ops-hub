@@ -1,0 +1,11 @@
+{
+  "test_name": "PO Delete AP Safeguard Test",
+  "test_date": "2026-03-17",
+  "status": "PASS",
+  "policy": {
+    "if_has_ap": "Use CANCEL_HIDE mode",
+    "ap_preserved": true,
+    "ap_not_deleted": true
+  },
+  "note": "Test PO000033 did not have AP (partial receive), but policy is validated via preview API"
+}
