@@ -1,0 +1,67 @@
+{
+  "test_date": "2026-03-17T20:00:00Z",
+  "test_type": "API_PAYLOAD_LOG",
+  "tenant": "ocb_titan",
+  "api_calls": [
+    {
+      "step": 1,
+      "method": "POST",
+      "endpoint": "/api/business/switch/ocb_titan",
+      "response": {"db_name": "ocb_titan", "message": "Berhasil switch ke bisnis"}
+    },
+    {
+      "step": 2,
+      "method": "POST",
+      "endpoint": "/api/auth/login",
+      "payload": {"email": "ocbgroupbjm@gmail.com", "password": "***"},
+      "response": {"token": "JWT with tenant_id: ocb_titan", "user": {"name": "Oscar OCB", "role": "owner"}}
+    },
+    {
+      "step": 3,
+      "method": "POST",
+      "endpoint": "/api/purchase/orders",
+      "payload": {
+        "supplier_id": "7c643fda-02fe-44b1-935a-d6fb11cd0ef9",
+        "warehouse_id": "13b57514-66e9-4f85-9c99-45cc3bb9d310",
+        "items": [{"product_id": "a09893d5-4c52-4e5f-870c-018f1134b1df", "quantity": 10, "unit_cost": 50000}]
+      },
+      "response": {"po_number": "PO000025", "id": "64fd3c85-95a1-4d15-bde5-7240028b995e"}
+    },
+    {
+      "step": 4,
+      "method": "POST",
+      "endpoint": "/api/purchase/orders/{id}/submit",
+      "response": {"status": "ordered"}
+    },
+    {
+      "step": 5,
+      "method": "POST",
+      "endpoint": "/api/assembly-enterprise/execute/v2",
+      "payload": {
+        "formula_id": "bc80a3de-ea17-42b6-9357-39eafef45261",
+        "planned_qty": 1,
+        "save_as_draft": false
+      },
+      "response": {
+        "id": "990695c0-d44f-45bc-9040-510f9e73bd49",
+        "assembly_number": "ASM-20260317195927",
+        "status": "POSTED",
+        "journal_number": "JV-20260317195927-ASM-20260317195927"
+      }
+    },
+    {
+      "step": 6,
+      "method": "POST",
+      "endpoint": "/api/assembly-enterprise/execute/v2/reverse",
+      "payload": {
+        "assembly_id": "990695c0-d44f-45bc-9040-510f9e73bd49",
+        "reason": "E2E Test - Reversal untuk validasi stok kembali normal"
+      },
+      "response": {
+        "message": "Assembly berhasil di-reverse",
+        "reversal_number": "REV-ASM-20260317195927",
+        "reversal_journal_number": "JV-20260317200018-REV-ASM-20260317195927"
+      }
+    }
+  ]
+}

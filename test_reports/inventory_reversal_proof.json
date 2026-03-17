@@ -1,0 +1,43 @@
+{
+  "test_date": "2026-03-17T20:00:00Z",
+  "test_type": "INVENTORY_REVERSAL_PROOF",
+  "result": "PASS",
+  "assembly_transaction": {
+    "id": "990695c0-d44f-45bc-9040-510f9e73bd49",
+    "assembly_number": "ASM-20260317195927",
+    "formula": "TEST-REVERSAL-FORMULA"
+  },
+  "stock_before_assembly": {
+    "PULSA_XL_AXIS_5K_result": 0,
+    "PULSA_INDOSAT_5K_component": 100,
+    "PULSA_SMARTFREEN_5K_component": 100
+  },
+  "stock_after_assembly": {
+    "PULSA_XL_AXIS_5K_result": 1,
+    "PULSA_INDOSAT_5K_component": 98,
+    "PULSA_SMARTFREEN_5K_component": 99
+  },
+  "stock_after_reversal": {
+    "PULSA_XL_AXIS_5K_result": 0,
+    "PULSA_INDOSAT_5K_component": 100,
+    "PULSA_SMARTFREEN_5K_component": 100
+  },
+  "stock_comparison": {
+    "all_stocks_restored": true,
+    "before_equals_after_reversal": true,
+    "ssot_verified": true
+  },
+  "movements_created": {
+    "assembly_post": [
+      {"type": "ASSEMBLY_CONSUME", "product": "PULSA INDOSAT 5K", "qty": -2},
+      {"type": "ASSEMBLY_CONSUME", "product": "PULSA SMARTFREEN 5K", "qty": -1},
+      {"type": "ASSEMBLY_PRODUCE", "product": "PULSA XL AXIS 5K", "qty": 1}
+    ],
+    "reversal": [
+      {"type": "ASSEMBLY_CONSUME_REVERSAL", "product": "PULSA INDOSAT 5K", "qty": 2},
+      {"type": "ASSEMBLY_CONSUME_REVERSAL", "product": "PULSA SMARTFREEN 5K", "qty": 1},
+      {"type": "ASSEMBLY_PRODUCE_REVERSAL", "product": "PULSA XL AXIS 5K", "qty": -1}
+    ]
+  },
+  "business_rule_verified": "Cancel/Reversal harus mengembalikan stok ke kondisi awal"
+}

@@ -1,0 +1,98 @@
+{
+  "test_date": "2026-03-17T20:00:00Z",
+  "test_type": "FINAL_E2E_VALIDATION",
+  "tenant": "ocb_titan",
+  "result": "ALL PASS",
+  "tests": [
+    {
+      "name": "1. Create Purchase Order",
+      "status": "PASS",
+      "details": {
+        "po_number": "PO000025",
+        "po_id": "64fd3c85-95a1-4d15-bde5-7240028b995e",
+        "total": 500000
+      }
+    },
+    {
+      "name": "2. Submit Purchase Order",
+      "status": "PASS",
+      "details": {
+        "status_after": "ordered"
+      }
+    },
+    {
+      "name": "3. Execute Assembly (POST)",
+      "status": "PASS",
+      "details": {
+        "assembly_number": "ASM-20260317195927",
+        "assembly_id": "990695c0-d44f-45bc-9040-510f9e73bd49",
+        "formula": "TEST-REVERSAL-FORMULA",
+        "status": "POSTED",
+        "produced_qty": 1,
+        "total_component_cost": 62520
+      }
+    },
+    {
+      "name": "4. Verify Stock Movements",
+      "status": "PASS",
+      "details": {
+        "movements_created": 3,
+        "ASSEMBLY_CONSUME": [
+          {"product": "PULSA INDOSAT 5K", "qty": -2},
+          {"product": "PULSA SMARTFREEN 5K", "qty": -1}
+        ],
+        "ASSEMBLY_PRODUCE": [
+          {"product": "PULSA XL AXIS 5K", "qty": 1}
+        ]
+      }
+    },
+    {
+      "name": "5. Verify Journal Entry",
+      "status": "PASS",
+      "details": {
+        "journal_number": "JV-20260317195927-ASM-20260317195927",
+        "total_debit": 62520,
+        "total_credit": 62520,
+        "is_balanced": true
+      }
+    },
+    {
+      "name": "6. Execute REVERSAL",
+      "status": "PASS",
+      "details": {
+        "reversal_number": "REV-ASM-20260317195927",
+        "reversal_journal": "JV-20260317200018-REV-ASM-20260317195927",
+        "status": "REVERSED"
+      }
+    },
+    {
+      "name": "7. Verify Stock Restored",
+      "status": "PASS",
+      "details": {
+        "PULSA_XL_AXIS_5K": {"before": 0, "after": 0, "restored": true},
+        "PULSA_INDOSAT_5K": {"before": 100, "after": 100, "restored": true},
+        "PULSA_SMARTFREEN_5K": {"before": 100, "after": 100, "restored": true}
+      }
+    },
+    {
+      "name": "8. Verify Journal Balanced",
+      "status": "PASS",
+      "details": {
+        "total_debit": 125040,
+        "total_credit": 125040,
+        "net_balance": 0,
+        "all_journals_balanced": true
+      }
+    }
+  ],
+  "ssot_verification": {
+    "inventory_ssot": "stock_movements collection",
+    "accounting_ssot": "journal_entries collection",
+    "verified": true
+  },
+  "tenant_isolation": {
+    "jwt_contains_tenant_id": true,
+    "data_written_to_correct_db": true,
+    "no_cross_tenant_leak": true
+  }
+}

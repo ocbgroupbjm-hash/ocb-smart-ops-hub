@@ -13,23 +13,42 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field, validator
 from typing import List, Optional
 from datetime import datetime, timezone
-from database import db
+from database import get_db
 from utils.auth import get_current_user
 import uuid
 
 router = APIRouter(prefix="/api/assembly-enterprise", tags=["Assembly Enterprise"])
 
-# ============ COLLECTIONS ============
-assembly_formulas = db["assembly_formulas"]
-assembly_components = db["assembly_components"]
-assembly_transactions = db["assembly_transactions"]
-assembly_logs = db["assembly_logs"]
-products_collection = db["products"]
-stock_movements_collection = db["stock_movements"]
-journal_entries_collection = db["journal_entries"]
-audit_logs = db["audit_logs"]
-# Legacy collection for backward compatibility
-assemblies_legacy = db["assemblies"]
+# ============ DYNAMIC COLLECTION ACCESS ============
+# These must be called inside each route handler to get the correct tenant database
+# DO NOT use global collection variables - they bind to wrong database on import
+
+def _get_formulas_coll():
+    return get_db()["assembly_formulas"]
+
+def _get_components_coll():
+    return get_db()["assembly_components"]
+
+def _get_transactions_coll():
+    return get_db()["assembly_transactions"]
+
+def _get_logs_coll():
+    return get_db()["assembly_logs"]
+
+def _get_products_coll():
+    return get_db()["products"]
+
+def _get_movements_coll():
+    return get_db()["stock_movements"]
+
+def _get_journal_coll():
+    return get_db()["journal_entries"]
+
+def _get_audit_coll():
+    return get_db()["audit_logs"]
+
+def _get_legacy_coll():
+    return get_db()["assemblies"]
 
 
 # ============ PYDANTIC MODELS ============
@@ -116,7 +135,7 @@ async def log_assembly_action(
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "tenant_id": tenant_id
     }
-    await assembly_logs.insert_one(log_entry)
+    await _get_logs_coll().insert_one(log_entry)
     return log_entry["id"]
 
 
@@ -131,7 +150,7 @@ async def calculate_stock_from_movements(product_id: str, branch_id: str = None)
         {"$group": {"_id": None, "total": {"$sum": "$quantity"}}}
     ]
     
-    result = await stock_movements_collection.aggregate(pipeline).to_list(1)
+    result = await _get_movements_coll().aggregate(pipeline).to_list(1)
     return result[0]["total"] if result else 0
 
 
@@ -187,7 +206,7 @@ async def create_journal_entry(
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     
-    await journal_entries_collection.insert_one(journal_doc)
+    await _get_journal_coll().insert_one(journal_doc)
     return journal_number
 
 
@@ -221,12 +240,12 @@ async def list_formulas_v2(
             {"result_product_name": {"$regex": search, "$options": "i"}}
         ]
     
-    total = await assembly_formulas.count_documents(query)
-    formulas = await assembly_formulas.find(query, {"_id": 0}).skip(skip).limit(limit).sort("formula_name", 1).to_list(limit)
+    total = await _get_formulas_coll().count_documents(query)
+    formulas = await _get_formulas_coll().find(query, {"_id": 0}).skip(skip).limit(limit).sort("formula_name", 1).to_list(limit)
     
     # Enrich with components
     for formula in formulas:
-        components = await assembly_components.find(
+        components = await _get_components_coll().find(
             {"formula_id": formula["id"], "tenant_id": tenant_id},
             {"_id": 0}
         ).sort("sequence_no", 1).to_list(100)
@@ -245,7 +264,7 @@ async def list_formulas_v2(
                 {"result_product_name": {"$regex": search, "$options": "i"}}
             ]
         
-        legacy_formulas = await assemblies_legacy.find(legacy_query, {"_id": 0}).to_list(100)
+        legacy_formulas = await _get_legacy_coll().find(legacy_query, {"_id": 0}).to_list(100)
         
         # Convert legacy format to v2 format
         for lf in legacy_formulas:
@@ -282,7 +301,7 @@ async def get_formula_v2(formula_id: str, user: dict = Depends(get_current_user)
     """Get detail formula dengan komponen lengkap"""
     tenant_id = user.get("tenant_id", "ocb_titan")
     
-    formula = await assembly_formulas.find_one(
+    formula = await _get_formulas_coll().find_one(
         {"id": formula_id, "tenant_id": tenant_id},
         {"_id": 0}
     )
@@ -290,7 +309,7 @@ async def get_formula_v2(formula_id: str, user: dict = Depends(get_current_user)
         raise HTTPException(status_code=404, detail="Formula tidak ditemukan")
     
     # Get components
-    components = await assembly_components.find(
+    components = await _get_components_coll().find(
         {"formula_id": formula_id, "tenant_id": tenant_id},
         {"_id": 0}
     ).sort("sequence_no", 1).to_list(100)
@@ -323,7 +342,7 @@ async def create_formula_v2(
     user_name = user.get("name", "")
     
     # Validate result product exists
-    result_product = await products_collection.find_one(
+    result_product = await _get_products_coll().find_one(
         {"id": data.product_result_id},
         {"_id": 0}
     )
@@ -332,7 +351,7 @@ async def create_formula_v2(
     
     # Validate all components exist
     for i, comp in enumerate(data.components):
-        product = await products_collection.find_one({"id": comp.item_id}, {"_id": 0})
+        product = await _get_products_coll().find_one({"id": comp.item_id}, {"_id": 0})
         if not product:
             raise HTTPException(
                 status_code=404, 
@@ -363,11 +382,11 @@ async def create_formula_v2(
         "created_at": datetime.now(timezone.utc).isoformat(),
         "updated_at": datetime.now(timezone.utc).isoformat()
     }
-    await assembly_formulas.insert_one(formula_doc)
+    await _get_formulas_coll().insert_one(formula_doc)
     
     # Create components
     for i, comp in enumerate(data.components):
-        product = await products_collection.find_one({"id": comp.item_id}, {"_id": 0})
+        product = await _get_products_coll().find_one({"id": comp.item_id}, {"_id": 0})
         comp_doc = {
             "id": str(uuid.uuid4()),
             "formula_id": formula_id,
@@ -382,7 +401,7 @@ async def create_formula_v2(
             "created_at": datetime.now(timezone.utc).isoformat(),
             "updated_at": datetime.now(timezone.utc).isoformat()
         }
-        await assembly_components.insert_one(comp_doc)
+        await _get_components_coll().insert_one(comp_doc)
     
     # Log action
     await log_assembly_action(
@@ -414,7 +433,7 @@ async def update_formula_v2(
     user_name = user.get("name", "")
     
     # Get existing formula
-    formula = await assembly_formulas.find_one(
+    formula = await _get_formulas_coll().find_one(
         {"id": formula_id, "tenant_id": tenant_id},
         {"_id": 0}
     )
@@ -431,7 +450,7 @@ async def update_formula_v2(
     if data.formula_name:
         update_data["formula_name"] = data.formula_name
     if data.product_result_id:
-        result_product = await products_collection.find_one({"id": data.product_result_id}, {"_id": 0})
+        result_product = await _get_products_coll().find_one({"id": data.product_result_id}, {"_id": 0})
         if not result_product:
             raise HTTPException(status_code=404, detail="Produk hasil tidak ditemukan")
         update_data["product_result_id"] = data.product_result_id
@@ -452,7 +471,7 @@ async def update_formula_v2(
     update_data["updated_by"] = user_id
     update_data["updated_by_name"] = user_name
     
-    await assembly_formulas.update_one(
+    await _get_formulas_coll().update_one(
         {"id": formula_id},
         {"$set": update_data}
     )
@@ -460,11 +479,11 @@ async def update_formula_v2(
     # Update components if provided
     if data.components:
         # Delete existing components
-        await assembly_components.delete_many({"formula_id": formula_id})
+        await _get_components_coll().delete_many({"formula_id": formula_id})
         
         # Insert new components
         for i, comp in enumerate(data.components):
-            product = await products_collection.find_one({"id": comp.item_id}, {"_id": 0})
+            product = await _get_products_coll().find_one({"id": comp.item_id}, {"_id": 0})
             comp_doc = {
                 "id": str(uuid.uuid4()),
                 "formula_id": formula_id,
@@ -479,7 +498,7 @@ async def update_formula_v2(
                 "created_at": datetime.now(timezone.utc).isoformat(),
                 "updated_at": datetime.now(timezone.utc).isoformat()
             }
-            await assembly_components.insert_one(comp_doc)
+            await _get_components_coll().insert_one(comp_doc)
     
     # Log action
     await log_assembly_action(
@@ -500,7 +519,7 @@ async def deactivate_formula(formula_id: str, user: dict = Depends(get_current_u
     
     tenant_id = user.get("tenant_id", "ocb_titan")
     
-    result = await assembly_formulas.update_one(
+    result = await _get_formulas_coll().update_one(
         {"id": formula_id, "tenant_id": tenant_id},
         {"$set": {
             "status": "INACTIVE",
@@ -532,7 +551,7 @@ async def activate_formula(formula_id: str, user: dict = Depends(get_current_use
     
     tenant_id = user.get("tenant_id", "ocb_titan")
     
-    result = await assembly_formulas.update_one(
+    result = await _get_formulas_coll().update_one(
         {"id": formula_id, "tenant_id": tenant_id},
         {"$set": {
             "status": "ACTIVE",
@@ -573,7 +592,7 @@ async def hard_delete_formula(formula_id: str, user: dict = Depends(get_current_
     user_name = user.get("name", "")
     
     # Check formula exists
-    formula = await assembly_formulas.find_one(
+    formula = await _get_formulas_coll().find_one(
         {"id": formula_id, "tenant_id": tenant_id},
         {"_id": 0}
     )
@@ -582,7 +601,7 @@ async def hard_delete_formula(formula_id: str, user: dict = Depends(get_current_
         raise HTTPException(status_code=404, detail="Formula tidak ditemukan")
     
     # VALIDASI: Check if formula is used in any transactions
-    transaction_count = await assembly_transactions.count_documents({
+    transaction_count = await _get_transactions_coll().count_documents({
         "formula_id": formula_id,
         "tenant_id": tenant_id
     })
@@ -598,20 +617,20 @@ async def hard_delete_formula(formula_id: str, user: dict = Depends(get_current_
     component_count = formula.get("component_count", 0)
     
     # HARD DELETE: Delete components first
-    await assembly_components.delete_many({
+    await _get_components_coll().delete_many({
         "formula_id": formula_id,
         "tenant_id": tenant_id
     })
     
     # HARD DELETE: Delete formula
-    await assembly_formulas.delete_one({
+    await _get_formulas_coll().delete_one({
         "id": formula_id,
         "tenant_id": tenant_id
     })
     
     # Log action (store in audit_logs since formula is deleted)
     try:
-        await audit_logs.insert_one({
+        await _get_audit_coll().insert_one({
             "id": str(uuid.uuid4()),
             "action": "HARD_DELETE_FORMULA",
             "entity_type": "assembly_formula",
@@ -670,7 +689,7 @@ async def execute_assembly_v2(
     user_name = user.get("name", "")
     
     # Get and validate formula
-    formula = await assembly_formulas.find_one(
+    formula = await _get_formulas_coll().find_one(
         {"id": data.formula_id, "tenant_id": tenant_id},
         {"_id": 0}
     )
@@ -681,7 +700,7 @@ async def execute_assembly_v2(
         raise HTTPException(status_code=400, detail="Formula tidak aktif. Tidak bisa digunakan untuk eksekusi baru.")
     
     # Get components
-    components = await assembly_components.find(
+    components = await _get_components_coll().find(
         {"formula_id": data.formula_id, "tenant_id": tenant_id},
         {"_id": 0}
     ).to_list(100)
@@ -703,7 +722,7 @@ async def execute_assembly_v2(
         current_stock = await calculate_stock_from_movements(comp["item_id"], branch_id)
         
         # Get product cost
-        product = await products_collection.find_one({"id": comp["item_id"]}, {"_id": 0})
+        product = await _get_products_coll().find_one({"id": comp["item_id"]}, {"_id": 0})
         unit_cost = product.get("cost_price", 0) if product else 0
         
         component_details.append({
@@ -778,7 +797,7 @@ async def execute_assembly_v2(
         "reversed_at": None
     }
     
-    await assembly_transactions.insert_one(transaction)
+    await _get_transactions_coll().insert_one(transaction)
     
     # Log creation
     await log_assembly_action(
@@ -840,7 +859,7 @@ async def post_assembly_transaction(
     user_name = user.get("name", "")
     
     # Get transaction
-    transaction = await assembly_transactions.find_one(
+    transaction = await _get_transactions_coll().find_one(
         {"id": data.assembly_id, "tenant_id": tenant_id},
         {"_id": 0}
     )
@@ -897,7 +916,7 @@ async def post_assembly_transaction(
             "created_by": user_id,
             "created_by_name": user_name
         }
-        await stock_movements_collection.insert_one(movement)
+        await _get_movements_coll().insert_one(movement)
         movement_ids.append(movement["id"])
     
     # 2. ASSEMBLY_PRODUCE - Hasil masuk
@@ -918,7 +937,7 @@ async def post_assembly_transaction(
         "created_by": user_id,
         "created_by_name": user_name
     }
-    await stock_movements_collection.insert_one(result_movement)
+    await _get_movements_coll().insert_one(result_movement)
     movement_ids.append(result_movement["id"])
     
     # ============ CREATE JOURNAL ENTRY (ACCOUNTING SSOT) ============
@@ -963,7 +982,7 @@ async def post_assembly_transaction(
         )
     
     # ============ UPDATE TRANSACTION STATUS ============
-    await assembly_transactions.update_one(
+    await _get_transactions_coll().update_one(
         {"id": data.assembly_id},
         {"$set": {
             "status": "POSTED",
@@ -1018,7 +1037,7 @@ async def reverse_assembly_transaction(
     user_name = user.get("name", "")
     
     # Get transaction
-    transaction = await assembly_transactions.find_one(
+    transaction = await _get_transactions_coll().find_one(
         {"id": data.assembly_id, "tenant_id": tenant_id},
         {"_id": 0}
     )
@@ -1056,7 +1075,7 @@ async def reverse_assembly_transaction(
             "created_by": user_id,
             "created_by_name": user_name
         }
-        await stock_movements_collection.insert_one(movement)
+        await _get_movements_coll().insert_one(movement)
         reversal_movement_ids.append(movement["id"])
     
     # 2. Reverse ASSEMBLY_PRODUCE → Remove result product
@@ -1077,7 +1096,7 @@ async def reverse_assembly_transaction(
         "created_by": user_id,
         "created_by_name": user_name
     }
-    await stock_movements_collection.insert_one(result_reversal)
+    await _get_movements_coll().insert_one(result_reversal)
     reversal_movement_ids.append(result_reversal["id"])
     
     # ============ CREATE REVERSAL JOURNAL ENTRY ============
@@ -1123,7 +1142,7 @@ async def reverse_assembly_transaction(
         )
     
     # ============ UPDATE TRANSACTION STATUS ============
-    await assembly_transactions.update_one(
+    await _get_transactions_coll().update_one(
         {"id": data.assembly_id},
         {"$set": {
             "status": "REVERSED",
@@ -1174,7 +1193,7 @@ async def edit_draft_assembly(
     """
     tenant_id = user.get("tenant_id", "ocb_titan")
     
-    transaction = await assembly_transactions.find_one(
+    transaction = await _get_transactions_coll().find_one(
         {"id": assembly_id, "tenant_id": tenant_id},
         {"_id": 0}
     )
@@ -1198,13 +1217,13 @@ async def edit_draft_assembly(
     
     # Recalculate if formula changed
     if data.formula_id != transaction.get("formula_id"):
-        formula = await assembly_formulas.find_one({"id": data.formula_id}, {"_id": 0})
+        formula = await _get_formulas_coll().find_one({"id": data.formula_id}, {"_id": 0})
         if not formula:
             raise HTTPException(status_code=404, detail="Formula tidak ditemukan")
         if formula.get("status") != "ACTIVE":
             raise HTTPException(status_code=400, detail="Formula tidak aktif")
         
-        components = await assembly_components.find(
+        components = await _get_components_coll().find(
             {"formula_id": data.formula_id, "tenant_id": tenant_id},
             {"_id": 0}
         ).to_list(100)
@@ -1214,7 +1233,7 @@ async def edit_draft_assembly(
         total_cost = 0
         for comp in components:
             required_qty = comp["quantity_required"] * data.planned_qty
-            product = await products_collection.find_one({"id": comp["item_id"]}, {"_id": 0})
+            product = await _get_products_coll().find_one({"id": comp["item_id"]}, {"_id": 0})
             unit_cost = product.get("cost_price", 0) if product else 0
             comp_cost = unit_cost * required_qty
             total_cost += comp_cost
@@ -1238,7 +1257,7 @@ async def edit_draft_assembly(
         update_data["components_snapshot"] = component_details
         update_data["total_component_cost"] = total_cost
     
-    await assembly_transactions.update_one(
+    await _get_transactions_coll().update_one(
         {"id": assembly_id},
         {"$set": update_data}
     )
@@ -1269,7 +1288,7 @@ async def delete_draft_assembly(
     """
     tenant_id = user.get("tenant_id", "ocb_titan")
     
-    transaction = await assembly_transactions.find_one(
+    transaction = await _get_transactions_coll().find_one(
         {"id": assembly_id, "tenant_id": tenant_id},
         {"_id": 0}
     )
@@ -1283,7 +1302,7 @@ async def delete_draft_assembly(
         )
     
     # Soft delete - change status to CANCELLED
-    await assembly_transactions.update_one(
+    await _get_transactions_coll().update_one(
         {"id": assembly_id},
         {"$set": {
             "status": "CANCELLED",
@@ -1352,8 +1371,8 @@ async def list_assembly_history(
             {"formula_name": {"$regex": search, "$options": "i"}}
         ]
     
-    total = await assembly_transactions.count_documents(query)
-    transactions = await assembly_transactions.find(query, {"_id": 0}).skip(skip).limit(limit).sort("created_at", -1).to_list(limit)
+    total = await _get_transactions_coll().count_documents(query)
+    transactions = await _get_transactions_coll().find(query, {"_id": 0}).skip(skip).limit(limit).sort("created_at", -1).to_list(limit)
     
     return {
         "transactions": transactions,
@@ -1368,7 +1387,7 @@ async def get_assembly_detail(assembly_id: str, user: dict = Depends(get_current
     """Get detail transaksi assembly dengan audit log"""
     tenant_id = user.get("tenant_id", "ocb_titan")
     
-    transaction = await assembly_transactions.find_one(
+    transaction = await _get_transactions_coll().find_one(
         {"id": assembly_id, "tenant_id": tenant_id},
         {"_id": 0}
     )
@@ -1376,7 +1395,7 @@ async def get_assembly_detail(assembly_id: str, user: dict = Depends(get_current
         raise HTTPException(status_code=404, detail="Transaksi tidak ditemukan")
     
     # Get audit logs for this transaction
-    logs = await assembly_logs.find(
+    logs = await _get_logs_coll().find(
         {"assembly_id": assembly_id, "tenant_id": tenant_id},
         {"_id": 0}
     ).sort("timestamp", 1).to_list(100)
@@ -1384,7 +1403,7 @@ async def get_assembly_detail(assembly_id: str, user: dict = Depends(get_current
     transaction["audit_logs"] = logs
     
     # Get stock movements
-    movements = await stock_movements_collection.find(
+    movements = await _get_movements_coll().find(
         {"reference_id": assembly_id},
         {"_id": 0}
     ).to_list(100)
@@ -1399,7 +1418,7 @@ async def get_assembly_logs(assembly_id: str, user: dict = Depends(get_current_u
     """Get audit logs untuk transaksi assembly"""
     tenant_id = user.get("tenant_id", "ocb_titan")
     
-    logs = await assembly_logs.find(
+    logs = await _get_logs_coll().find(
         {"assembly_id": assembly_id, "tenant_id": tenant_id},
         {"_id": 0}
     ).sort("timestamp", 1).to_list(100)
@@ -1427,14 +1446,14 @@ async def validate_formula_stock(
     tenant_id = user.get("tenant_id", "ocb_titan")
     branch_id = warehouse_id or user.get("branch_id", "")
     
-    formula = await assembly_formulas.find_one(
+    formula = await _get_formulas_coll().find_one(
         {"id": formula_id, "tenant_id": tenant_id},
         {"_id": 0}
     )
     if not formula:
         raise HTTPException(status_code=404, detail="Formula tidak ditemukan")
     
-    components = await assembly_components.find(
+    components = await _get_components_coll().find(
         {"formula_id": formula_id, "tenant_id": tenant_id},
         {"_id": 0}
     ).to_list(100)
@@ -1512,7 +1531,7 @@ async def create_stock_adjustment(
     branch_id = data.warehouse_id or user.get("branch_id", "")
     
     # Validate product exists
-    product = await products_collection.find_one(
+    product = await _get_products_coll().find_one(
         {"id": data.product_id},
         {"_id": 0}
     )
@@ -1540,7 +1559,7 @@ async def create_stock_adjustment(
         "created_by": user_id,
         "created_by_name": user_name
     }
-    await stock_movements_collection.insert_one(movement)
+    await _get_movements_coll().insert_one(movement)
     
     # Get new stock level
     new_stock = await calculate_stock_from_movements(data.product_id, branch_id)
@@ -1553,7 +1572,7 @@ async def create_stock_adjustment(
     )
     
     return {
-        "message": f"Stock adjustment berhasil",
+        "message": "Stock adjustment berhasil",
         "adjustment_number": adj_number,
         "product_id": data.product_id,
         "product_name": product.get("name"),
@@ -1572,14 +1591,14 @@ async def get_product_stock(
     """Get current stock level for a product (calculated from stock_movements SSOT)"""
     branch_id = warehouse_id or user.get("branch_id", "")
     
-    product = await products_collection.find_one({"id": product_id}, {"_id": 0})
+    product = await _get_products_coll().find_one({"id": product_id}, {"_id": 0})
     if not product:
         raise HTTPException(status_code=404, detail="Produk tidak ditemukan")
     
     current_stock = await calculate_stock_from_movements(product_id, branch_id)
     
     # Get recent movements
-    movements = await stock_movements_collection.find(
+    movements = await _get_movements_coll().find(
         {"product_id": product_id},
         {"_id": 0}
     ).sort("created_at", -1).limit(10).to_list(10)
