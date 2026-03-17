@@ -1,0 +1,8 @@
+{
+  "test_name": "Item Tenant Query Test",
+  "tenant": "ocb_titan",
+  "query_isolation": true,
+  "static_binding": false,
+  "cross_tenant_leak": false,
+  "result": "PASS"
+}

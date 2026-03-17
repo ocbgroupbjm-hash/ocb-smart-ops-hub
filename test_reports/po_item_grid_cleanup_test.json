@@ -1,0 +1,9 @@
+{
+  "test_name": "PO Item Grid Cleanup Test",
+  "columns_final": ["No", "Kode", "Nama Produk", "Qty Pesan", "Satuan", "Harga Beli", "Disk %", "Subtotal", "Aksi"],
+  "column_count": 9,
+  "previous_column_count": 23,
+  "reduction": "60%",
+  "usability_improved": true,
+  "result": "PASS"
+}

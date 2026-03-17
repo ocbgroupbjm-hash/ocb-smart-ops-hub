@@ -1,0 +1,13 @@
+{
+  "test_name": "Purchase Form Before/After Comparison",
+  "screenshots": {
+    "before": "/app/test_reports/purchase_form_before.png",
+    "after": "/app/test_reports/purchase_ui_after_fix.png"
+  },
+  "comparison": {
+    "header_field_count": {"before": 13, "after": 7},
+    "item_grid_column_count": {"before": 23, "after": 9},
+    "bottom_tab_count": {"before": 7, "after": 3}
+  },
+  "result": "PASS"
+}

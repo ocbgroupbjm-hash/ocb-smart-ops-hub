@@ -838,7 +838,7 @@ const PurchaseEnterprise = () => {
         <div className="flex justify-between items-center mb-3">
           <h3 className="font-medium flex items-center gap-2">
             <FileText className="h-4 w-4 text-blue-400" />
-            {editingId ? `Edit Transaksi: ${form.transaction_no}` : 'Tambah Transaksi Pembelian'}
+            {editingId ? `Edit PO: ${form.transaction_no}` : 'Buat PO Pembelian Baru'}
           </h3>
           <button
             onClick={() => setViewMode('list')}
@@ -848,9 +848,10 @@ const PurchaseEnterprise = () => {
           </button>
         </div>
         
-        <div className="grid grid-cols-6 gap-3">
+        {/* ROW 1: Core Fields - No PO, Tanggal, Supplier, Gudang */}
+        <div className="grid grid-cols-4 gap-3">
           <InputField
-            label="No Transaksi"
+            label="No PO"
             value={form.transaction_no}
             onChange={(v) => setForm(prev => ({ ...prev, transaction_no: v }))}
             disabled
@@ -863,13 +864,6 @@ const PurchaseEnterprise = () => {
             onChange={(v) => setForm(prev => ({ ...prev, date: v }))}
             required
             icon={Calendar}
-          />
-          <InputField
-            label="Jam"
-            type="time"
-            value={form.time}
-            onChange={(v) => setForm(prev => ({ ...prev, time: v }))}
-            icon={Clock}
           />
           {/* Supplier - Searchable */}
           <div>
@@ -891,10 +885,10 @@ const PurchaseEnterprise = () => {
               triggerClassName="bg-gray-800 border-gray-700 text-white hover:bg-gray-700"
             />
           </div>
-          {/* Gudang Masuk - Searchable */}
+          {/* Gudang Tujuan - Searchable */}
           <div>
             <label className="block text-xs text-gray-400 mb-1">
-              Gudang Masuk <span className="text-red-400">*</span>
+              Gudang Tujuan <span className="text-red-400">*</span>
             </label>
             <SearchableSelect
               options={warehouses.map(w => ({ 
@@ -911,26 +905,13 @@ const PurchaseEnterprise = () => {
               triggerClassName="bg-gray-800 border-gray-700 text-white hover:bg-gray-700"
             />
           </div>
-          <InputField
-            label="Cabang"
-            type="select"
-            value={form.branch_id}
-            onChange={(v) => {
-              setForm(prev => ({ ...prev, branch_id: v }));
-              // Regenerate transaction number with new branch
-              setTimeout(() => {
-                setForm(prev => ({ ...prev, transaction_no: generateTransactionNo() }));
-              }, 100);
-            }}
-            options={branches.map(b => ({ value: b.id, label: b.name }))}
-            icon={Building2}
-          />
         </div>
         
-        <div className="grid grid-cols-6 gap-3 mt-3">
-          {/* PIC / Sales Person - Searchable */}
+        {/* ROW 2: PIC, Akun Pembayaran, Catatan */}
+        <div className="grid grid-cols-4 gap-3 mt-3">
+          {/* PIC - Searchable */}
           <div>
-            <label className="block text-xs text-gray-400 mb-1">Sales / PIC</label>
+            <label className="block text-xs text-gray-400 mb-1">PIC (Person in Charge)</label>
             <SearchableSelect
               options={employees.map(e => ({ 
                 value: e.id, 
@@ -964,44 +945,15 @@ const PurchaseEnterprise = () => {
               triggerClassName="bg-gray-800 border-gray-700 text-white hover:bg-gray-700"
             />
           </div>
-          <InputField
-            label="Dept"
-            value={form.dept}
-            onChange={(v) => setForm(prev => ({ ...prev, dept: v }))}
-            placeholder="Departemen"
-          />
-          <InputField
-            label="Referensi PO"
-            value={form.po_reference}
-            onChange={(v) => setForm(prev => ({ ...prev, po_reference: v }))}
-            placeholder="No PO"
-          />
-          <InputField
-            label="Jenis Transaksi"
-            type="select"
-            value={form.transaction_type}
-            onChange={(v) => setForm(prev => ({ ...prev, transaction_type: v }))}
-            options={[
-              { value: 'direct', label: 'Pembelian Langsung' },
-              { value: 'from_po', label: 'Dari PO' },
-              { value: 'from_request', label: 'Dari Permintaan' },
-              { value: 'transfer', label: 'Transfer Masuk' }
-            ]}
-          />
-          <InputField
-            label="PPN %"
-            type="number"
-            value={form.ppn_percent}
-            onChange={(v) => setForm(prev => ({ ...prev, ppn_percent: parseFloat(v) || 0 }))}
-            icon={Percent}
-          />
-          <InputField
-            label="Keterangan"
-            value={form.notes}
-            onChange={(v) => setForm(prev => ({ ...prev, notes: v }))}
-            placeholder="Catatan..."
-            icon={StickyNote}
-          />
+          <div className="col-span-2">
+            <InputField
+              label="Catatan"
+              value={form.notes}
+              onChange={(v) => setForm(prev => ({ ...prev, notes: v }))}
+              placeholder="Catatan/keterangan PO..."
+              icon={StickyNote}
+            />
+          </div>
         </div>
       </div>
       
@@ -1049,42 +1001,28 @@ const PurchaseEnterprise = () => {
         </div>
       </div>
       
-      {/* Items Grid */}
+      {/* Items Grid - SIMPLIFIED */}
       <div className="bg-gray-800/50 rounded-lg border border-gray-700 overflow-hidden">
         <div className="overflow-x-auto max-h-64">
           <table className="w-full text-xs">
             <thead className="bg-gray-800 sticky top-0">
               <tr className="text-left text-gray-400">
                 <th className="p-1.5 border-b border-gray-700 w-8">No</th>
-                <th className="p-1.5 border-b border-gray-700">Kode</th>
-                <th className="p-1.5 border-b border-gray-700">Barcode</th>
-                <th className="p-1.5 border-b border-gray-700 min-w-32">Nama Item</th>
-                <th className="p-1.5 border-b border-gray-700">Merk</th>
-                <th className="p-1.5 border-b border-gray-700">Kategori</th>
-                <th className="p-1.5 border-b border-gray-700">Jenis</th>
-                <th className="p-1.5 border-b border-gray-700 text-right w-16">Qty Pesan</th>
-                <th className="p-1.5 border-b border-gray-700 text-right w-16">Qty Datang</th>
-                <th className="p-1.5 border-b border-gray-700 w-14">Satuan</th>
-                <th className="p-1.5 border-b border-gray-700 w-12">Isi</th>
-                <th className="p-1.5 border-b border-gray-700 text-right w-24">Harga Beli</th>
-                <th className="p-1.5 border-b border-gray-700 text-right w-14">Disk %</th>
-                <th className="p-1.5 border-b border-gray-700 text-right w-20">Disk Rp</th>
-                <th className="p-1.5 border-b border-gray-700 text-right w-24">Subtotal</th>
-                <th className="p-1.5 border-b border-gray-700 text-right w-12">Tax %</th>
-                <th className="p-1.5 border-b border-gray-700 text-right w-24">Total</th>
-                <th className="p-1.5 border-b border-gray-700">Gudang</th>
-                <th className="p-1.5 border-b border-gray-700">Batch</th>
-                <th className="p-1.5 border-b border-gray-700">Expired</th>
-                <th className="p-1.5 border-b border-gray-700">SN</th>
-                <th className="p-1.5 border-b border-gray-700">Catatan</th>
+                <th className="p-1.5 border-b border-gray-700 w-24">Kode</th>
+                <th className="p-1.5 border-b border-gray-700 min-w-48">Nama Produk</th>
+                <th className="p-1.5 border-b border-gray-700 text-center w-20">Qty Pesan</th>
+                <th className="p-1.5 border-b border-gray-700 w-16">Satuan</th>
+                <th className="p-1.5 border-b border-gray-700 text-right w-28">Harga Beli</th>
+                <th className="p-1.5 border-b border-gray-700 text-center w-16">Disk %</th>
+                <th className="p-1.5 border-b border-gray-700 text-right w-28">Subtotal</th>
                 <th className="p-1.5 border-b border-gray-700 w-8"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-700/50">
               {form.items.length === 0 ? (
                 <tr>
-                  <td colSpan="23" className="p-4 text-center text-gray-400">
-                    Belum ada item. Scan barcode atau cari item di atas.
+                  <td colSpan="9" className="p-4 text-center text-gray-400">
+                    Belum ada item. Cari dan pilih produk di atas.
                   </td>
                 </tr>
               ) : form.items.map((item, idx) => (
@@ -1092,14 +1030,11 @@ const PurchaseEnterprise = () => {
                   key={idx} 
                   className={`hover:bg-gray-800/30 cursor-pointer ${selectedItemForHistory?.product_id === item.product_id ? 'bg-blue-900/20' : ''}`}
                   onClick={() => selectItemForHistory(item)}
+                  data-testid={`item-row-${idx}`}
                 >
                   <td className="p-1.5 text-center">{item.no}</td>
-                  <td className="p-1.5 font-mono">{item.product_code}</td>
-                  <td className="p-1.5 font-mono text-gray-400">{item.barcode}</td>
-                  <td className="p-1.5 font-medium">{item.product_name}</td>
-                  <td className="p-1.5">{item.brand || '-'}</td>
-                  <td className="p-1.5">{item.category || '-'}</td>
-                  <td className="p-1.5">{item.item_type}</td>
+                  <td className="p-1.5 font-mono text-xs">{item.product_code}</td>
+                  <td className="p-1.5 font-medium text-amber-200" data-testid={`item-name-${idx}`}>{item.product_name || 'Nama tidak tersedia'}</td>
                   <td className="p-1.5">
                     <input
                       type="number"
@@ -1107,12 +1042,11 @@ const PurchaseEnterprise = () => {
                       value={item.qty_order}
                       onClick={(e) => e.stopPropagation()}
                       onChange={(e) => updateItem(idx, 'qty_order', parseInt(e.target.value) || 0)}
-                      className="w-full px-1 py-0.5 bg-gray-800 border border-gray-600 rounded text-right"
+                      className="w-full px-1 py-0.5 bg-gray-800 border border-gray-600 rounded text-center"
+                      data-testid={`item-qty-${idx}`}
                     />
                   </td>
-                  <td className="p-1.5 text-right text-green-400">{item.qty_received || 0}</td>
-                  <td className="p-1.5">{item.unit}</td>
-                  <td className="p-1.5 text-right">{item.conversion || 1}</td>
+                  <td className="p-1.5 text-center">{item.unit}</td>
                   <td className="p-1.5">
                     <input
                       type="number"
@@ -1121,6 +1055,7 @@ const PurchaseEnterprise = () => {
                       onClick={(e) => e.stopPropagation()}
                       onChange={(e) => updateItem(idx, 'unit_price', parseFloat(e.target.value) || 0)}
                       className="w-full px-1 py-0.5 bg-gray-800 border border-gray-600 rounded text-right"
+                      data-testid={`item-price-${idx}`}
                     />
                   </td>
                   <td className="p-1.5">
@@ -1131,78 +1066,16 @@ const PurchaseEnterprise = () => {
                       value={item.discount_percent}
                       onClick={(e) => e.stopPropagation()}
                       onChange={(e) => updateItem(idx, 'discount_percent', parseFloat(e.target.value) || 0)}
-                      className="w-full px-1 py-0.5 bg-gray-800 border border-gray-600 rounded text-right"
+                      className="w-full px-1 py-0.5 bg-gray-800 border border-gray-600 rounded text-center"
+                      data-testid={`item-disc-${idx}`}
                     />
                   </td>
-                  <td className="p-1.5 text-right text-red-400">{formatRupiah(item.discount_amount)}</td>
-                  <td className="p-1.5 text-right">{formatRupiah(item.subtotal)}</td>
-                  <td className="p-1.5">
-                    <input
-                      type="number"
-                      min="0"
-                      max="100"
-                      value={item.tax_percent}
-                      onClick={(e) => e.stopPropagation()}
-                      onChange={(e) => updateItem(idx, 'tax_percent', parseFloat(e.target.value) || 0)}
-                      className="w-full px-1 py-0.5 bg-gray-800 border border-gray-600 rounded text-right"
-                    />
-                  </td>
-                  <td className="p-1.5 text-right font-medium">{formatRupiah(item.total)}</td>
-                  <td className="p-1.5">
-                    <select
-                      value={item.warehouse_id || form.warehouse_id}
-                      onClick={(e) => e.stopPropagation()}
-                      onChange={(e) => updateItem(idx, 'warehouse_id', e.target.value)}
-                      className="w-full px-1 py-0.5 bg-gray-800 border border-gray-600 rounded text-xs"
-                    >
-                      {warehouses.map(w => (
-                        <option key={w.id} value={w.id}>{w.name}</option>
-                      ))}
-                    </select>
-                  </td>
-                  <td className="p-1.5">
-                    <input
-                      type="text"
-                      value={item.batch_no || ''}
-                      onClick={(e) => e.stopPropagation()}
-                      onChange={(e) => updateItem(idx, 'batch_no', e.target.value)}
-                      className="w-16 px-1 py-0.5 bg-gray-800 border border-gray-600 rounded"
-                      placeholder="Batch"
-                    />
-                  </td>
-                  <td className="p-1.5">
-                    <input
-                      type="date"
-                      value={item.expired_date || ''}
-                      onClick={(e) => e.stopPropagation()}
-                      onChange={(e) => updateItem(idx, 'expired_date', e.target.value)}
-                      className="w-28 px-1 py-0.5 bg-gray-800 border border-gray-600 rounded"
-                    />
-                  </td>
-                  <td className="p-1.5">
-                    <input
-                      type="text"
-                      value={item.serial_number || ''}
-                      onClick={(e) => e.stopPropagation()}
-                      onChange={(e) => updateItem(idx, 'serial_number', e.target.value)}
-                      className="w-20 px-1 py-0.5 bg-gray-800 border border-gray-600 rounded"
-                      placeholder="SN"
-                    />
-                  </td>
-                  <td className="p-1.5">
-                    <input
-                      type="text"
-                      value={item.item_notes || ''}
-                      onClick={(e) => e.stopPropagation()}
-                      onChange={(e) => updateItem(idx, 'item_notes', e.target.value)}
-                      className="w-20 px-1 py-0.5 bg-gray-800 border border-gray-600 rounded"
-                      placeholder="Catatan"
-                    />
-                  </td>
+                  <td className="p-1.5 text-right font-medium text-green-400">{formatRupiah(item.total || item.subtotal)}</td>
                   <td className="p-1.5">
                     <button
                       onClick={(e) => { e.stopPropagation(); removeItem(idx); }}
                       className="p-0.5 hover:bg-red-700 rounded"
+                      data-testid={`item-remove-${idx}`}
                     >
                       <Trash2 className="h-3.5 w-3.5 text-red-400" />
                     </button>
@@ -1214,14 +1087,10 @@ const PurchaseEnterprise = () => {
         </div>
       </div>
       
-      {/* Bottom Tabs - like iPos */}
+      {/* Bottom Tabs - Simplified */}
       <div className="bg-gray-800/50 rounded-lg border border-gray-700 overflow-hidden">
         <div className="flex border-b border-gray-700 bg-gray-800">
           <TabButton active={activeBottomTab === 'rincian'} onClick={() => setActiveBottomTab('rincian')} label="Rincian Item" />
-          <TabButton active={activeBottomTab === 'potongan'} onClick={() => setActiveBottomTab('potongan')} label="Potongan" />
-          <TabButton active={activeBottomTab === 'pajak'} onClick={() => setActiveBottomTab('pajak')} label="Pajak" />
-          <TabButton active={activeBottomTab === 'biaya_lain'} onClick={() => setActiveBottomTab('biaya_lain')} label="Biaya Lain" />
-          <TabButton active={activeBottomTab === 'serial'} onClick={() => setActiveBottomTab('serial')} label="Serial Number" />
           <TabButton active={activeBottomTab === 'riwayat_harga'} onClick={() => setActiveBottomTab('riwayat_harga')} label="Riwayat Harga Beli" count={priceHistory.length} />
           <TabButton active={activeBottomTab === 'riwayat_supplier'} onClick={() => setActiveBottomTab('riwayat_supplier')} label="Riwayat Supplier" count={supplierHistory.length} />
         </div>
@@ -1233,107 +1102,23 @@ const PurchaseEnterprise = () => {
                 <div className="grid grid-cols-4 gap-4 text-sm">
                   <div>
                     <p className="text-gray-400 text-xs">Item Dipilih</p>
-                    <p className="font-medium">{selectedItemForHistory.product_name}</p>
+                    <p className="font-medium text-amber-200">{selectedItemForHistory.product_name}</p>
                   </div>
                   <div>
                     <p className="text-gray-400 text-xs">Kode</p>
                     <p className="font-mono">{selectedItemForHistory.product_code}</p>
                   </div>
                   <div>
-                    <p className="text-gray-400 text-xs">Kategori</p>
-                    <p>{selectedItemForHistory.category || '-'}</p>
+                    <p className="text-gray-400 text-xs">Satuan</p>
+                    <p>{selectedItemForHistory.unit || '-'}</p>
                   </div>
                   <div>
-                    <p className="text-gray-400 text-xs">Info</p>
-                    <p>{selectedItemForHistory.info || '-'}</p>
+                    <p className="text-gray-400 text-xs">Harga Terakhir</p>
+                    <p className="font-medium text-green-400">{formatRupiah(selectedItemForHistory.unit_price)}</p>
                   </div>
                 </div>
               ) : (
                 <p className="text-gray-400 text-sm">Klik item di grid untuk melihat rincian</p>
-              )}
-            </div>
-          )}
-          
-          {activeBottomTab === 'potongan' && (
-            <div className="grid grid-cols-3 gap-4">
-              <InputField
-                label="Diskon Transaksi %"
-                type="number"
-                value={form.discount_percent}
-                onChange={(v) => setForm(prev => ({ ...prev, discount_percent: parseFloat(v) || 0 }))}
-              />
-              <InputField
-                label="Diskon Transaksi Rp"
-                type="number"
-                value={form.discount_amount}
-                onChange={(v) => setForm(prev => ({ ...prev, discount_amount: parseFloat(v) || 0 }))}
-              />
-              <InputField
-                label="Pembulatan"
-                type="number"
-                value={form.rounding}
-                onChange={(v) => setForm(prev => ({ ...prev, rounding: parseFloat(v) || 0 }))}
-              />
-            </div>
-          )}
-          
-          {activeBottomTab === 'pajak' && (
-            <div className="grid grid-cols-3 gap-4">
-              <InputField
-                label="PPN %"
-                type="number"
-                value={form.ppn_percent}
-                onChange={(v) => setForm(prev => ({ ...prev, ppn_percent: parseFloat(v) || 0 }))}
-              />
-              <div>
-                <p className="text-xs text-gray-400 mb-1">Total Pajak Item</p>
-                <p className="text-lg font-medium text-blue-400">{formatRupiah(calculateTotals.totalItemTax)}</p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-400 mb-1">PPN Transaksi</p>
-                <p className="text-lg font-medium text-blue-400">{formatRupiah(calculateTotals.ppnAmt)}</p>
-              </div>
-            </div>
-          )}
-          
-          {activeBottomTab === 'biaya_lain' && (
-            <div className="grid grid-cols-3 gap-4">
-              <InputField
-                label="Biaya Lain"
-                type="number"
-                value={form.other_cost}
-                onChange={(v) => setForm(prev => ({ ...prev, other_cost: parseFloat(v) || 0 }))}
-              />
-              <InputField
-                label="Ongkir"
-                type="number"
-                value={form.shipping_cost}
-                onChange={(v) => setForm(prev => ({ ...prev, shipping_cost: parseFloat(v) || 0 }))}
-              />
-            </div>
-          )}
-          
-          {activeBottomTab === 'serial' && (
-            <div className="text-sm">
-              {form.items.filter(i => i.serial_number).length > 0 ? (
-                <table className="w-full">
-                  <thead className="text-gray-400 text-xs">
-                    <tr>
-                      <th className="text-left p-1">Item</th>
-                      <th className="text-left p-1">Serial Number</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {form.items.filter(i => i.serial_number).map((item, idx) => (
-                      <tr key={idx} className="border-t border-gray-700">
-                        <td className="p-1">{item.product_name}</td>
-                        <td className="p-1 font-mono">{item.serial_number}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              ) : (
-                <p className="text-gray-400">Tidak ada item dengan serial number</p>
               )}
             </div>
           )}
@@ -1533,9 +1318,9 @@ const PurchaseEnterprise = () => {
         <div>
           <h1 className="text-xl font-bold flex items-center gap-2">
             <Truck className="h-6 w-6 text-blue-400" />
-            Modul Pembelian Enterprise
+            Buat PO Pembelian
           </h1>
-          <p className="text-sm text-gray-400">Form pembelian lengkap setara iPos Ultimate</p>
+          <p className="text-sm text-gray-400">Form Purchase Order ke Supplier</p>
         </div>
         {viewMode === 'list' && (
           <div className="flex items-center gap-2 text-xs text-gray-400">

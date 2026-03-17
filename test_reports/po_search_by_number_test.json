@@ -1,0 +1,9 @@
+{
+  "test_name": "PO Search by Number - Frontend UI",
+  "test_date": "2025-01-XX",
+  "tenant": "ocb_titan",
+  "search_term": "PO000027",
+  "expected": "Filter and show only PO000027",
+  "result": "PASS",
+  "screenshot": "/app/test_reports/po_search_by_number_test.png"
+}

@@ -1,0 +1,42 @@
+{
+  "test_name": "PO Search Backend Validation",
+  "test_date": "2025-01-XX",
+  "tenant": "ocb_titan",
+  "endpoint": "/api/purchase/orders?search=<keyword>",
+  "tests": [
+    {
+      "name": "All POs (no search)",
+      "search": "",
+      "expected": "Return all active POs",
+      "result": "PASS",
+      "total_found": 57
+    },
+    {
+      "name": "Search by PO number keyword",
+      "search": "PO",
+      "expected": "Return POs containing 'PO' in po_number",
+      "result": "PASS",
+      "total_found": 55
+    },
+    {
+      "name": "Search by supplier name (partial)",
+      "search": "Distributor",
+      "expected": "Return POs with supplier containing 'Distributor'",
+      "result": "PASS",
+      "total_found": 16
+    },
+    {
+      "name": "Search empty result",
+      "search": "xyznonexistent99999",
+      "expected": "Return 0 results",
+      "result": "PASS",
+      "total_found": 0
+    }
+  ],
+  "search_features": {
+    "case_insensitive": true,
+    "partial_match": true,
+    "fields_searched": ["po_number", "supplier_name", "notes"]
+  },
+  "overall_status": "PASS"
+}

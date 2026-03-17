@@ -1,0 +1,16 @@
+{
+  "test_name": "PO Item Backend Payload Test",
+  "item_selected": {
+    "product_code": "PRD002",
+    "product_name": "XL Unlimited 30 Hari",
+    "unit": "PCS",
+    "qty_order": 1,
+    "unit_price": 10000,
+    "discount_percent": 0,
+    "subtotal": 10000
+  },
+  "source": "master_items / products collection",
+  "tenant": "ocb_titan",
+  "tenant_aware": true,
+  "result": "PASS"
+}

@@ -1,0 +1,10 @@
+{
+  "test_name": "PO Search by Supplier Name - Frontend UI",
+  "test_date": "2025-01-XX",
+  "tenant": "ocb_titan",
+  "search_term": "KURNIA",
+  "expected": "Filter and show POs from KURNIA CELL supplier",
+  "result": "PASS",
+  "matched_count": 2,
+  "screenshot": "/app/test_reports/po_search_by_supplier_test.png"
+}

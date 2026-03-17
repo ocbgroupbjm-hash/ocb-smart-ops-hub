@@ -1,0 +1,10 @@
+{
+  "test_name": "Item Field Mapping Test",
+  "mappings": {
+    "product_code": {"source": "code/product_code/sku", "target": "product_code", "working": true},
+    "product_name": {"source": "name/product_name/item_name", "target": "product_name", "working": true},
+    "unit": {"source": "unit/satuan", "target": "unit", "working": true},
+    "unit_price": {"source": "buy_price/unit_price/cost", "target": "unit_price", "working": true}
+  },
+  "result": "PASS"
+}

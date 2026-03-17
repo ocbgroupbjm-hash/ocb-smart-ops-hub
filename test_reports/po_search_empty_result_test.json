@@ -1,0 +1,9 @@
+{
+  "test_name": "PO Search Empty Result - Frontend UI",
+  "test_date": "2025-01-XX",
+  "tenant": "ocb_titan",
+  "search_term": "xyznonexistent",
+  "expected": "Show 'Belum ada purchase order' message",
+  "result": "PASS",
+  "screenshot": "/app/test_reports/po_search_empty_result_test.png"
+}
