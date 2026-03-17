@@ -50,6 +50,36 @@ Membangun sistem ERP retail komprehensif (OCB TITAN) dengan fitur POS, Inventory
 
 ---
 
+## KONSOLIDASI PURCHASE COMPLETE - 2026-03-17 ✅
+
+### Blueprint Version: v2.4.4
+
+**Status:** LOCKED & SYNCED
+
+**Menu Resmi:**
+- Daftar PO Pembelian → /purchase/orders
+- Buat PO Pembelian → /purchase/orders/add
+- Terima Barang → /purchase/receiving
+
+**Menu Dihapus (Duplicate):**
+- ~~Daftar Pembelian~~ → Redirect ke /purchase/orders
+- ~~Tambah Pembelian~~ → Redirect ke /purchase/orders/add
+
+**Business Rules (LOCKED):**
+1. Stock ONLY changes on receiving
+2. AP ONLY created on full receipt
+3. No stock/journal on PO create/submit
+
+**Tenant Sync Status:**
+- ocb_titan: PASS (Primary)
+- ocb_unit_4: PASS
+- ocb_unt_1: PASS
+- erp_db: LOGIN_FAILED (user not exist)
+
+**Evidence:** 29 files di `/app/test_reports/purchase_*.json|.md`
+
+---
+
 ## AUDIT DUPLIKASI MODUL - 2026-03-17 ✅
 
 ### HASIL UJI NYATA: DUPLICATE MODULE CONFIRMED

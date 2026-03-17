@@ -1,0 +1,19 @@
+{
+  "test_name": "Purchase Route Redirect Proof",
+  "test_date": "2026-03-17",
+  "redirects": [
+    {
+      "from": "/purchase/list",
+      "to": "/purchase/orders",
+      "type": "Navigate with replace",
+      "reason": "Consolidation - single list page"
+    },
+    {
+      "from": "/purchase/add",
+      "to": "/purchase/orders/add",
+      "type": "Navigate with replace",
+      "reason": "Consolidation - single create page"
+    }
+  ],
+  "implementation": "<Route path='purchase/list' element={<Navigate to='/purchase/orders' replace />} />"
+}

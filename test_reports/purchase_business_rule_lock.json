@@ -1,0 +1,40 @@
+{
+  "test_name": "Purchase Business Rule Lock",
+  "test_date": "2026-03-17",
+  "blueprint_version": "v2.4.4",
+  "status": "LOCKED",
+  "official_flow": "PO → Submit → Receive → Complete",
+  "rules": {
+    "on_create_po": {
+      "status": "draft",
+      "stock_change": false,
+      "journal_created": false,
+      "reason": "PO is just an order document, no inventory/accounting impact"
+    },
+    "on_submit_po": {
+      "status": "ordered",
+      "stock_change": false,
+      "journal_created": false,
+      "reason": "Submit only changes status, waiting for goods receipt"
+    },
+    "on_partial_receive": {
+      "status": "partial",
+      "stock_change": true,
+      "stock_movement_type": "stock_in",
+      "stock_quantity": "Only received quantity, not ordered quantity",
+      "journal_created": false,
+      "reason": "Stock increases only for actually received items"
+    },
+    "on_final_receive": {
+      "status": "received",
+      "stock_change": true,
+      "stock_movement_type": "stock_in",
+      "stock_quantity": "Remaining quantity",
+      "journal_created": true,
+      "journal_type": "AP (Accounts Payable)",
+      "reason": "Full receipt triggers AP creation for payment tracking"
+    }
+  },
+  "stock_rule": "Stock ONLY changes via official receiving flow, NOT on PO creation/submission",
+  "accounting_rule": "AP/Journal ONLY created on full receipt, NOT on PO creation/submission"
+}

@@ -1,0 +1,13 @@
+{
+  "test_name": "Purchase Journal/AP Proof",
+  "test_date": "2026-03-17",
+  "po_number": "PO000031",
+  "ap_creation": {
+    "created_on_partial_receive": false,
+    "created_on_final_receive": true,
+    "ap_id": "c7017ade-8816-49f9-87f0-c20c5e46e4ed",
+    "trigger_condition": "All items fully received",
+    "po_status_when_created": "received"
+  },
+  "accounting_flow": "PO → Receive → AP Created → Payment (future)"
+}

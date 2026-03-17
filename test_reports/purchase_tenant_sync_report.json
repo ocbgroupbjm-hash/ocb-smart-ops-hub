@@ -1,0 +1,45 @@
+{
+  "test_name": "Purchase Tenant Sync Report",
+  "test_date": "2026-03-17",
+  "blueprint_version": "v2.4.4",
+  "sync_type": "Code/Logic/Schema/Blueprint only",
+  "database_synced": false,
+  "tenants": [
+    {
+      "name": "ocb_titan",
+      "status": "PRIMARY",
+      "tested": true,
+      "result": "PASS"
+    },
+    {
+      "name": "ocb_unit_4",
+      "status": "SYNC_TARGET",
+      "tested": true,
+      "result": "PASS"
+    },
+    {
+      "name": "ocb_unt_1",
+      "status": "SYNC_TARGET",
+      "tested": true,
+      "result": "PASS"
+    },
+    {
+      "name": "erp_db",
+      "status": "SYNC_TARGET",
+      "tested": true,
+      "result": "LOGIN_FAILED",
+      "note": "User credentials may not exist in this tenant"
+    }
+  ],
+  "synced_items": [
+    "Menu structure (Sidebar.jsx)",
+    "Route configuration (App.js)",
+    "Business logic (purchase.py - already tenant-aware)"
+  ],
+  "not_synced": [
+    "Database content",
+    "Transactions",
+    "PO documents",
+    "Stock data"
+  ]
+}

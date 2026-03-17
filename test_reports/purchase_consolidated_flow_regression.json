@@ -1,0 +1,52 @@
+{
+  "test_name": "Purchase Consolidated Flow Regression",
+  "test_date": "2026-03-17",
+  "blueprint_version": "v2.4.4",
+  "tenant": "ocb_titan",
+  "status": "PASS",
+  "test_po": {
+    "po_id": "ab9092c1-768f-48e8-a20c-80a84fbb4434",
+    "po_number": "PO000031",
+    "product": "PULSA XL AXIS 5K",
+    "quantity_ordered": 100,
+    "unit_cost": 5000
+  },
+  "test_steps": [
+    {
+      "step": 1,
+      "action": "Create PO",
+      "result": "PASS",
+      "status_after": "draft",
+      "stock_changed": false
+    },
+    {
+      "step": 2,
+      "action": "Submit PO",
+      "result": "PASS",
+      "status_after": "ordered",
+      "stock_changed": false
+    },
+    {
+      "step": 3,
+      "action": "Partial Receive (30)",
+      "result": "PASS",
+      "status_after": "partial",
+      "stock_changed": true,
+      "stock_movement": "+30 (stock_in)",
+      "ap_created": false
+    },
+    {
+      "step": 4,
+      "action": "Final Receive (70)",
+      "result": "PASS",
+      "status_after": "received",
+      "stock_changed": true,
+      "stock_movement": "+70 (stock_in)",
+      "ap_created": true,
+      "ap_id": "c7017ade-8816-49f9-87f0-c20c5e46e4ed"
+    }
+  ],
+  "total_stock_added": 100,
+  "final_status": "received",
+  "all_tests_passed": true
+}

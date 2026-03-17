@@ -1,0 +1,19 @@
+{
+  "test_name": "Purchase Accounting Rule Proof",
+  "test_date": "2026-03-17",
+  "rule": "AP/Journal only created on full receipt",
+  "proof_from_code": {
+    "file": "/app/backend/routes/purchase.py",
+    "receive_endpoint": {
+      "ap_creation_condition": "if all items fully received",
+      "ap_id_returned": "Only when status becomes 'received'"
+    }
+  },
+  "test_evidence": {
+    "PO000030": {
+      "ap_created_on_partial_receive": false,
+      "ap_created_on_final_receive": true,
+      "ap_id": "68af3dab-b652-4adf-a40e-bbd0beb1b128"
+    }
+  }
+}

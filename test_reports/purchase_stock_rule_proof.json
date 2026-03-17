@@ -1,0 +1,33 @@
+{
+  "test_name": "Purchase Stock Rule Proof",
+  "test_date": "2026-03-17",
+  "rule": "Stock only changes on receiving, not on create/submit",
+  "proof_from_code": {
+    "file": "/app/backend/routes/purchase.py",
+    "create_endpoint": {
+      "function": "create_purchase_order",
+      "stock_movement_call": "NONE",
+      "reason": "Create PO does not touch stock"
+    },
+    "submit_endpoint": {
+      "function": "submit_purchase_order",
+      "stock_movement_call": "NONE",
+      "reason": "Submit PO does not touch stock"
+    },
+    "receive_endpoint": {
+      "function": "receive_purchase_order",
+      "stock_movement_call": "create_stock_movement(type='stock_in')",
+      "reason": "Only receiving creates stock movement"
+    }
+  },
+  "test_evidence": {
+    "PO000030": {
+      "created_at": "2026-03-17T20:57:52",
+      "stock_after_create": "NO CHANGE",
+      "stock_after_submit": "NO CHANGE",
+      "stock_after_partial_receive_3": "+3 (stock_in)",
+      "stock_after_final_receive_7": "+7 (stock_in)",
+      "total_stock_added": 10
+    }
+  }
+}

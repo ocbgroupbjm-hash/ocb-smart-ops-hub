@@ -1,0 +1,16 @@
+{
+  "test_name": "Purchase Final Receive Proof",
+  "test_date": "2026-03-17",
+  "po_number": "PO000031",
+  "final_receive": {
+    "quantity_remaining": 70,
+    "quantity_received_final": 70,
+    "total_received": 100,
+    "status_after": "received",
+    "stock_movement_created": true,
+    "stock_movement_type": "stock_in",
+    "stock_movement_qty": 70,
+    "ap_created": true,
+    "ap_id": "c7017ade-8816-49f9-87f0-c20c5e46e4ed"
+  }
+}

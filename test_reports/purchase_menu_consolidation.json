@@ -1,0 +1,48 @@
+{
+  "test_name": "Purchase Menu Consolidation",
+  "test_date": "2026-03-17",
+  "blueprint_version": "v2.4.4",
+  "status": "COMPLETED",
+  "changes": {
+    "removed_menu_items": [
+      {
+        "name": "Daftar Pembelian",
+        "path": "/purchase/list",
+        "reason": "Duplicate of Daftar PO Pembelian"
+      },
+      {
+        "name": "Tambah Pembelian",
+        "path": "/purchase/add",
+        "reason": "Duplicate of Buat PO Pembelian"
+      }
+    ],
+    "renamed_menu_items": [
+      {
+        "old_name": "Pesanan Pembelian",
+        "new_name": "Daftar PO Pembelian",
+        "path": "/purchase/orders"
+      },
+      {
+        "old_name": "Tambah Pesanan Pembelian",
+        "new_name": "Buat PO Pembelian",
+        "path": "/purchase/orders/add"
+      }
+    ],
+    "added_menu_items": [
+      {
+        "name": "Terima Barang",
+        "path": "/purchase/receiving",
+        "reason": "Easier access to receiving flow"
+      }
+    ]
+  },
+  "final_menu_structure": [
+    "Daftar PO Pembelian → /purchase/orders",
+    "Buat PO Pembelian → /purchase/orders/add",
+    "Terima Barang → /purchase/receiving",
+    "History Harga Beli → /purchase/price-history",
+    "Daftar Retur Pembelian → /purchase/returns",
+    "Tambah Retur Pembelian → /purchase/returns/add"
+  ],
+  "file_modified": "/app/frontend/src/components/layout/Sidebar.jsx"
+}

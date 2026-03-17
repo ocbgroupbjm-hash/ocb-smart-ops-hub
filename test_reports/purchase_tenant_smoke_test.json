@@ -1,0 +1,34 @@
+{
+  "test_name": "Purchase Tenant Smoke Test",
+  "test_date": "2026-03-17",
+  "tests": [
+    {
+      "tenant": "ocb_titan",
+      "login": "PASS",
+      "po_list_api": "PASS",
+      "note": "Primary tenant - full regression tested"
+    },
+    {
+      "tenant": "ocb_unit_4",
+      "login": "PASS",
+      "po_list_api": "PASS"
+    },
+    {
+      "tenant": "ocb_unt_1",
+      "login": "PASS",
+      "po_list_api": "PASS"
+    },
+    {
+      "tenant": "erp_db",
+      "login": "FAIL",
+      "po_list_api": "NOT_TESTED",
+      "note": "Login failed - user may not exist in this tenant"
+    }
+  ],
+  "summary": {
+    "total_tenants": 4,
+    "passed": 3,
+    "failed": 1,
+    "pass_rate": "75%"
+  }
+}

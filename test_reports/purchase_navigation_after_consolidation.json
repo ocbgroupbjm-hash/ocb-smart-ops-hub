@@ -1,0 +1,60 @@
+{
+  "test_name": "Purchase Navigation After Consolidation",
+  "test_date": "2026-03-17",
+  "blueprint_version": "v2.4.4",
+  "status": "VERIFIED",
+  "menu_structure": {
+    "parent": "Pembelian",
+    "items": [
+      {
+        "name": "Daftar PO Pembelian",
+        "path": "/purchase/orders",
+        "icon": "List",
+        "visible": true
+      },
+      {
+        "name": "Buat PO Pembelian",
+        "path": "/purchase/orders/add",
+        "icon": "Plus",
+        "visible": true
+      },
+      {
+        "name": "Terima Barang",
+        "path": "/purchase/receiving",
+        "icon": "Package",
+        "visible": true
+      },
+      {
+        "name": "History Harga Beli",
+        "path": "/purchase/price-history",
+        "icon": "History",
+        "visible": true
+      },
+      {
+        "name": "Daftar Retur Pembelian",
+        "path": "/purchase/returns",
+        "icon": "RotateCcw",
+        "visible": true
+      },
+      {
+        "name": "Tambah Retur Pembelian",
+        "path": "/purchase/returns/add",
+        "icon": "Plus",
+        "visible": true
+      }
+    ]
+  },
+  "removed_items": [
+    {
+      "name": "Daftar Pembelian",
+      "old_path": "/purchase/list",
+      "reason": "Duplicate - consolidated into Daftar PO Pembelian"
+    },
+    {
+      "name": "Tambah Pembelian",
+      "old_path": "/purchase/add",
+      "reason": "Duplicate - consolidated into Buat PO Pembelian"
+    }
+  ],
+  "screenshot": "purchase_ui_after_consolidation.png"
+}

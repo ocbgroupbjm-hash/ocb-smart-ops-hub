@@ -1,77 +1,61 @@
-# Rollback Plan - Purchase Module Consolidation
+# Rollback Plan - Purchase Consolidation
 
 ## Date: 2026-03-17
-## Blueprint Version: v2.4.3
+## Blueprint Version: v2.4.4
 
 ---
 
-## CURRENT STATE
+## Changes Made
 
-### Duplicate Modules Identified
-1. **Pesanan Pembelian** (menu group)
-   - Daftar Pesanan → PurchaseOrders.jsx
-   - Tambah Pesanan Pembelian → PurchaseEnterprise.jsx
+### 1. Menu Consolidation (Sidebar.jsx)
+- Removed "Daftar Pembelian" menu
+- Removed "Tambah Pembelian" menu
+- Renamed "Pesanan Pembelian" → "Daftar PO Pembelian"
+- Renamed "Tambah Pesanan Pembelian" → "Buat PO Pembelian"
+- Added "Terima Barang" direct link
 
-2. **Daftar Pembelian** (menu group)
-   - Daftar Pembelian → PurchaseList.jsx
-   - Tambah Pembelian → PurchaseEnterprise.jsx
+### 2. Route Consolidation (App.js)
+- Added redirect: /purchase/list → /purchase/orders
+- Added redirect: /purchase/add → /purchase/orders/add
 
-### Evidence Files
-All test evidence stored in `/app/test_reports/`:
-- `real_test_po_*.json`
-- `real_test_purchase_*.json`
-- `purchase_vs_po_*.json`
-- `menu_duplicate_audit.md`
-- `frontend_route_mapping.json`
-- `backend_endpoint_mapping.json`
+### 3. Business Rules (LOCKED)
+- Stock changes ONLY on receiving
+- AP created ONLY on full receipt
 
 ---
 
-## ROLLBACK OPTIONS
+## Rollback Procedure
 
-### Option A: Consolidate to Single Menu
-**Recommended** - Merge into one "Pembelian" menu
+If issues occur after sync:
 
-Changes required:
-1. Update Sidebar.jsx - remove duplicate menu group
-2. Keep PurchaseOrders.jsx as main list
-3. Delete or redirect PurchaseList.jsx
-4. Single "Tambah Pembelian" entry
+1. **Use Emergent Rollback Feature**
+   - Go to Emergent Platform
+   - Click "Rollback" option
+   - Select checkpoint before v2.4.4
 
-### Option B: Keep Both with Different Functions
-Create truly different modules:
-
-1. **Purchase Order Flow** (existing)
-   - Create PO → Submit → Receive → Complete
-   - Stock changes only on receiving
-   - AP created on full receipt
-
-2. **Direct Purchase Flow** (NEW - to be created)
-   - Create → Post → Done
-   - Stock and Journal created immediately on post
-   - No receiving step required
+2. **Manual Rollback** (if needed)
+   - Restore Sidebar.jsx from git
+   - Restore App.js from git
+   - Restart frontend
 
 ---
 
-## ROLLBACK PROCEDURE
+## Verification After Rollback
 
-If consolidation causes issues:
-
-1. Use Emergent Platform "Rollback" feature
-2. Target checkpoint: Before menu consolidation
-3. Restore Sidebar.jsx to previous state
-4. Verify both menu groups exist
+1. Login to each tenant
+2. Check menu structure restored
+3. Check both routes work:
+   - /purchase/orders
+   - /purchase/list
+4. Check both add routes work:
+   - /purchase/orders/add
+   - /purchase/add
 
 ---
 
-## TENANT SYNC RULES
+## Contact
 
-After consolidation PASS on ocb_titan:
-- **SYNC**: code, logic, schema, blueprint_version
-- **DO NOT SYNC**: transactions, items, journals, stock data
-
-Tenants to sync:
-- ocb_unit_4
-- ocb_unt_1
-- erp_db
+For issues, check:
+- `/app/test_reports/` for all evidence files
+- PRD.md for architecture decisions
 

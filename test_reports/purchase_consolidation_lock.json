@@ -1,0 +1,25 @@
+{
+  "test_name": "Purchase Consolidation Lock",
+  "test_date": "2026-03-17",
+  "blueprint_version": "v2.4.4",
+  "status": "LOCKED",
+  "consolidation_complete": true,
+  "changes_locked": [
+    {
+      "type": "menu",
+      "file": "/app/frontend/src/components/layout/Sidebar.jsx",
+      "change": "Removed duplicate menu items, renamed to official names"
+    },
+    {
+      "type": "route",
+      "file": "/app/frontend/src/App.js",
+      "change": "Added redirects for legacy routes to official routes"
+    },
+    {
+      "type": "business_rule",
+      "description": "Stock changes only on receiving, AP created on full receipt"
+    }
+  ],
+  "regression_test": "PASS",
+  "ready_for_sync": true
+}

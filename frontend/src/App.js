@@ -324,12 +324,11 @@ function App() {
             <Route path="financial-control" element={<FinancialControl />} />
             <Route path="accounting/financial-control" element={<FinancialControl />} />
             
-            {/* Purchase Routes - iPOS Style */}
+            {/* Purchase Routes - CONSOLIDATED (Blueprint v2.4.4) */}
+            {/* Official PO Flow: orders → orders/add → receiving */}
             <Route path="purchase" element={<PurchaseModule />} />
             <Route path="purchase/orders" element={<PurchaseOrders />} />
             <Route path="purchase/orders/add" element={<PurchaseEnterprise />} />
-            <Route path="purchase/list" element={<PurchaseList />} />
-            <Route path="purchase/add" element={<PurchaseEnterprise />} />
             <Route path="purchase/receiving" element={<PurchaseReceiving />} />
             <Route path="purchase/price-history" element={<PurchasePriceHistory />} />
             <Route path="purchase/ap-payments" element={<PurchasePayments />} />
@@ -338,6 +337,9 @@ function App() {
             <Route path="purchase/payment-status" element={<PurchasePayments />} />
             <Route path="purchase/returns" element={<PurchaseReturns />} />
             <Route path="purchase/returns/add" element={<PurchaseReturns />} />
+            {/* Legacy routes - redirect to official routes */}
+            <Route path="purchase/list" element={<Navigate to="/purchase/orders" replace />} />
+            <Route path="purchase/add" element={<Navigate to="/purchase/orders/add" replace />} />
             
             {/* Hutang (AP) Routes - iPOS Style */}
             <Route path="hutang/list" element={<AccountsPayable />} />

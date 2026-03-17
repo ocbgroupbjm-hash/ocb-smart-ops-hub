@@ -1,0 +1,36 @@
+{
+  "test_name": "Purchase Route Consolidation",
+  "test_date": "2026-03-17",
+  "blueprint_version": "v2.4.4",
+  "status": "COMPLETED",
+  "official_routes": [
+    {
+      "path": "/purchase/orders",
+      "component": "PurchaseOrders",
+      "purpose": "List all purchase orders"
+    },
+    {
+      "path": "/purchase/orders/add",
+      "component": "PurchaseEnterprise",
+      "purpose": "Create new purchase order"
+    },
+    {
+      "path": "/purchase/receiving",
+      "component": "PurchaseReceiving",
+      "purpose": "Receive goods from PO"
+    }
+  ],
+  "legacy_routes_redirected": [
+    {
+      "old_path": "/purchase/list",
+      "redirect_to": "/purchase/orders",
+      "reason": "Duplicate route consolidated"
+    },
+    {
+      "old_path": "/purchase/add",
+      "redirect_to": "/purchase/orders/add",
+      "reason": "Duplicate route consolidated"
+    }
+  ],
+  "file_modified": "/app/frontend/src/App.js"
+}

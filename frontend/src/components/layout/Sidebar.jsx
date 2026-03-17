@@ -171,22 +171,21 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     },
 
     // ============================================================
-    // PEMBELIAN - iPOS Style
+    // PEMBELIAN - iPOS Style (CONSOLIDATED - Blueprint v2.4.4)
+    // Single official flow: PO → Submit → Receive → Complete
     // ============================================================
     {
       name: 'Pembelian',
       icon: Truck,
       roles: ['owner', 'admin', 'supervisor', 'inventory'],
       submenu: [
-        { name: 'Pesanan Pembelian', icon: List, path: '/purchase/orders' },
-        { name: 'Tambah Pesanan Pembelian', icon: Plus, path: '/purchase/orders/add' },
+        { name: 'Daftar PO Pembelian', icon: List, path: '/purchase/orders' },
+        { name: 'Buat PO Pembelian', icon: Plus, path: '/purchase/orders/add' },
         { divider: true },
-        { name: 'Daftar Pembelian', icon: FileText, path: '/purchase/list' },
-        { name: 'Tambah Pembelian', icon: Plus, path: '/purchase/add' },
+        { name: 'Terima Barang', icon: Package, path: '/purchase/receiving' },
         { divider: true },
         { name: 'History Harga Beli', icon: History, path: '/purchase/price-history' },
         { divider: true },
-        // Pembayaran Hutang dipindahkan ke menu Hutang (menghindari duplicate)
         { name: 'Daftar Retur Pembelian', icon: RotateCcw, path: '/purchase/returns' },
         { name: 'Tambah Retur Pembelian', icon: Plus, path: '/purchase/returns/add' },
       ]
