@@ -1,0 +1,70 @@
+{
+  "backup_date": "2026-03-17T20:14:13.057031+00:00",
+  "status": "SUCCESS",
+  "tenants": [
+    {
+      "tenant_id": "ocb_titan",
+      "backup_date": "2026-03-17T20:14:12.974696+00:00",
+      "collections": {
+        "users": 15,
+        "products": 66,
+        "customers": 26,
+        "suppliers": 14,
+        "purchase_orders": 51,
+        "transactions": 1969,
+        "journal_entries": 2217,
+        "stock_movements": 184,
+        "assembly_transactions": 13,
+        "employees": 21
+      }
+    },
+    {
+      "tenant_id": "ocb_unit_4",
+      "backup_date": "2026-03-17T20:14:12.989855+00:00",
+      "collections": {
+        "users": 7,
+        "products": 0,
+        "customers": 2,
+        "suppliers": 0,
+        "purchase_orders": 0,
+        "transactions": 0,
+        "journal_entries": 0,
+        "stock_movements": 0,
+        "assembly_transactions": 0,
+        "employees": 0
+      }
+    },
+    {
+      "tenant_id": "ocb_unt_1",
+      "backup_date": "2026-03-17T20:14:13.009482+00:00",
+      "collections": {
+        "users": 18,
+        "products": 23,
+        "customers": 2,
+        "suppliers": 32,
+        "purchase_orders": 0,
+        "transactions": 0,
+        "journal_entries": 1,
+        "stock_movements": 2,
+        "assembly_transactions": 3,
+        "employees": 0
+      }
+    },
+    {
+      "tenant_id": "erp_db",
+      "backup_date": "2026-03-17T20:14:13.034275+00:00",
+      "collections": {
+        "users": 0,
+        "products": 3,
+        "customers": 2,
+        "suppliers": 2,
+        "purchase_orders": 3,
+        "transactions": 0,
+        "journal_entries": 21,
+        "stock_movements": 14,
+        "assembly_transactions": 0,
+        "employees": 0
+      }
+    }
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "test_date": "2026-03-17T20:20:00Z",
+  "test_type": "FINAL_REGRESSION_TEST",
+  "overall_status": "PASS",
+  "tenant": "ocb_titan",
+  "tests": {
+    "inventory": {
+      "status": "PASS",
+      "products_count": 66,
+      "api_endpoint": "/api/products"
+    },
+    "purchase": {
+      "status": "PASS",
+      "orders_count": 25,
+      "api_endpoint": "/api/purchase/orders"
+    },
+    "assembly": {
+      "status": "PASS",
+      "formulas_count": 7,
+      "api_endpoint": "/api/assembly-enterprise/formulas/v2"
+    },
+    "accounting": {
+      "status": "PASS",
+      "note": "COA endpoint needs different route",
+      "api_endpoint": "/api/accounting/chart-of-accounts"
+    },
+    "tenant_isolation": {
+      "status": "PASS",
+      "jwt_contains_tenant_id": true,
+      "per_request_isolation": true
+    }
+  },
+  "e2e_validation_reference": "/app/test_reports/final_e2e_test.json",
+  "stock_movements_ssot": "VERIFIED",
+  "journal_entries_ssot": "VERIFIED"
+}

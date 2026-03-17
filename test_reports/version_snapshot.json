@@ -1,0 +1,41 @@
+{
+  "snapshot_date": "2026-03-17T20:10:00Z",
+  "blueprint_version": "v2.4.0",
+  "commit_hash": "a7e18061e3adfd7e9bfeb0666353e9592589553d",
+  "key_files": {
+    "database": {
+      "path": "/app/backend/database.py",
+      "feature": "contextvars for per-request tenant isolation"
+    },
+    "tenant_middleware": {
+      "path": "/app/backend/middleware/tenant_isolation.py",
+      "feature": "TenantIsolationMiddleware"
+    },
+    "auth": {
+      "path": "/app/backend/routes/auth.py",
+      "feature": "JWT includes tenant_id"
+    },
+    "assembly_enterprise": {
+      "path": "/app/backend/routes/assembly_enterprise.py",
+      "feature": "Dynamic collection access via _get_*_coll() functions"
+    },
+    "purchase": {
+      "path": "/app/backend/routes/purchase.py",
+      "feature": "PIC, warehouse, payment account, item search"
+    }
+  },
+  "collections": {
+    "inventory_ssot": "stock_movements",
+    "accounting_ssot": "journal_entries",
+    "assembly": ["assembly_formulas", "assembly_components", "assembly_transactions"]
+  },
+  "api_endpoints": {
+    "assembly": "/api/assembly-enterprise/*",
+    "purchase": "/api/purchase/*",
+    "auth": "/api/auth/*"
+  },
+  "frontend_routes": {
+    "assembly_voucher": "/inventory/assembly-voucher",
+    "purchase_orders": "/purchase/orders"
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "test_date": "2026-03-17T20:20:00Z",
+  "test_type": "INVENTORY_VS_GL_RECONCILIATION",
+  "status": "PASS",
+  "ssot_architecture": {
+    "inventory_source": "stock_movements collection",
+    "accounting_source": "journal_entries collection",
+    "linkage": "reference_id field connects stock movements to journal entries"
+  },
+  "validation": {
+    "assembly_post_creates_both": true,
+    "assembly_reversal_creates_both": true,
+    "movements_net_zero_after_reversal": true,
+    "journal_balanced_after_reversal": true
+  },
+  "test_transaction": {
+    "assembly_id": "990695c0-d44f-45bc-9040-510f9e73bd49",
+    "assembly_number": "ASM-20260317195927",
+    "stock_movements_created": 3,
+    "journal_entry_created": true,
+    "debit_equals_credit": true
+  },
+  "reversal_test": {
+    "reversal_number": "REV-ASM-20260317195927",
+    "reversal_movements_created": 3,
+    "reversal_journal_created": true,
+    "net_stock_change": 0,
+    "net_journal_balance": 0
+  }
+}

@@ -1,0 +1,138 @@
+{
+  "test_date": "2026-03-17T20:14:50.659271+00:00",
+  "status": "PARTIAL",
+  "tenants": [
+    {
+      "tenant_id": "ocb_titan",
+      "tests": [
+        {
+          "name": "switch_tenant",
+          "status": "PASS"
+        },
+        {
+          "name": "login",
+          "status": "PASS"
+        },
+        {
+          "name": "get_products",
+          "status": "PASS"
+        },
+        {
+          "name": "get_suppliers",
+          "status": "PASS"
+        },
+        {
+          "name": "get_assembly_formulas",
+          "status": "PASS"
+        },
+        {
+          "name": "get_purchase_orders",
+          "status": "PASS"
+        },
+        {
+          "name": "get_journals",
+          "status": "FAIL"
+        }
+      ]
+    },
+    {
+      "tenant_id": "ocb_unit_4",
+      "tests": [
+        {
+          "name": "switch_tenant",
+          "status": "PASS"
+        },
+        {
+          "name": "login",
+          "status": "PASS"
+        },
+        {
+          "name": "get_products",
+          "status": "PASS"
+        },
+        {
+          "name": "get_suppliers",
+          "status": "PASS"
+        },
+        {
+          "name": "get_assembly_formulas",
+          "status": "PASS"
+        },
+        {
+          "name": "get_purchase_orders",
+          "status": "PASS"
+        },
+        {
+          "name": "get_journals",
+          "status": "FAIL"
+        }
+      ]
+    },
+    {
+      "tenant_id": "ocb_unt_1",
+      "tests": [
+        {
+          "name": "switch_tenant",
+          "status": "PASS"
+        },
+        {
+          "name": "login",
+          "status": "PASS"
+        },
+        {
+          "name": "get_products",
+          "status": "PASS"
+        },
+        {
+          "name": "get_suppliers",
+          "status": "PASS"
+        },
+        {
+          "name": "get_assembly_formulas",
+          "status": "PASS"
+        },
+        {
+          "name": "get_purchase_orders",
+          "status": "PASS"
+        },
+        {
+          "name": "get_journals",
+          "status": "FAIL"
+        }
+      ]
+    },
+    {
+      "tenant_id": "erp_db",
+      "tests": [
+        {
+          "name": "switch_tenant",
+          "status": "FAIL"
+        },
+        {
+          "name": "login",
+          "status": "PASS"
+        },
+        {
+          "name": "get_products",
+          "status": "PASS"
+        },
+        {
+          "name": "get_suppliers",
+          "status": "PASS"
+        },
+        {
+          "name": "get_assembly_formulas",
+          "status": "PASS"
+        },
+        {
+          "name": "get_purchase_orders",
+          "status": "PASS"
+        },
+        {
+          "name": "get_journals",
+          "status": "FAIL"
+        }
+      ]
+    }
+  ]
+}

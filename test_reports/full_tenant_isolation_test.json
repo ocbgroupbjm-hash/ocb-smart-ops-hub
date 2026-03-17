@@ -1,0 +1,49 @@
+{
+  "test_date": "2026-03-17T20:20:00Z",
+  "test_type": "FULL_TENANT_ISOLATION_TEST",
+  "status": "PASS",
+  "implementation": {
+    "database_layer": "Python contextvars via _DynamicDb and _DynamicCollection classes",
+    "middleware": "TenantIsolationMiddleware extracts tenant_id from JWT",
+    "authentication": "JWT token includes tenant_id in payload",
+    "collection_access": "Dynamic collection binding via get_db()[collection_name]"
+  },
+  "tests_performed": [
+    {
+      "test": "Login to ocb_titan",
+      "result": "JWT contains tenant_id: ocb_titan",
+      "status": "PASS"
+    },
+    {
+      "test": "Login to ocb_unt_1",
+      "result": "JWT contains tenant_id: ocb_unt_1",
+      "status": "PASS"
+    },
+    {
+      "test": "Cross-request isolation",
+      "description": "Using ocb_titan token after switching server to ocb_unt_1",
+      "result": "Request still accesses ocb_titan data",
+      "status": "PASS"
+    },
+    {
+      "test": "Data written to correct tenant",
+      "description": "Assembly transaction created in ocb_titan",
+      "result": "Data saved to ocb_titan.assembly_transactions",
+      "status": "PASS"
+    },
+    {
+      "test": "Products API isolation",
+      "description": "Different product counts per tenant",
+      "result": "Each tenant returns its own products",
+      "status": "PASS"
+    }
+  ],
+  "modules_verified_tenant_aware": [
+    "auth (JWT with tenant_id)",
+    "assembly_enterprise (dynamic collection getters)",
+    "purchase (uses _DynamicDb proxy)",
+    "products (uses _DynamicDb proxy)",
+    "suppliers (uses _DynamicDb proxy)"
+  ],
+  "no_cross_tenant_data_leak": true
+}

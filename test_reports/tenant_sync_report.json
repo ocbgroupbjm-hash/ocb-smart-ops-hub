@@ -1,0 +1,41 @@
+{
+  "sync_date": "2026-03-17T20:14:33.271251+00:00",
+  "blueprint_version": "v2.4.0",
+  "status": "SUCCESS",
+  "synced_items": [
+    "code",
+    "logic (routes, middleware)",
+    "schema (models)",
+    "blueprint_version"
+  ],
+  "not_synced": [
+    "items",
+    "transaksi",
+    "jurnal",
+    "stok",
+    "customer",
+    "supplier"
+  ],
+  "tenants": [
+    {
+      "tenant_id": "ocb_titan",
+      "blueprint_version": "v2.4.0",
+      "synced": true
+    },
+    {
+      "tenant_id": "ocb_unit_4",
+      "blueprint_version": "v2.4.0",
+      "synced": true
+    },
+    {
+      "tenant_id": "ocb_unt_1",
+      "blueprint_version": "v2.4.0",
+      "synced": true
+    },
+    {
+      "tenant_id": "erp_db",
+      "blueprint_version": "v2.4.0",
+      "synced": true
+    }
+  ]
+}
