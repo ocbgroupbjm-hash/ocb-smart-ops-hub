@@ -171,6 +171,7 @@ class DeleteMode:
 async def list_purchase_orders(
     status: str = "",
     supplier_id: str = "",
+    search: str = "",  # Search by PO number, supplier name, notes
     include_deleted: bool = False,  # Filter untuk tampilkan deleted PO
     only_deleted: bool = False,  # Filter untuk hanya tampilkan deleted PO
     skip: int = 0,
@@ -181,6 +182,8 @@ async def list_purchase_orders(
     List purchase orders - Requires purchase.view permission
     
     Filters:
+    - status: Filter by PO status
+    - search: Search by PO number, supplier name, or notes (case-insensitive)
     - include_deleted: false (default) = hide deleted, true = show all
     - only_deleted: true = show only deleted POs
     """
@@ -198,12 +201,40 @@ async def list_purchase_orders(
     if status:
         # Support multiple statuses (comma-separated)
         if "," in status:
-            query["status"] = {"$in": status.split(",")}
+            status_list = [s.strip() for s in status.split(",")]
+            if "$or" in query:
+                # Combine with existing $or
+                existing_or = query.pop("$or")
+                query["$and"] = [
+                    {"$or": existing_or},
+                    {"status": {"$in": status_list}}
+                ]
+            else:
+                query["status"] = {"$in": status_list}
         else:
             query["status"] = status
     
     if supplier_id:
         query["supplier_id"] = supplier_id
+    
+    # Search functionality - case insensitive
+    if search:
+        search_regex = {"$regex": search, "$options": "i"}
+        search_conditions = [
+            {"po_number": search_regex},
+            {"supplier_name": search_regex},
+            {"notes": search_regex}
+        ]
+        if "$and" in query:
+            query["$and"].append({"$or": search_conditions})
+        elif "$or" in query:
+            existing_or = query.pop("$or")
+            query["$and"] = [
+                {"$or": existing_or},
+                {"$or": search_conditions}
+            ]
+        else:
+            query["$or"] = search_conditions
     
     items = await purchase_orders.find(query, {"_id": 0}).sort("created_at", -1).skip(skip).limit(limit).to_list(limit)
     total = await purchase_orders.count_documents(query)
