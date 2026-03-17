@@ -1,0 +1,35 @@
+{
+  "test_name": "Purchase E2E Regression Test",
+  "test_date": "2026-03-17",
+  "test_iteration": 85,
+  "status": "PASS",
+  "test_coverage": [
+    {
+      "name": "Purchase Order CRUD",
+      "status": "PASS",
+      "tests": ["list", "create", "submit", "view"]
+    },
+    {
+      "name": "Purchase Receiving",
+      "status": "PASS",
+      "tests": ["partial_receipt", "full_receipt", "stock_movement"]
+    },
+    {
+      "name": "Searchable Select Fields",
+      "status": "PASS",
+      "fields": ["Supplier", "Warehouse", "PIC", "Payment Account"]
+    },
+    {
+      "name": "Purchase Returns",
+      "status": "PASS",
+      "tests": ["list", "create"]
+    },
+    {
+      "name": "Price History",
+      "status": "PASS",
+      "tests": ["list", "filter_by_product"]
+    }
+  ],
+  "regression_verified": true,
+  "evidence_reference": "/app/test_reports/iteration_85.json"
+}

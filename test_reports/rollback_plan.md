@@ -1,92 +1,43 @@
-# ROLLBACK PLAN - ERP STABILIZATION FIX
-## OCB TITAN ERP × AI - Blueprint v2.4.3
-## Date: 2026-03-15
+# Rollback Plan
 
----
+## Date: 2026-03-17
+## Blueprint Version: v2.4.3
 
-## 1. PERUBAHAN YANG DILAKUKAN
+## Changes Made in This Session
 
-### TASK 1: Multi-Tenant Routing
-| File | Change | Reversible |
-|------|--------|------------|
-| `/app/backend/database.py` | Changed from global variable to contextvars | YES |
-| `/app/backend/middleware/tenant_isolation.py` | NEW: Tenant isolation middleware | YES (delete file) |
-| `/app/backend/server.py` | Added TenantIsolationMiddleware | YES |
-| `/app/backend/routes/auth.py` | JWT now includes tenant_id | YES |
-| `/app/backend/utils/auth.py` | get_current_user sets db from token | YES |
+### 1. HR Payroll Module (hr_payroll.py)
+- Converted static collection bindings to dynamic getters
+- All collection access now uses _get_*_coll() pattern for tenant isolation
 
-### TASK 2: Purchase Module
-| File | Change | Reversible |
-|------|--------|------------|
-| `/app/frontend/src/pages/purchase/PurchaseOrders.jsx` | Added warehouse, PIC, payment account, item search flow | YES |
-| `/app/backend/routes/purchase.py` | Added new fields and validation | YES |
-| `/app/backend/models/titan_models.py` | Updated PurchaseOrder model | YES |
+### 2. Purchase Module (PurchaseEnterprise.jsx)
+- Added SearchableSelect for Supplier field
+- Added SearchableSelect for Warehouse field
+- Added SearchableSelect for PIC field
+- Added new Payment Account field with SearchableSelect
+- Added employees and paymentAccounts state
+- Updated loadMasterData to fetch employees and cash-bank accounts
 
-### Database Changes
-No direct data changes. All changes are schema/code level.
+### 3. Purchase Receiving (purchase.py)
+- Updated receive_purchase_order to accept status: submitted, ordered, partial, posted
 
----
+### 4. Purchase Receiving Frontend (PurchaseReceiving.jsx)
+- Updated status filter to include ordered and posted
+- Added status badges for new statuses
 
-## 2. ROLLBACK STEPS
+### 5. SearchableSelect Component (searchable-select.jsx)
+- Enhanced to support dynamic theming based on triggerClassName prop
 
-### Step 1: Restore database.py (if tenant issues)
-```python
-# Restore global variable approach
-_active_db_name = os.environ.get('DB_NAME', 'ocb_titan')
+## Rollback Instructions
 
-def get_active_db_name() -> str:
-    return _active_db_name
+If issues occur:
+1. Use Emergent Platform "Rollback" feature to revert to previous checkpoint
+2. Key checkpoint: Blueprint v2.4.0 (before HR Payroll and Purchase changes)
 
-def set_active_db_name(db_name: str):
-    global _active_db_name
-    _active_db_name = db_name
+## Tenant Data Sync Rules
+- Code/Logic/Schema: Can sync to all tenants
+- Database content (items, transactions, payroll): NEVER sync
 
-def get_db():
-    return client[_active_db_name]
-```
-
-### Step 2: Remove middleware (if issues)
-```bash
-# Delete middleware file
-rm /app/backend/middleware/tenant_isolation.py
-
-# Remove from server.py
-# Comment out: from middleware.tenant_isolation import TenantIsolationMiddleware
-# Comment out: app.add_middleware(TenantIsolationMiddleware)
-```
-
-### Step 3: Restore auth.py (if JWT issues)
-```python
-# Remove tenant_id from token_data
-# Remove current_tenant = get_active_db_name()
-```
-
-### Step 4: Restore purchase form (if UI issues)
-```bash
-# Git revert the changes to PurchaseOrders.jsx
-# Or manually remove new dropdowns
-```
-
----
-
-## 3. VERIFICATION AFTER ROLLBACK
-
-1. Login should work for all tenants
-2. Data should go to correct database
-3. Purchase orders can be created
-4. Assembly transactions work
-
----
-
-## 4. CONTACTS
-
-- System Architect: [Contact Info]
-- DevOps: [Contact Info]
-
----
-
-## 5. NOTES
-
-- All changes are code-level, no data was modified
-- Database schema additions are backward compatible
-- New fields use default values
+## Test Verification
+- All 17 backend tests PASS
+- Frontend UI verified working
+- Evidence files at /app/test_reports/

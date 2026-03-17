@@ -1,0 +1,22 @@
+{
+  "test_name": "Purchase Audit Log Proof",
+  "test_date": "2026-03-17",
+  "status": "PASS",
+  "audit_events_logged": [
+    {
+      "event": "Purchase Order Created",
+      "collection": "audit_logs",
+      "logged_fields": ["user_id", "user_name", "action", "module", "details", "ip_address"]
+    },
+    {
+      "event": "Purchase Order Submitted",
+      "collection": "audit_logs",
+      "logged_via": "log_security_event function in purchase.py"
+    },
+    {
+      "event": "Purchase Goods Received",
+      "collection": "stock_movements",
+      "logged_fields": ["product_id", "quantity", "reference_id", "reference_type", "notes", "user_id"]
+    }
+  ]
+}

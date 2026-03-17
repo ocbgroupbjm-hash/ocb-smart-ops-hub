@@ -14,6 +14,42 @@ Membangun sistem ERP retail komprehensif (OCB TITAN) dengan fitur POS, Inventory
 
 ---
 
+## BLUEPRINT v2.4.3 - HR PAYROLL + PURCHASE ENHANCEMENT ✅
+
+### LATEST UPDATES (2026-03-17)
+
+**TASK 1: HR Payroll Multi-Tenant Fix ✅**
+- File: `/app/backend/routes/hr_payroll.py`
+- Issue: Static collection bindings caused cross-tenant data leak
+- Fix: Converted all collection access to dynamic getters (_get_*_coll() pattern)
+- Testing: 5/5 tenant isolation tests PASSED
+- Evidence: `/app/test_reports/payroll_tenant_fix_test.json`, `/app/test_reports/payroll_tenant_isolation_proof.json`
+
+**TASK 2: Purchase Form Searchable Select ✅**
+- File: `/app/frontend/src/pages/PurchaseEnterprise.jsx`
+- Changes:
+  - Supplier field: Changed from select to SearchableSelect
+  - Gudang Masuk field: Changed from select to SearchableSelect
+  - Sales/PIC field: Changed from select to SearchableSelect (loads from /api/erp/employees)
+  - Payment Account field: NEW field added with SearchableSelect (loads from /api/accounts/cash-bank)
+- Testing: 4/4 API tests PASSED
+- Evidence: `/app/test_reports/purchase_searchable_*_test.json`
+
+**TASK 3: Purchase Partial Receipt Flow ✅**
+- Backend: `/app/backend/routes/purchase.py` - Updated receive_purchase_order to accept status: submitted, ordered, partial, posted
+- Frontend: `/app/frontend/src/pages/purchase/PurchaseReceiving.jsx` - Updated status filter and badges
+- Flow: PO can be received partially, status changes to 'partial', remaining qty tracked
+- Testing: 4/4 partial receipt tests PASSED
+- Evidence: `/app/test_reports/purchase_partial_receipt_test.json`, `/app/test_reports/purchase_receipt_stock_movement_proof.json`
+
+**TASK 4: E2E Purchase Regression ✅**
+- Full purchase cycle: create → submit → receive → received
+- All purchase modules working correctly
+- Testing: 4/4 regression tests PASSED
+- Evidence: `/app/test_reports/purchase_e2e_regression.json`, `/app/test_reports/iteration_85.json`
+
+---
+
 ## BLUEPRINT v2.4.0 - FINAL STABILIZATION COMPLETE ✅ READY FOR HR PAYROLL
 
 ### ALL STEPS COMPLETE
