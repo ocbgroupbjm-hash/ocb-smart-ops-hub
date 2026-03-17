@@ -1,24 +1,53 @@
-# OCB TITAN ERP - HR PAYROLL ENGINE
+# OCB TITAN ERP - HR PAYROLL ENGINE ENTERPRISE
 # Kalkulasi gaji dengan auto-journal ke Accounting
+# BLUEPRINT v2.4.0 - TENANT AWARE + AUDIT TRAIL
 
 from fastapi import APIRouter, HTTPException, Depends, Request, Query
 from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
 from datetime import datetime, timezone
-from database import db
+from database import get_db
 from utils.auth import get_current_user
 from routes.rbac_system import log_activity
 import uuid
 
 router = APIRouter(prefix="/api/hr/payroll", tags=["HR Payroll Engine"])
 
-# Collections
-payroll_collection = db["payroll"]
-payroll_items = db["payroll_items"]
-employees = db["employees"]
-attendance_logs = db["attendance_logs"]
-leave_requests = db["leave_requests"]
-journal_entries = db["journal_entries"]
+# ============ DYNAMIC COLLECTION ACCESS (Multi-Tenant) ============
+def _get_payroll_coll():
+    return get_db()["payroll"]
+
+def _get_payroll_items_coll():
+    return get_db()["payroll_items"]
+
+def _get_employees_coll():
+    return get_db()["employees"]
+
+def _get_attendance_logs_coll():
+    return get_db()["attendance_logs"]
+
+def _get_leave_requests_coll():
+    return get_db()["leave_requests"]
+
+def _get_journal_entries_coll():
+    return get_db()["journal_entries"]
+
+def _get_audit_logs_coll():
+    return get_db()["audit_logs"]
+
+def _get_payroll_components_coll():
+    return get_db()["payroll_components"]
+
+def _get_kpi_results_coll():
+    return get_db()["kpi_results"]
+
+# ============ PAYROLL STATUS ============
+class PayrollStatus:
+    DRAFT = "draft"
+    CALCULATED = "calculated"
+    POSTED = "posted"
+    PAID = "paid"
+    REVERSED = "reversed"
 
 # ==================== PYDANTIC MODELS ====================
 
