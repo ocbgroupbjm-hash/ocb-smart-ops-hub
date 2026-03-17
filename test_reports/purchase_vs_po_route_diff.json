@@ -1,0 +1,22 @@
+{
+  "test_name": "Route Comparison: Purchase vs PO",
+  "test_date": "2026-03-17",
+  "comparison": {
+    "tambah_pesanan_pembelian": {
+      "frontend_route": "/purchase/orders/add",
+      "component": "PurchaseEnterprise.jsx",
+      "api_call": "POST /api/purchase/orders"
+    },
+    "tambah_pembelian": {
+      "frontend_route": "/purchase/add",
+      "component": "PurchaseEnterprise.jsx",
+      "api_call": "POST /api/purchase/orders"
+    }
+  },
+  "difference": {
+    "frontend_route": "DIFFERENT",
+    "component": "SAME",
+    "api_call": "SAME"
+  },
+  "conclusion": "Only frontend route path differs. Core functionality is identical."
+}

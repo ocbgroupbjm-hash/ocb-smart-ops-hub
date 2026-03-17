@@ -1,0 +1,10 @@
+{
+  "test_name": "Real Test - Purchase Stock Check",
+  "test_date": "2026-03-17",
+  "stock_impact": {
+    "on_create": "NO CHANGE",
+    "on_submit": "NO CHANGE",
+    "on_receive": "STOCK_IN movement created"
+  },
+  "note": "Stock only changes on receiving, not on create/submit"
+}

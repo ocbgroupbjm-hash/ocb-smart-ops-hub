@@ -1,0 +1,10 @@
+{
+  "test_name": "Real Test - Purchase Journal Check",
+  "test_date": "2026-03-17",
+  "journal_creation": {
+    "on_create": false,
+    "on_submit": false,
+    "on_full_receive": "AP created (ap_id returned in response)"
+  },
+  "note": "Accounts Payable created when all items received"
+}

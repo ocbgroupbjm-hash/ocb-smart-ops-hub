@@ -1,0 +1,3 @@
+stock_in: 3 | ref: purchase_order 61a3eabd-d6fa-4877-8
+adjustment_out: -5 | ref: reconciliation RECON-20260311212530
+adjustment: 5 | ref:  

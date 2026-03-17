@@ -1,43 +1,77 @@
-# Rollback Plan
+# Rollback Plan - Purchase Module Consolidation
 
 ## Date: 2026-03-17
 ## Blueprint Version: v2.4.3
 
-## Changes Made in This Session
+---
 
-### 1. HR Payroll Module (hr_payroll.py)
-- Converted static collection bindings to dynamic getters
-- All collection access now uses _get_*_coll() pattern for tenant isolation
+## CURRENT STATE
 
-### 2. Purchase Module (PurchaseEnterprise.jsx)
-- Added SearchableSelect for Supplier field
-- Added SearchableSelect for Warehouse field
-- Added SearchableSelect for PIC field
-- Added new Payment Account field with SearchableSelect
-- Added employees and paymentAccounts state
-- Updated loadMasterData to fetch employees and cash-bank accounts
+### Duplicate Modules Identified
+1. **Pesanan Pembelian** (menu group)
+   - Daftar Pesanan → PurchaseOrders.jsx
+   - Tambah Pesanan Pembelian → PurchaseEnterprise.jsx
 
-### 3. Purchase Receiving (purchase.py)
-- Updated receive_purchase_order to accept status: submitted, ordered, partial, posted
+2. **Daftar Pembelian** (menu group)
+   - Daftar Pembelian → PurchaseList.jsx
+   - Tambah Pembelian → PurchaseEnterprise.jsx
 
-### 4. Purchase Receiving Frontend (PurchaseReceiving.jsx)
-- Updated status filter to include ordered and posted
-- Added status badges for new statuses
+### Evidence Files
+All test evidence stored in `/app/test_reports/`:
+- `real_test_po_*.json`
+- `real_test_purchase_*.json`
+- `purchase_vs_po_*.json`
+- `menu_duplicate_audit.md`
+- `frontend_route_mapping.json`
+- `backend_endpoint_mapping.json`
 
-### 5. SearchableSelect Component (searchable-select.jsx)
-- Enhanced to support dynamic theming based on triggerClassName prop
+---
 
-## Rollback Instructions
+## ROLLBACK OPTIONS
 
-If issues occur:
-1. Use Emergent Platform "Rollback" feature to revert to previous checkpoint
-2. Key checkpoint: Blueprint v2.4.0 (before HR Payroll and Purchase changes)
+### Option A: Consolidate to Single Menu
+**Recommended** - Merge into one "Pembelian" menu
 
-## Tenant Data Sync Rules
-- Code/Logic/Schema: Can sync to all tenants
-- Database content (items, transactions, payroll): NEVER sync
+Changes required:
+1. Update Sidebar.jsx - remove duplicate menu group
+2. Keep PurchaseOrders.jsx as main list
+3. Delete or redirect PurchaseList.jsx
+4. Single "Tambah Pembelian" entry
 
-## Test Verification
-- All 17 backend tests PASS
-- Frontend UI verified working
-- Evidence files at /app/test_reports/
+### Option B: Keep Both with Different Functions
+Create truly different modules:
+
+1. **Purchase Order Flow** (existing)
+   - Create PO → Submit → Receive → Complete
+   - Stock changes only on receiving
+   - AP created on full receipt
+
+2. **Direct Purchase Flow** (NEW - to be created)
+   - Create → Post → Done
+   - Stock and Journal created immediately on post
+   - No receiving step required
+
+---
+
+## ROLLBACK PROCEDURE
+
+If consolidation causes issues:
+
+1. Use Emergent Platform "Rollback" feature
+2. Target checkpoint: Before menu consolidation
+3. Restore Sidebar.jsx to previous state
+4. Verify both menu groups exist
+
+---
+
+## TENANT SYNC RULES
+
+After consolidation PASS on ocb_titan:
+- **SYNC**: code, logic, schema, blueprint_version
+- **DO NOT SYNC**: transactions, items, journals, stock data
+
+Tenants to sync:
+- ocb_unit_4
+- ocb_unt_1
+- erp_db
+

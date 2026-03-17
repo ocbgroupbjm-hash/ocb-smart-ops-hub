@@ -1,0 +1,10 @@
+{
+  "test_name": "Real Test - Tambah Pembelian Request",
+  "test_date": "2026-03-17",
+  "menu_path": "Daftar Pembelian > Tambah Pembelian",
+  "frontend_route": "/purchase/add",
+  "api_endpoint": "POST /api/purchase/orders",
+  "request_payload": "IDENTICAL TO real_test_po_request.json",
+  "component_used": "PurchaseEnterprise.jsx",
+  "note": "Same component and endpoint as 'Tambah Pesanan Pembelian'"
+}

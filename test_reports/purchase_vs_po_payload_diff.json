@@ -1,0 +1,34 @@
+{
+  "test_name": "Payload Comparison: Purchase vs PO",
+  "test_date": "2026-03-17",
+  "create_payload": {
+    "tambah_pesanan_pembelian": {
+      "endpoint": "POST /api/purchase/orders",
+      "payload": {
+        "supplier_id": "required",
+        "warehouse_id": "required",
+        "notes": "optional",
+        "items": [
+          {
+            "product_id": "required",
+            "product_name": "required",
+            "quantity": "required",
+            "unit_cost": "required"
+          }
+        ]
+      }
+    },
+    "tambah_pembelian": {
+      "endpoint": "POST /api/purchase/orders",
+      "payload": "IDENTICAL TO ABOVE"
+    }
+  },
+  "response": {
+    "both_return": {
+      "id": "uuid",
+      "po_number": "PO######",
+      "message": "Purchase order created"
+    }
+  },
+  "conclusion": "Payload structure is IDENTICAL for both menus"
+}

@@ -1,0 +1,41 @@
+{
+  "test_name": "Backend Endpoint Mapping Analysis",
+  "test_date": "2026-03-17",
+  "purchase_endpoints": {
+    "base_route": "/api/purchase",
+    "endpoints": [
+      {
+        "method": "GET",
+        "path": "/orders",
+        "description": "List purchase orders",
+        "used_by": ["PurchaseOrders.jsx", "PurchaseList.jsx"]
+      },
+      {
+        "method": "POST",
+        "path": "/orders",
+        "description": "Create purchase order",
+        "used_by": ["PurchaseEnterprise.jsx"],
+        "note": "Both 'Tambah Pembelian' and 'Tambah Pesanan Pembelian' call this same endpoint"
+      },
+      {
+        "method": "GET",
+        "path": "/orders/{id}",
+        "description": "Get single PO"
+      },
+      {
+        "method": "POST",
+        "path": "/orders/{id}/submit",
+        "description": "Submit PO (draft -> ordered)"
+      },
+      {
+        "method": "POST",
+        "path": "/orders/{id}/receive",
+        "description": "Receive goods from PO"
+      }
+    ]
+  },
+  "finding": {
+    "duplicate_detected": true,
+    "reason": "No separate endpoint for 'Direct Purchase' - all purchases go through same PO flow"
+  }
+}

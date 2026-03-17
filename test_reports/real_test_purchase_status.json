@@ -1,0 +1,9 @@
+{
+  "test_name": "Real Test - Purchase Status Flow",
+  "test_date": "2026-03-17",
+  "status_flow": {
+    "tambah_pembelian": ["draft", "ordered", "partial", "received"],
+    "tambah_pesanan_pembelian": ["draft", "ordered", "partial", "received"]
+  },
+  "note": "IDENTICAL status flow for both menus"
+}

@@ -1,0 +1,41 @@
+{
+  "test_name": "Frontend Route Mapping Analysis",
+  "test_date": "2026-03-17",
+  "analysis": {
+    "menu_pesanan_pembelian": {
+      "menu_name": "Pesanan Pembelian",
+      "submenu": [
+        {
+          "name": "Daftar Pesanan",
+          "path": "/purchase/orders",
+          "component": "PurchaseOrders"
+        },
+        {
+          "name": "Tambah Pesanan Pembelian",
+          "path": "/purchase/orders/add",
+          "component": "PurchaseEnterprise"
+        }
+      ]
+    },
+    "menu_daftar_pembelian": {
+      "menu_name": "Daftar Pembelian",
+      "submenu": [
+        {
+          "name": "Daftar Pembelian",
+          "path": "/purchase/list",
+          "component": "PurchaseList"
+        },
+        {
+          "name": "Tambah Pembelian",
+          "path": "/purchase/add",
+          "component": "PurchaseEnterprise"
+        }
+      ]
+    }
+  },
+  "finding": {
+    "duplicate_detected": true,
+    "shared_component": "PurchaseEnterprise",
+    "reason": "Both 'Tambah Pesanan Pembelian' and 'Tambah Pembelian' use same PurchaseEnterprise component"
+  }
+}

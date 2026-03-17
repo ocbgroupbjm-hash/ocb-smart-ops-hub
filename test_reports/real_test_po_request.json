@@ -1,0 +1,21 @@
+{
+  "test_name": "Real Test - Tambah Pesanan Pembelian Request",
+  "test_date": "2026-03-17",
+  "menu_path": "Pesanan Pembelian > Tambah Pesanan Pembelian",
+  "frontend_route": "/purchase/orders/add",
+  "api_endpoint": "POST /api/purchase/orders",
+  "request_payload": {
+    "supplier_id": "7c643fda-02fe-44b1-935a-ae9f7a4ea942",
+    "warehouse_id": "87c5646d-90f2-4455-835d-d7875304e008",
+    "notes": "TEST UJI NYATA - Pesanan Pembelian",
+    "items": [
+      {
+        "product_id": "8985a1b8-334a-49bf-8950-c2592f4020b6",
+        "product_name": "Audit Product",
+        "quantity": 10,
+        "unit_cost": 10000
+      }
+    ]
+  },
+  "component_used": "PurchaseEnterprise.jsx"
+}

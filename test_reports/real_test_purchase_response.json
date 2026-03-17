@@ -1,0 +1,6 @@
+{
+  "test_name": "Real Test - Tambah Pembelian Response",
+  "test_date": "2026-03-17",
+  "response": "IDENTICAL TO real_test_po_response.json",
+  "note": "Both menus create Purchase Order with same response format"
+}
