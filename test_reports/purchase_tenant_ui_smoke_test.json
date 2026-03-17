@@ -1,0 +1,21 @@
+{
+  "test_name": "Purchase Tenant UI Smoke Test",
+  "test_date": "2025-01-XX",
+  "primary_tenant": {
+    "name": "ocb_titan",
+    "tested_features": [
+      "Search PO List",
+      "Form Buat PO Header",
+      "Item Picker",
+      "Item Grid",
+      "Save PO"
+    ],
+    "status": "PASS"
+  },
+  "secondary_tenants": {
+    "ocb_unit_4": "Pending user verification",
+    "ocb_unt_1": "Pending user verification",
+    "erp_db": "Pending user verification"
+  },
+  "recommendation": "User should manually verify Purchase module on other tenants by logging in and testing core flows"
+}

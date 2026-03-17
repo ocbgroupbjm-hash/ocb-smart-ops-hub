@@ -14,43 +14,50 @@ Membangun sistem ERP retail komprehensif (OCB TITAN) dengan fitur POS, Inventory
 
 ---
 
-## BLUEPRINT v2.4.3 - HR PAYROLL + PURCHASE ENHANCEMENT ✅
+## BLUEPRINT v2.4.6 - PURCHASE MODULE UI CLEANUP ✅
 
 ### LATEST UPDATES (2026-03-17)
 
-**TASK 1: HR Payroll Multi-Tenant Fix ✅**
-- File: `/app/backend/routes/hr_payroll.py`
-- Issue: Static collection bindings caused cross-tenant data leak
-- Fix: Converted all collection access to dynamic getters (_get_*_coll() pattern)
-- Testing: 5/5 tenant isolation tests PASSED
-- Evidence: `/app/test_reports/payroll_tenant_fix_test.json`, `/app/test_reports/payroll_tenant_isolation_proof.json`
+**TASK 1: Search Daftar PO Pembelian ✅**
+- File: `/app/backend/routes/purchase.py`, `/app/frontend/src/pages/purchase/PurchaseOrders.jsx`
+- Feature: Search by PO number, supplier name, notes
+- Backend: Added `search` parameter with regex matching
+- Frontend: Search bar filters real-time
+- Testing: Backend curl + Frontend UI - 100% PASS
+- Evidence: `/app/test_reports/po_search_*.json`
 
-**TASK 2: Purchase Form Searchable Select ✅**
+**TASK 2: Form Buat PO Pembelian Cleanup ✅**
 - File: `/app/frontend/src/pages/PurchaseEnterprise.jsx`
-- Changes:
-  - Supplier field: Changed from select to SearchableSelect
-  - Gudang Masuk field: Changed from select to SearchableSelect
-  - Sales/PIC field: Changed from select to SearchableSelect (loads from /api/erp/employees)
-  - Payment Account field: NEW field added with SearchableSelect (loads from /api/accounts/cash-bank)
-- Testing: 4/4 API tests PASSED
-- Evidence: `/app/test_reports/purchase_searchable_*_test.json`
+- Title Changes:
+  - "Modul Pembelian Enterprise" → "Buat PO Pembelian"
+  - "Tambah Transaksi Pembelian" → "Buat PO Pembelian Baru"
+- Fields REMOVED: Jam, Cabang, Dept, Referensi PO, Jenis Transaksi, PPN %
+- Fields KEPT: No PO, Tanggal, Supplier*, Gudang Tujuan*, PIC, Akun Pembayaran, Catatan
+- Testing: iteration_86 - 100% PASS
+- Evidence: `/app/test_reports/purchase_form_*.json`
 
-**TASK 3: Purchase Partial Receipt Flow ✅**
-- Backend: `/app/backend/routes/purchase.py` - Updated receive_purchase_order to accept status: submitted, ordered, partial, posted
-- Frontend: `/app/frontend/src/pages/purchase/PurchaseReceiving.jsx` - Updated status filter and badges
-- Flow: PO can be received partially, status changes to 'partial', remaining qty tracked
-- Testing: 4/4 partial receipt tests PASSED
-- Evidence: `/app/test_reports/purchase_partial_receipt_test.json`, `/app/test_reports/purchase_receipt_stock_movement_proof.json`
+**TASK 3: Fix Nama Produk di Item Picker ✅**
+- Issue: Nama produk tidak terlihat jelas saat dipilih
+- Fix: Product name displayed with amber-200 color for high contrast
+- Testing: Item "XL Unlimited 30 Hari" (PRD002) successfully added with visible name
+- Evidence: `/app/test_reports/po_item_*.json`
 
-**TASK 4: E2E Purchase Regression ✅**
-- Full purchase cycle: create → submit → receive → received
-- All purchase modules working correctly
-- Testing: 4/4 regression tests PASSED
-- Evidence: `/app/test_reports/purchase_e2e_regression.json`, `/app/test_reports/iteration_85.json`
+**TASK 4: Simplify Item Grid ✅**
+- Columns KEPT: No, Kode, Nama Produk, Qty Pesan, Satuan, Harga Beli, Disk %, Subtotal, Aksi
+- Columns REMOVED: Barcode, Merk, Kategori, Jenis, Qty Datang, Isi, Disk Rp, Tax %, Total, Gudang, Batch, Expired, SN, Catatan
+- Column count: 23 → 9 (60% reduction)
+- Bottom Tabs: 7 → 3 (Rincian Item, Riwayat Harga Beli, Riwayat Supplier)
+- Evidence: `/app/test_reports/po_item_grid_cleanup_test.json`
+
+**TASK 5: Regression Test ✅**
+- Tenant: ocb_titan
+- Tests: 5/5 PASSED (100%)
+- PO Created: PO0000034 (Draft)
+- Evidence: `/app/test_reports/iteration_86.json`, `/app/test_reports/purchase_ui_regression.json`
 
 ---
 
-## PO DELETE POLICY COMPLETE - 2026-03-17 ✅
+## BLUEPRINT v2.4.5 - PO DELETE POLICY ✅
 
 ### Blueprint Version: v2.4.5
 **Status:** PASS

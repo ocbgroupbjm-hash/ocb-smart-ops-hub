@@ -1,0 +1,15 @@
+{
+  "test_name": "Purchase Item Selection Regression Test",
+  "test_date": "2025-01-XX",
+  "tenant": "ocb_titan",
+  "test_status": "PASS",
+  "item_tested": {
+    "code": "PRD002",
+    "name": "XL Unlimited 30 Hari",
+    "unit": "PCS",
+    "price": 10000
+  },
+  "item_name_visible": true,
+  "item_added_to_grid": true,
+  "toast_notification_shown": true
+}

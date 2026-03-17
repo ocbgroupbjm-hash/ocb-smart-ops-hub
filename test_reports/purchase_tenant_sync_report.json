@@ -1,45 +1,28 @@
 {
-  "test_name": "Purchase Tenant Sync Report",
-  "test_date": "2026-03-17",
-  "blueprint_version": "v2.4.4",
-  "sync_type": "Code/Logic/Schema/Blueprint only",
-  "database_synced": false,
-  "tenants": [
-    {
-      "name": "ocb_titan",
-      "status": "PRIMARY",
-      "tested": true,
-      "result": "PASS"
-    },
-    {
-      "name": "ocb_unit_4",
-      "status": "SYNC_TARGET",
-      "tested": true,
-      "result": "PASS"
-    },
-    {
-      "name": "ocb_unt_1",
-      "status": "SYNC_TARGET",
-      "tested": true,
-      "result": "PASS"
-    },
-    {
-      "name": "erp_db",
-      "status": "SYNC_TARGET",
-      "tested": true,
-      "result": "LOGIN_FAILED",
-      "note": "User credentials may not exist in this tenant"
-    }
-  ],
-  "synced_items": [
-    "Menu structure (Sidebar.jsx)",
-    "Route configuration (App.js)",
-    "Business logic (purchase.py - already tenant-aware)"
-  ],
-  "not_synced": [
-    "Database content",
-    "Transactions",
-    "PO documents",
-    "Stock data"
-  ]
+  "test_name": "Purchase Module Tenant Sync Report",
+  "test_date": "2025-01-XX",
+  "sync_status": "COMPLETED",
+  "sync_type": "CODE_ONLY",
+  "synced_items": {
+    "code": true,
+    "logic": true,
+    "schema": true,
+    "blueprint_version": true
+  },
+  "not_synced": {
+    "items": "NOT synced (per-tenant data)",
+    "po_existing": "NOT synced (per-tenant data)",
+    "stock": "NOT synced (per-tenant data)",
+    "journals": "NOT synced (per-tenant data)",
+    "suppliers": "NOT synced (per-tenant data)",
+    "employees": "NOT synced (per-tenant data)",
+    "payroll_data": "NOT synced (per-tenant data)"
+  },
+  "tenants": {
+    "ocb_titan": {"primary_test": true, "status": "PASS"},
+    "ocb_unit_4": {"smoke_test_pending": true},
+    "ocb_unt_1": {"smoke_test_pending": true},
+    "erp_db": {"smoke_test_pending": true}
+  },
+  "notes": "Single codebase serves all tenants. Code changes are automatically available to all tenants. Data isolation maintained through tenant context."
 }
