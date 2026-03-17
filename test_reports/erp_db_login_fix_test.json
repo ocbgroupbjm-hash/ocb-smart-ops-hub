@@ -1,0 +1,15 @@
+{
+  "test_name": "erp_db Login Fix Test",
+  "test_date": "2026-03-17",
+  "status": "PASS",
+  "issue": "User not found in erp_db tenant - Users count was 0",
+  "fix_applied": [
+    "Created user with email: ocbgroupbjm@gmail.com",
+    "Set role: owner",
+    "Hashed password with bcrypt (same format as other tenants)"
+  ],
+  "verification": {
+    "login_before_fix": "Invalid credentials",
+    "login_after_fix": "SUCCESS - Token received"
+  }
+}

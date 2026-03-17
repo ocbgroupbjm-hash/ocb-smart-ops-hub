@@ -1,0 +1,12 @@
+{
+  "test_name": "erp_db Purchase Smoke Test",
+  "test_date": "2026-03-17",
+  "status": "PASS",
+  "tests": [
+    {"step": "Login", "result": "PASS"},
+    {"step": "Get PO List", "result": "PASS", "count": 3},
+    {"step": "Get Suppliers", "result": "PASS"},
+    {"step": "Get Warehouses", "result": "PASS"},
+    {"step": "Get Products", "result": "PASS"}
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "test_name": "erp_db AP Creation Proof",
+  "test_date": "2026-03-17",
+  "po_number": "PO000001",
+  "ap_creation": {
+    "created_on_partial_receive": false,
+    "created_on_full_receive": true,
+    "ap_id": "134e226e-5429-44a8-bb34-0a65e7f2dffe"
+  },
+  "rule_validated": "AP ONLY created on full receipt - PASS"
+}

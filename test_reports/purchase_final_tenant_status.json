@@ -1,0 +1,43 @@
+{
+  "test_name": "Purchase Final Tenant Status",
+  "test_date": "2026-03-17",
+  "blueprint_version": "v2.4.4",
+  "status": "ALL_PASS",
+  "tenants": [
+    {
+      "name": "ocb_titan",
+      "status": "PASS",
+      "login": true,
+      "po_list": true,
+      "full_flow_tested": true
+    },
+    {
+      "name": "ocb_unit_4",
+      "status": "PASS",
+      "login": true,
+      "po_list": true,
+      "full_flow_tested": false
+    },
+    {
+      "name": "ocb_unt_1",
+      "status": "PASS",
+      "login": true,
+      "po_list": true,
+      "full_flow_tested": false
+    },
+    {
+      "name": "erp_db",
+      "status": "PASS",
+      "login": true,
+      "po_list": true,
+      "full_flow_tested": true,
+      "fix_applied": "User created with bcrypt password"
+    }
+  ],
+  "summary": {
+    "total_tenants": 4,
+    "passed": 4,
+    "failed": 0,
+    "pass_rate": "100%"
+  }
+}

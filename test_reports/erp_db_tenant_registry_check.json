@@ -1,0 +1,17 @@
+{
+  "test_name": "erp_db Tenant Registry Check",
+  "test_date": "2026-03-17",
+  "status": "PASS",
+  "tenant_info": {
+    "database_name": "erp_db",
+    "exists_in_mongodb": true,
+    "collections_count": 43,
+    "users_count_before_fix": 0,
+    "users_count_after_fix": 1
+  },
+  "master_data": {
+    "suppliers": "Available (supplier-001)",
+    "warehouses": "Available",
+    "products": "Available (product-001)"
+  }
+}

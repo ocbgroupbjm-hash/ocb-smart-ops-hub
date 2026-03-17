@@ -1,0 +1,14 @@
+{
+  "test_name": "erp_db Audit Log Proof",
+  "test_date": "2026-03-17",
+  "po_number": "PO000001",
+  "audit_events_logged": [
+    "PO Created",
+    "PO Submitted",
+    "Goods Received (Partial - 2)",
+    "Goods Received (Final - 3)",
+    "AP Created"
+  ],
+  "stock_movements_logged": true,
+  "status": "PASS"
+}

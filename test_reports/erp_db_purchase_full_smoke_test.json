@@ -1,0 +1,26 @@
+{
+  "test_name": "erp_db Purchase Full Smoke Test",
+  "test_date": "2026-03-17",
+  "tenant": "erp_db",
+  "status": "PASS",
+  "test_po": {
+    "po_id": "c2dfedd8-c985-4539-abed-4319aa815762",
+    "po_number": "PO000001",
+    "product": "Laptop Asus ROG",
+    "quantity_ordered": 5,
+    "unit_cost": 15000000
+  },
+  "test_steps": [
+    {"step": 1, "action": "Create PO", "result": "PASS", "status": "draft"},
+    {"step": 2, "action": "Submit PO", "result": "PASS", "status": "ordered"},
+    {"step": 3, "action": "Partial Receive (2/5)", "result": "PASS", "status": "partial", "ap_created": false},
+    {"step": 4, "action": "Final Receive (3/5)", "result": "PASS", "status": "received", "ap_created": true, "ap_id": "134e226e-5429-44a8-bb34-0a65e7f2dffe"}
+  ],
+  "business_rules_validated": {
+    "stock_on_create": false,
+    "stock_on_submit": false,
+    "stock_on_receive": true,
+    "ap_on_partial": false,
+    "ap_on_full_receive": true
+  }
+}

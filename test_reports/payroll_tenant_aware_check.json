@@ -1,0 +1,31 @@
+{
+  "test_name": "Payroll Tenant-Aware Check - Phase 1 & 2",
+  "test_date": "2026-03-17",
+  "status": "PASS",
+  "implementation": {
+    "file": "/app/backend/routes/hr_payroll.py",
+    "method": "Dynamic collection getters (_get_*_coll())",
+    "database_access": "get_db() returns tenant-specific database"
+  },
+  "tenant_isolation_test": {
+    "ocb_titan": {
+      "login": "PASS",
+      "payroll_count": 21,
+      "data_isolated": true
+    },
+    "ocb_unt_1": {
+      "login": "PASS",
+      "payroll_count": 0,
+      "data_isolated": true,
+      "note": "No payroll data - correct (tenant isolation)"
+    },
+    "erp_db": {
+      "login": "PASS",
+      "payroll_count": 0,
+      "data_isolated": true,
+      "note": "No payroll data - correct (tenant isolation)"
+    }
+  },
+  "cross_tenant_leak": false,
+  "static_collection_binding": false
+}

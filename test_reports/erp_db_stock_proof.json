@@ -1,0 +1,12 @@
+{
+  "test_name": "erp_db Stock Movement Proof",
+  "test_date": "2026-03-17",
+  "po_number": "PO000001",
+  "product_id": "product-001",
+  "stock_movements": [
+    {"type": "stock_in", "quantity": 2, "event": "Partial receive"},
+    {"type": "stock_in", "quantity": 3, "event": "Final receive"}
+  ],
+  "total_stock_added": 5,
+  "rule_validated": "Stock ONLY changes on receiving - PASS"
+}

@@ -1,0 +1,36 @@
+{
+  "test_name": "Payroll Formula Test - Phase 1 & 2",
+  "test_date": "2026-03-17",
+  "status": "PASS",
+  "formulas": {
+    "gross_salary": {
+      "formula": "Base + Overtime + Allowance + Bonus",
+      "test_case": {
+        "salary_base": 5000000,
+        "overtime": 0,
+        "allowance": 500000,
+        "bonus": 0,
+        "expected_gross": 5500000,
+        "actual_gross": 5500000,
+        "result": "PASS"
+      }
+    },
+    "net_salary": {
+      "formula": "Gross - Tax - BPJS - Deduction",
+      "test_case": {
+        "gross_salary": 5500000,
+        "tax_amount": 47250,
+        "bpjs": 0,
+        "deductions": 55000,
+        "expected_net": 5397750,
+        "actual_net": 5397750,
+        "result": "PASS"
+      }
+    }
+  },
+  "tax_calculation": {
+    "method": "PPh 21 simplified",
+    "threshold": 4500000,
+    "rate": "5% for income above threshold"
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "test_name": "Payroll Schema Proof - Phase 1 & 2",
+  "test_date": "2026-03-17",
+  "blueprint_version": "v2.4.4",
+  "status": "PASS",
+  "collections": {
+    "payroll": {
+      "exists": true,
+      "sample_fields": {
+        "id": "uuid",
+        "batch_id": "uuid",
+        "batch_no": "PAY-YYYYMMDD-####",
+        "period": "YYYY-MM",
+        "period_month": "int (1-12)",
+        "period_year": "int",
+        "employee_id": "uuid",
+        "employee_nik": "string",
+        "employee_name": "string",
+        "department_id": "string",
+        "department_name": "string",
+        "branch_id": "string",
+        "salary_base": "float",
+        "total_allowances": "float",
+        "total_deductions": "float",
+        "gross_salary": "float",
+        "tax_amount": "float",
+        "net_salary": "float",
+        "status": "draft|calculated|posted|paid|reversed",
+        "created_by": "uuid",
+        "created_at": "datetime"
+      }
+    },
+    "payroll_items": {
+      "exists": true,
+      "sample_fields": {
+        "id": "uuid",
+        "payroll_id": "uuid",
+        "employee_id": "uuid",
+        "item_code": "string",
+        "item_name": "string",
+        "type": "allowance|deduction",
+        "amount": "float",
+        "is_taxable": "boolean"
+      }
+    }
+  }
+}
