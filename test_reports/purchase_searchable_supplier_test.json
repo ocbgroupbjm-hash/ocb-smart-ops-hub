@@ -1,0 +1,17 @@
+{
+  "test_name": "Purchase Form - Searchable Supplier Select",
+  "test_date": "2026-03-17",
+  "status": "PASS",
+  "component": "PurchaseEnterprise.jsx",
+  "feature": "Supplier field is now a SearchableSelect component",
+  "test_steps": [
+    "Navigate to Pembelian > Tambah Pembelian",
+    "Click Tambah Transaksi button",
+    "Click on Supplier field",
+    "Verify dropdown opens with search input",
+    "Verify supplier list shows with name and code as sublabel"
+  ],
+  "expected": "User can type to search and filter suppliers",
+  "actual": "Supplier dropdown opens with search input 'Cari supplier...' and displays list with sublabels",
+  "screenshot": "screenshot_supplier_dropdown.png"
+}

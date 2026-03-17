@@ -81,9 +81,9 @@ export function SearchableSelect({
           disabled={disabled}
           data-testid={testId}
           className={cn(
-            "w-full justify-between bg-red-950/30 border-red-900/30 text-amber-100 hover:bg-red-900/40 hover:text-amber-100",
-            !value && "text-amber-100/50",
-            triggerClassName,
+            "w-full justify-between",
+            triggerClassName || "bg-red-950/30 border-red-900/30 text-amber-100 hover:bg-red-900/40 hover:text-amber-100",
+            !value && "text-gray-400",
             className
           )}
         >
@@ -101,20 +101,20 @@ export function SearchableSelect({
           </div>
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[--radix-popover-trigger-width] p-0 bg-red-950 border-red-900/50" align="start">
+      <PopoverContent className={cn("w-[--radix-popover-trigger-width] p-0", triggerClassName?.includes("bg-gray") ? "bg-gray-800 border-gray-700" : "bg-red-950 border-red-900/50")} align="start">
         <Command className="bg-transparent">
-          <div className="flex items-center border-b border-red-900/30 px-3">
-            <Search className="mr-2 h-4 w-4 shrink-0 text-amber-100/50" />
+          <div className={cn("flex items-center border-b px-3", triggerClassName?.includes("bg-gray") ? "border-gray-700" : "border-red-900/30")}>
+            <Search className={cn("mr-2 h-4 w-4 shrink-0", triggerClassName?.includes("bg-gray") ? "text-gray-400" : "text-amber-100/50")} />
             <input
               placeholder={searchPlaceholder}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="flex h-10 w-full bg-transparent py-3 text-sm text-amber-100 outline-none placeholder:text-amber-100/50"
+              className={cn("flex h-10 w-full bg-transparent py-3 text-sm outline-none", triggerClassName?.includes("bg-gray") ? "text-white placeholder:text-gray-500" : "text-amber-100 placeholder:text-amber-100/50")}
             />
           </div>
           <CommandList className="max-h-[200px]">
             {filteredOptions.length === 0 ? (
-              <div className="py-6 text-center text-sm text-amber-100/50">
+              <div className={cn("py-6 text-center text-sm", triggerClassName?.includes("bg-gray") ? "text-gray-400" : "text-amber-100/50")}>
                 {emptyText}
               </div>
             ) : (
@@ -124,8 +124,11 @@ export function SearchableSelect({
                     key={option.value}
                     onClick={() => handleSelect(option.value)}
                     className={cn(
-                      "relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none text-amber-100 hover:bg-red-900/50",
-                      value === option.value && "bg-red-900/30"
+                      "relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none",
+                      triggerClassName?.includes("bg-gray") 
+                        ? "text-white hover:bg-gray-700" 
+                        : "text-amber-100 hover:bg-red-900/50",
+                      value === option.value && (triggerClassName?.includes("bg-gray") ? "bg-gray-700" : "bg-red-900/30")
                     )}
                   >
                     <Check
@@ -137,7 +140,7 @@ export function SearchableSelect({
                     <div className="flex flex-col">
                       <span>{option.label}</span>
                       {option.sublabel && (
-                        <span className="text-xs text-amber-100/50">
+                        <span className={cn("text-xs", triggerClassName?.includes("bg-gray") ? "text-gray-400" : "text-amber-100/50")}>
                           {option.sublabel}
                         </span>
                       )}

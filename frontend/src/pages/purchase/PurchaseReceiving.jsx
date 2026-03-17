@@ -15,7 +15,7 @@ const PurchaseReceiving = () => {
   const loadOrders = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await api(`/api/purchase/orders?status=submitted,partial&search=${searchTerm}`);
+      const res = await api(`/api/purchase/orders?status=submitted,ordered,partial,posted&search=${searchTerm}`);
       if (res.ok) {
         const data = await res.json();
         setOrders(data.items || data || []);
@@ -82,11 +82,17 @@ const PurchaseReceiving = () => {
   const getStatusBadge = (status) => {
     const badges = {
       submitted: 'bg-blue-600/20 text-blue-400',
-      partial: 'bg-yellow-600/20 text-yellow-400'
+      ordered: 'bg-blue-600/20 text-blue-400',
+      posted: 'bg-green-600/20 text-green-400',
+      partial: 'bg-yellow-600/20 text-yellow-400',
+      received: 'bg-emerald-600/20 text-emerald-400'
     };
     const labels = {
       submitted: 'Menunggu',
-      partial: 'Sebagian'
+      ordered: 'Dipesan',
+      posted: 'Posted',
+      partial: 'Sebagian',
+      received: 'Selesai'
     };
     return (
       <span className={`px-2 py-1 rounded-full text-xs ${badges[status] || 'bg-gray-600/20 text-gray-400'}`}>

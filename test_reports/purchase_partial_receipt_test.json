@@ -1,0 +1,35 @@
+{
+  "test_name": "Purchase Partial Receipt Flow",
+  "test_date": "2026-03-17",
+  "status": "PASS",
+  "backend_changes": {
+    "file": "/app/backend/routes/purchase.py",
+    "endpoint": "POST /api/purchase/orders/{po_id}/receive",
+    "changes": [
+      "Added 'submitted' and 'posted' status to allowed statuses for receiving",
+      "Status validation now includes: submitted, ordered, partial, posted"
+    ]
+  },
+  "frontend_changes": {
+    "file": "/app/frontend/src/pages/purchase/PurchaseReceiving.jsx",
+    "changes": [
+      "Updated status filter to include: submitted, ordered, partial, posted",
+      "Added status badges for ordered, posted, received statuses"
+    ]
+  },
+  "partial_receipt_logic": {
+    "description": "System supports partial receipt with remaining qty tracking",
+    "steps": [
+      "User enters receive_now quantity (0 to pending_qty)",
+      "System calculates new_received = received_qty + receive_now",
+      "If new_received < ordered_qty: status = partial",
+      "If new_received >= ordered_qty: status = received",
+      "Stock movement created for actual received quantity only"
+    ]
+  },
+  "validation": {
+    "min_qty": 0,
+    "max_qty": "pending_qty (ordered - received)",
+    "button_enabled": "When any item has receive_now > 0"
+  }
+}

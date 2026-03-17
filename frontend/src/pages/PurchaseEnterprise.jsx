@@ -5,10 +5,12 @@ import {
   Package, Truck, CreditCard, RotateCcw, History, Calendar, Check, 
   ChevronDown, RefreshCw, Filter, Building2, AlertTriangle, Hash, 
   Barcode, Tag, User, Clock, FileCheck, Percent, DollarSign, Warehouse,
-  StickyNote, Copy, ArrowUpDown, Download, Upload, ChevronLeft, ChevronRight
+  StickyNote, Copy, ArrowUpDown, Download, Upload, ChevronLeft, ChevronRight,
+  Banknote
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDateDisplay, formatDateInput, getDefaultFilterDates, getTodayISO } from '../utils/dateUtils';
+import { SearchableSelect } from '../components/ui/searchable-select';
 
 // ==================== UTILITY FUNCTIONS ====================
 const formatRupiah = (num) => `Rp ${(num || 0).toLocaleString('id-ID')}`;
@@ -126,6 +128,8 @@ const PurchaseEnterprise = () => {
   const [warehouses, setWarehouses] = useState([]);
   const [branches, setBranches] = useState([]);
   const [transactions, setTransactions] = useState([]);
+  const [employees, setEmployees] = useState([]);
+  const [paymentAccounts, setPaymentAccounts] = useState([]);
   
   // Bottom tab state
   const [activeBottomTab, setActiveBottomTab] = useState('rincian');
@@ -147,6 +151,7 @@ const PurchaseEnterprise = () => {
     warehouse_id: '',
     branch_id: '',
     sales_person_id: '',       // PIC
+    payment_account_id: '',    // Akun Pembayaran (Kas/Bank)
     dept: '',
     po_reference: '',
     transaction_type: 'direct', // direct, from_po, from_request, transfer
@@ -189,11 +194,13 @@ const PurchaseEnterprise = () => {
   // ==================== DATA LOADING ====================
   const loadMasterData = useCallback(async () => {
     try {
-      const [supRes, prodRes, whRes, branchRes] = await Promise.all([
+      const [supRes, prodRes, whRes, branchRes, empRes, accRes] = await Promise.all([
         api('/api/suppliers'),
         api('/api/products?limit=2000'),
         api('/api/master/warehouses'),
-        api('/api/branches')
+        api('/api/branches'),
+        api('/api/erp/employees?status=active'),
+        api('/api/accounts/cash-bank')
       ]);
       
       if (supRes.ok) {
@@ -211,6 +218,14 @@ const PurchaseEnterprise = () => {
       if (branchRes.ok) {
         const data = await branchRes.json();
         setBranches(data || []);
+      }
+      if (empRes.ok) {
+        const data = await empRes.json();
+        setEmployees(data.employees || data.items || data || []);
+      }
+      if (accRes.ok) {
+        const data = await accRes.json();
+        setPaymentAccounts(data.accounts || data.items || data || []);
       }
     } catch (err) {
       console.error('Error loading master data:', err);
@@ -283,6 +298,7 @@ const PurchaseEnterprise = () => {
       warehouse_id: warehouses[0]?.id || '',
       branch_id: user?.branch_id || branches[0]?.id || '',
       sales_person_id: '',
+      payment_account_id: '',
       dept: '',
       po_reference: '',
       transaction_type: 'direct',
@@ -855,24 +871,46 @@ const PurchaseEnterprise = () => {
             onChange={(v) => setForm(prev => ({ ...prev, time: v }))}
             icon={Clock}
           />
-          <InputField
-            label="Supplier"
-            type="select"
-            value={form.supplier_id}
-            onChange={(v) => setForm(prev => ({ ...prev, supplier_id: v }))}
-            options={suppliers.map(s => ({ value: s.id, label: `${s.code || ''} - ${s.name}` }))}
-            required
-            icon={Truck}
-          />
-          <InputField
-            label="Gudang Masuk"
-            type="select"
-            value={form.warehouse_id}
-            onChange={(v) => setForm(prev => ({ ...prev, warehouse_id: v }))}
-            options={warehouses.map(w => ({ value: w.id, label: w.name }))}
-            required
-            icon={Warehouse}
-          />
+          {/* Supplier - Searchable */}
+          <div>
+            <label className="block text-xs text-gray-400 mb-1">
+              Supplier <span className="text-red-400">*</span>
+            </label>
+            <SearchableSelect
+              options={suppliers.map(s => ({ 
+                value: s.id, 
+                label: s.name,
+                sublabel: s.code || s.phone || ''
+              }))}
+              value={form.supplier_id}
+              onValueChange={(v) => setForm(prev => ({ ...prev, supplier_id: v }))}
+              placeholder="Ketik untuk cari supplier..."
+              searchPlaceholder="Cari supplier..."
+              emptyText="Supplier tidak ditemukan"
+              data-testid="select-supplier"
+              triggerClassName="bg-gray-800 border-gray-700 text-white hover:bg-gray-700"
+            />
+          </div>
+          {/* Gudang Masuk - Searchable */}
+          <div>
+            <label className="block text-xs text-gray-400 mb-1">
+              Gudang Masuk <span className="text-red-400">*</span>
+            </label>
+            <SearchableSelect
+              options={warehouses.map(w => ({ 
+                value: w.id, 
+                label: w.name,
+                sublabel: w.code || w.location || ''
+              }))}
+              value={form.warehouse_id}
+              onValueChange={(v) => setForm(prev => ({ ...prev, warehouse_id: v }))}
+              placeholder="Ketik untuk cari gudang..."
+              searchPlaceholder="Cari gudang..."
+              emptyText="Gudang tidak ditemukan"
+              data-testid="select-warehouse"
+              triggerClassName="bg-gray-800 border-gray-700 text-white hover:bg-gray-700"
+            />
+          </div>
           <InputField
             label="Cabang"
             type="select"
@@ -890,15 +928,42 @@ const PurchaseEnterprise = () => {
         </div>
         
         <div className="grid grid-cols-6 gap-3 mt-3">
-          <InputField
-            label="Sales / PIC"
-            type="select"
-            value={form.sales_person_id}
-            onChange={(v) => setForm(prev => ({ ...prev, sales_person_id: v }))}
-            options={[]}
-            placeholder="Pilih PIC"
-            icon={User}
-          />
+          {/* PIC / Sales Person - Searchable */}
+          <div>
+            <label className="block text-xs text-gray-400 mb-1">Sales / PIC</label>
+            <SearchableSelect
+              options={employees.map(e => ({ 
+                value: e.id, 
+                label: e.full_name || e.name || e.employee_name,
+                sublabel: e.employee_id || e.jabatan_name || e.position || ''
+              }))}
+              value={form.sales_person_id}
+              onValueChange={(v) => setForm(prev => ({ ...prev, sales_person_id: v }))}
+              placeholder="Ketik untuk cari PIC..."
+              searchPlaceholder="Cari karyawan..."
+              emptyText="Karyawan tidak ditemukan"
+              data-testid="select-pic"
+              triggerClassName="bg-gray-800 border-gray-700 text-white hover:bg-gray-700"
+            />
+          </div>
+          {/* Akun Pembayaran - Searchable */}
+          <div>
+            <label className="block text-xs text-gray-400 mb-1">Akun Pembayaran</label>
+            <SearchableSelect
+              options={paymentAccounts.map(a => ({ 
+                value: a.id || a.code, 
+                label: a.name,
+                sublabel: `${a.code || ''} - ${a.account_type?.toUpperCase() || a.type?.toUpperCase() || ''}`
+              }))}
+              value={form.payment_account_id}
+              onValueChange={(v) => setForm(prev => ({ ...prev, payment_account_id: v }))}
+              placeholder="Ketik untuk cari akun..."
+              searchPlaceholder="Cari akun kas/bank..."
+              emptyText="Akun tidak ditemukan"
+              data-testid="select-payment-account"
+              triggerClassName="bg-gray-800 border-gray-700 text-white hover:bg-gray-700"
+            />
+          </div>
           <InputField
             label="Dept"
             value={form.dept}

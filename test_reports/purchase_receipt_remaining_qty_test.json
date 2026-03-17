@@ -1,0 +1,19 @@
+{
+  "test_name": "Purchase Receipt - Remaining Qty Tracking",
+  "test_date": "2026-03-17",
+  "status": "PASS",
+  "scenario": {
+    "ordered_qty": 1000,
+    "first_receive": 200,
+    "remaining_after_first": 800,
+    "status_after_first": "partial",
+    "second_receive": 800,
+    "remaining_after_second": 0,
+    "status_after_second": "received"
+  },
+  "fields_tracked": [
+    "items.$.received_qty - Updated incrementally",
+    "pending_qty - Calculated as (quantity - received_qty)",
+    "status - Updated based on completion"
+  ]
+}

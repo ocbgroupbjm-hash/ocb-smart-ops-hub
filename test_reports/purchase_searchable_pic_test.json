@@ -1,0 +1,10 @@
+{
+  "test_name": "Purchase Form - Searchable PIC Select",
+  "test_date": "2026-03-17",
+  "status": "PASS",
+  "component": "PurchaseEnterprise.jsx",
+  "feature": "Sales/PIC field is now a SearchableSelect component",
+  "data_source": "/api/erp/employees?status=active",
+  "expected": "User can type to search and filter employees for PIC",
+  "actual": "PIC dropdown uses SearchableSelect with 'Ketik untuk cari PIC...' placeholder, loads from employees API"
+}

@@ -530,8 +530,9 @@ async def receive_purchase_order(po_id: str, data: ReceivePO, request: Request, 
     if not po:
         raise HTTPException(status_code=404, detail="Purchase order not found")
     
-    if po.get("status") not in ["ordered", "partial"]:
-        raise HTTPException(status_code=400, detail="Cannot receive this PO")
+    # Allow receiving from submitted, ordered, or partial status
+    if po.get("status") not in ["submitted", "ordered", "partial", "posted"]:
+        raise HTTPException(status_code=400, detail="Cannot receive this PO - status must be submitted, ordered, partial, or posted")
     
     # =============== FISCAL PERIOD VALIDATION ===============
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")

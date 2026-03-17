@@ -1,6 +1,7 @@
 # OCB TITAN ERP - HR PAYROLL ENGINE ENTERPRISE
 # Kalkulasi gaji dengan auto-journal ke Accounting
 # BLUEPRINT v2.4.0 - TENANT AWARE + AUDIT TRAIL
+# MULTI-TENANT FIX: All collection access via dynamic getters
 
 from fastapi import APIRouter, HTTPException, Depends, Request, Query
 from pydantic import BaseModel, Field
@@ -14,6 +15,8 @@ import uuid
 router = APIRouter(prefix="/api/hr/payroll", tags=["HR Payroll Engine"])
 
 # ============ DYNAMIC COLLECTION ACCESS (Multi-Tenant) ============
+# All collection access MUST use these getters to ensure tenant isolation
+
 def _get_payroll_coll():
     return get_db()["payroll"]
 
@@ -94,7 +97,9 @@ async def create_payroll_component(
     """Create payroll component (tunjangan/potongan)"""
     user_id = user.get("user_id", user.get("id", ""))
     
-    existing = await db.payroll_components.find_one({"code": data.code.upper()})
+    payroll_components = _get_payroll_components_coll()
+    
+    existing = await payroll_components.find_one({"code": data.code.upper()})
     if existing:
         raise HTTPException(status_code=400, detail=f"Kode komponen {data.code} sudah ada")
     
@@ -114,7 +119,7 @@ async def create_payroll_component(
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     
-    await db.payroll_components.insert_one(component)
+    await payroll_components.insert_one(component)
     
     return {"status": "success", "component_id": component["id"]}
 
@@ -124,11 +129,13 @@ async def get_payroll_components(
     user: dict = Depends(get_current_user)
 ):
     """Get all payroll components"""
+    payroll_components = _get_payroll_components_coll()
+    
     query = {"is_active": True}
     if type:
         query["type"] = type
     
-    components = await db.payroll_components.find(query, {"_id": 0}).to_list(50)
+    components = await payroll_components.find(query, {"_id": 0}).to_list(50)
     return {"components": components}
 
 
@@ -136,6 +143,8 @@ async def get_payroll_components(
 
 async def calculate_attendance_data(employee_id: str, month: int, year: int) -> Dict:
     """Calculate attendance metrics for payroll"""
+    attendance_logs = _get_attendance_logs_coll()
+    
     period_start = f"{year}-{month:02d}-01"
     if month == 12:
         period_end = f"{year + 1}-01-01"
@@ -162,6 +171,8 @@ async def calculate_attendance_data(employee_id: str, month: int, year: int) -> 
 
 async def calculate_leave_data(employee_id: str, month: int, year: int) -> Dict:
     """Calculate approved leave days for the period"""
+    leave_requests = _get_leave_requests_coll()
+    
     period_start = f"{year}-{month:02d}-01"
     if month == 12:
         period_end = f"{year + 1}-01-01"
@@ -194,6 +205,10 @@ async def create_payroll_journal(
 ) -> str:
     """Create journal entry for payroll"""
     from utils.number_generator import generate_transaction_number
+    
+    db = get_db()
+    journal_entries = _get_journal_entries_coll()
+    
     journal_number = await generate_transaction_number(db, "JV")
     
     # Get account codes
@@ -285,11 +300,18 @@ async def run_payroll(
     user_name = user.get("name", "")
     branch_id = data.branch_id or user.get("branch_id", "")
     
+    # Get dynamic collections
+    payroll_coll = _get_payroll_coll()
+    payroll_items_coll = _get_payroll_items_coll()
+    employees_coll = _get_employees_coll()
+    payroll_components = _get_payroll_components_coll()
+    db = get_db()
+    
     period = f"{data.period_year}-{data.period_month:02d}"
     period_display = f"{datetime(data.period_year, data.period_month, 1).strftime('%B %Y')}"
     
     # Check if payroll already exists for this period
-    existing = await payroll_collection.find_one({
+    existing = await payroll_coll.find_one({
         "period": period,
         "status": {"$in": ["draft", "posted"]}
     })
@@ -309,13 +331,13 @@ async def run_payroll(
     if data.employee_ids:
         emp_query["id"] = {"$in": data.employee_ids}
     
-    employee_list = await employees.find(emp_query, {"_id": 0}).to_list(1000)
+    employee_list = await employees_coll.find(emp_query, {"_id": 0}).to_list(1000)
     
     if not employee_list:
         raise HTTPException(status_code=400, detail="Tidak ada karyawan yang diproses")
     
     # Get standard components
-    components = await db.payroll_components.find(
+    components = await payroll_components.find(
         {"is_active": True}, {"_id": 0}
     ).to_list(50)
     
@@ -485,10 +507,10 @@ async def run_payroll(
     
     # Bulk insert payroll records
     if payroll_records:
-        await payroll_collection.insert_many(payroll_records)
+        await payroll_coll.insert_many(payroll_records)
     
     if item_records:
-        await payroll_items.insert_many(item_records)
+        await payroll_items_coll.insert_many(item_records)
     
     await log_activity(
         db, user_id, user_name,
@@ -532,8 +554,11 @@ async def post_payroll(
     user_name = user.get("name", "")
     branch_id = user.get("branch_id", "")
     
+    payroll_coll = _get_payroll_coll()
+    db = get_db()
+    
     # Get payroll records
-    payrolls = await payroll_collection.find(
+    payrolls = await payroll_coll.find(
         {"batch_id": batch_id, "status": "draft"},
         {"_id": 0}
     ).to_list(1000)
@@ -568,7 +593,7 @@ async def post_payroll(
     journal_no = await create_payroll_journal(payroll_data, user_id, user_name, branch_id)
     
     # Update all payroll records to posted
-    await payroll_collection.update_many(
+    await payroll_coll.update_many(
         {"batch_id": batch_id},
         {"$set": {
             "status": "posted",
@@ -607,13 +632,15 @@ async def get_payroll(
     user: dict = Depends(get_current_user)
 ):
     """Get payroll data for a period"""
+    payroll_coll = _get_payroll_coll()
+    
     query = {"period": period}
     if status:
         query["status"] = status
     if department_id:
         query["department_id"] = department_id
     
-    payrolls = await payroll_collection.find(query, {"_id": 0}).to_list(500)
+    payrolls = await payroll_coll.find(query, {"_id": 0}).to_list(500)
     
     # Calculate summary
     total_gross = sum(p.get("gross_salary", 0) for p in payrolls)
@@ -641,7 +668,10 @@ async def get_employee_payroll_history(
     user: dict = Depends(get_current_user)
 ):
     """Get payroll history for an employee"""
-    employee = await employees.find_one(
+    employees_coll = _get_employees_coll()
+    payroll_coll = _get_payroll_coll()
+    
+    employee = await employees_coll.find_one(
         {"$or": [{"id": employee_id}, {"employee_id": employee_id.upper()}]},
         {"_id": 0}
     )
@@ -653,7 +683,7 @@ async def get_employee_payroll_history(
     if year:
         query["period_year"] = year
     
-    payrolls = await payroll_collection.find(
+    payrolls = await payroll_coll.find(
         query, {"_id": 0}
     ).sort("period", -1).to_list(24)
     
@@ -674,11 +704,14 @@ async def get_payroll_slip(
     user: dict = Depends(get_current_user)
 ):
     """Get payroll slip detail with all items"""
-    payroll = await payroll_collection.find_one({"id": payroll_id}, {"_id": 0})
+    payroll_coll = _get_payroll_coll()
+    payroll_items_coll = _get_payroll_items_coll()
+    
+    payroll = await payroll_coll.find_one({"id": payroll_id}, {"_id": 0})
     if not payroll:
         raise HTTPException(status_code=404, detail="Slip gaji tidak ditemukan")
     
-    items = await payroll_items.find(
+    items = await payroll_items_coll.find(
         {"payroll_id": payroll_id},
         {"_id": 0}
     ).to_list(50)

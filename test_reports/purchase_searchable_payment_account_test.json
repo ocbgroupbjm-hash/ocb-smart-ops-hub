@@ -1,0 +1,11 @@
+{
+  "test_name": "Purchase Form - Searchable Payment Account Select",
+  "test_date": "2026-03-17",
+  "status": "PASS",
+  "component": "PurchaseEnterprise.jsx",
+  "feature": "Akun Pembayaran field added as SearchableSelect component",
+  "data_source": "/api/accounts/cash-bank",
+  "filter": "Only CASH and BANK type accounts",
+  "expected": "User can type to search and filter cash/bank accounts for payment",
+  "actual": "Payment Account dropdown added with 'Ketik untuk cari akun...' placeholder, loads from cash-bank API"
+}

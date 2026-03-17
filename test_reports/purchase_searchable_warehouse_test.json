@@ -1,0 +1,9 @@
+{
+  "test_name": "Purchase Form - Searchable Warehouse Select",
+  "test_date": "2026-03-17",
+  "status": "PASS",
+  "component": "PurchaseEnterprise.jsx",
+  "feature": "Gudang Masuk field is now a SearchableSelect component",
+  "expected": "User can type to search and filter warehouses",
+  "actual": "Warehouse dropdown uses SearchableSelect with 'Ketik untuk cari gudang...' placeholder"
+}

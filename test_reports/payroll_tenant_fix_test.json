@@ -1,0 +1,48 @@
+{
+  "test_name": "Payroll Multi-Tenant Isolation Fix",
+  "test_date": "2026-03-16",
+  "blueprint_version": "v2.4.0",
+  "status": "PASS",
+  "summary": "Multi-tenant isolation fix validated - no cross-tenant data leak",
+  "tests": [
+    {
+      "test_id": "1",
+      "description": "Login to ocb_titan and fetch payroll data",
+      "tenant": "ocb_titan",
+      "endpoint": "GET /api/hr/payroll/2026-03",
+      "expected": "Return payroll data for ocb_titan only",
+      "actual": "Returned 21 payroll records with batch PAY-20260314-0007",
+      "status": "PASS"
+    },
+    {
+      "test_id": "2", 
+      "description": "Login to ocb_unt_1 and fetch payroll data",
+      "tenant": "ocb_unt_1",
+      "endpoint": "GET /api/hr/payroll/2026-03",
+      "expected": "Return empty data (no payroll exists for this tenant)",
+      "actual": "Returned empty payrolls array with employee_count: 0",
+      "status": "PASS"
+    },
+    {
+      "test_id": "3",
+      "description": "Verify no cross-tenant data leak",
+      "expected": "ocb_unt_1 should NOT see ocb_titan payroll data",
+      "actual": "ocb_unt_1 returned empty data, ocb_titan data not leaked",
+      "status": "PASS"
+    }
+  ],
+  "code_changes": {
+    "file": "/app/backend/routes/hr_payroll.py",
+    "changes": [
+      "Replaced static collection bindings with dynamic getter functions",
+      "All collection access now uses _get_*_coll() pattern",
+      "db = get_db() called at function level for tenant context"
+    ]
+  },
+  "validation_method": "API testing with JWT tokens for different tenants",
+  "evidence_files": [
+    "payroll_tenant_isolation_proof.json",
+    "payroll_api_payload_log.json",
+    "payroll_backend_restart_log.txt"
+  ]
+}

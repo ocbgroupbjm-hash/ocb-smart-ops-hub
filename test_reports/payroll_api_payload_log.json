@@ -1,0 +1,30 @@
+{
+  "test_name": "Payroll API Payload Log",
+  "test_date": "2026-03-17",
+  "tests": [
+    {
+      "tenant": "ocb_titan",
+      "endpoint": "GET /api/hr/payroll/2026-03",
+      "response": {
+        "period": "2026-03",
+        "payroll_count": 21,
+        "sample_record": {
+          "batch_no": "PAY-20260314-0007",
+          "status": "posted",
+          "total_gross": 5500000,
+          "total_net": 5397750
+        }
+      }
+    },
+    {
+      "tenant": "ocb_unt_1",
+      "endpoint": "GET /api/hr/payroll/2026-03",
+      "response": {
+        "period": "2026-03",
+        "payroll_count": 0,
+        "payrolls": []
+      }
+    }
+  ],
+  "conclusion": "API correctly returns tenant-specific data with no cross-tenant leakage"
+}

@@ -1,0 +1,21 @@
+{
+  "test_name": "Purchase Receipt - Stock Movement Creation",
+  "test_date": "2026-03-17",
+  "status": "PASS",
+  "movement_type": "STOCK_IN",
+  "collection": "stock_movements",
+  "fields_created": {
+    "product_id": "From PO item",
+    "branch_id": "From PO header",
+    "quantity": "Actual received quantity (not ordered)",
+    "reference_id": "PO ID",
+    "reference_type": "purchase_order",
+    "cost_price": "unit_cost * received_quantity",
+    "notes": "PO: {po_number}"
+  },
+  "stock_update": {
+    "collection": "product_stocks",
+    "operation": "$inc quantity and available by received_qty",
+    "last_restock": "Updated to current timestamp"
+  }
+}
