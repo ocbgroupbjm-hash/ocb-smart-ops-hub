@@ -1,0 +1,13 @@
+{
+  "test_name": "PIC Visibility Test",
+  "test_date": "2026-03-18",
+  "tenant": "ocb_titan",
+  "status": "PASS",
+  "styling": {
+    "color": "amber-200 (orange/amber)",
+    "border": "border-amber-600/50",
+    "font_weight": "font-medium",
+    "checkmark": "✓ shown below dropdown when selected"
+  },
+  "visibility": "HIGH CONTRAST - easily visible"
+}

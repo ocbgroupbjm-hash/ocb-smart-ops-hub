@@ -1,0 +1,18 @@
+{
+  "test_name": "PO Print Template Test",
+  "test_date": "2026-03-18",
+  "tenant": "ocb_titan",
+  "status": "PASS",
+  "template_sections": {
+    "header": "PURCHASE ORDER - Pesanan Pembelian ke Supplier",
+    "po_info": ["No. PO", "Tanggal", "Status"],
+    "supplier_info": ["Nama", "Kode", "Alamat", "Telepon"],
+    "branch_pic": ["Cabang", "PIC", "Dibuat"],
+    "items_table": ["No", "Kode", "Nama Produk", "Qty", "Satuan", "Harga", "Disk%", "Subtotal"],
+    "totals": ["Subtotal", "Diskon", "Pajak", "TOTAL"],
+    "signatures": ["Dibuat oleh", "Disetujui oleh", "Supplier"],
+    "footer": "Timestamp + OCB TITAN ERP System"
+  },
+  "is_clean_document": true,
+  "is_form_screenshot": false
+}

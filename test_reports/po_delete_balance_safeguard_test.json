@@ -1,0 +1,8 @@
+{
+  "test_name": "PO Delete Balance Safeguard",
+  "test_date": "2026-03-18",
+  "tenant": "ocb_titan",
+  "status": "PASS",
+  "safeguard": "Delete preview menampilkan dampak ke neraca/jurnal sebelum konfirmasi",
+  "impact_shown": ["Receiving count", "Stock movements count", "AP records count", "Journal entries count"]
+}

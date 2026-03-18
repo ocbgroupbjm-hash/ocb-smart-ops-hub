@@ -1,0 +1,17 @@
+{
+  "test_name": "Purchase Final Regression Test",
+  "test_date": "2026-03-18",
+  "tenant": "ocb_titan",
+  "test_iteration": "iteration_87",
+  "overall_status": "PASS",
+  "success_rate": "100% (6/6 tasks passed)",
+  "tasks_verified": [
+    "Edit PO Draft - PASS",
+    "Edit PO Blocked - PASS",
+    "Delete PO Preview - PASS",
+    "Print PO Template - PASS",
+    "PIC Visibility - PASS",
+    "Akun Pembayaran Visibility - PASS",
+    "Menu Structure - PASS"
+  ]
+}

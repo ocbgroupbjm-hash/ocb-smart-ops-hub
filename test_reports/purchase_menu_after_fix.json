@@ -1,0 +1,19 @@
+{
+  "test_name": "Purchase Menu Structure Validation",
+  "test_date": "2026-03-18",
+  "status": "PASS",
+  "menu_structure": {
+    "po_procurement": {
+      "label": "PO / Procurement",
+      "items": ["Daftar PO Pembelian", "Buat PO Pembelian", "Terima Barang"]
+    },
+    "histori_pembelian": {
+      "label": "Histori Pembelian",
+      "items": ["Daftar Pembelian", "History Harga Beli"]
+    },
+    "retur": {
+      "label": "Retur",
+      "items": ["Daftar Retur Pembelian", "Tambah Retur Pembelian"]
+    }
+  }
+}

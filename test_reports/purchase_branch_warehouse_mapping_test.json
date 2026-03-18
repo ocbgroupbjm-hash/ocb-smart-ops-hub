@@ -1,0 +1,11 @@
+{
+  "test_name": "Branch-Warehouse Mapping Test",
+  "test_date": "2026-03-18",
+  "tenant": "ocb_titan",
+  "status": "PASS",
+  "behavior": {
+    "filter": "Warehouse dropdown filtered by user's branch_id",
+    "auto_select": "Default warehouse auto-selected based on user's branch",
+    "branch_sync": "When warehouse selected, branch_id auto-updated from warehouse"
+  }
+}

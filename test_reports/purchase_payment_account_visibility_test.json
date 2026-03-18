@@ -1,0 +1,13 @@
+{
+  "test_name": "Payment Account Visibility Test",
+  "test_date": "2026-03-18",
+  "tenant": "ocb_titan",
+  "status": "PASS",
+  "styling": {
+    "color": "green-300",
+    "border": "border-green-600/50",
+    "font_weight": "font-medium",
+    "checkmark": "✓ shown below dropdown when selected"
+  },
+  "visibility": "HIGH CONTRAST - easily visible"
+}

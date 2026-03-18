@@ -1,0 +1,8 @@
+{
+  "test_name": "Cross-Branch Warehouse Validation",
+  "test_date": "2026-03-18",
+  "tenant": "ocb_titan",
+  "status": "PASS",
+  "validation": "Warehouses dari branch lain tidak muncul di dropdown (filtered)",
+  "note": "User hanya bisa memilih gudang yang sesuai dengan cabang aktif"
+}

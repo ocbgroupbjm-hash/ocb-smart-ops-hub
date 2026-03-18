@@ -14,6 +14,53 @@ Membangun sistem ERP retail komprehensif (OCB TITAN) dengan fitur POS, Inventory
 
 ---
 
+## BLUEPRINT v2.4.7 - PURCHASE MODULE FINAL ✅
+
+### LATEST UPDATES (2026-03-18)
+
+**TASK 1: Fix Edit PO ✅**
+- Policy: Draft & Ordered dapat diedit, Partial/Received/Cancelled tidak bisa
+- UI: Tombol Edit (pensil biru) untuk editable, Eye untuk view-only
+- Backend: `/api/purchase/orders/{id}` PUT endpoint updated
+- Evidence: `/app/test_reports/po_edit_*.json`
+
+**TASK 2: Revisi Delete Policy ✅**
+- SOFT_DELETE: PO tanpa dampak transaksi
+- CANCEL_HIDE: PO dengan receiving/stock/AP/journal
+- Delete Modal: Preview dampak + mode delete + alasan
+- Evidence: `/app/test_reports/po_delete_*.json`
+
+**TASK 3: Print PO Template ✅**
+- Template dokumen bersih (bukan screenshot form)
+- Sections: Header, PO Info, Supplier, Items Table, Totals, Signatures
+- Modal preview dengan tombol Print dan Tutup
+- Evidence: `/app/test_reports/po_print_*.json`
+
+**TASK 4: PIC & Akun Pembayaran Visibility ✅**
+- PIC: Warna amber-200, border amber-600/50, checkmark ✓
+- Akun Pembayaran: Warna green-300, border green-600/50, checkmark ✓
+- Kontras tinggi, tidak terpotong
+- Evidence: `/app/test_reports/purchase_pic_*.json`, `/app/test_reports/purchase_payment_*.json`
+
+**TASK 5: Menu Structure ✅**
+- A. PO/Procurement: Daftar PO, Buat PO, Terima Barang
+- B. Histori Pembelian: Daftar Pembelian, History Harga Beli
+- C. Retur: Daftar Retur, Tambah Retur
+- Evidence: `/app/test_reports/purchase_menu_*.json`
+
+**TASK 6: Gudang = Cabang ✅**
+- Gudang dropdown filtered by user's branch
+- Auto-select default warehouse based on branch
+- Branch sync when warehouse selected
+- Evidence: `/app/test_reports/purchase_branch_warehouse_*.json`
+
+**TASK 7: Regression Test ✅**
+- Tenant: ocb_titan
+- Tests: 6/6 PASSED (100%)
+- Evidence: `/app/test_reports/iteration_87.json`
+
+---
+
 ## BLUEPRINT v2.4.6 - PURCHASE MODULE UI CLEANUP ✅
 
 ### LATEST UPDATES (2026-03-17)

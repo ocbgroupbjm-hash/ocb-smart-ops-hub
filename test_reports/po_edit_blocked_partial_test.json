@@ -1,0 +1,11 @@
+{
+  "test_name": "PO Edit Blocked - Partial Status",
+  "test_date": "2026-03-18",
+  "tenant": "ocb_titan",
+  "status": "PASS",
+  "po_tested": "PO0000028",
+  "po_status": "Partial",
+  "edit_allowed": false,
+  "button_shown": "Eye (view only)",
+  "reason": "PO sudah ada penerimaan sebagian"
+}

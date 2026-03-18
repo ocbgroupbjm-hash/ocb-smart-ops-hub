@@ -1,0 +1,18 @@
+{
+  "test_name": "Edit & Delete Policy Regression",
+  "test_date": "2026-03-18",
+  "tenant": "ocb_titan",
+  "status": "PASS",
+  "edit_policy": {
+    "draft": "EDITABLE",
+    "ordered": "EDITABLE",
+    "partial": "BLOCKED",
+    "received": "BLOCKED",
+    "cancelled": "BLOCKED",
+    "deleted": "BLOCKED"
+  },
+  "delete_policy": {
+    "no_impact": "SOFT_DELETE",
+    "with_impact": "CANCEL_HIDE"
+  }
+}

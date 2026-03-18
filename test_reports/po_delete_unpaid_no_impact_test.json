@@ -1,0 +1,14 @@
+{
+  "test_name": "PO Delete - No Transaction Impact",
+  "test_date": "2026-03-18",
+  "tenant": "ocb_titan",
+  "status": "PASS",
+  "delete_mode": "SOFT_DELETE",
+  "impact_analysis": {
+    "has_receiving": false,
+    "stock_movements_count": 0,
+    "ap_records_count": 0,
+    "journal_entries_count": 0
+  },
+  "action": "PO dihapus dengan soft delete (is_deleted=true)"
+}

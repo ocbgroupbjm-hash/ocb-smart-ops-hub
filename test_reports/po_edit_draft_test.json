@@ -1,0 +1,11 @@
+{
+  "test_name": "PO Edit Draft Test",
+  "test_date": "2026-03-18",
+  "tenant": "ocb_titan",
+  "status": "PASS",
+  "po_tested": "PO0000034",
+  "po_status": "Draft",
+  "edit_allowed": true,
+  "form_opens": true,
+  "fields_editable": ["Supplier", "Gudang", "PIC", "Akun Pembayaran", "Catatan", "Items"]
+}

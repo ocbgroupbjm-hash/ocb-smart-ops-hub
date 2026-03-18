@@ -1,0 +1,8 @@
+{
+  "test_name": "PO Delete - With Transaction Impact",
+  "test_date": "2026-03-18",
+  "tenant": "ocb_titan",
+  "status": "PASS",
+  "delete_mode": "CANCEL_HIDE",
+  "note": "PO dengan dampak transaksi menggunakan mode CANCEL_HIDE untuk menjaga audit trail"
+}

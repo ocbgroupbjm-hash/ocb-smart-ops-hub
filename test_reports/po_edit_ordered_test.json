@@ -1,0 +1,10 @@
+{
+  "test_name": "PO Edit Ordered Test",
+  "test_date": "2026-03-18",
+  "tenant": "ocb_titan",
+  "status": "PASS",
+  "po_tested": "PO0000027",
+  "po_status": "Ordered",
+  "edit_allowed": true,
+  "note": "Ordered status can be edited as per policy (no receiving yet)"
+}

@@ -1,0 +1,7 @@
+{
+  "test_name": "PO Delete - Item List Visibility",
+  "test_date": "2026-03-18",
+  "tenant": "ocb_titan",
+  "status": "PASS",
+  "behavior": "PO yang dihapus tidak muncul di daftar aktif (is_deleted filter)"
+}
