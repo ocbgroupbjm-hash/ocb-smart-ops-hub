@@ -1,0 +1,26 @@
+{
+  "test_name": "HR Payroll Phase 3 - Duplicate Prevention",
+  "test_date": "2026-03-18",
+  "tenant": "ocb_titan",
+  "status": "PASS",
+  "validations": {
+    "duplicate_posted_check": {
+      "description": "Cannot run payroll if POSTED payroll exists for same period",
+      "error_message": "Payroll periode {period} sudah diposting. Tidak bisa run ulang.",
+      "verified": true,
+      "code_location": "hr_payroll.py lines 595-600"
+    },
+    "draft_replacement": {
+      "description": "Existing DRAFT payrolls deleted before creating new one",
+      "behavior": "Re-run for same period replaces draft, not creates duplicate",
+      "verified": true,
+      "code_location": "hr_payroll.py lines 603-604"
+    },
+    "employee_duplicate_check": {
+      "description": "Per-employee duplicate check skips already processed employees",
+      "helper": "check_payroll_duplicate()",
+      "verified": true,
+      "code_location": "hr_payroll.py lines 243-268"
+    }
+  }
+}

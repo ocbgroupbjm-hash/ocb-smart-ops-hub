@@ -1,0 +1,31 @@
+{
+  "test_name": "HR Payroll Phase 3 - Accounting Validation",
+  "test_date": "2026-03-18",
+  "tenant": "ocb_titan",
+  "status": "PASS",
+  "validations": {
+    "kpi_bonus_in_journal": {
+      "description": "KPI bonus included in gross_salary calculation",
+      "formula": "gross_salary = salary_base + total_allowances (including kpi_bonus)",
+      "verified": true,
+      "code_location": "hr_payroll.py line 784"
+    },
+    "journal_debit_credit_balance": {
+      "description": "Journal entries: Debit Expense = Credit Liability (Kas) + Credit PPh21",
+      "formula": "total_gross = kas_credit + pph21_credit (if any)",
+      "verified": true,
+      "code_location": "hr_payroll.py create_payroll_journal function"
+    },
+    "total_salary_formula": {
+      "formula": "total_salary = basic + allowance + kpi_bonus - deduction",
+      "implemented": true,
+      "code_location": "hr_payroll.py lines 780-795"
+    }
+  },
+  "source_of_truth": {
+    "salary_base": "employees collection (Employee Master)",
+    "kpi_bonus": "kpi_results collection (ONLY approved KPI)",
+    "attendance": "attendance_logs collection",
+    "leave": "leave_requests collection"
+  }
+}

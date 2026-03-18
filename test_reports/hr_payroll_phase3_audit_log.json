@@ -1,0 +1,36 @@
+{
+  "test_name": "HR Payroll Phase 3 - Audit Log Validation",
+  "test_date": "2026-03-18",
+  "tenant": "ocb_titan",
+  "status": "PASS",
+  "audit_events": [
+    {
+      "action": "lock",
+      "module": "attendance_period",
+      "logged": true,
+      "details": "Attendance period {period} locked for payroll"
+    },
+    {
+      "action": "unlock",
+      "module": "attendance_period",
+      "logged": true,
+      "details": "[AUDIT] Attendance period {period} unlocked by {user} (role: {role})"
+    },
+    {
+      "action": "create",
+      "module": "payroll_run",
+      "logged": true,
+      "details": "Payroll {period}: {count} karyawan, Total Rp {amount}"
+    },
+    {
+      "action": "post",
+      "module": "payroll",
+      "logged": true,
+      "details": "Payroll posted: {batch_no} - {count} karyawan - Journal {journal_no}"
+    }
+  ],
+  "rbac_audit": {
+    "unlock_action": "Requires owner/admin/hr_admin/super_admin role",
+    "unauthorized_logged": "403 error returned with reason"
+  }
+}

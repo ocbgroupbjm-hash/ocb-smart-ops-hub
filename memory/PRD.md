@@ -14,32 +14,42 @@ Membangun sistem ERP retail komprehensif (OCB TITAN) dengan fitur POS, Inventory
 
 ---
 
-## BLUEPRINT v2.4.8 - HR PAYROLL PHASE 3 ✅
+## BLUEPRINT v2.4.8 - HR PAYROLL PHASE 3 AUDIT-READY ✅
 
 ### LATEST UPDATES (2026-03-18)
 
-**TASK: Attendance Period Lock Implementation ✅**
-- File: `/app/backend/routes/hr_payroll.py`
-- New endpoints:
-  - `POST /api/hr/payroll/attendance-period/lock` - Lock attendance period
-  - `POST /api/hr/payroll/attendance-period/unlock` - Unlock (if payroll not posted)
-  - `GET /api/hr/payroll/attendance-period/status/{period}` - Check lock status
-- Business Rule: Payroll TIDAK BOLEH diposting jika attendance period belum dikunci
-- Evidence: `/app/test_reports/hr_payroll_phase3_attendance_lock.json`
+**TASK 1: KPI → Accounting Consistency ✅**
+- KPI bonus masuk ke gross_salary calculation
+- Journal: Debit Expense = Credit Kas + Credit PPh21
+- Formula: total_salary = basic + allowance + kpi_bonus - deduction
+- Evidence: `/app/test_reports/hr_payroll_phase3_accounting_validation.json`
 
-**TASK: KPI Bonus Integration ✅**
-- File: `/app/backend/routes/hr_payroll.py`
-- Helper: `calculate_kpi_bonus()` - Calculates bonus based on KPI score
-- KPI Bonus Tiers:
-  - 90-100: 20% bonus (Excellent)
-  - 80-89: 15% bonus (Very Good)
-  - 70-79: 10% bonus (Good)
-  - 60-69: 5% bonus (Satisfactory)
-  - Below 60: 0% bonus (Needs Improvement)
-- Payroll Run: KPI bonus otomatis ditambahkan sebagai KPIBONUS allowance
-- Evidence: `/app/test_reports/hr_payroll_phase3_kpi_integration.json`
+**TASK 2: Lock Attendance IMMUTABLE setelah POST ✅**
+- `is_immutable` field di attendance-period/status endpoint
+- Unlock BLOCKED jika payroll sudah POSTED
+- RBAC: Hanya owner/admin/hr_admin/super_admin bisa unlock
+- Evidence: `/app/test_reports/hr_payroll_phase3_audit_log.json`
 
-**Testing: iteration_88 - 100% PASS (10/10 tests)**
+**TASK 3: Duplicate & Employee Validation ✅**
+- `check_payroll_duplicate()` helper
+- `validate_employee_for_payroll()` helper (status + contract)
+- Draft payroll di-replace, Posted payroll BLOCKED
+- Evidence: `/app/test_reports/hr_payroll_phase3_duplicate_prevention.json`
+
+**TASK 4: KPI Source of Truth ✅**
+- Source: `kpi_results` collection ONLY (status=approved)
+- Marker: `kpi_source='kpi_results'` di payroll item
+- Bonus tiers: 90-100=20%, 80-89=15%, 70-79=10%, 60-69=5%, <60=0%
+
+**Testing: iteration_89 - 100% PASS (14/14 tests)**
+
+### DEFINITION OF DONE (COMPLETED)
+- ✅ KPI bonus masuk ke journal
+- ✅ Attendance lock immutable setelah POST
+- ✅ Duplicate payroll tidak bisa
+- ✅ Employee inactive tidak bisa dipayroll
+- ✅ Audit log lengkap
+- ✅ Evidence accounting tersedia
 
 ---
 
