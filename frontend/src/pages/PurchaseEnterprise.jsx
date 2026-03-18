@@ -214,6 +214,15 @@ const PurchaseEnterprise = () => {
       if (whRes.ok) {
         const data = await whRes.json();
         setWarehouses(data || []);
+        
+        // TASK 6: Auto-select default warehouse for user's branch
+        const userBranch = user?.branch_id;
+        if (userBranch) {
+          const defaultWarehouse = (data || []).find(w => w.branch_id === userBranch);
+          if (defaultWarehouse) {
+            setForm(prev => ({ ...prev, warehouse_id: defaultWarehouse.id, branch_id: userBranch }));
+          }
+        }
       }
       if (branchRes.ok) {
         const data = await branchRes.json();
@@ -339,24 +348,48 @@ const PurchaseEnterprise = () => {
   };
   
   const handleEditTransaction = (tx) => {
-    // POSTED IMMUTABLE RULE:
-    // - Draft/pending = editable
-    // - Posted/received/completed = tidak boleh edit langsung
-    const isPosted = ['posted', 'received', 'completed', 'lunas', 'approved'].includes(tx.status?.toLowerCase());
+    // ============================================================
+    // EDIT POLICY (Blueprint v2.4.6):
+    // BOLEH EDIT: draft, ordered (belum ada receiving/stock/AP/jurnal)
+    // TIDAK BOLEH EDIT: partial, received, cancelled, deleted
+    // ============================================================
+    const editableStatuses = ['draft', 'ordered'];
+    const blockedStatuses = ['partial', 'received', 'cancelled', 'deleted', 'posted', 'completed', 'lunas', 'approved'];
     
-    if (isPosted) {
-      toast.error(
-        'Transaksi yang sudah di-POST tidak bisa diedit langsung. Gunakan fitur Koreksi/Reversal.',
-        { duration: 4000 }
-      );
+    const currentStatus = tx.status?.toLowerCase();
+    
+    if (blockedStatuses.includes(currentStatus)) {
+      let reason = '';
+      if (currentStatus === 'partial') {
+        reason = 'PO sudah ada penerimaan sebagian. Gunakan fitur Koreksi jika perlu perubahan.';
+      } else if (currentStatus === 'received') {
+        reason = 'PO sudah selesai diterima. Data tidak bisa diubah untuk menjaga integritas audit trail.';
+      } else if (currentStatus === 'cancelled' || currentStatus === 'deleted') {
+        reason = 'PO sudah dibatalkan/dihapus. Tidak bisa diedit.';
+      } else {
+        reason = 'Transaksi sudah di-POST. Gunakan fitur Koreksi/Reversal.';
+      }
+      
+      toast.error(reason, { duration: 4000 });
       return;
     }
     
+    if (!editableStatuses.includes(currentStatus)) {
+      toast.error(`Status "${currentStatus}" tidak dapat diedit.`, { duration: 3000 });
+      return;
+    }
+    
+    // Map PO data to form
     setForm({
       ...tx,
       transaction_no: tx.po_number || tx.transaction_no,
-      date: tx.created_at?.split('T')[0] || new Date().toISOString().split('T')[0],
+      date: tx.created_at?.split('T')[0] || tx.order_date?.split('T')[0] || new Date().toISOString().split('T')[0],
       time: tx.created_at ? new Date(tx.created_at).toTimeString().slice(0, 5) : new Date().toTimeString().slice(0, 5),
+      supplier_id: tx.supplier_id || '',
+      warehouse_id: tx.warehouse_id || '',
+      branch_id: tx.branch_id || '',
+      sales_person_id: tx.pic_id || tx.sales_person_id || '',
+      payment_account_id: tx.payment_account_id || '',
       items: tx.items || [],
       subtotal: tx.subtotal || 0,
       grand_total: tx.total || 0,
@@ -364,6 +397,94 @@ const PurchaseEnterprise = () => {
     });
     setEditingId(tx.id);
     setViewMode('form');
+    toast.info(`Edit PO ${tx.po_number} - Status: ${currentStatus.toUpperCase()}`);
+  };
+  
+  // ============================================================
+  // CHECK IF PO CAN BE EDITED (for UI display)
+  // ============================================================
+  const canEditPO = (tx) => {
+    const editableStatuses = ['draft', 'ordered'];
+    return editableStatuses.includes(tx.status?.toLowerCase());
+  };
+  
+  // ============================================================
+  // PRINT PO - TASK 3: Template Print Bersih
+  // ============================================================
+  const [showPrintModal, setShowPrintModal] = useState(false);
+  const [printData, setPrintData] = useState(null);
+  
+  const handlePrintPO = async (tx) => {
+    try {
+      // Fetch print data from backend
+      const res = await api(`/api/purchase/orders/${tx.id}/print`);
+      if (res.ok) {
+        const data = await res.json();
+        setPrintData(data);
+        setShowPrintModal(true);
+      } else {
+        toast.error('Gagal mengambil data untuk print');
+      }
+    } catch (err) {
+      console.error('Print error:', err);
+      toast.error('Terjadi kesalahan saat memuat data print');
+    }
+  };
+  
+  const printPODocument = () => {
+    window.print();
+  };
+  
+  // ============================================================
+  // DELETE PO - TASK 2: Delete Policy
+  // ============================================================
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleteReason, setDeleteReason] = useState('');
+  const [deletePreview, setDeletePreview] = useState(null);
+  
+  const handleDeletePO = async (tx) => {
+    try {
+      // Get delete preview first
+      const res = await api(`/api/purchase/orders/${tx.id}/delete-preview`);
+      if (res.ok) {
+        const preview = await res.json();
+        setDeleteTarget(tx);
+        setDeletePreview(preview);
+        setShowDeleteModal(true);
+      } else {
+        toast.error('Gagal memuat preview penghapusan');
+      }
+    } catch (err) {
+      console.error('Delete preview error:', err);
+      toast.error('Terjadi kesalahan');
+    }
+  };
+  
+  const confirmDeletePO = async () => {
+    if (!deleteTarget) return;
+    
+    try {
+      const res = await api(`/api/purchase/orders/${deleteTarget.id}?reason=${encodeURIComponent(deleteReason)}`, {
+        method: 'DELETE'
+      });
+      
+      if (res.ok) {
+        const result = await res.json();
+        toast.success(result.message);
+        setShowDeleteModal(false);
+        setDeleteTarget(null);
+        setDeleteReason('');
+        setDeletePreview(null);
+        loadTransactions();
+      } else {
+        const err = await res.json();
+        toast.error(err.detail || 'Gagal menghapus PO');
+      }
+    } catch (err) {
+      console.error('Delete error:', err);
+      toast.error('Terjadi kesalahan saat menghapus');
+    }
   };
   
   const handleReversalTransaction = (tx) => {
@@ -561,31 +682,68 @@ const PurchaseEnterprise = () => {
       
       let res;
       if (editingId) {
-        // Update existing (not supported in current API, would need backend changes)
-        toast.error('Update belum didukung, silakan buat transaksi baru');
-        return;
+        // Update existing PO (draft/ordered only)
+        const updatePayload = {
+          supplier_id: form.supplier_id,
+          branch_id: form.branch_id || user?.branch_id,
+          expected_date: form.date,
+          notes: form.notes,
+          items: form.items.map(item => ({
+            product_id: item.product_id,
+            product_code: item.product_code || '',
+            product_name: item.product_name || '',
+            unit: item.unit || 'PCS',
+            quantity: parseFloat(item.qty_order) || 1,
+            unit_cost: parseFloat(item.unit_price) || 0,
+            discount_percent: parseFloat(item.discount_percent) || 0
+          }))
+        };
+        
+        res = await api(`/api/purchase/orders/${editingId}`, {
+          method: 'PUT',
+          body: JSON.stringify(updatePayload)
+        });
+        
+        if (res.ok) {
+          const result = await res.json();
+          toast.success(result.message || `PO ${form.transaction_no} berhasil diupdate`);
+          
+          // If status is 'posted', submit the PO
+          if (status === 'posted') {
+            const submitRes = await api(`/api/purchase/orders/${editingId}/submit`, { method: 'POST' });
+            if (submitRes.ok) {
+              toast.success('PO berhasil di-submit');
+            }
+          }
+          
+          setViewMode('list');
+          loadTransactions();
+        } else {
+          const err = await res.json();
+          toast.error(err.detail || 'Gagal update PO');
+        }
       } else {
         res = await api('/api/purchase/orders', {
           method: 'POST',
           body: JSON.stringify(payload)
         });
-      }
-      
-      if (res.ok) {
-        const result = await res.json();
-        toast.success(`Transaksi ${result.po_number} berhasil disimpan`);
         
-        // If status is 'posted', submit the PO
-        if (status === 'posted') {
-          await api(`/api/purchase/orders/${result.id}/submit`, { method: 'POST' });
-          toast.success('Transaksi berhasil diposting');
+        if (res.ok) {
+          const result = await res.json();
+          toast.success(`Transaksi ${result.po_number} berhasil disimpan`);
+          
+          // If status is 'posted', submit the PO
+          if (status === 'posted') {
+            await api(`/api/purchase/orders/${result.id}/submit`, { method: 'POST' });
+            toast.success('Transaksi berhasil diposting');
+          }
+          
+          setViewMode('list');
+          loadTransactions();
+        } else {
+          const err = await res.json();
+          toast.error(err.detail || 'Gagal menyimpan transaksi');
         }
-        
-        setViewMode('list');
-        loadTransactions();
-      } else {
-        const err = await res.json();
-        toast.error(err.detail || 'Gagal menyimpan transaksi');
       }
     } catch (err) {
       console.error('Save error:', err);
@@ -777,13 +935,27 @@ const PurchaseEnterprise = () => {
                     <div className="flex gap-1">
                       <button
                         onClick={() => handleEditTransaction(tx)}
-                        className="p-1 hover:bg-gray-700 rounded"
-                        title="Edit"
+                        className={`p-1 rounded ${canEditPO(tx) ? 'hover:bg-blue-700 text-blue-400' : 'hover:bg-gray-700 text-gray-500'}`}
+                        title={canEditPO(tx) ? 'Edit PO' : 'Lihat Detail (tidak bisa edit)'}
+                        data-testid={`btn-edit-${tx.po_number}`}
                       >
-                        <Eye className="h-3.5 w-3.5 text-gray-400" />
+                        {canEditPO(tx) ? <Edit className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                       </button>
-                      <button className="p-1 hover:bg-gray-700 rounded" title="Print">
+                      <button 
+                        onClick={() => handlePrintPO(tx)}
+                        className="p-1 hover:bg-gray-700 rounded" 
+                        title="Print PO"
+                        data-testid={`btn-print-${tx.po_number}`}
+                      >
                         <Printer className="h-3.5 w-3.5 text-gray-400" />
+                      </button>
+                      <button
+                        onClick={() => handleDeletePO(tx)}
+                        className="p-1 hover:bg-red-700 rounded"
+                        title="Hapus PO"
+                        data-testid={`btn-delete-${tx.po_number}`}
+                      >
+                        <Trash2 className="h-3.5 w-3.5 text-red-400" />
                       </button>
                     </div>
                   </td>
@@ -865,85 +1037,124 @@ const PurchaseEnterprise = () => {
             required
             icon={Calendar}
           />
-          {/* Supplier - Searchable */}
+          {/* Supplier - Searchable - HIGH VISIBILITY */}
           <div>
-            <label className="block text-xs text-gray-400 mb-1">
+            <label className="block text-xs text-gray-400 mb-1 flex items-center gap-1">
+              <Truck className="h-3 w-3" />
               Supplier <span className="text-red-400">*</span>
             </label>
             <SearchableSelect
               options={suppliers.map(s => ({ 
                 value: s.id, 
-                label: s.name,
-                sublabel: s.code || s.phone || ''
+                label: s.name || 'Supplier',
+                sublabel: `${s.code || ''} ${s.phone ? `| ${s.phone}` : ''}`
               }))}
               value={form.supplier_id}
               onValueChange={(v) => setForm(prev => ({ ...prev, supplier_id: v }))}
-              placeholder="Ketik untuk cari supplier..."
+              placeholder="Pilih supplier..."
               searchPlaceholder="Cari supplier..."
               emptyText="Supplier tidak ditemukan"
               data-testid="select-supplier"
-              triggerClassName="bg-gray-800 border-gray-700 text-white hover:bg-gray-700"
+              triggerClassName={`bg-gray-800 border-gray-600 hover:bg-gray-700 ${form.supplier_id ? 'text-orange-300 font-medium border-orange-600/50' : 'text-gray-400'}`}
             />
+            {form.supplier_id && (
+              <div className="mt-1 text-xs text-orange-300/70">
+                ✓ {suppliers.find(s => s.id === form.supplier_id)?.name || 'Dipilih'}
+              </div>
+            )}
           </div>
-          {/* Gudang Tujuan - Searchable */}
+          {/* Gudang Tujuan - Searchable - FILTERED BY USER BRANCH */}
           <div>
-            <label className="block text-xs text-gray-400 mb-1">
+            <label className="block text-xs text-gray-400 mb-1 flex items-center gap-1">
+              <Warehouse className="h-3 w-3" />
               Gudang Tujuan <span className="text-red-400">*</span>
             </label>
             <SearchableSelect
-              options={warehouses.map(w => ({ 
-                value: w.id, 
-                label: w.name,
-                sublabel: w.code || w.location || ''
-              }))}
+              options={warehouses
+                .filter(w => !user?.branch_id || w.branch_id === user.branch_id || !w.branch_id)
+                .map(w => ({ 
+                  value: w.id, 
+                  label: w.name,
+                  sublabel: `${w.code || ''} ${w.branch_id ? `(${branches.find(b => b.id === w.branch_id)?.name || 'Cabang'})` : '(Global)'}`
+                }))}
               value={form.warehouse_id}
-              onValueChange={(v) => setForm(prev => ({ ...prev, warehouse_id: v }))}
-              placeholder="Ketik untuk cari gudang..."
+              onValueChange={(v) => {
+                // TASK 6: When warehouse selected, set branch_id from warehouse
+                const selectedWarehouse = warehouses.find(w => w.id === v);
+                setForm(prev => ({ 
+                  ...prev, 
+                  warehouse_id: v,
+                  branch_id: selectedWarehouse?.branch_id || prev.branch_id
+                }));
+              }}
+              placeholder="Pilih gudang tujuan..."
               searchPlaceholder="Cari gudang..."
               emptyText="Gudang tidak ditemukan"
               data-testid="select-warehouse"
-              triggerClassName="bg-gray-800 border-gray-700 text-white hover:bg-gray-700"
+              triggerClassName={`bg-gray-800 border-gray-600 hover:bg-gray-700 ${form.warehouse_id ? 'text-blue-300 font-medium border-blue-600/50' : 'text-gray-400'}`}
             />
+            {form.warehouse_id && (
+              <div className="mt-1 text-xs text-blue-300/70">
+                ✓ {warehouses.find(w => w.id === form.warehouse_id)?.name || 'Dipilih'}
+              </div>
+            )}
           </div>
         </div>
         
         {/* ROW 2: PIC, Akun Pembayaran, Catatan */}
         <div className="grid grid-cols-4 gap-3 mt-3">
-          {/* PIC - Searchable */}
+          {/* PIC - Searchable - HIGH VISIBILITY */}
           <div>
-            <label className="block text-xs text-gray-400 mb-1">PIC (Person in Charge)</label>
+            <label className="block text-xs text-gray-400 mb-1 flex items-center gap-1">
+              <User className="h-3 w-3" />
+              PIC (Person in Charge)
+            </label>
             <SearchableSelect
               options={employees.map(e => ({ 
                 value: e.id, 
-                label: e.full_name || e.name || e.employee_name,
-                sublabel: e.employee_id || e.jabatan_name || e.position || ''
+                label: e.full_name || e.name || e.employee_name || 'Karyawan',
+                sublabel: `${e.employee_id || ''} ${e.jabatan_name ? `- ${e.jabatan_name}` : (e.position ? `- ${e.position}` : '')}`
               }))}
               value={form.sales_person_id}
               onValueChange={(v) => setForm(prev => ({ ...prev, sales_person_id: v }))}
-              placeholder="Ketik untuk cari PIC..."
+              placeholder="Pilih PIC..."
               searchPlaceholder="Cari karyawan..."
               emptyText="Karyawan tidak ditemukan"
               data-testid="select-pic"
-              triggerClassName="bg-gray-800 border-gray-700 text-white hover:bg-gray-700"
+              triggerClassName={`bg-gray-800 border-gray-600 hover:bg-gray-700 ${form.sales_person_id ? 'text-amber-200 font-medium border-amber-600/50' : 'text-gray-400'}`}
             />
+            {form.sales_person_id && (
+              <div className="mt-1 text-xs text-amber-300/70">
+                ✓ {employees.find(e => e.id === form.sales_person_id)?.full_name || 
+                   employees.find(e => e.id === form.sales_person_id)?.name || 'Dipilih'}
+              </div>
+            )}
           </div>
-          {/* Akun Pembayaran - Searchable */}
+          {/* Akun Pembayaran - Searchable - HIGH VISIBILITY */}
           <div>
-            <label className="block text-xs text-gray-400 mb-1">Akun Pembayaran</label>
+            <label className="block text-xs text-gray-400 mb-1 flex items-center gap-1">
+              <Banknote className="h-3 w-3" />
+              Akun Pembayaran
+            </label>
             <SearchableSelect
               options={paymentAccounts.map(a => ({ 
                 value: a.id || a.code, 
-                label: a.name,
-                sublabel: `${a.code || ''} - ${a.account_type?.toUpperCase() || a.type?.toUpperCase() || ''}`
+                label: a.name || 'Akun',
+                sublabel: `${a.code || ''} - ${a.account_type?.toUpperCase() || a.type?.toUpperCase() || 'KAS/BANK'}`
               }))}
               value={form.payment_account_id}
               onValueChange={(v) => setForm(prev => ({ ...prev, payment_account_id: v }))}
-              placeholder="Ketik untuk cari akun..."
-              searchPlaceholder="Cari akun kas/bank..."
+              placeholder="Pilih akun kas/bank..."
+              searchPlaceholder="Cari akun..."
               emptyText="Akun tidak ditemukan"
               data-testid="select-payment-account"
-              triggerClassName="bg-gray-800 border-gray-700 text-white hover:bg-gray-700"
+              triggerClassName={`bg-gray-800 border-gray-600 hover:bg-gray-700 ${form.payment_account_id ? 'text-green-300 font-medium border-green-600/50' : 'text-gray-400'}`}
             />
+            {form.payment_account_id && (
+              <div className="mt-1 text-xs text-green-300/70">
+                ✓ {paymentAccounts.find(a => (a.id || a.code) === form.payment_account_id)?.name || 'Dipilih'}
+              </div>
+            )}
           </div>
           <div className="col-span-2">
             <InputField
@@ -1331,6 +1542,267 @@ const PurchaseEnterprise = () => {
       
       {/* Content */}
       {viewMode === 'list' ? renderListView() : renderFormView()}
+      
+      {/* ============================================================ */}
+      {/* PRINT MODAL - TASK 3: Template Print Bersih */}
+      {/* ============================================================ */}
+      {showPrintModal && printData && (
+        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 print:p-0 print:bg-white">
+          <div className="bg-white rounded-lg shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto print:max-h-none print:overflow-visible print:rounded-none print:shadow-none">
+            {/* Print Header - Hide on print */}
+            <div className="sticky top-0 bg-gray-100 p-4 flex justify-between items-center border-b print:hidden">
+              <h3 className="text-lg font-bold text-gray-800">Preview Print PO</h3>
+              <div className="flex gap-2">
+                <button
+                  onClick={printPODocument}
+                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center gap-2"
+                >
+                  <Printer className="h-4 w-4" /> Print
+                </button>
+                <button
+                  onClick={() => setShowPrintModal(false)}
+                  className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
+                >
+                  Tutup
+                </button>
+              </div>
+            </div>
+            
+            {/* Print Content - A4 Style Document */}
+            <div className="p-8 bg-white text-black print:p-4" id="print-content">
+              {/* Document Header */}
+              <div className="text-center mb-6 border-b-2 border-gray-800 pb-4">
+                <h1 className="text-2xl font-bold text-gray-900">PURCHASE ORDER</h1>
+                <p className="text-sm text-gray-600 mt-1">Pesanan Pembelian ke Supplier</p>
+              </div>
+              
+              {/* PO Info Grid */}
+              <div className="grid grid-cols-2 gap-6 mb-6">
+                <div>
+                  <table className="text-sm w-full">
+                    <tbody>
+                      <tr>
+                        <td className="py-1 text-gray-600 w-32">No. PO</td>
+                        <td className="py-1 font-bold text-lg text-blue-700">: {printData.po_number}</td>
+                      </tr>
+                      <tr>
+                        <td className="py-1 text-gray-600">Tanggal</td>
+                        <td className="py-1">: {formatDate(printData.created_at || printData.order_date)}</td>
+                      </tr>
+                      <tr>
+                        <td className="py-1 text-gray-600">Status</td>
+                        <td className="py-1">
+                          : <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                            printData.status === 'draft' ? 'bg-gray-200 text-gray-700' :
+                            printData.status === 'ordered' ? 'bg-blue-100 text-blue-700' :
+                            printData.status === 'received' ? 'bg-green-100 text-green-700' :
+                            'bg-gray-100 text-gray-600'
+                          }`}>{printData.status?.toUpperCase()}</span>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div>
+                  <div className="bg-gray-50 p-3 rounded border">
+                    <p className="text-xs text-gray-500 mb-1">SUPPLIER</p>
+                    <p className="font-bold text-lg">{printData.supplier?.name || '-'}</p>
+                    <p className="text-sm text-gray-600">{printData.supplier?.code || ''}</p>
+                    <p className="text-sm text-gray-500">{printData.supplier?.address || ''}</p>
+                    <p className="text-sm text-gray-500">{printData.supplier?.phone || ''}</p>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Branch & PIC Info */}
+              <div className="grid grid-cols-3 gap-4 mb-6 text-sm">
+                <div>
+                  <span className="text-gray-500">Cabang:</span>
+                  <span className="ml-2 font-medium">{printData.branch?.name || '-'}</span>
+                </div>
+                <div>
+                  <span className="text-gray-500">PIC:</span>
+                  <span className="ml-2 font-medium">{printData.pic_name || printData.created_by_name || '-'}</span>
+                </div>
+                <div>
+                  <span className="text-gray-500">Dibuat:</span>
+                  <span className="ml-2 font-medium">{printData.created_by_name || '-'}</span>
+                </div>
+              </div>
+              
+              {/* Items Table */}
+              <table className="w-full border-collapse mb-6">
+                <thead>
+                  <tr className="bg-gray-800 text-white">
+                    <th className="border border-gray-300 p-2 text-center w-10">No</th>
+                    <th className="border border-gray-300 p-2 text-left w-24">Kode</th>
+                    <th className="border border-gray-300 p-2 text-left">Nama Produk</th>
+                    <th className="border border-gray-300 p-2 text-center w-16">Qty</th>
+                    <th className="border border-gray-300 p-2 text-center w-16">Satuan</th>
+                    <th className="border border-gray-300 p-2 text-right w-28">Harga</th>
+                    <th className="border border-gray-300 p-2 text-center w-14">Disk%</th>
+                    <th className="border border-gray-300 p-2 text-right w-32">Subtotal</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {printData.items?.map((item, idx) => (
+                    <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                      <td className="border border-gray-300 p-2 text-center">{item.no}</td>
+                      <td className="border border-gray-300 p-2 font-mono text-xs">{item.product_code}</td>
+                      <td className="border border-gray-300 p-2">{item.product_name}</td>
+                      <td className="border border-gray-300 p-2 text-center">{item.quantity}</td>
+                      <td className="border border-gray-300 p-2 text-center">{item.unit}</td>
+                      <td className="border border-gray-300 p-2 text-right">{formatRupiah(item.unit_cost)}</td>
+                      <td className="border border-gray-300 p-2 text-center">{item.discount_percent || 0}%</td>
+                      <td className="border border-gray-300 p-2 text-right font-medium">{formatRupiah(item.subtotal)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              
+              {/* Totals */}
+              <div className="flex justify-end mb-6">
+                <div className="w-72">
+                  <div className="flex justify-between py-1 text-sm">
+                    <span className="text-gray-600">Subtotal</span>
+                    <span>{formatRupiah(printData.subtotal)}</span>
+                  </div>
+                  {printData.discount_amount > 0 && (
+                    <div className="flex justify-between py-1 text-sm text-red-600">
+                      <span>Diskon</span>
+                      <span>-{formatRupiah(printData.discount_amount)}</span>
+                    </div>
+                  )}
+                  {printData.tax_amount > 0 && (
+                    <div className="flex justify-between py-1 text-sm">
+                      <span className="text-gray-600">Pajak ({printData.tax_percent || 0}%)</span>
+                      <span>{formatRupiah(printData.tax_amount)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between py-2 border-t-2 border-gray-800 font-bold text-lg">
+                    <span>TOTAL</span>
+                    <span className="text-blue-700">{formatRupiah(printData.total)}</span>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Notes */}
+              {printData.notes && (
+                <div className="mb-6 p-3 bg-gray-50 rounded border">
+                  <p className="text-xs text-gray-500 mb-1">CATATAN:</p>
+                  <p className="text-sm">{printData.notes}</p>
+                </div>
+              )}
+              
+              {/* Signatures */}
+              <div className="grid grid-cols-3 gap-8 mt-12 text-center text-sm">
+                <div>
+                  <p className="text-gray-500 mb-16">Dibuat oleh,</p>
+                  <div className="border-t border-gray-400 pt-2">
+                    <p className="font-medium">{printData.created_by_name || '________________'}</p>
+                    <p className="text-xs text-gray-500">Purchasing</p>
+                  </div>
+                </div>
+                <div>
+                  <p className="text-gray-500 mb-16">Disetujui oleh,</p>
+                  <div className="border-t border-gray-400 pt-2">
+                    <p className="font-medium">________________</p>
+                    <p className="text-xs text-gray-500">Manager</p>
+                  </div>
+                </div>
+                <div>
+                  <p className="text-gray-500 mb-16">Supplier,</p>
+                  <div className="border-t border-gray-400 pt-2">
+                    <p className="font-medium">________________</p>
+                    <p className="text-xs text-gray-500">{printData.supplier?.name || 'Supplier'}</p>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Footer */}
+              <div className="mt-8 pt-4 border-t text-center text-xs text-gray-400">
+                <p>Dicetak pada: {new Date().toLocaleString('id-ID')} | OCB TITAN ERP System</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* ============================================================ */}
+      {/* DELETE MODAL - TASK 2: Delete Policy Confirmation */}
+      {/* ============================================================ */}
+      {showDeleteModal && deleteTarget && (
+        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+          <div className="bg-gray-900 rounded-lg border border-red-700/50 shadow-2xl max-w-lg w-full">
+            <div className="p-4 border-b border-red-700/30">
+              <h3 className="text-lg font-bold text-red-300 flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5" />
+                Hapus Purchase Order
+              </h3>
+            </div>
+            
+            <div className="p-4">
+              <div className="bg-gray-800 rounded p-3 mb-4">
+                <p className="text-sm text-gray-400">PO yang akan dihapus:</p>
+                <p className="text-lg font-bold text-white">{deleteTarget.po_number}</p>
+                <p className="text-sm text-gray-400">
+                  Supplier: {deleteTarget.supplier_name} | Total: {formatRupiah(deleteTarget.total)}
+                </p>
+              </div>
+              
+              {deletePreview && (
+                <div className={`rounded p-3 mb-4 ${deletePreview.impact_analysis.has_any_impact ? 'bg-amber-900/30 border border-amber-600/50' : 'bg-green-900/30 border border-green-600/50'}`}>
+                  <p className="text-xs font-medium mb-2 uppercase tracking-wide">
+                    {deletePreview.impact_analysis.has_any_impact ? '⚠️ Ada Dampak Transaksi' : '✓ Tidak Ada Dampak'}
+                  </p>
+                  <div className="text-sm space-y-1">
+                    <p>• Receiving: {deletePreview.impact_analysis.has_receiving ? 'Ya' : 'Tidak'}</p>
+                    <p>• Stock Movement: {deletePreview.impact_analysis.stock_movements_count}</p>
+                    <p>• AP Record: {deletePreview.impact_analysis.ap_records_count}</p>
+                    <p>• Journal: {deletePreview.impact_analysis.journal_entries_count}</p>
+                  </div>
+                  <div className="mt-3 pt-3 border-t border-gray-700">
+                    <p className="text-sm">
+                      <span className="font-medium">Mode Hapus:</span>{' '}
+                      <span className={deletePreview.delete_preview.delete_mode === 'SOFT_DELETE' ? 'text-green-400' : 'text-amber-400'}>
+                        {deletePreview.delete_preview.delete_mode}
+                      </span>
+                    </p>
+                    <p className="text-xs text-gray-400 mt-1">{deletePreview.delete_preview.message}</p>
+                  </div>
+                </div>
+              )}
+              
+              <div className="mb-4">
+                <label className="block text-sm text-gray-400 mb-1">Alasan Penghapusan (opsional)</label>
+                <textarea
+                  value={deleteReason}
+                  onChange={(e) => setDeleteReason(e.target.value)}
+                  placeholder="Masukkan alasan penghapusan..."
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white text-sm"
+                  rows={2}
+                />
+              </div>
+            </div>
+            
+            <div className="p-4 border-t border-gray-700 flex gap-3 justify-end">
+              <button
+                onClick={() => { setShowDeleteModal(false); setDeleteTarget(null); setDeleteReason(''); setDeletePreview(null); }}
+                className="px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-600"
+              >
+                Batal
+              </button>
+              <button
+                onClick={confirmDeletePO}
+                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 flex items-center gap-2"
+              >
+                <Trash2 className="h-4 w-4" />
+                Hapus PO
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -171,21 +171,25 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     },
 
     // ============================================================
-    // PEMBELIAN - iPOS Style (CONSOLIDATED - Blueprint v2.4.4)
-    // Single official flow: PO → Submit → Receive → Complete
+    // PEMBELIAN - iPOS Style (CONSOLIDATED - Blueprint v2.4.6)
+    // Separated: A. PO/Procurement, B. Histori Pembelian Aktual
     // ============================================================
     {
       name: 'Pembelian',
       icon: Truck,
       roles: ['owner', 'admin', 'supervisor', 'inventory'],
       submenu: [
+        // A. PO / Procurement
+        { divider: true, label: 'PO / Procurement' },
         { name: 'Daftar PO Pembelian', icon: List, path: '/purchase/orders' },
         { name: 'Buat PO Pembelian', icon: Plus, path: '/purchase/orders/add' },
-        { divider: true },
         { name: 'Terima Barang', icon: Package, path: '/purchase/receiving' },
-        { divider: true },
+        // B. Histori Pembelian Aktual
+        { divider: true, label: 'Histori Pembelian' },
+        { name: 'Daftar Pembelian', icon: ClipboardList, path: '/purchase/history' },
         { name: 'History Harga Beli', icon: History, path: '/purchase/price-history' },
-        { divider: true },
+        // Retur
+        { divider: true, label: 'Retur' },
         { name: 'Daftar Retur Pembelian', icon: RotateCcw, path: '/purchase/returns' },
         { name: 'Tambah Retur Pembelian', icon: Plus, path: '/purchase/returns/add' },
       ]

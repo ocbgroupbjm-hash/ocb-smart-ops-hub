@@ -257,13 +257,36 @@ async def update_draft_purchase_order(
     request: Request, 
     user: dict = Depends(require_permission("purchase", "edit"))
 ):
-    """Update draft PO - allows editing supplier, items, prices"""
+    """
+    Update PO - allows editing for draft and ordered status
+    
+    EDIT POLICY (Blueprint v2.4.6):
+    - BOLEH EDIT: draft, ordered (belum ada receiving/stock/AP/jurnal)
+    - TIDAK BOLEH EDIT: partial, received, cancelled, deleted
+    """
     po = await purchase_orders.find_one({"id": po_id}, {"_id": 0})
     if not po:
         raise HTTPException(status_code=404, detail="Purchase order not found")
     
-    if po.get("status") != "draft":
-        raise HTTPException(status_code=400, detail="Hanya PO draft yang dapat diedit")
+    current_status = po.get("status", "").lower()
+    
+    # Editable statuses
+    editable_statuses = ["draft", "ordered"]
+    blocked_statuses = ["partial", "received", "cancelled", "deleted", "posted", "completed"]
+    
+    if current_status in blocked_statuses:
+        reason_map = {
+            "partial": "PO sudah ada penerimaan sebagian. Gunakan fitur Koreksi jika perlu perubahan.",
+            "received": "PO sudah selesai diterima. Data tidak bisa diubah untuk menjaga integritas audit trail.",
+            "cancelled": "PO sudah dibatalkan. Tidak bisa diedit.",
+            "deleted": "PO sudah dihapus. Tidak bisa diedit.",
+            "posted": "PO sudah di-post. Gunakan fitur Koreksi/Reversal.",
+            "completed": "PO sudah selesai. Tidak bisa diedit."
+        }
+        raise HTTPException(status_code=400, detail=reason_map.get(current_status, f"Status {current_status} tidak dapat diedit"))
+    
+    if current_status not in editable_statuses:
+        raise HTTPException(status_code=400, detail=f"Status '{current_status}' tidak dapat diedit")
     
     update_data = {"updated_at": datetime.now(timezone.utc).isoformat()}
     

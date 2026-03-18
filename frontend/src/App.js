@@ -324,17 +324,21 @@ function App() {
             <Route path="financial-control" element={<FinancialControl />} />
             <Route path="accounting/financial-control" element={<FinancialControl />} />
             
-            {/* Purchase Routes - CONSOLIDATED (Blueprint v2.4.4) */}
-            {/* Official PO Flow: orders → orders/add → receiving */}
+            {/* Purchase Routes - CONSOLIDATED (Blueprint v2.4.6) */}
+            {/* A. PO/Procurement Flow: orders → orders/add → receiving */}
             <Route path="purchase" element={<PurchaseModule />} />
             <Route path="purchase/orders" element={<PurchaseOrders />} />
             <Route path="purchase/orders/add" element={<PurchaseEnterprise />} />
             <Route path="purchase/receiving" element={<PurchaseReceiving />} />
+            {/* B. Histori Pembelian Aktual */}
+            <Route path="purchase/history" element={<PurchaseList />} />
             <Route path="purchase/price-history" element={<PurchasePriceHistory />} />
+            {/* Payments */}
             <Route path="purchase/ap-payments" element={<PurchasePayments />} />
             <Route path="purchase/ap-payments/add" element={<PurchasePayments />} />
             <Route path="purchase/payments" element={<PurchasePayments />} />
             <Route path="purchase/payment-status" element={<PurchasePayments />} />
+            {/* Returns */}
             <Route path="purchase/returns" element={<PurchaseReturns />} />
             <Route path="purchase/returns/add" element={<PurchaseReturns />} />
             {/* Legacy routes - redirect to official routes */}
