@@ -1,6 +1,6 @@
 # OCB TITAN ERP - HR PAYROLL ENGINE ENTERPRISE
 # Kalkulasi gaji dengan auto-journal ke Accounting
-# BLUEPRINT v2.4.0 - TENANT AWARE + AUDIT TRAIL
+# BLUEPRINT v2.4.8 - AUDIT READY + TENANT SAFE + ACCOUNTING CONSISTENT
 # MULTI-TENANT FIX: All collection access via dynamic getters
 
 from fastapi import APIRouter, HTTPException, Depends, Request, Query
@@ -44,6 +44,9 @@ def _get_payroll_components_coll():
 def _get_kpi_results_coll():
     return get_db()["kpi_results"]
 
+def _get_contracts_coll():
+    return get_db()["employee_contracts"]
+
 # ============ PAYROLL STATUS ============
 class PayrollStatus:
     DRAFT = "draft"
@@ -51,6 +54,10 @@ class PayrollStatus:
     POSTED = "posted"
     PAID = "paid"
     REVERSED = "reversed"
+
+# ============ RBAC ROLES FOR PAYROLL ============
+HR_ADMIN_ROLES = ["owner", "admin", "hr_admin", "super_admin"]
+PAYROLL_VIEW_ROLES = ["owner", "admin", "hr_admin", "super_admin", "hr_staff", "supervisor"]
 
 # ==================== PYDANTIC MODELS ====================
 
@@ -155,12 +162,14 @@ async def check_attendance_period_locked(month: int, year: int) -> Dict:
     Returns:
         {
             "is_locked": bool,
+            "is_immutable": bool (True if payroll already posted),
             "locked_at": datetime or None,
             "locked_by": str or None,
             "message": str
         }
     """
     attendance_periods = _get_attendance_periods_coll()
+    payroll_coll = _get_payroll_coll()
     
     period_key = f"{year}-{month:02d}"
     
@@ -169,10 +178,18 @@ async def check_attendance_period_locked(month: int, year: int) -> Dict:
         {"_id": 0}
     )
     
+    # Check if payroll already posted for this period (makes lock IMMUTABLE)
+    posted_payroll = await payroll_coll.find_one({
+        "period": period_key,
+        "status": "posted"
+    })
+    
+    is_immutable = posted_payroll is not None
+    
     if not period_record:
-        # Period not found - assume unlocked
         return {
             "is_locked": False,
+            "is_immutable": is_immutable,
             "locked_at": None,
             "locked_by": None,
             "message": f"Periode {period_key} belum ada di sistem. Silakan lock terlebih dahulu."
@@ -182,63 +199,191 @@ async def check_attendance_period_locked(month: int, year: int) -> Dict:
     
     return {
         "is_locked": is_locked,
+        "is_immutable": is_immutable,
         "locked_at": period_record.get("locked_at"),
         "locked_by": period_record.get("locked_by"),
-        "message": f"Periode {period_key} {'sudah' if is_locked else 'belum'} dikunci"
+        "locked_by_name": period_record.get("locked_by_name"),
+        "message": f"Periode {period_key} {'sudah' if is_locked else 'belum'} dikunci" + 
+                   (" (IMMUTABLE - payroll sudah diposting)" if is_immutable else "")
+    }
+
+
+# ============================================================
+# PHASE 3.1: VALIDATE EMPLOYEE FOR PAYROLL
+# - Must be ACTIVE status
+# - Must have valid contract for the period
+# ============================================================
+async def validate_employee_for_payroll(employee_id: str, period_month: int, period_year: int) -> Dict:
+    """
+    Validate if employee can be included in payroll
+    
+    Rules:
+    1. Employee status must be ACTIVE
+    2. Employee must have valid contract covering the payroll period
+    
+    Returns:
+        {
+            "is_valid": bool,
+            "reason": str or None,
+            "employee": dict or None
+        }
+    """
+    employees_coll = _get_employees_coll()
+    contracts_coll = _get_contracts_coll()
+    
+    # Get employee
+    employee = await employees_coll.find_one({"id": employee_id}, {"_id": 0})
+    
+    if not employee:
+        return {
+            "is_valid": False,
+            "reason": "Karyawan tidak ditemukan",
+            "employee": None
+        }
+    
+    # Check status
+    emp_status = employee.get("status", "").lower()
+    if emp_status != "active":
+        return {
+            "is_valid": False,
+            "reason": f"Karyawan tidak aktif (status: {emp_status})",
+            "employee": employee
+        }
+    
+    # Check contract validity
+    period_date = f"{period_year}-{period_month:02d}-01"
+    
+    valid_contract = await contracts_coll.find_one({
+        "employee_id": employee_id,
+        "status": "active",
+        "$or": [
+            {"valid_until": {"$gte": period_date}},
+            {"valid_until": None},
+            {"valid_until": ""}
+        ]
+    })
+    
+    # If no contracts collection or no contract, assume valid (for backward compatibility)
+    # But log a warning
+    if not valid_contract:
+        # Try to check if contracts collection exists
+        contract_count = await contracts_coll.count_documents({})
+        if contract_count > 0:
+            # Contracts exist but none valid for this employee
+            return {
+                "is_valid": False,
+                "reason": f"Tidak ada kontrak aktif yang valid untuk periode {period_month}/{period_year}",
+                "employee": employee
+            }
+        # No contracts in system - allow (backward compatibility)
+    
+    return {
+        "is_valid": True,
+        "reason": None,
+        "employee": employee
+    }
+
+
+# ============================================================
+# PHASE 3.2: CHECK DUPLICATE PAYROLL
+# ============================================================
+async def check_payroll_duplicate(employee_id: str, period_month: int, period_year: int) -> Dict:
+    """
+    Check if payroll already exists for this employee and period
+    
+    Returns:
+        {
+            "has_duplicate": bool,
+            "existing_status": str or None,
+            "existing_batch_no": str or None
+        }
+    """
+    payroll_coll = _get_payroll_coll()
+    
+    period_key = f"{period_year}-{period_month:02d}"
+    
+    existing = await payroll_coll.find_one({
+        "employee_id": employee_id,
+        "period": period_key,
+        "status": {"$ne": "reversed"}  # Reversed payroll doesn't count
+    }, {"_id": 0, "status": 1, "batch_no": 1})
+    
+    if existing:
+        return {
+            "has_duplicate": True,
+            "existing_status": existing.get("status"),
+            "existing_batch_no": existing.get("batch_no")
+        }
+    
+    return {
+        "has_duplicate": False,
+        "existing_status": None,
+        "existing_batch_no": None
     }
 
 
 # ============================================================
 # PHASE 3: KPI INTEGRATION FOR BONUS CALCULATION
+# SOURCE OF TRUTH: kpi_results collection ONLY
 # ============================================================
-async def calculate_kpi_bonus(employee_id: str, month: int, year: int) -> Dict:
+async def calculate_kpi_bonus(employee_id: str, month: int, year: int, base_salary: float = 0) -> Dict:
     """
     Calculate KPI-based bonus for employee
     
-    KPI Score Ranges:
-    - 90-100: 20% of base salary as bonus
-    - 80-89: 15% of base salary as bonus
-    - 70-79: 10% of base salary as bonus
-    - 60-69: 5% of base salary as bonus
-    - Below 60: No bonus
+    SOURCE OF TRUTH: kpi_results collection
+    - Only approved KPI results are considered
+    - Bonus calculated based on final_score
+    
+    KPI Score Ranges (Blueprint HR v2.4.8):
+    - 90-100: 20% of base salary as bonus (Excellent)
+    - 80-89: 15% of base salary as bonus (Very Good)
+    - 70-79: 10% of base salary as bonus (Good)
+    - 60-69: 5% of base salary as bonus (Satisfactory)
+    - Below 60: No bonus (Needs Improvement)
     
     Returns:
         {
             "has_kpi": bool,
+            "kpi_id": str or None,
             "kpi_score": float,
             "kpi_rating": str,
             "bonus_percentage": float,
-            "bonus_amount": float
+            "bonus_amount": float,
+            "source": "kpi_results"
         }
     """
     kpi_results = _get_kpi_results_coll()
     employees_coll = _get_employees_coll()
     
-    # Get KPI result for this employee and period
+    # Get KPI result for this employee and period - SOURCE OF TRUTH
     period_key = f"{year}-{month:02d}"
     
     kpi_record = await kpi_results.find_one({
         "employee_id": employee_id,
         "period": period_key,
-        "status": "approved"
+        "status": "approved"  # Only approved KPI
     }, {"_id": 0})
     
     if not kpi_record:
         return {
             "has_kpi": False,
+            "kpi_id": None,
             "kpi_score": 0,
             "kpi_rating": "N/A",
             "bonus_percentage": 0,
-            "bonus_amount": 0
+            "bonus_amount": 0,
+            "source": "kpi_results"
         }
     
-    # Get employee base salary
-    employee = await employees_coll.find_one({"id": employee_id}, {"_id": 0, "salary_base": 1})
-    base_salary = employee.get("salary_base", 0) if employee else 0
+    # Get employee base salary if not provided
+    if base_salary == 0:
+        employee = await employees_coll.find_one({"id": employee_id}, {"_id": 0, "salary_base": 1})
+        base_salary = employee.get("salary_base", 0) if employee else 0
     
-    kpi_score = kpi_record.get("final_score", 0)
+    kpi_score = kpi_record.get("final_score", kpi_record.get("score", 0))
+    kpi_id = kpi_record.get("id", kpi_record.get("kpi_id"))
     
-    # Calculate bonus based on KPI score
+    # Calculate bonus based on KPI score - FIXED TIERS
     if kpi_score >= 90:
         bonus_pct = 20
         rating = "Excellent"
@@ -259,10 +404,12 @@ async def calculate_kpi_bonus(employee_id: str, month: int, year: int) -> Dict:
     
     return {
         "has_kpi": True,
+        "kpi_id": kpi_id,
         "kpi_score": kpi_score,
         "kpi_rating": rating,
         "bonus_percentage": bonus_pct,
-        "bonus_amount": bonus_amount
+        "bonus_amount": bonus_amount,
+        "source": "kpi_results"
     }
 
 
@@ -412,13 +559,17 @@ async def run_payroll(
     """
     Run payroll calculation for a period
     
-    Business Rules:
+    Business Rules (Blueprint v2.4.8 AUDIT READY):
+    - Validate employee status = ACTIVE
+    - Validate contract validity
+    - Check duplicate payroll
     - Calculate basic salary
-    - Add allowances
+    - Add allowances (including KPI bonus from kpi_results)
     - Deduct absences (unpaid leave)
     - Calculate tax (PPh 21)
     - Generate journal entries
     - SSOT: salary_base from Employee Master
+    - KPI bonus: kpi_results collection ONLY
     """
     user_id = user.get("user_id", user.get("id", ""))
     user_name = user.get("name", "")
@@ -434,17 +585,23 @@ async def run_payroll(
     period = f"{data.period_year}-{data.period_month:02d}"
     period_display = f"{datetime(data.period_year, data.period_month, 1).strftime('%B %Y')}"
     
-    # Check if payroll already exists for this period
-    existing = await payroll_coll.find_one({
+    # ============================================================
+    # VALIDATION 1: Check if payroll already exists (POSTED)
+    # ============================================================
+    existing_posted = await payroll_coll.find_one({
         "period": period,
-        "status": {"$in": ["draft", "posted"]}
+        "status": "posted"
     })
     
-    if existing and existing.get("status") == "posted":
+    if existing_posted:
         raise HTTPException(
             status_code=400, 
-            detail=f"Payroll periode {period_display} sudah diposting"
+            detail=f"Payroll periode {period_display} sudah diposting. Tidak bisa run ulang."
         )
+    
+    # Delete existing draft if any (allow re-run for draft)
+    await payroll_coll.delete_many({"period": period, "status": "draft"})
+    await payroll_items_coll.delete_many({"period": period})
     
     # Get employees to process
     emp_query = {"status": "active"}
@@ -480,8 +637,34 @@ async def run_payroll(
     total_deductions_all = 0
     total_tax_all = 0
     total_net_all = 0
+    skipped_employees = []
     
     for emp in employee_list:
+        # ============================================================
+        # VALIDATION 2: Validate employee for payroll
+        # ============================================================
+        emp_validation = await validate_employee_for_payroll(emp["id"], data.period_month, data.period_year)
+        
+        if not emp_validation.get("is_valid"):
+            skipped_employees.append({
+                "employee_id": emp["id"],
+                "employee_name": emp.get("full_name", emp.get("name", "")),
+                "reason": emp_validation.get("reason")
+            })
+            continue  # Skip this employee
+        
+        # ============================================================
+        # VALIDATION 3: Check duplicate payroll (extra safety)
+        # ============================================================
+        dup_check = await check_payroll_duplicate(emp["id"], data.period_month, data.period_year)
+        if dup_check.get("has_duplicate"):
+            skipped_employees.append({
+                "employee_id": emp["id"],
+                "employee_name": emp.get("full_name", emp.get("name", "")),
+                "reason": f"Payroll sudah ada (status: {dup_check.get('existing_status')})"
+            })
+            continue  # Skip this employee
+        
         # Get attendance and leave data
         attendance_data = await calculate_attendance_data(emp["id"], data.period_month, data.period_year)
         leave_data = await calculate_leave_data(emp["id"], data.period_month, data.period_year)
@@ -568,9 +751,10 @@ async def run_payroll(
         
         # ============================================================
         # PHASE 3: KPI BONUS INTEGRATION
+        # SOURCE OF TRUTH: kpi_results collection
         # Calculate and add KPI-based bonus
         # ============================================================
-        kpi_bonus_data = await calculate_kpi_bonus(emp["id"], data.period_month, data.period_year)
+        kpi_bonus_data = await calculate_kpi_bonus(emp["id"], data.period_month, data.period_year, salary_base)
         kpi_bonus_amount = 0
         
         if kpi_bonus_data.get("has_kpi") and kpi_bonus_data.get("bonus_amount", 0) > 0:
@@ -583,7 +767,11 @@ async def run_payroll(
                 "item_name": f"Bonus KPI ({kpi_bonus_data['kpi_rating']} - Score {kpi_bonus_data['kpi_score']:.1f}%)",
                 "type": "allowance",
                 "amount": kpi_bonus_amount,
-                "is_taxable": True
+                "is_taxable": True,
+                "kpi_id": kpi_bonus_data.get("kpi_id"),
+                "kpi_score": kpi_bonus_data.get("kpi_score"),
+                "kpi_rating": kpi_bonus_data.get("kpi_rating"),
+                "kpi_source": "kpi_results"  # SOURCE OF TRUTH marker
             })
             total_allowances += kpi_bonus_amount
         
@@ -629,6 +817,16 @@ async def run_payroll(
             "work_days": actual_work_days,
             "absent_days": absent_days,
             
+            # KPI Bonus info for audit trail
+            "kpi_bonus": {
+                "has_kpi": kpi_bonus_data.get("has_kpi", False),
+                "kpi_id": kpi_bonus_data.get("kpi_id"),
+                "kpi_score": kpi_bonus_data.get("kpi_score", 0),
+                "kpi_rating": kpi_bonus_data.get("kpi_rating", "N/A"),
+                "bonus_amount": kpi_bonus_amount,
+                "source": "kpi_results"
+            },
+            
             "status": "draft",
             "paid_at": None,
             "journal_id": None,
@@ -643,12 +841,21 @@ async def run_payroll(
         # Update items with payroll_id
         for item in emp_items:
             item["payroll_id"] = payroll_id
+            item["period"] = period  # Add period for reference
         item_records.extend(emp_items)
         
         total_gross_all += gross_salary
         total_deductions_all += total_deductions
         total_tax_all += tax_amount
         total_net_all += net_salary
+    
+    # Check if any employees were processed
+    if not payroll_records:
+        return {
+            "status": "warning",
+            "message": f"Tidak ada karyawan yang diproses untuk periode {period_display}",
+            "skipped_employees": skipped_employees
+        }
     
     # Bulk insert payroll records
     if payroll_records:
@@ -676,8 +883,10 @@ async def run_payroll(
             "total_gross": total_gross_all,
             "total_deductions": total_deductions_all,
             "total_tax": total_tax_all,
-            "total_net": total_net_all
-        }
+            "total_net": total_net_all,
+            "skipped_count": len(skipped_employees)
+        },
+        "skipped_employees": skipped_employees if skipped_employees else None
     }
 
 
@@ -990,10 +1199,25 @@ async def unlock_attendance_period(
     """
     Unlock attendance period (for corrections)
     
+    BUSINESS RULES (AUDIT READY):
+    - RBAC: Only HR_ADMIN or SUPER_ADMIN can unlock
+    - IMMUTABLE: Cannot unlock if payroll already POSTED
+    - All unlock actions are logged for audit trail
+    
     WARNING: This will allow attendance modifications
     """
     user_id = user.get("user_id", user.get("id", ""))
     user_name = user.get("name", "")
+    user_role = user.get("role", "").lower()
+    
+    # ============================================================
+    # RBAC CHECK: Only HR_ADMIN / SUPER_ADMIN can unlock
+    # ============================================================
+    if user_role not in ["owner", "admin", "hr_admin", "super_admin"]:
+        raise HTTPException(
+            status_code=403,
+            detail="Hanya HR Admin atau Super Admin yang dapat unlock periode attendance."
+        )
     
     attendance_periods = _get_attendance_periods_coll()
     payroll_coll = _get_payroll_coll()
@@ -1001,7 +1225,9 @@ async def unlock_attendance_period(
     
     period_key = f"{data.period_year}-{data.period_month:02d}"
     
-    # Check if payroll is already posted
+    # ============================================================
+    # IMMUTABLE CHECK: Cannot unlock if payroll already POSTED
+    # ============================================================
     posted_payroll = await payroll_coll.find_one({
         "period": period_key,
         "status": "posted"
@@ -1010,7 +1236,7 @@ async def unlock_attendance_period(
     if posted_payroll:
         raise HTTPException(
             status_code=400,
-            detail=f"Tidak dapat unlock periode {period_key}. Payroll sudah diposting."
+            detail=f"IMMUTABLE: Periode {period_key} tidak dapat di-unlock karena payroll sudah diposting (Journal: {posted_payroll.get('journal_id', 'N/A')})."
         )
     
     await attendance_periods.update_one(
@@ -1019,14 +1245,16 @@ async def unlock_attendance_period(
             "is_locked": False,
             "unlocked_at": datetime.now(timezone.utc).isoformat(),
             "unlocked_by": user_id,
-            "unlocked_by_name": user_name
+            "unlocked_by_name": user_name,
+            "unlock_reason": "Manual unlock by authorized user"
         }}
     )
     
+    # AUDIT LOG for unlock action
     await log_activity(
         db, user_id, user_name,
         "unlock", "attendance_period",
-        f"Attendance period {period_key} unlocked",
+        f"[AUDIT] Attendance period {period_key} unlocked by {user_name} (role: {user_role})",
         request.client.host if request.client else "",
         user.get("branch_id", "")
     )
@@ -1034,7 +1262,9 @@ async def unlock_attendance_period(
     return {
         "status": "success",
         "message": f"Periode attendance {period_key} berhasil di-unlock",
-        "period": period_key
+        "period": period_key,
+        "unlocked_by": user_name,
+        "unlocked_by_role": user_role
     }
 
 
