@@ -141,6 +141,131 @@ async def get_payroll_components(
 
 # ==================== PAYROLL RUN ====================
 
+# ============================================================
+# PHASE 3: ATTENDANCE PERIOD LOCK CHECK
+# ============================================================
+def _get_attendance_periods_coll():
+    return get_db()["attendance_periods"]
+
+
+async def check_attendance_period_locked(month: int, year: int) -> Dict:
+    """
+    Check if attendance period is locked
+    
+    Returns:
+        {
+            "is_locked": bool,
+            "locked_at": datetime or None,
+            "locked_by": str or None,
+            "message": str
+        }
+    """
+    attendance_periods = _get_attendance_periods_coll()
+    
+    period_key = f"{year}-{month:02d}"
+    
+    period_record = await attendance_periods.find_one(
+        {"period": period_key},
+        {"_id": 0}
+    )
+    
+    if not period_record:
+        # Period not found - assume unlocked
+        return {
+            "is_locked": False,
+            "locked_at": None,
+            "locked_by": None,
+            "message": f"Periode {period_key} belum ada di sistem. Silakan lock terlebih dahulu."
+        }
+    
+    is_locked = period_record.get("is_locked", False)
+    
+    return {
+        "is_locked": is_locked,
+        "locked_at": period_record.get("locked_at"),
+        "locked_by": period_record.get("locked_by"),
+        "message": f"Periode {period_key} {'sudah' if is_locked else 'belum'} dikunci"
+    }
+
+
+# ============================================================
+# PHASE 3: KPI INTEGRATION FOR BONUS CALCULATION
+# ============================================================
+async def calculate_kpi_bonus(employee_id: str, month: int, year: int) -> Dict:
+    """
+    Calculate KPI-based bonus for employee
+    
+    KPI Score Ranges:
+    - 90-100: 20% of base salary as bonus
+    - 80-89: 15% of base salary as bonus
+    - 70-79: 10% of base salary as bonus
+    - 60-69: 5% of base salary as bonus
+    - Below 60: No bonus
+    
+    Returns:
+        {
+            "has_kpi": bool,
+            "kpi_score": float,
+            "kpi_rating": str,
+            "bonus_percentage": float,
+            "bonus_amount": float
+        }
+    """
+    kpi_results = _get_kpi_results_coll()
+    employees_coll = _get_employees_coll()
+    
+    # Get KPI result for this employee and period
+    period_key = f"{year}-{month:02d}"
+    
+    kpi_record = await kpi_results.find_one({
+        "employee_id": employee_id,
+        "period": period_key,
+        "status": "approved"
+    }, {"_id": 0})
+    
+    if not kpi_record:
+        return {
+            "has_kpi": False,
+            "kpi_score": 0,
+            "kpi_rating": "N/A",
+            "bonus_percentage": 0,
+            "bonus_amount": 0
+        }
+    
+    # Get employee base salary
+    employee = await employees_coll.find_one({"id": employee_id}, {"_id": 0, "salary_base": 1})
+    base_salary = employee.get("salary_base", 0) if employee else 0
+    
+    kpi_score = kpi_record.get("final_score", 0)
+    
+    # Calculate bonus based on KPI score
+    if kpi_score >= 90:
+        bonus_pct = 20
+        rating = "Excellent"
+    elif kpi_score >= 80:
+        bonus_pct = 15
+        rating = "Very Good"
+    elif kpi_score >= 70:
+        bonus_pct = 10
+        rating = "Good"
+    elif kpi_score >= 60:
+        bonus_pct = 5
+        rating = "Satisfactory"
+    else:
+        bonus_pct = 0
+        rating = "Needs Improvement"
+    
+    bonus_amount = base_salary * (bonus_pct / 100)
+    
+    return {
+        "has_kpi": True,
+        "kpi_score": kpi_score,
+        "kpi_rating": rating,
+        "bonus_percentage": bonus_pct,
+        "bonus_amount": bonus_amount
+    }
+
+
 async def calculate_attendance_data(employee_id: str, month: int, year: int) -> Dict:
     """Calculate attendance metrics for payroll"""
     attendance_logs = _get_attendance_logs_coll()
@@ -188,8 +313,8 @@ async def calculate_leave_data(employee_id: str, month: int, year: int) -> Dict:
         ]
     }, {"_id": 0}).to_list(10)
     
-    paid_leave_days = sum(l.get("total_days", 0) for l in leaves if l.get("leave_type_code") != "UNPAID")
-    unpaid_leave_days = sum(l.get("total_days", 0) for l in leaves if l.get("leave_type_code") == "UNPAID")
+    paid_leave_days = sum(leave.get("total_days", 0) for leave in leaves if leave.get("leave_type_code") != "UNPAID")
+    unpaid_leave_days = sum(leave.get("total_days", 0) for leave in leaves if leave.get("leave_type_code") == "UNPAID")
     
     return {
         "paid_leave_days": paid_leave_days,
@@ -217,9 +342,8 @@ async def create_payroll_journal(
     tax_payable = "2-1500"    # Hutang Pajak
     
     total_gross = payroll_data.get("total_gross", 0)
-    total_deductions = payroll_data.get("total_deductions", 0)
+    # Note: total_deductions and net_salary are available in payroll_data but journal uses total_gross and tax for entries
     tax_amount = payroll_data.get("tax_amount", 0)
-    net_salary = payroll_data.get("net_salary", 0)
     
     entries = [
         {
@@ -442,7 +566,28 @@ async def run_payroll(
             })
             total_deductions += proration_deduction
         
-        # Calculate PPh 21 (simplified)
+        # ============================================================
+        # PHASE 3: KPI BONUS INTEGRATION
+        # Calculate and add KPI-based bonus
+        # ============================================================
+        kpi_bonus_data = await calculate_kpi_bonus(emp["id"], data.period_month, data.period_year)
+        kpi_bonus_amount = 0
+        
+        if kpi_bonus_data.get("has_kpi") and kpi_bonus_data.get("bonus_amount", 0) > 0:
+            kpi_bonus_amount = kpi_bonus_data["bonus_amount"]
+            emp_items.append({
+                "id": str(uuid.uuid4()),
+                "payroll_id": None,
+                "employee_id": emp["id"],
+                "item_code": "KPIBONUS",
+                "item_name": f"Bonus KPI ({kpi_bonus_data['kpi_rating']} - Score {kpi_bonus_data['kpi_score']:.1f}%)",
+                "type": "allowance",
+                "amount": kpi_bonus_amount,
+                "is_taxable": True
+            })
+            total_allowances += kpi_bonus_amount
+        
+        # Calculate PPh 21 (simplified) - UPDATED to include KPI bonus
         gross_salary = salary_base + total_allowances
         taxable_income = gross_salary - total_deductions
         
@@ -545,10 +690,14 @@ async def post_payroll(
     """
     Post payroll and create journal entry
     
+    BUSINESS RULES (Blueprint v2.4.7):
+    - Attendance period MUST be locked before posting
+    - KPI results are integrated for bonus calculation
+    
     ACCOUNTING INTEGRATION:
-    - Debit: Beban Gaji
-    - Credit: Kas/Bank
-    - Credit: Hutang PPh 21 (if any)
+    - Debit: Beban Gaji (6-1100)
+    - Credit: Kas/Bank (1-1100)
+    - Credit: Hutang PPh 21 (2-1500) if any
     """
     user_id = user.get("user_id", user.get("id", ""))
     user_name = user.get("name", "")
@@ -566,6 +715,22 @@ async def post_payroll(
     if not payrolls:
         raise HTTPException(status_code=404, detail="Batch payroll tidak ditemukan atau sudah diposting")
     
+    # ============================================================
+    # PHASE 3: ATTENDANCE PERIOD LOCK VALIDATION
+    # Payroll tidak boleh diposting jika periode attendance belum dikunci
+    # ============================================================
+    period_month = payrolls[0].get("period_month")
+    period_year = payrolls[0].get("period_year")
+    
+    attendance_lock = await check_attendance_period_locked(period_month, period_year)
+    
+    if not attendance_lock.get("is_locked", False):
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Periode attendance {period_month}/{period_year} belum dikunci. "
+                   f"Silakan kunci periode attendance terlebih dahulu sebelum posting payroll."
+        )
+    
     # Calculate totals
     total_gross = sum(p.get("gross_salary", 0) for p in payrolls)
     total_deductions = sum(p.get("total_deductions", 0) for p in payrolls)
@@ -573,15 +738,15 @@ async def post_payroll(
     total_net = sum(p.get("net_salary", 0) for p in payrolls)
     
     batch_no = payrolls[0].get("batch_no")
-    period = payrolls[0].get("period")
-    period_month = payrolls[0].get("period_month")
-    period_year = payrolls[0].get("period_year")
+    # period variable is used in payroll_data
+    payroll_period = payrolls[0].get("period")
     period_display = f"{datetime(period_year, period_month, 1).strftime('%B %Y')}"
     
     # Create journal
     payroll_data = {
         "batch_id": batch_id,
         "batch_no": batch_no,
+        "period": payroll_period,
         "period_display": period_display,
         "employee_count": len(payrolls),
         "total_gross": total_gross,
@@ -599,7 +764,8 @@ async def post_payroll(
             "status": "posted",
             "posted_at": datetime.now(timezone.utc).isoformat(),
             "posted_by": user_id,
-            "journal_id": journal_no
+            "journal_id": journal_no,
+            "attendance_period_locked": True
         }}
     )
     
@@ -616,6 +782,7 @@ async def post_payroll(
         "message": f"Payroll {period_display} berhasil diposting",
         "batch_no": batch_no,
         "journal_no": journal_no,
+        "attendance_period_verified": True,
         "summary": {
             "employee_count": len(payrolls),
             "total_gross": total_gross,
@@ -725,3 +892,168 @@ async def get_payroll_slip(
     }
     
     return payroll
+
+
+
+# ============================================================
+# PHASE 3: ATTENDANCE PERIOD LOCK ENDPOINTS
+# ============================================================
+
+class AttendancePeriodLock(BaseModel):
+    """Request to lock attendance period"""
+    period_month: int
+    period_year: int
+
+
+@router.post("/attendance-period/lock")
+async def lock_attendance_period(
+    data: AttendancePeriodLock,
+    request: Request,
+    user: dict = Depends(get_current_user)
+):
+    """
+    Lock attendance period for payroll processing
+    
+    BUSINESS RULES:
+    - Once locked, attendance for this period cannot be modified
+    - Payroll can only be posted if attendance period is locked
+    """
+    user_id = user.get("user_id", user.get("id", ""))
+    user_name = user.get("name", "")
+    
+    attendance_periods = _get_attendance_periods_coll()
+    db = get_db()
+    
+    period_key = f"{data.period_year}-{data.period_month:02d}"
+    
+    # Check if period exists
+    existing = await attendance_periods.find_one({"period": period_key})
+    
+    if existing and existing.get("is_locked"):
+        return {
+            "status": "already_locked",
+            "message": f"Periode {period_key} sudah dikunci sebelumnya",
+            "locked_at": existing.get("locked_at"),
+            "locked_by": existing.get("locked_by_name")
+        }
+    
+    now = datetime.now(timezone.utc).isoformat()
+    
+    if existing:
+        # Update existing record
+        await attendance_periods.update_one(
+            {"period": period_key},
+            {"$set": {
+                "is_locked": True,
+                "locked_at": now,
+                "locked_by": user_id,
+                "locked_by_name": user_name
+            }}
+        )
+    else:
+        # Create new record
+        await attendance_periods.insert_one({
+            "id": str(uuid.uuid4()),
+            "period": period_key,
+            "period_month": data.period_month,
+            "period_year": data.period_year,
+            "is_locked": True,
+            "locked_at": now,
+            "locked_by": user_id,
+            "locked_by_name": user_name,
+            "created_at": now
+        })
+    
+    await log_activity(
+        db, user_id, user_name,
+        "lock", "attendance_period",
+        f"Attendance period {period_key} locked for payroll",
+        request.client.host if request.client else "",
+        user.get("branch_id", "")
+    )
+    
+    return {
+        "status": "success",
+        "message": f"Periode attendance {period_key} berhasil dikunci",
+        "period": period_key,
+        "locked_at": now,
+        "locked_by": user_name
+    }
+
+
+@router.post("/attendance-period/unlock")
+async def unlock_attendance_period(
+    data: AttendancePeriodLock,
+    request: Request,
+    user: dict = Depends(get_current_user)
+):
+    """
+    Unlock attendance period (for corrections)
+    
+    WARNING: This will allow attendance modifications
+    """
+    user_id = user.get("user_id", user.get("id", ""))
+    user_name = user.get("name", "")
+    
+    attendance_periods = _get_attendance_periods_coll()
+    payroll_coll = _get_payroll_coll()
+    db = get_db()
+    
+    period_key = f"{data.period_year}-{data.period_month:02d}"
+    
+    # Check if payroll is already posted
+    posted_payroll = await payroll_coll.find_one({
+        "period": period_key,
+        "status": "posted"
+    })
+    
+    if posted_payroll:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Tidak dapat unlock periode {period_key}. Payroll sudah diposting."
+        )
+    
+    await attendance_periods.update_one(
+        {"period": period_key},
+        {"$set": {
+            "is_locked": False,
+            "unlocked_at": datetime.now(timezone.utc).isoformat(),
+            "unlocked_by": user_id,
+            "unlocked_by_name": user_name
+        }}
+    )
+    
+    await log_activity(
+        db, user_id, user_name,
+        "unlock", "attendance_period",
+        f"Attendance period {period_key} unlocked",
+        request.client.host if request.client else "",
+        user.get("branch_id", "")
+    )
+    
+    return {
+        "status": "success",
+        "message": f"Periode attendance {period_key} berhasil di-unlock",
+        "period": period_key
+    }
+
+
+@router.get("/attendance-period/status/{period}")
+async def get_attendance_period_status(
+    period: str,  # Format: "2026-03"
+    user: dict = Depends(get_current_user)
+):
+    """Get attendance period lock status"""
+    parts = period.split("-")
+    if len(parts) != 2:
+        raise HTTPException(status_code=400, detail="Format periode tidak valid. Gunakan YYYY-MM")
+    
+    year = int(parts[0])
+    month = int(parts[1])
+    
+    lock_status = await check_attendance_period_locked(month, year)
+    
+    return {
+        "period": period,
+        **lock_status
+    }
