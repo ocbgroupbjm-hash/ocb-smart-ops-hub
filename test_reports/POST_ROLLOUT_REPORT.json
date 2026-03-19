@@ -1,0 +1,65 @@
+{
+  "report_id": "ROLLOUT-RPT-20260319005236",
+  "generated_at": "2026-03-19T00:52:36.463399+00:00",
+  "report_type": "POST_ROLLOUT_STATUS",
+  "blueprint": {
+    "id": "BP-20260319004657",
+    "version": "v1.0.0-PILOT-20260319",
+    "status": "LOCKED",
+    "locked_at": "2026-03-19T00:46:57.863655+00:00",
+    "master_checksum": "e9baa1f6fa178146c255a04b0764bcfc",
+    "total_records": 191658
+  },
+  "tenant_status": {
+    "tenant_id": "ocb_titan",
+    "sales": 20000,
+    "purchases": 4271,
+    "journals": 145073,
+    "ap_payments": 3318,
+    "ar_payments": 18996,
+    "products": 113,
+    "coa": 382
+  },
+  "data_validation": {
+    "journals": {
+      "debit": 441001856569.0,
+      "credit": 441001856569.0,
+      "balanced": true,
+      "status": "PASS"
+    },
+    "sales": {
+      "total": 76440624743.0,
+      "expected": 76440624743.0,
+      "match": true,
+      "status": "PASS"
+    },
+    "purchases": {
+      "total": 77566144214.0,
+      "expected": 77566144214.0,
+      "match": true,
+      "status": "PASS"
+    },
+    "stock": {
+      "qty": 48169465,
+      "expected": 48169465,
+      "match": true,
+      "status": "PASS"
+    },
+    "overall": "PASS"
+  },
+  "isolation_check": {
+    "orphan_sales": 0,
+    "orphan_purchases": 0,
+    "orphan_journals": 0,
+    "status": "PASS"
+  },
+  "rollout_readiness": {
+    "blueprint_locked": true,
+    "data_validated": true,
+    "isolation_passed": true,
+    "ready_for_rollout": true,
+    "target_tenants": [],
+    "note": "System ready to accept new tenant rollouts"
+  },
+  "overall_status": "READY"
+}

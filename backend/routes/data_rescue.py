@@ -9,7 +9,7 @@ import json
 import os
 import logging
 
-from services.ipos_adapter import IPOSAdapter, IPOSBackupParser, StagingService, ReconciliationEngine, IPOSDataImporter, HistoricalTransactionImporter
+from services.ipos_adapter import IPOSAdapter, IPOSBackupParser, StagingService, ReconciliationEngine, IPOSDataImporter, HistoricalTransactionImporter, TenantRolloutService
 from middleware.tenant_isolation import get_current_tenant
 from database import get_db
 
@@ -1242,4 +1242,186 @@ async def validate_full_accounting_chain(tenant_id: str = Depends(get_current_te
         raise
     except Exception as e:
         logger.error(f"Error validating full accounting chain: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+
+# ============================================================
+# TENANT ROLLOUT ENDPOINTS
+# ============================================================
+
+@router.get("/rollout/isolation-report")
+async def get_tenant_isolation_report(tenant_id: str = Depends(get_current_tenant)):
+    """
+    Generate tenant isolation report.
+    
+    Validates that data is properly isolated per tenant.
+    """
+    try:
+        db = get_db()
+        rollout_svc = TenantRolloutService(db, source_tenant="ocb_titan")
+        
+        result = await rollout_svc.get_tenant_isolation_report()
+        
+        # Save report
+        report_path = f"/app/test_reports/tenant_isolation_report_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.json"
+        with open(report_path, 'w') as f:
+            json.dump(result, f, indent=2)
+        
+        result["report_saved_to"] = report_path
+        
+        return result
+        
+    except Exception as e:
+        logger.error(f"Error generating isolation report: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/rollout/validate-blueprint")
+async def validate_blueprint_for_rollout(
+    blueprint_id: str = Query(default="BP-20260319004657"),
+    tenant_id: str = Depends(get_current_tenant)
+):
+    """
+    Validate that blueprint is ready for rollout.
+    """
+    try:
+        if tenant_id != "ocb_titan":
+            raise HTTPException(
+                status_code=403,
+                detail="Blueprint validation only available from pilot tenant"
+            )
+        
+        db = get_db()
+        rollout_svc = TenantRolloutService(db, source_tenant="ocb_titan")
+        
+        result = await rollout_svc.validate_source_blueprint(blueprint_id)
+        
+        return result
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error validating blueprint: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/rollout/execute")
+async def execute_tenant_rollout(
+    target_tenant_id: str = Query(..., description="Target tenant ID"),
+    target_tenant_name: str = Query(..., description="Target tenant name"),
+    admin_email: str = Query(..., description="Admin email for target tenant"),
+    dry_run: bool = Query(default=True, description="Dry run mode"),
+    tenant_id: str = Depends(get_current_tenant)
+):
+    """
+    Execute rollout to a new tenant.
+    
+    WARNING: This creates a new tenant and copies master data.
+    Always run with dry_run=True first!
+    """
+    try:
+        if tenant_id != "ocb_titan":
+            raise HTTPException(
+                status_code=403,
+                detail="Rollout only available from pilot tenant"
+            )
+        
+        db = get_db()
+        rollout_svc = TenantRolloutService(db, source_tenant="ocb_titan")
+        
+        # Create target tenant if not exists
+        if not dry_run:
+            tenant_result = await rollout_svc.create_target_tenant(
+                target_tenant_id, 
+                target_tenant_name,
+                admin_email
+            )
+            if tenant_result["status"] == "EXISTS":
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Tenant {target_tenant_id} already exists"
+                )
+        
+        # Execute rollout
+        result = await rollout_svc.execute_rollout(
+            target_tenant_id,
+            dry_run=dry_run,
+            include_products=True
+        )
+        
+        # Save report
+        mode = "dryrun" if dry_run else "executed"
+        report_path = f"/app/test_reports/rollout_{mode}_{target_tenant_id}_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.json"
+        with open(report_path, 'w') as f:
+            json.dump(result, f, indent=2)
+        
+        result["report_saved_to"] = report_path
+        
+        return result
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error executing rollout: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/rollout/validate/{target_tenant_id}")
+async def validate_tenant_rollout(
+    target_tenant_id: str,
+    tenant_id: str = Depends(get_current_tenant)
+):
+    """
+    Validate rollout to target tenant.
+    """
+    try:
+        db = get_db()
+        rollout_svc = TenantRolloutService(db, source_tenant="ocb_titan")
+        
+        result = await rollout_svc.validate_rollout(target_tenant_id)
+        
+        return result
+        
+    except Exception as e:
+        logger.error(f"Error validating rollout: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/rollout/status")
+async def get_rollout_status(tenant_id: str = Depends(get_current_tenant)):
+    """
+    Get current rollout status and history.
+    """
+    try:
+        db = get_db()
+        
+        # Get all rollouts
+        rollouts = await db.tenant_rollouts.find(
+            {},
+            {"_id": 0}
+        ).sort("created_at", -1).to_list(20)
+        
+        # Get blueprint status
+        blueprint = await db.blueprint_locks.find_one(
+            {"blueprint_id": "BP-20260319004657"},
+            {"_id": 0}
+        )
+        
+        # Get tenant list
+        tenants = await db.tenants.find({}, {"_id": 0}).to_list(20)
+        
+        return {
+            "blueprint": {
+                "id": blueprint.get("blueprint_id") if blueprint else None,
+                "version": blueprint.get("version") if blueprint else None,
+                "status": blueprint.get("status") if blueprint else None
+            },
+            "tenants": tenants,
+            "rollout_history": rollouts,
+            "ready_for_rollout": blueprint.get("status") == "LOCKED" if blueprint else False
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting rollout status: {e}")
         raise HTTPException(status_code=500, detail=str(e))

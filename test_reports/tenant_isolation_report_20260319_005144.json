@@ -1,0 +1,19 @@
+{
+  "timestamp": "2026-03-19T00:51:44.779958+00:00",
+  "tenants": {
+    "ocb_titan": {
+      "sales": 20000,
+      "purchases": 4271,
+      "journals": 145073,
+      "ap_payments": 3318,
+      "ar_payments": 18996,
+      "products": 113
+    }
+  },
+  "isolation_status": "BREACH_DETECTED",
+  "orphan_records": {
+    "sales_invoices": 129,
+    "purchase_orders": 60,
+    "journals": 4
+  }
+}
