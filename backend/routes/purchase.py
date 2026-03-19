@@ -643,17 +643,35 @@ async def receive_purchase_order(po_id: str, data: ReceivePO, request: Request, 
                 if new_received < po_item["quantity"]:
                     all_received = False
                 
-                # Add to stock
+                # Add to stock with WEIGHTED AVERAGE HPP calculation
+                # Formula: new_hpp = (old_qty * old_hpp + new_qty * new_price) / (old_qty + new_qty)
                 stock = await product_stocks.find_one(
                     {"product_id": receive_item.product_id, "branch_id": branch_id}
                 )
                 
+                new_unit_cost = po_item.get("unit_cost", 0)
+                
                 if stock:
+                    old_qty = stock.get("quantity", 0)
+                    old_hpp = stock.get("unit_cost", 0)
+                    new_qty = receive_item.quantity
+                    
+                    # WEIGHTED AVERAGE CALCULATION (iPOS-style)
+                    if old_qty + new_qty > 0:
+                        weighted_avg_hpp = ((old_qty * old_hpp) + (new_qty * new_unit_cost)) / (old_qty + new_qty)
+                    else:
+                        weighted_avg_hpp = new_unit_cost
+                    
+                    new_total_qty = old_qty + new_qty
+                    new_total_value = new_total_qty * weighted_avg_hpp
+                    
                     await product_stocks.update_one(
                         {"product_id": receive_item.product_id, "branch_id": branch_id},
                         {
                             "$inc": {"quantity": receive_item.quantity, "available": receive_item.quantity},
                             "$set": {
+                                "unit_cost": round(weighted_avg_hpp, 2),
+                                "total_value": round(new_total_value, 2),
                                 "last_restock": datetime.now(timezone.utc).isoformat(),
                                 "updated_at": datetime.now(timezone.utc).isoformat()
                             }
@@ -665,6 +683,8 @@ async def receive_purchase_order(po_id: str, data: ReceivePO, request: Request, 
                         branch_id=branch_id,
                         quantity=receive_item.quantity,
                         available=receive_item.quantity,
+                        unit_cost=new_unit_cost,
+                        total_value=receive_item.quantity * new_unit_cost,
                         last_restock=datetime.now(timezone.utc).isoformat()
                     )
                     await product_stocks.insert_one(new_stock.model_dump())

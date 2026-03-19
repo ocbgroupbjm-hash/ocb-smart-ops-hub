@@ -41,8 +41,12 @@ class StagingService:
         "sales_details": "ipos_sales_dt_staging",
         "purchase_headers": "ipos_purchase_hd_staging",
         "purchase_details": "ipos_purchase_dt_staging",
-        "ar": "ipos_ar_staging",
-        "ap": "ipos_ap_staging",
+        "ar_balances": "ipos_ar_staging",
+        "ap_balances": "ipos_ap_staging",
+        "ap_payment_headers": "ipos_ap_payment_hd_staging",
+        "ap_payment_details": "ipos_ap_payment_dt_staging",
+        "ar_payment_headers": "ipos_ar_payment_hd_staging",
+        "ar_payment_details": "ipos_ar_payment_dt_staging",
         "batches": "ipos_import_batches",
         "reconciliation": "ipos_reconciliation_results",
         "audit": "ipos_audit_logs"
@@ -115,6 +119,63 @@ class StagingService:
             {"$set": update_data}
         )
     
+    async def stage_records_bulk(self, collection_name: str, records: List[Dict], batch_id: str) -> Dict:
+        """
+        Stage records in bulk (faster than one-by-one)
+        
+        Uses bulk insert for new records
+        """
+        if not records:
+            return {"inserted": 0, "updated": 0, "skipped": 0, "errors": []}
+        
+        collection = self._get_collection(collection_name)
+        now = datetime.now(timezone.utc).isoformat()
+        
+        # Prepare all records
+        staging_records = []
+        for record in records:
+            source_id = record.get("source_id") or record.get("code") or str(uuid.uuid4())
+            checksum = self._compute_checksum(record)
+            
+            staging_records.append({
+                "staging_id": str(uuid.uuid4()),
+                "tenant_id": self.tenant_id,
+                "batch_id": batch_id,
+                "source_system": "IPOS5",
+                "source_record_id": source_id,
+                "checksum": checksum,
+                "imported_at": now,
+                "mapped": False,
+                "validated": False,
+                "imported_to_final": False,
+                "data": record
+            })
+        
+        # Bulk insert
+        try:
+            result = await collection.insert_many(staging_records, ordered=False)
+            return {
+                "inserted": len(result.inserted_ids),
+                "updated": 0,
+                "skipped": 0,
+                "errors": []
+            }
+        except Exception as e:
+            # Handle duplicate key errors
+            if "duplicate key" in str(e).lower():
+                return {
+                    "inserted": 0,
+                    "updated": 0,
+                    "skipped": len(records),
+                    "errors": []
+                }
+            return {
+                "inserted": 0,
+                "updated": 0,
+                "skipped": 0,
+                "errors": [{"error": str(e)}]
+            }
+
     async def stage_records(self, collection_name: str, records: List[Dict], batch_id: str) -> Dict:
         """
         Stage records from iPOS to staging collection
@@ -229,6 +290,12 @@ class StagingService:
             ("sales_details", parser_data.get("sales_details", [])),
             ("purchase_headers", parser_data.get("purchase_headers", [])),
             ("purchase_details", parser_data.get("purchase_details", [])),
+            ("ar_balances", parser_data.get("ar_balances", [])),
+            ("ap_balances", parser_data.get("ap_balances", [])),
+            ("ap_payment_headers", parser_data.get("ap_payment_headers", [])),
+            ("ap_payment_details", parser_data.get("ap_payment_details", [])),
+            ("ar_payment_headers", parser_data.get("ar_payment_headers", [])),
+            ("ar_payment_details", parser_data.get("ar_payment_details", [])),
         ]
         
         for collection_name, records in mappings:

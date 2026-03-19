@@ -1,9 +1,10 @@
 # OCB TITAN - Tenant Isolation Middleware
 # Ensures each request uses the correct tenant database based on JWT token
-from fastapi import Request
+from fastapi import Request, Header
 from starlette.middleware.base import BaseHTTPMiddleware
-from database import set_active_db_name, get_default_db_name
+from database import set_active_db_name, get_default_db_name, get_active_db_name
 from utils.auth import decode_token
+from typing import Optional
 import re
 
 # Routes that don't require tenant isolation (public/system routes)
@@ -20,6 +21,43 @@ TENANT_EXEMPT_ROUTES = [
     r'^/openapi.json',
     r'^/$',
 ]
+
+
+async def get_current_tenant(
+    authorization: Optional[str] = Header(None, alias="Authorization"),
+    x_tenant_id: Optional[str] = Header(None, alias="X-Tenant-ID")
+) -> str:
+    """
+    FastAPI dependency to get current tenant ID from request.
+    
+    Priority:
+    1. JWT token's tenant_id
+    2. X-Tenant-ID header
+    3. Active database name (set by middleware)
+    4. Default database
+    """
+    tenant_id = None
+    
+    # Try to get from JWT token
+    if authorization and authorization.startswith("Bearer "):
+        token = authorization[7:]
+        payload = decode_token(token)
+        if payload:
+            tenant_id = payload.get('tenant_id') or payload.get('db_name')
+    
+    # Try X-Tenant-ID header
+    if not tenant_id and x_tenant_id:
+        tenant_id = x_tenant_id
+    
+    # Try active db name (set by middleware)
+    if not tenant_id:
+        tenant_id = get_active_db_name()
+    
+    # Fallback to default
+    if not tenant_id:
+        tenant_id = get_default_db_name()
+    
+    return tenant_id
 
 class TenantIsolationMiddleware(BaseHTTPMiddleware):
     """

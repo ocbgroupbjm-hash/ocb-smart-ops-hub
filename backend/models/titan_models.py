@@ -166,6 +166,8 @@ class ProductStock(BaseModel):
     quantity: int = 0
     reserved: int = 0  # Reserved for pending orders
     available: int = 0  # quantity - reserved
+    unit_cost: float = 0.0  # HPP per unit per warehouse (weighted average)
+    total_value: float = 0.0  # quantity * unit_cost
     last_restock: Optional[str] = None
     updated_at: str = Field(default_factory=now_iso)
 

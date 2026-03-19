@@ -543,6 +543,9 @@ async def create_sales_invoice(data: SalesInvoiceCreate, current_user: dict = De
     total_hpp = 0
     items_data = []
     
+    # Get branch_id for HPP lookup
+    branch_id_for_hpp = data.branch_id or user.get("branch_id") or "0acd2ffd-c2d9-4324-b860-a4626840e80e"
+    
     for item in data.items:
         product = await get_product_info(db, item.product_id, data.branch_id)
         if not product:
@@ -552,12 +555,21 @@ async def create_sales_invoice(data: SalesInvoiceCreate, current_user: dict = De
         if current_stock < item.quantity:
             raise HTTPException(status_code=400, detail=f"Stok {product.get('name')} tidak cukup ({current_stock} tersedia)")
         
+        # GET HPP FROM WAREHOUSE (product_stocks.unit_cost) - iPOS-style
+        # Priority: 1. product_stocks.unit_cost (warehouse-level)
+        #           2. products.cost_price (fallback)
+        warehouse_stock = await db.product_stocks.find_one(
+            {"product_id": item.product_id, "branch_id": branch_id_for_hpp},
+            {"_id": 0, "unit_cost": 1}
+        )
+        unit_hpp = warehouse_stock.get("unit_cost", 0) if warehouse_stock else product.get("cost_price", 0)
+        
         item_subtotal = item.quantity * item.unit_price
         item_discount = item_subtotal * (item.discount_percent / 100)
         item_after_disc = item_subtotal - item_discount
         item_tax = item_after_disc * (item.tax_percent / 100)
         item_total = item_after_disc + item_tax
-        item_hpp = item.quantity * product.get("cost_price", 0)
+        item_hpp = item.quantity * unit_hpp  # Use warehouse-level HPP
         
         items_data.append({
             "product_id": item.product_id,
@@ -566,7 +578,7 @@ async def create_sales_invoice(data: SalesInvoiceCreate, current_user: dict = De
             "quantity": item.quantity,
             "unit": product.get("unit", "PCS"),
             "unit_price": item.unit_price,
-            "cost_price": product.get("cost_price", 0),
+            "cost_price": unit_hpp,  # Store warehouse HPP
             "discount_percent": item.discount_percent,
             "discount_amount": item_discount,
             "tax_percent": item.tax_percent,

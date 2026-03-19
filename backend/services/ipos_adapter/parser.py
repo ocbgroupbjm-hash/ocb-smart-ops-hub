@@ -1,6 +1,7 @@
 # iPOS 5 Ultimate Backup Parser
-# Parses PostgreSQL dump files (.i5bu) from iPOS 5 Ultimate
+# Parses PostgreSQL dump files (.i5bu / .sql) from iPOS 5 Ultimate
 # READ-ONLY - No write operations to source
+# Supports both custom format (pg_dump -Fc) and plain SQL format
 
 import re
 import json
@@ -8,15 +9,16 @@ import hashlib
 from datetime import datetime, timezone
 from typing import Dict, List, Any, Optional, Generator
 import logging
+import os
 
 logger = logging.getLogger(__name__)
 
 
 class IPOSBackupParser:
     """
-    Parser for iPOS 5 Ultimate backup files (.i5bu)
+    Parser for iPOS 5 Ultimate backup files (.i5bu / extracted .sql)
     
-    File format: PostgreSQL pg_dump binary/text format
+    File format: PostgreSQL pg_dump plain SQL format (extracted via pg_restore)
     
     RULES:
     - READ-ONLY operations only
@@ -43,31 +45,93 @@ class IPOSBackupParser:
         'tbl_byrhutangdt': 'ap_payment_details',
         'tbl_byrpiutanghd': 'ar_payment_headers',
         'tbl_byrpiutangdt': 'ar_payment_details',
+        'tbl_itrdt': 'sales_return_details',
+        'tbl_itrhd': 'sales_return_headers',
         'tbl_user': 'users',
         'tbl_conf': 'config',
+        'tbl_hupi_sa': 'ar_ap_balance',
     }
+    
+    # Critical tables for ERP reconciliation
+    CRITICAL_TABLES = [
+        'tbl_item', 'tbl_itemstok', 'tbl_supel', 'tbl_perkiraan',
+        'tbl_accjurnal', 'tbl_ikhd', 'tbl_ikdt', 'tbl_imhd', 'tbl_imdt',
+        'tbl_kantor', 'tbl_itemjenis', 'tbl_itemmerek', 'tbl_itemsatuan',
+        'tbl_byrhutanghd', 'tbl_byrhutangdt', 'tbl_byrpiutanghd', 'tbl_byrpiutangdt',
+        'tbl_hupi_sa'
+    ]
     
     def __init__(self, file_path: str):
         self.file_path = file_path
         self.content = None
         self.tables = {}
+        self.table_schemas = {}  # Store table column definitions
         self.extract_timestamp = datetime.now(timezone.utc).isoformat()
         self.file_hash = None
+        self._cache = {}  # Cache extracted data
         
     def load(self) -> bool:
         """Load and parse the backup file"""
         try:
+            file_size = os.path.getsize(self.file_path)
+            logger.info(f"Loading iPOS backup: {self.file_path} ({file_size / 1024 / 1024:.2f} MB)")
+            
             with open(self.file_path, 'rb') as f:
                 raw_content = f.read()
                 self.file_hash = hashlib.sha256(raw_content).hexdigest()
                 
-            # Decode content
-            self.content = raw_content.decode('utf-8', errors='ignore')
-            logger.info(f"Loaded iPOS backup: {self.file_path}, hash: {self.file_hash[:16]}...")
+            # Decode content - handle multiple encodings
+            for encoding in ['utf-8', 'latin-1', 'cp1252']:
+                try:
+                    self.content = raw_content.decode(encoding, errors='replace')
+                    break
+                except Exception:
+                    continue
+            
+            if not self.content:
+                self.content = raw_content.decode('utf-8', errors='ignore')
+            
+            # Pre-parse table schemas from CREATE TABLE statements
+            self._parse_table_schemas()
+            
+            logger.info(f"Loaded iPOS backup: hash={self.file_hash[:16]}..., tables found: {len(self.table_schemas)}")
             return True
         except Exception as e:
             logger.error(f"Failed to load iPOS backup: {e}")
             return False
+    
+    def _parse_table_schemas(self):
+        """Parse CREATE TABLE statements to get column definitions"""
+        if not self.content:
+            return
+        
+        # Pattern to match CREATE TABLE statements
+        create_pattern = r'CREATE TABLE\s+(?:public\.)?(\w+)\s*\(([\s\S]*?)\);'
+        
+        for match in re.finditer(create_pattern, self.content, re.IGNORECASE):
+            table_name = match.group(1).lower()
+            columns_def = match.group(2)
+            
+            # Extract column names (first word before type definition)
+            columns = []
+            for line in columns_def.split('\n'):
+                line = line.strip()
+                if line and not line.startswith('--') and not line.upper().startswith('CONSTRAINT'):
+                    # Get column name (first word)
+                    parts = line.split()
+                    if parts:
+                        col_name = parts[0].strip(',')
+                        if col_name and col_name.upper() not in ['PRIMARY', 'FOREIGN', 'UNIQUE', 'CHECK', 'CONSTRAINT']:
+                            columns.append(col_name)
+            
+            if columns:
+                self.table_schemas[table_name] = columns
+    
+    def get_available_tables(self) -> List[str]:
+        """Get list of tables available in the backup"""
+        if not self.content:
+            self.load()
+        return list(self.table_schemas.keys())
     
     def get_file_info(self) -> Dict:
         """Get backup file metadata"""
@@ -76,7 +140,9 @@ class IPOSBackupParser:
             "file_hash": self.file_hash,
             "extract_timestamp": self.extract_timestamp,
             "source_system": "IPOS5_ULTIMATE",
-            "format": "PGDUMP"
+            "format": "PGDUMP_PLAIN_SQL",
+            "tables_found": len(self.table_schemas),
+            "critical_tables": [t for t in self.CRITICAL_TABLES if t in self.table_schemas]
         }
     
     def extract_table_data(self, table_name: str) -> List[Dict]:
@@ -89,57 +155,91 @@ class IPOSBackupParser:
         Returns:
             List of dictionaries containing row data
         """
+        # Check cache first
+        if table_name in self._cache:
+            return self._cache[table_name]
+        
         if not self.content:
             self.load()
         
-        # Find COPY statement for this table
-        # Format: COPY table_name (columns) FROM stdin;
-        copy_pattern = rf'COPY {table_name}\s*\(([^)]+)\)\s*FROM stdin;'
-        match = re.search(copy_pattern, self.content, re.IGNORECASE)
+        # Try multiple patterns for COPY statement
+        # Pattern 1: COPY public.table_name (columns) FROM stdin;
+        # Pattern 2: COPY table_name (columns) FROM stdin;
+        patterns = [
+            rf'COPY\s+(?:public\.)?{table_name}\s*\(([^)]+)\)\s*FROM\s+stdin\s*;',
+        ]
+        
+        match = None
+        for pattern in patterns:
+            match = re.search(pattern, self.content, re.IGNORECASE)
+            if match:
+                break
         
         if not match:
-            logger.warning(f"Table {table_name} not found in backup")
+            logger.warning(f"Table {table_name} not found in backup (COPY statement not found)")
             return []
         
         # Get column names
         columns_str = match.group(1)
-        columns = [c.strip() for c in columns_str.split(',')]
+        columns = [c.strip().strip('"') for c in columns_str.split(',')]
         
         # Find data section (after COPY statement until \.)
         copy_start = match.end()
-        end_marker = self.content.find('\\.', copy_start)
+        
+        end_marker = -1
+        search_text = self.content[copy_start:copy_start + 50000000]  # Limit search range
+        
+        # Simple search for \. at beginning of line
+        lines = search_text.split('\n')
+        current_pos = 0
+        for line in lines:
+            if line == '\\.' or line == '\\.':
+                end_marker = copy_start + current_pos
+                break
+            current_pos += len(line) + 1  # +1 for newline
         
         if end_marker == -1:
-            # Try alternative end marker
-            end_marker = self.content.find('\\.\n', copy_start)
-        
-        if end_marker == -1:
-            logger.warning(f"Could not find end of data for table {table_name}")
-            return []
+            # Fallback: search for next COPY or end of reasonable section
+            next_copy = re.search(r'\nCOPY\s+', search_text)
+            if next_copy:
+                end_marker = copy_start + next_copy.start()
+            else:
+                logger.warning(f"Could not find end of data for table {table_name}")
+                return []
         
         data_section = self.content[copy_start:end_marker].strip()
         
         # Parse rows (tab-separated)
         rows = []
-        for line_num, line in enumerate(data_section.split('\n')):
-            if not line.strip() or line.startswith('--'):
+        for line in data_section.split('\n'):
+            line = line.strip()
+            if not line or line.startswith('--') or line == '\\.' or line == '\\.':
                 continue
-                
+            
             values = line.split('\t')
             
-            if len(values) != len(columns):
-                # Skip malformed rows
+            # Allow some flexibility in column count
+            if len(values) < len(columns) - 2:
                 continue
             
             row = {}
             for i, col in enumerate(columns):
-                val = values[i] if i < len(values) else None
-                # Handle PostgreSQL NULL representation
-                if val == '\\N':
+                if i < len(values):
+                    val = values[i]
+                    # Handle PostgreSQL NULL representation
+                    if val == '\\N' or val == 'NULL':
+                        val = None
+                    # Handle escaped characters
+                    elif isinstance(val, str):
+                        val = val.replace('\\n', '\n').replace('\\t', '\t').replace('\\r', '\r')
+                else:
                     val = None
                 row[col] = val
             
             rows.append(row)
+        
+        # Cache the result
+        self._cache[table_name] = rows
         
         logger.info(f"Extracted {len(rows)} rows from {table_name}")
         return rows
@@ -491,16 +591,139 @@ class IPOSBackupParser:
         
         return units
     
+    def extract_ar_ap_balance(self) -> Dict[str, List[Dict]]:
+        """Extract AR/AP balances from tbl_hupi_sa"""
+        raw_data = self.extract_table_data('tbl_hupi_sa')
+        
+        ar_records = []
+        ap_records = []
+        
+        for row in raw_data:
+            record = {
+                "source_id": f"{row.get('kodesupel')}_{row.get('notransaksi')}",
+                "entity_code": row.get('kodesupel'),
+                "transaction_no": row.get('notransaksi'),
+                "transaction_date": row.get('tanggal'),
+                "due_date": row.get('jatuhtempo'),
+                "type": row.get('tipe'),  # HU = Hutang (AP), PI = Piutang (AR)
+                "currency": row.get('matauang'),
+                "rate": self._parse_decimal(row.get('rate')),
+                "amount": self._parse_decimal(row.get('jumlah')),
+                "paid": self._parse_decimal(row.get('bayar')),
+                "remaining": self._parse_decimal(row.get('sisa')),
+                "status": row.get('status'),
+                "warehouse_code": row.get('kantor'),
+                "source_system": "IPOS5",
+                "raw_data": row
+            }
+            
+            if row.get('tipe') == 'HU':
+                ap_records.append(record)
+            elif row.get('tipe') == 'PI':
+                ar_records.append(record)
+        
+        return {
+            "ar": ar_records,
+            "ap": ap_records
+        }
+    
+    def extract_ap_payments(self) -> Dict[str, List[Dict]]:
+        """Extract AP payment headers and details"""
+        headers = self.extract_table_data('tbl_byrhutanghd')
+        details = self.extract_table_data('tbl_byrhutangdt')
+        
+        payment_headers = []
+        for row in headers:
+            header = {
+                "source_id": row.get('notransaksi'),
+                "transaction_no": row.get('notransaksi'),
+                "warehouse_code": row.get('kodekantor'),
+                "date": row.get('tanggal'),
+                "supplier_code": row.get('kodesupel'),
+                "currency": row.get('matauang'),
+                "rate": self._parse_decimal(row.get('rate')),
+                "payment_method": row.get('bayarlewat'),
+                "bank_account": row.get('kodeacc'),
+                "total": self._parse_decimal(row.get('total')),
+                "description": row.get('keterangan'),
+                "source_system": "IPOS5",
+                "raw_data": row
+            }
+            payment_headers.append(header)
+        
+        payment_details = []
+        for row in details:
+            detail = {
+                "source_id": row.get('iddetail'),
+                "transaction_no": row.get('notransaksi'),
+                "invoice_no": row.get('nofaktur'),
+                "amount": self._parse_decimal(row.get('jumlah')),
+                "source_system": "IPOS5",
+                "raw_data": row
+            }
+            payment_details.append(detail)
+        
+        return {
+            "headers": payment_headers,
+            "details": payment_details
+        }
+    
+    def extract_ar_payments(self) -> Dict[str, List[Dict]]:
+        """Extract AR payment headers and details"""
+        headers = self.extract_table_data('tbl_byrpiutanghd')
+        details = self.extract_table_data('tbl_byrpiutangdt')
+        
+        payment_headers = []
+        for row in headers:
+            header = {
+                "source_id": row.get('notransaksi'),
+                "transaction_no": row.get('notransaksi'),
+                "warehouse_code": row.get('kodekantor'),
+                "date": row.get('tanggal'),
+                "customer_code": row.get('kodesupel'),
+                "currency": row.get('matauang'),
+                "rate": self._parse_decimal(row.get('rate')),
+                "payment_method": row.get('bayarlewat'),
+                "bank_account": row.get('kodeacc'),
+                "total": self._parse_decimal(row.get('total')),
+                "description": row.get('keterangan'),
+                "source_system": "IPOS5",
+                "raw_data": row
+            }
+            payment_headers.append(header)
+        
+        payment_details = []
+        for row in details:
+            detail = {
+                "source_id": row.get('iddetail'),
+                "transaction_no": row.get('notransaksi'),
+                "invoice_no": row.get('nofaktur'),
+                "amount": self._parse_decimal(row.get('jumlah')),
+                "source_system": "IPOS5",
+                "raw_data": row
+            }
+            payment_details.append(detail)
+        
+        return {
+            "headers": payment_headers,
+            "details": payment_details
+        }
+    
     def extract_all(self) -> Dict[str, Any]:
         """Extract all data from backup"""
         if not self.content:
             self.load()
         
+        logger.info("=== EXTRACTING ALL DATA FROM iPOS BACKUP ===")
+        
         supel = self.extract_suppliers_customers()
         sales = self.extract_sales()
         purchases = self.extract_purchases()
+        ar_ap = self.extract_ar_ap_balance()
+        ap_payments = self.extract_ap_payments()
+        ar_payments = self.extract_ar_payments()
         
-        return {
+        result = {
             "file_info": self.get_file_info(),
             "items": self.extract_items(),
             "categories": self.extract_categories(),
@@ -516,7 +739,21 @@ class IPOSBackupParser:
             "sales_details": sales["details"],
             "purchase_headers": purchases["headers"],
             "purchase_details": purchases["details"],
+            "ar_balances": ar_ap["ar"],
+            "ap_balances": ar_ap["ap"],
+            "ap_payment_headers": ap_payments["headers"],
+            "ap_payment_details": ap_payments["details"],
+            "ar_payment_headers": ar_payments["headers"],
+            "ar_payment_details": ar_payments["details"],
         }
+        
+        # Log extraction summary
+        logger.info("=== EXTRACTION SUMMARY ===")
+        for key, value in result.items():
+            if key != "file_info" and isinstance(value, list):
+                logger.info(f"  {key}: {len(value)} records")
+        
+        return result
     
     def _parse_decimal(self, value: Any) -> float:
         """Parse decimal value"""

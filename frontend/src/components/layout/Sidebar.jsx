@@ -427,6 +427,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
         { divider: true },
         { name: 'Log Aktivitas', icon: Clock, path: '/settings/activity-log' },
         { name: 'Backup & Restore', icon: HardDrive, path: '/settings/backup' },
+        { name: 'Data Rescue', icon: Database, path: '/settings/data-rescue' },
       ]
     },
 

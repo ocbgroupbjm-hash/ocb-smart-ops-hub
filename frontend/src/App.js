@@ -177,6 +177,9 @@ import FinanceDashboard from './pages/FinanceDashboard';
 // Enterprise Purchase Module
 import PurchaseEnterprise from './pages/PurchaseEnterprise';
 
+// Data Rescue - iPOS Migration & Reconciliation
+import DataRescuePage from './pages/DataRescuePage';
+
 import './index.css';
 
 const PrivateRoute = ({ children }) => {
@@ -484,6 +487,7 @@ function App() {
             <Route path="settings/tenants" element={<TenantManagement />} />
             <Route path="settings/backup" element={<BackupManager />} />
             <Route path="settings/integrity-monitor" element={<IntegrityMonitor />} />
+            <Route path="settings/data-rescue" element={<DataRescuePage />} />
             <Route path="settings/theme" element={<Settings />} />
             <Route path="settings/import" element={<Settings />} />
             <Route path="settings/export" element={<Settings />} />

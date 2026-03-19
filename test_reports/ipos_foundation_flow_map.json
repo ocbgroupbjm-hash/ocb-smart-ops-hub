@@ -1,0 +1,300 @@
+{
+  "report_type": "IPOS_FOUNDATION_FLOW_MAP",
+  "generated_at": "2026-03-19",
+  "source_system": "IPOS5_ULTIMATE",
+  "target_system": "OCB_TITAN",
+  "tenant": "ocb_titan",
+
+  "EXECUTIVE_SUMMARY": {
+    "items": 110,
+    "warehouses": 43,
+    "chart_of_accounts": 382,
+    "sales_transactions": 20000,
+    "purchase_transactions": 4271,
+    "journal_entries": 145073,
+    "total_stock_qty": 48169465,
+    "journal_balance": "BALANCED (D=C=441,001,856,569)"
+  },
+
+  "A_MASTER_DATA_FLOW": {
+    "items": {
+      "source_table": "tbl_item",
+      "count": 110,
+      "key_fields": ["kodeitem", "namaitem", "jenis", "merek", "satuan", "hbeli1", "hjual1", "hjual2", "hjual3"],
+      "notes": "Item master with category, brand, unit, cost price, 3 sell prices"
+    },
+    "categories": {
+      "source_table": "tbl_itemjenis",
+      "count": 4,
+      "key_fields": ["jenis", "ketjenis"]
+    },
+    "units": {
+      "source_table": "tbl_itemsatuan",
+      "count": 7,
+      "key_fields": ["satuan", "ketsatuan", "konversi"]
+    },
+    "brands": {
+      "source_table": "tbl_itemmerek",
+      "count": 4,
+      "key_fields": ["merek", "ketmerek"]
+    },
+    "warehouses": {
+      "source_table": "tbl_kantor",
+      "count": 43,
+      "key_fields": ["kodekantor", "namakantor", "fungsi"],
+      "notes": "43 outlets/warehouses, fungsi=Utama means primary warehouse"
+    },
+    "suppliers_customers": {
+      "source_table": "tbl_supel",
+      "notes": "Combined table for suppliers (type=S) and customers (type=P)"
+    },
+    "chart_of_accounts": {
+      "source_table": "tbl_perkiraan",
+      "count": 382,
+      "structure": {
+        "1": "AKTIVA (156 accounts)",
+        "2": "KEWAJIBAN (38 accounts)",
+        "3": "MODAL (6 accounts)",
+        "4": "PENDAPATAN (19 accounts)",
+        "5": "HPP (9 accounts)",
+        "6": "BIAYA (113 accounts)",
+        "7": "PENDAPATAN LAIN (34 accounts)",
+        "8": "BIAYA LAIN (7 accounts)"
+      }
+    }
+  },
+
+  "B_PURCHASE_FLOW": {
+    "source_tables": {
+      "header": "tbl_imhd",
+      "detail": "tbl_imdt"
+    },
+    "transaction_count": {
+      "headers": 4271,
+      "details": 4846
+    },
+    "transaction_types": {
+      "BL": "Pembelian Biasa (4120 transactions)",
+      "IM": "Import/Masuk (151 transactions)"
+    },
+    "flow_sequence": [
+      "1. Create PO/Purchase (header + details)",
+      "2. Receive goods (update stock)",
+      "3. Create AP (hutang dagang)",
+      "4. Post journal entry"
+    ],
+    "posting_rules": {
+      "description": "When purchase is posted",
+      "journal_entries": [
+        {"account": "1-2010", "position": "D", "description": "PERSEDIAAN BARANG", "effect": "Increase inventory asset"},
+        {"account": "2-1101", "position": "K", "description": "HUTANG DAGANG", "effect": "Increase AP liability"},
+        {"account": "5-199X01", "position": "K", "description": "POTONGAN PEMBELIAN", "effect": "If discount exists"}
+      ],
+      "formula": "D(Inventory) = C(AP) + C(Discount)"
+    },
+    "stock_effect": {
+      "direction": "IN",
+      "update_table": "tbl_itemstok",
+      "effect": "Increase stock quantity per item per warehouse"
+    },
+    "ar_ap_effect": {
+      "type": "AP",
+      "update_table": "tbl_hupi_sa",
+      "effect": "Create AP record with amount = total purchase"
+    }
+  },
+
+  "C_SALES_FLOW": {
+    "source_tables": {
+      "header": "tbl_ikhd",
+      "detail": "tbl_ikdt"
+    },
+    "transaction_count": {
+      "headers": 20000,
+      "details": 28058
+    },
+    "transaction_types": {
+      "JL": "Penjualan Biasa (19921 transactions)",
+      "KSR": "Konsinyasi Retur (13 transactions)",
+      "IK": "Other (66 transactions)"
+    },
+    "flow_sequence": [
+      "1. Create Sales Invoice (header + details)",
+      "2. Decrease stock",
+      "3. Calculate HPP (COGS)",
+      "4. Create AR (piutang) if credit sale",
+      "5. Post journal entry (4 lines minimum)"
+    ],
+    "posting_rules": {
+      "description": "When sales is posted (4-line journal)",
+      "journal_entries": [
+        {"account": "1-1210", "position": "D", "description": "PIUTANG DAGANG", "effect": "Increase AR (or KAS if cash)"},
+        {"account": "5-1300", "position": "D", "description": "HPP/COGS", "effect": "Recognize cost of goods sold"},
+        {"account": "4-1100", "position": "K", "description": "PENDAPATAN PENJUALAN", "effect": "Recognize revenue"},
+        {"account": "1-2010", "position": "K", "description": "PERSEDIAAN BARANG", "effect": "Decrease inventory asset"}
+      ],
+      "formula": "D(AR/Cash) + D(COGS) = C(Revenue) + C(Inventory)",
+      "notes": "HPP amount = qty * unit cost from tbl_itemstok"
+    },
+    "stock_effect": {
+      "direction": "OUT",
+      "update_table": "tbl_itemstok",
+      "effect": "Decrease stock quantity per item per warehouse"
+    },
+    "ar_ap_effect": {
+      "type": "AR",
+      "condition": "If payment_type = KREDIT",
+      "update_table": "tbl_hupi_sa",
+      "effect": "Create AR record with amount = total sales"
+    }
+  },
+
+  "D_STOCK_FLOW": {
+    "source_table": "tbl_itemstok",
+    "record_count": 658,
+    "total_qty": 48169465,
+    "key_fields": ["kodeitem", "kodekantor", "stok", "hpp"],
+    "valuation_method": "Moving Average / Weighted Average",
+    "flow_rules": {
+      "purchase_in": "stock += purchase_qty; recalculate hpp",
+      "sales_out": "stock -= sales_qty; hpp unchanged",
+      "transfer": "stock_from -= qty; stock_to += qty",
+      "adjustment": "stock = new_qty; post journal for difference"
+    },
+    "hpp_calculation": {
+      "formula": "(old_stock * old_hpp + new_qty * new_price) / (old_stock + new_qty)",
+      "notes": "HPP recalculated on every purchase/receiving"
+    },
+    "inventory_valuation": {
+      "formula": "SUM(stock_qty * hpp) per item per warehouse",
+      "account": "1-2010 PERSEDIAAN BARANG",
+      "notes": "Must match accounting balance"
+    }
+  },
+
+  "E_ACCOUNTING_FLOW": {
+    "source_table": "tbl_accjurnal",
+    "total_entries": 145073,
+    "journal_modules": {
+      "BLI": "Purchase (19196 entries)",
+      "JUA": "Sales (119647 entries)",
+      "MAN": "Manual Adjustment (5796 entries)",
+      "PRS": "Stock Adjustment (434 entries)"
+    },
+    "posting_rules": {
+      "purchase": {
+        "debit": ["1-2010 Persediaan"],
+        "credit": ["2-1101 Hutang Dagang", "5-199X01 Potongan Pembelian"]
+      },
+      "sales": {
+        "debit": ["1-1210 Piutang Dagang", "5-1300 HPP"],
+        "credit": ["4-1100 Pendapatan Penjualan", "1-2010 Persediaan"]
+      },
+      "payment_ap": {
+        "debit": ["2-1101 Hutang Dagang"],
+        "credit": ["1-1xxx Kas/Bank"]
+      },
+      "payment_ar": {
+        "debit": ["1-1xxx Kas/Bank"],
+        "credit": ["1-1210 Piutang Dagang"]
+      }
+    },
+    "balance_check": {
+      "total_debit": 441001856569,
+      "total_credit": 441001856569,
+      "status": "BALANCED"
+    }
+  },
+
+  "F_KEY_ACCOUNTS_MAPPING": {
+    "cash_bank": {
+      "1-1100": "KAS & BANK (Header)",
+      "1-1110": "KAS KECIL",
+      "1-1121": "BANK MANDIRI",
+      "1-1122": "BANK BCA",
+      "1-1124": "BANK BCA SDP"
+    },
+    "receivables": {
+      "1-1200": "PIUTANG (Header)",
+      "1-1210": "PIUTANG DAGANG"
+    },
+    "inventory": {
+      "1-2000": "PERSEDIAAN (Header)",
+      "1-2010": "PERSEDIAAN BARANG"
+    },
+    "payables": {
+      "2-1100": "HUTANG (Header)",
+      "2-1101": "HUTANG DAGANG"
+    },
+    "revenue": {
+      "4-1000": "PENDAPATAN DAGANG (Header)",
+      "4-1100": "PENDAPATAN PENJUALAN"
+    },
+    "cogs": {
+      "5-1000": "HPP (Header)",
+      "5-1300": "HARGA POKOK PENJUALAN"
+    },
+    "expenses": {
+      "6-0000": "BIAYA (Header)",
+      "6-1xxx": "Various expense accounts"
+    }
+  },
+
+  "G_REPORT_BEHAVIOR": {
+    "stock_report": {
+      "source": "tbl_itemstok JOIN tbl_item",
+      "output": "item_code, item_name, warehouse, qty, hpp, value"
+    },
+    "inventory_valuation": {
+      "source": "tbl_itemstok",
+      "formula": "SUM(stok * hpp) GROUP BY item",
+      "must_match": "Account 1-2010 balance"
+    },
+    "sales_report": {
+      "source": "tbl_ikhd JOIN tbl_ikdt",
+      "output": "date, invoice, customer, items, qty, price, total, hpp, profit"
+    },
+    "purchase_report": {
+      "source": "tbl_imhd JOIN tbl_imdt",
+      "output": "date, po_number, supplier, items, qty, price, total"
+    },
+    "ar_aging": {
+      "source": "tbl_hupi_sa WHERE tipe='PI'",
+      "output": "customer, invoice, date, amount, paid, remaining, age"
+    },
+    "ap_aging": {
+      "source": "tbl_hupi_sa WHERE tipe='HU'",
+      "output": "supplier, invoice, date, amount, paid, remaining, age"
+    },
+    "trial_balance": {
+      "source": "tbl_accjurnal GROUP BY account",
+      "output": "account_code, account_name, debit_total, credit_total, balance"
+    },
+    "income_statement": {
+      "revenue": "Account group 4 (credit balance)",
+      "cogs": "Account group 5 (debit balance)",
+      "gross_profit": "Revenue - COGS",
+      "expenses": "Account group 6 (debit balance)",
+      "net_income": "Gross Profit - Expenses"
+    },
+    "balance_sheet": {
+      "assets": "Account group 1 (debit balance)",
+      "liabilities": "Account group 2 (credit balance)",
+      "equity": "Account group 3 (credit balance)",
+      "check": "Assets = Liabilities + Equity"
+    }
+  },
+
+  "H_CRITICAL_BUSINESS_RULES": {
+    "rule_1": "Every sales transaction MUST create 4 journal lines (AR, COGS, Revenue, Inventory)",
+    "rule_2": "Every purchase transaction MUST create at least 2 journal lines (Inventory, AP)",
+    "rule_3": "Stock can NEVER go negative (validation required)",
+    "rule_4": "HPP must be recalculated on every purchase using weighted average",
+    "rule_5": "Journal MUST always balance (total debit = total credit)",
+    "rule_6": "Inventory account balance MUST match physical stock valuation",
+    "rule_7": "AR balance MUST match sum of unpaid invoices",
+    "rule_8": "AP balance MUST match sum of unpaid bills",
+    "rule_9": "All transactions must be warehouse-aware (per outlet)",
+    "rule_10": "Audit trail must record all changes"
+  }
+}

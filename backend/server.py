@@ -176,6 +176,9 @@ from routes.ai_engine import router as ai_engine_router
 # Payment Allocation Engine - Enterprise AP/AR Architecture
 from routes.payment_allocation_engine import router as payment_allocation_router
 
+# Data Rescue Engine - iPOS 5 Migration & Reconciliation
+from routes.data_rescue import router as data_rescue_router
+
 # Mount all routers under /api - Core ERP
 app.include_router(auth_router, prefix="/api")
 app.include_router(products_router, prefix="/api")
@@ -204,6 +207,9 @@ app.include_router(system_monitoring_router)
 app.include_router(data_integrity_router)
 app.include_router(maintenance_mode_router)
 app.include_router(integrity_fix_router)
+
+# Data Rescue Engine - iPOS 5 Migration & Reconciliation
+app.include_router(data_rescue_router)
 
 # Mount SUPER AI routers
 app.include_router(ai_sales_router)

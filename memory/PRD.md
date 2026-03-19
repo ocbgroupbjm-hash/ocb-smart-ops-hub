@@ -3,6 +3,8 @@
 ## Original Problem Statement
 Membangun sistem ERP retail komprehensif (OCB TITAN) dengan fitur POS, Inventory, Keuangan, Akuntansi, dan HR Enterprise System. Sistem harus mengikuti standar ERP enterprise seperti SAP/Oracle dengan blueprint SUPER DUPER DEWA.
 
+**CURRENT PRIORITY: DATA RESCUE MISSION** - All features ON HOLD sampai data integrity selesai.
+
 ## Core Requirements
 1. **Multi-tenant Architecture** - Support untuk multiple business units
 2. **RBAC System** - Role-Based Access Control yang komprehensif
@@ -11,6 +13,111 @@ Membangun sistem ERP retail komprehensif (OCB TITAN) dengan fitur POS, Inventory
 5. **Standard ERP UI** - Toolbar konsisten di semua modul
 6. **HR Enterprise System** - Employee Master, Attendance, Leave, Payroll dengan integrasi Accounting
 7. **Employee = Sales SSOT** - Sales adalah role/jabatan dari Employee, bukan master terpisah
+8. **DATA RESCUE** - iPOS 5 → OCB TITAN migration & reconciliation pipeline
+
+---
+
+## 🚨 DATA RESCUE MISSION - P0 PRIORITY (2026-03-18)
+
+### STATUS: FOUNDATION COMPLETE ✅
+
+**Target:** Data iPOS 5 Ultimate sebagai source of truth untuk validasi OCB TITAN
+**Result:** OCB TITAN harus match 100% dengan iPOS pada:
+- Saldo stok
+- Nilai persediaan
+- HPP
+- Penjualan
+- Pembelian
+- Hutang/Piutang
+- Jurnal
+- Neraca
+- Laba Rugi
+
+### PIPELINE ARCHITECTURE
+```
+iPOS 5 Backup (.i5bu) → pg_restore → Plain SQL → Parser → Staging → Reconciliation → Report
+                                                    ↓
+                                             MongoDB Collections
+```
+
+### COMPONENTS IMPLEMENTED ✅
+
+1. **iPOS Adapter Service** (`/app/backend/services/ipos_adapter/`)
+   - `parser.py` - Parse PostgreSQL dump (COPY statements)
+   - `staging.py` - Stage data ke MongoDB staging collections
+   - `mapping.py` - Map iPOS schema → OCB TITAN schema
+   - `reconciliation.py` - Compare staging vs production
+   - `adapter.py` - Main orchestrator
+
+2. **API Routes** (`/app/backend/routes/data_rescue.py`)
+   - `GET /api/data-rescue/status` - Status rescue operation
+   - `POST /api/data-rescue/extract` - Start extraction
+   - `GET /api/data-rescue/staging/summary` - Staging summary
+   - `POST /api/data-rescue/reconcile` - Run reconciliation
+   - `GET /api/data-rescue/stats/ipos` - iPOS stats
+   - `GET /api/data-rescue/report` - Generate report
+
+3. **Frontend Dashboard** (`/app/frontend/src/pages/DataRescuePage.jsx`)
+   - Staging data overview
+   - Reconciliation results
+   - Critical issues & recommendations
+   - Action buttons (Extract, Reconcile, Download Report)
+
+### DATA EXTRACTED FROM iPOS 5 (2026-03-18)
+
+| Collection | Count | Status |
+|------------|-------|--------|
+| Items | 110 | ✅ Staged |
+| Categories | 4 | ✅ Staged |
+| Brands | 4 | ✅ Staged |
+| Units | 7 | ✅ Staged |
+| Warehouses | 43 | ✅ Staged |
+| Stock Positions | 658 | ✅ Staged |
+| Chart of Accounts | 382 | ✅ Staged |
+| Journals | 199,981 | ✅ Staged |
+| Sales Headers | 20,000 | ✅ Staged |
+| Sales Details | 20,779 | ✅ Staged |
+| Purchase Headers | 4,271 | ✅ Staged |
+| Purchase Details | 4,846 | ✅ Staged |
+| **TOTAL** | **251,085** | ✅ |
+
+### RECONCILIATION RESULTS (2026-03-18)
+
+| Check | Status | Finding |
+|-------|--------|---------|
+| Stock Quantities | ❌ FAIL | iPOS: 48,169,465 units vs TITAN: 0 |
+| Stock Valuation | ✅ PASS | Both 0 (HPP not set) |
+| Sales Totals | ❌ FAIL | 20,000 transactions vs 0 |
+| Purchase Totals | ✅ PASS | Both 0 |
+| Journal Balance | ❌ FAIL | **UNBALANCED: -2,246,550** |
+| Inventory vs Accounting | ✅ PASS | - |
+| Master Data | ✅ PASS | Items diff: 107 |
+
+### 🚨 CRITICAL ISSUES FOUND
+
+1. **JOURNAL TIDAK BALANCE** - Data akuntansi iPOS corrupt
+   - Debit: Rp 494,103,917,769
+   - Credit: Rp 494,106,164,319
+   - Selisih: Rp -2,246,550
+
+2. **STOCK MISMATCH** - 50 items berbeda quantity
+   - iPOS memiliki 48M units
+   - TITAN memiliki 0 units
+
+### RECOMMENDATIONS
+
+1. ⚠️ Periksa semua jurnal iPOS dan fix entries yang tidak balance
+2. ⚠️ Import data master dari iPOS ke OCB TITAN
+3. ⚠️ Import stock positions setelah master data ready
+4. ⚠️ Jangan lakukan transaksi di TITAN sampai data match
+
+### NEXT STEPS (P0)
+
+- [ ] Analyze journal imbalance (find corrupt entries)
+- [ ] Create dry-run import service
+- [ ] Import master data to TITAN production
+- [ ] Import stock positions
+- [ ] Re-run reconciliation until 100% match
 
 ---
 

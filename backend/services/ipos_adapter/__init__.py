@@ -7,11 +7,13 @@ from .parser import IPOSBackupParser
 from .staging import StagingService
 from .mapping import MappingService
 from .reconciliation import ReconciliationEngine
+from .importer import IPOSDataImporter
 
 __all__ = [
     'IPOSAdapter',
     'IPOSBackupParser', 
     'StagingService',
     'MappingService',
-    'ReconciliationEngine'
+    'ReconciliationEngine',
+    'IPOSDataImporter'
 ]

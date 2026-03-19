@@ -1,0 +1,352 @@
+{
+  "report_type": "IPOS_OCB_ALIGNMENT_MISMATCH",
+  "generated_at": "2026-03-19",
+  "analyst": "ERP_REBUILD_AGENT",
+
+  "EXECUTIVE_SUMMARY": {
+    "overall_alignment": "PARTIAL - 60% Match",
+    "critical_gaps": 5,
+    "minor_gaps": 8,
+    "action_required": "IMMEDIATE"
+  },
+
+  "GAP_ANALYSIS": {
+    "A_MASTER_DATA": {
+      "status": "PARTIAL_MATCH",
+      "ipos_structure": {
+        "items": "tbl_item with category, brand, unit, cost_price, sell_price_1/2/3",
+        "suppliers_customers": "tbl_supel combined table (type S/P)",
+        "warehouses": "tbl_kantor (43 outlets with function type)",
+        "chart_of_accounts": "tbl_perkiraan (382 accounts, 8 groups)"
+      },
+      "ocb_titan_structure": {
+        "items": "products collection with category_id, brand, unit, cost_price, selling_price",
+        "suppliers": "suppliers collection (separate)",
+        "customers": "customers collection (separate)",
+        "warehouses": "warehouses/branches collections",
+        "chart_of_accounts": "chart_of_accounts collection"
+      },
+      "gaps": [
+        {
+          "id": "GAP-M1",
+          "severity": "HIGH",
+          "description": "iPOS supports 3 selling prices (hjual1/2/3), OCB TITAN has selling_price, wholesale_price, member_price, reseller_price - MISMATCH",
+          "impact": "Pricing logic may differ for different customer types",
+          "recommendation": "Map iPOS hjual1=selling_price, hjual2=wholesale_price, hjual3=member_price"
+        },
+        {
+          "id": "GAP-M2",
+          "severity": "MEDIUM",
+          "description": "iPOS combines suppliers/customers in tbl_supel, OCB TITAN separates them",
+          "impact": "Data migration needs type filtering",
+          "recommendation": "Filter by type field during import (S=supplier, P=customer)"
+        },
+        {
+          "id": "GAP-M3",
+          "severity": "LOW",
+          "description": "iPOS uses kodeitem as primary key, OCB TITAN uses UUID",
+          "impact": "Need source_id mapping during import",
+          "recommendation": "Store ipos_code in products.code field"
+        }
+      ]
+    },
+
+    "B_PURCHASE_FLOW": {
+      "status": "MATCH",
+      "ipos_flow": [
+        "Create PO (tbl_imhd/tbl_imdt)",
+        "Receive goods (update tbl_itemstok)",
+        "Create AP (tbl_hupi_sa type=HU)",
+        "Post journal: D(1-2010 Persediaan) C(2-1101 Hutang Dagang)"
+      ],
+      "ocb_titan_flow": [
+        "Create PO (purchase_orders collection)",
+        "Receive goods (update product_stocks + stock_movements)",
+        "Create AP (accounts_payable collection)",
+        "Post journal: D(Persediaan) C(Hutang Dagang)"
+      ],
+      "gaps": [
+        {
+          "id": "GAP-P1",
+          "severity": "MEDIUM",
+          "description": "iPOS uses fixed account codes (1-2010, 2-1101), OCB TITAN uses Account Derivation Engine",
+          "impact": "Account codes may differ, need mapping",
+          "recommendation": "Configure account_settings with iPOS account codes"
+        },
+        {
+          "id": "GAP-P2",
+          "severity": "LOW",
+          "description": "iPOS has purchase types BL (normal) and IM (import), OCB TITAN has single type",
+          "impact": "Purchase categorization differs",
+          "recommendation": "Add purchase_type field to OCB TITAN"
+        }
+      ],
+      "posting_rule_match": true
+    },
+
+    "C_SALES_FLOW": {
+      "status": "MATCH",
+      "ipos_flow": [
+        "Create Invoice (tbl_ikhd/tbl_ikdt)",
+        "Decrease stock (update tbl_itemstok)",
+        "Calculate HPP (qty * hpp from tbl_itemstok)",
+        "Create AR if credit (tbl_hupi_sa type=PI)",
+        "Post 4-line journal: D(Piutang) D(HPP) C(Penjualan) C(Persediaan)"
+      ],
+      "ocb_titan_flow": [
+        "Create Invoice (sales_invoices collection)",
+        "Decrease stock (stock_movements + product_stocks)",
+        "Calculate HPP (qty * cost_price from products)",
+        "Create AR if credit (accounts_receivable collection)",
+        "Post journal using Account Derivation Engine"
+      ],
+      "gaps": [
+        {
+          "id": "GAP-S1",
+          "severity": "HIGH",
+          "description": "iPOS HPP comes from tbl_itemstok.hpp (weighted average per warehouse), OCB TITAN uses products.cost_price (single value)",
+          "impact": "HPP calculation may differ significantly for weighted average scenarios",
+          "recommendation": "Implement warehouse-level HPP tracking in product_stocks.unit_cost"
+        },
+        {
+          "id": "GAP-S2",
+          "severity": "MEDIUM",
+          "description": "iPOS 4-line journal is MANDATORY (AR+HPP+Revenue+Inventory), OCB TITAN journal creation is configurable",
+          "impact": "Journal structure may differ",
+          "recommendation": "Enforce 4-line journal rule in sales_module.py"
+        },
+        {
+          "id": "GAP-S3",
+          "severity": "LOW",
+          "description": "iPOS sales types: JL (normal), KSR (consignment return), IK (other)",
+          "impact": "Different sales categorization",
+          "recommendation": "Add sales_type field to sales_invoices"
+        }
+      ],
+      "posting_rule_match": true
+    },
+
+    "D_STOCK_FLOW": {
+      "status": "PARTIAL_MATCH",
+      "ipos_structure": {
+        "storage": "tbl_itemstok (item + warehouse + stok + hpp)",
+        "valuation": "Weighted Average per warehouse",
+        "updates": "Direct update on purchase/sales",
+        "hpp_calc": "(old_qty * old_hpp + new_qty * new_price) / total_qty"
+      },
+      "ocb_titan_structure": {
+        "storage": "product_stocks (product_id + branch_id + quantity)",
+        "movement_log": "stock_movements (single source of truth)",
+        "valuation": "Using products.cost_price (single value)",
+        "updates": "Via stock_movements aggregation"
+      },
+      "gaps": [
+        {
+          "id": "GAP-I1",
+          "severity": "CRITICAL",
+          "description": "iPOS stores HPP per item per warehouse in tbl_itemstok, OCB TITAN stores single cost_price in products",
+          "impact": "CRITICAL - Inventory valuation will differ for multi-warehouse scenarios",
+          "recommendation": "Add unit_cost field to product_stocks collection for warehouse-level HPP"
+        },
+        {
+          "id": "GAP-I2",
+          "severity": "HIGH",
+          "description": "iPOS recalculates HPP on every purchase using weighted average, OCB TITAN overwrites cost_price",
+          "impact": "HPP values will diverge over time",
+          "recommendation": "Implement weighted average calculation on purchase receive"
+        },
+        {
+          "id": "GAP-I3",
+          "severity": "MEDIUM",
+          "description": "iPOS updates stock directly, OCB TITAN calculates from stock_movements",
+          "impact": "Different approach but same result - acceptable",
+          "recommendation": "Keep OCB TITAN approach (more auditable)"
+        }
+      ]
+    },
+
+    "E_ACCOUNTING_FLOW": {
+      "status": "MATCH",
+      "ipos_structure": {
+        "journal_table": "tbl_accjurnal",
+        "modules": "BLI (purchase), JUA (sales), MAN (manual), PRS (adjustment)",
+        "balance_rule": "STRICT - Total Debit MUST equal Total Credit"
+      },
+      "ocb_titan_structure": {
+        "journal_collection": "journals",
+        "format": "Header with embedded entries array",
+        "derivation": "Account Derivation Engine"
+      },
+      "gaps": [
+        {
+          "id": "GAP-A1",
+          "severity": "MEDIUM",
+          "description": "iPOS uses module codes (BLI/JUA/MAN/PRS), OCB TITAN uses source_type",
+          "impact": "Journal categorization differs",
+          "recommendation": "Map module codes to source_type"
+        },
+        {
+          "id": "GAP-A2",
+          "severity": "LOW",
+          "description": "iPOS journal is flat rows, OCB TITAN uses embedded entries",
+          "impact": "Data structure differs but accounting logic same",
+          "recommendation": "No change needed - both are valid approaches"
+        }
+      ],
+      "posting_rule_match": true,
+      "balance_status": "BOTH_ENFORCED"
+    },
+
+    "F_AR_AP_FLOW": {
+      "status": "MATCH",
+      "ipos_structure": {
+        "combined_table": "tbl_hupi_sa (type HU=AP, PI=AR)",
+        "fields": "kodesupel, notransaksi, jumlah, bayar, sisa, status",
+        "payments": "tbl_byrhutanghd/dt (AP), tbl_byrpiutanghd/dt (AR)"
+      },
+      "ocb_titan_structure": {
+        "separate_collections": "accounts_payable, accounts_receivable",
+        "fields": "amount, paid_amount, due_date, status",
+        "payments": "ap_payments, ar_payments collections"
+      },
+      "gaps": [
+        {
+          "id": "GAP-AR1",
+          "severity": "LOW",
+          "description": "iPOS combines AR/AP in one table, OCB TITAN separates",
+          "impact": "Data structure differs but logic same",
+          "recommendation": "No change needed"
+        }
+      ],
+      "posting_rule_match": true
+    }
+  },
+
+  "PRIORITY_FIXES": [
+    {
+      "priority": "P0",
+      "id": "FIX-001",
+      "gap_ref": "GAP-I1",
+      "title": "Implement warehouse-level HPP in product_stocks",
+      "description": "Add unit_cost field to product_stocks to track HPP per warehouse",
+      "files_affected": [
+        "/app/backend/models/titan_models.py",
+        "/app/backend/routes/purchase.py",
+        "/app/backend/routes/inventory.py"
+      ],
+      "effort": "MEDIUM"
+    },
+    {
+      "priority": "P0",
+      "id": "FIX-002",
+      "gap_ref": "GAP-I2",
+      "title": "Implement weighted average HPP calculation",
+      "description": "Calculate new HPP on purchase receive: (old_qty * old_hpp + new_qty * new_price) / total_qty",
+      "files_affected": [
+        "/app/backend/routes/purchase.py"
+      ],
+      "effort": "MEDIUM"
+    },
+    {
+      "priority": "P0",
+      "id": "FIX-003",
+      "gap_ref": "GAP-S1",
+      "title": "Use warehouse HPP for sales COGS calculation",
+      "description": "Get HPP from product_stocks.unit_cost instead of products.cost_price for sales",
+      "files_affected": [
+        "/app/backend/routes/sales_module.py",
+        "/app/backend/routes/pos.py"
+      ],
+      "effort": "LOW"
+    },
+    {
+      "priority": "P1",
+      "id": "FIX-004",
+      "gap_ref": "GAP-P1",
+      "title": "Configure iPOS account codes in account_settings",
+      "description": "Set default accounts matching iPOS: 1-2010, 2-1101, 4-1100, 5-1300, 1-1210",
+      "files_affected": [
+        "/app/backend/routes/account_settings.py",
+        "Database: account_settings collection"
+      ],
+      "effort": "LOW"
+    },
+    {
+      "priority": "P1",
+      "id": "FIX-005",
+      "gap_ref": "GAP-S2",
+      "title": "Enforce 4-line journal for sales",
+      "description": "Always create: D(AR/Cash) + D(HPP) + C(Revenue) + C(Inventory)",
+      "files_affected": [
+        "/app/backend/routes/sales_module.py"
+      ],
+      "effort": "LOW"
+    }
+  ],
+
+  "IMPORT_MAPPING_RULES": {
+    "items": {
+      "ipos_field": "OCB_TITAN_field",
+      "kodeitem": "code",
+      "namaitem": "name",
+      "jenis": "category_id (lookup)",
+      "merek": "brand",
+      "satuan": "unit",
+      "hbeli1": "cost_price",
+      "hjual1": "selling_price",
+      "hjual2": "wholesale_price",
+      "hjual3": "member_price"
+    },
+    "stock": {
+      "kodeitem": "product_id (lookup)",
+      "kodekantor": "branch_id (lookup)",
+      "stok": "quantity",
+      "hpp": "unit_cost (NEW FIELD)"
+    },
+    "chart_of_accounts": {
+      "kodeacc": "code",
+      "namaacc": "name",
+      "kelompok": "group",
+      "tipe": "type"
+    }
+  },
+
+  "VALIDATION_CHECKPOINTS": [
+    {
+      "checkpoint": "MASTER_DATA_IMPORT",
+      "tests": [
+        "Item count matches",
+        "Account code structure matches",
+        "Warehouse/branch mapping complete"
+      ]
+    },
+    {
+      "checkpoint": "STOCK_IMPORT",
+      "tests": [
+        "Total stock qty matches",
+        "Per-item-per-warehouse qty matches",
+        "HPP values imported correctly"
+      ]
+    },
+    {
+      "checkpoint": "TRANSACTION_BEHAVIOR",
+      "tests": [
+        "Purchase creates correct stock movement",
+        "Purchase creates correct AP entry",
+        "Purchase creates correct journal (D:Inventory C:AP)",
+        "Sales decreases stock correctly",
+        "Sales creates AR if credit",
+        "Sales creates 4-line journal"
+      ]
+    },
+    {
+      "checkpoint": "ACCOUNTING_INTEGRITY",
+      "tests": [
+        "Journal balances (D=C)",
+        "Inventory account matches physical stock value",
+        "AR balance matches unpaid invoices",
+        "AP balance matches unpaid bills"
+      ]
+    }
+  ]
+}
