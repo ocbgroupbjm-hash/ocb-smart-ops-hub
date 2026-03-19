@@ -1,0 +1,153 @@
+{
+  "report_id": "TENANT-AUDIT-20260319012222",
+  "generated_at": "2026-03-19T01:22:22.405057+00:00",
+  "type": "TENANT_SAFETY_AUDIT",
+  "tenant_id": "ocb_titan",
+  "collections_audited": [
+    {
+      "collection": "products",
+      "type": "Master",
+      "total": 176,
+      "with_tenant": 176,
+      "orphan": 0,
+      "status": "PASS"
+    },
+    {
+      "collection": "categories",
+      "type": "Master",
+      "total": 23,
+      "with_tenant": 23,
+      "orphan": 0,
+      "status": "PASS"
+    },
+    {
+      "collection": "brands",
+      "type": "Master",
+      "total": 10,
+      "with_tenant": 10,
+      "orphan": 0,
+      "status": "PASS"
+    },
+    {
+      "collection": "units",
+      "type": "Master",
+      "total": 9,
+      "with_tenant": 9,
+      "orphan": 0,
+      "status": "PASS"
+    },
+    {
+      "collection": "suppliers",
+      "type": "Master",
+      "total": 14,
+      "with_tenant": 14,
+      "orphan": 0,
+      "status": "PASS"
+    },
+    {
+      "collection": "customers",
+      "type": "Master",
+      "total": 26,
+      "with_tenant": 26,
+      "orphan": 0,
+      "status": "PASS"
+    },
+    {
+      "collection": "warehouses",
+      "type": "Master",
+      "total": 10,
+      "with_tenant": 10,
+      "orphan": 0,
+      "status": "PASS"
+    },
+    {
+      "collection": "branches",
+      "type": "Master",
+      "total": 102,
+      "with_tenant": 102,
+      "orphan": 0,
+      "status": "PASS"
+    },
+    {
+      "collection": "employees",
+      "type": "Master",
+      "total": 21,
+      "with_tenant": 21,
+      "orphan": 0,
+      "status": "PASS"
+    },
+    {
+      "collection": "chart_of_accounts",
+      "type": "Master",
+      "total": 411,
+      "with_tenant": 411,
+      "orphan": 0,
+      "status": "PASS"
+    },
+    {
+      "collection": "sales_invoices",
+      "type": "Transaction",
+      "total": 20000,
+      "with_tenant": 20000,
+      "orphan": 0,
+      "status": "PASS"
+    },
+    {
+      "collection": "purchase_orders",
+      "type": "Transaction",
+      "total": 4275,
+      "with_tenant": 4275,
+      "orphan": 0,
+      "status": "PASS"
+    },
+    {
+      "collection": "journals",
+      "type": "Transaction",
+      "total": 145073,
+      "with_tenant": 145073,
+      "orphan": 0,
+      "status": "PASS"
+    },
+    {
+      "collection": "ap_payments",
+      "type": "Transaction",
+      "total": 3332,
+      "with_tenant": 3332,
+      "orphan": 0,
+      "status": "PASS"
+    },
+    {
+      "collection": "ar_payments",
+      "type": "Transaction",
+      "total": 19006,
+      "with_tenant": 19006,
+      "orphan": 0,
+      "status": "PASS"
+    },
+    {
+      "collection": "stock_movements",
+      "type": "Transaction",
+      "total": 192,
+      "with_tenant": 192,
+      "orphan": 0,
+      "status": "PASS"
+    },
+    {
+      "collection": "product_stocks",
+      "type": "Stock",
+      "total": 1221,
+      "with_tenant": 1221,
+      "orphan": 0,
+      "status": "PASS"
+    }
+  ],
+  "overall_status": "PASS",
+  "summary": {
+    "total_collections": 17,
+    "passed": 17,
+    "failed": 0,
+    "total_records": 193901,
+    "total_bound": 193901,
+    "total_orphan": 0
+  }
+}
