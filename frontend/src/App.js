@@ -142,6 +142,7 @@ import PointTransaksi from './pages/sales/PointTransaksi';
 import CommissionPaymentsList from './pages/sales/CommissionPaymentsList';
 import DeliveriesList from './pages/sales/DeliveriesList';
 import TaxExport from './pages/sales/TaxExport';
+import POSScreen from './pages/sales/POSScreen';
 
 // Inventory Pages
 import { StockCards, StockMovements, StockTransfers, StockOpname, KartuStok } from './pages/inventory';
