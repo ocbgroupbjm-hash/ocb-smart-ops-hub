@@ -5,6 +5,59 @@ Membangun sistem ERP retail komprehensif (OCB TITAN) dengan fitur POS, Inventory
 
 **STATUS: 🔒 BLUEPRINT LOCKED & TENANT BINDING FIXED** - v1.0.0-PILOT-20260319
 
+---
+
+## 🟢 P0: IPOS UX ALIGNMENT - POS SCREEN (2026-03-19) ✅ DONE
+
+### Summary
+Implemented a new Point of Sale (POS) screen that mimics the iPOS 5 UX for fast, keyboard-driven transaction entry.
+
+### Features Implemented
+| Feature | Status |
+|---------|--------|
+| Single-screen POS layout | ✅ DONE |
+| Search by barcode/code/name | ✅ DONE |
+| Auto-add item on exact match | ✅ DONE |
+| Dropdown search results | ✅ DONE |
+| Real-time cart with qty edit | ✅ DONE |
+| Total calculation real-time | ✅ DONE |
+| Customer selection | ✅ DONE |
+| Warehouse selection | ✅ DONE |
+| BAYAR TUNAI (F1) | ✅ DONE |
+| TRANSFER/E-MONEY (F2) | ✅ DONE |
+| Payment modal | ✅ DONE |
+| Quick amount buttons | ✅ DONE |
+| Kembalian calculation | ✅ DONE |
+| Keyboard shortcuts | ✅ DONE |
+| Transaction creation | ✅ DONE |
+
+### Keyboard Shortcuts
+| Key | Action |
+|-----|--------|
+| F1 | Bayar Tunai |
+| F2 | Transfer/E-Money |
+| Esc | Batal/Tutup modal |
+| Delete | Hapus item terpilih |
+| Arrow Up/Down | Navigasi item |
+| Enter | Pilih item/Konfirmasi |
+| Ctrl+S | Simpan transaksi |
+
+### Files Created/Modified
+- `/app/frontend/src/pages/sales/POSScreen.jsx` - Main POS component
+- `/app/frontend/src/App.js` - Added /pos route
+- `/app/frontend/src/components/layout/Sidebar.jsx` - Added POS Kasir menu item
+
+### Route
+- `/pos` - Full-screen POS interface
+
+### Test Results
+- **Backend**: 100% PASS
+- **Frontend**: 100% PASS
+- **Invoice Created**: INV-20260319-0011
+- **Test Report**: `/app/test_reports/iteration_90.json`
+
+---
+
 ## Core Requirements
 1. **Multi-tenant Architecture** - Support untuk multiple business units
 2. **RBAC System** - Role-Based Access Control yang komprehensif
