@@ -1,0 +1,10 @@
+{
+  "batch_id": "de5ef05b-b19e-47fa-8169-fab62bc959c2",
+  "type": "PURCHASE_IMPORT",
+  "started_at": "2026-03-19T00:28:47.209867+00:00",
+  "status": "COMPLETED",
+  "imported": 4271,
+  "skipped": 0,
+  "errors": [],
+  "completed_at": "2026-03-19T00:28:49.611791+00:00"
+}

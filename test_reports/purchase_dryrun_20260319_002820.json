@@ -1,0 +1,23 @@
+{
+  "type": "PURCHASE_DRY_RUN",
+  "timestamp": "2026-03-19T00:28:19.918245+00:00",
+  "tenant_id": "ocb_titan",
+  "status": "READY",
+  "summary": {
+    "total_transactions": 4271,
+    "total_line_items": 4846,
+    "total_value": 77566144214.0,
+    "valid_transactions": 4271,
+    "invalid_transactions": 0
+  },
+  "validation_errors": [],
+  "warnings": [],
+  "expected_effects": {
+    "stock_in_items": 107,
+    "stock_in_total_qty": 55268703383.0,
+    "inventory_value_increase": 78725579217.0,
+    "ap_created": 77566144214.0,
+    "journal_entries": 8542
+  },
+  "can_proceed": true
+}

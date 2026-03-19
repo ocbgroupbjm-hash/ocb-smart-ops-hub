@@ -1,0 +1,23 @@
+{
+  "timestamp": "2026-03-19T00:28:56.009939+00:00",
+  "tenant_id": "ocb_titan",
+  "validations": {
+    "sales": {
+      "staging_count": 20000,
+      "imported_count": 20000,
+      "staging_total": 76440624743.0,
+      "imported_total": 76440624743.0,
+      "count_match": true,
+      "total_match": true
+    },
+    "purchases": {
+      "staging_count": 4271,
+      "imported_count": 4271,
+      "staging_total": 77566144214.0,
+      "imported_total": 77566144214.0,
+      "count_match": true,
+      "total_match": true
+    }
+  },
+  "overall_status": "PASS"
+}

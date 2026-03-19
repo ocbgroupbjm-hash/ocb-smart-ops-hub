@@ -1,0 +1,25 @@
+{
+  "type": "SALES_DRY_RUN",
+  "timestamp": "2026-03-19T00:28:12.005806+00:00",
+  "tenant_id": "ocb_titan",
+  "status": "READY",
+  "summary": {
+    "total_transactions": 20000,
+    "total_line_items": 28058,
+    "total_value": 76440624743.0,
+    "valid_transactions": 20000,
+    "invalid_transactions": 0
+  },
+  "validation_errors": [],
+  "warnings": [],
+  "expected_effects": {
+    "stock_out_items": 105,
+    "stock_out_total_qty": 55220533918.0,
+    "revenue": 76440624743.0,
+    "cogs": 77584709804.0,
+    "gross_profit": -1144085061.0,
+    "ar_created": 76422694143.0,
+    "journal_entries": 80000
+  },
+  "can_proceed": true
+}

@@ -9,7 +9,7 @@ import json
 import os
 import logging
 
-from services.ipos_adapter import IPOSAdapter, IPOSBackupParser, StagingService, ReconciliationEngine, IPOSDataImporter
+from services.ipos_adapter import IPOSAdapter, IPOSBackupParser, StagingService, ReconciliationEngine, IPOSDataImporter, HistoricalTransactionImporter
 from middleware.tenant_isolation import get_current_tenant
 from database import get_db
 
@@ -709,4 +709,296 @@ async def validate_import(tenant_id: str = Depends(get_current_tenant)):
         
     except Exception as e:
         logger.error(f"Error validating import: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================================
+# HISTORICAL TRANSACTION IMPORT ENDPOINTS
+# ============================================================
+
+@router.post("/import/historical/dry-run/sales")
+async def dry_run_sales_import(tenant_id: str = Depends(get_current_tenant)):
+    """
+    DRY-RUN: Validate sales import without committing
+    
+    Simulates the import and reports:
+    - Which transactions will be imported
+    - Which transactions have validation issues
+    - Expected effects (stock changes, journal entries, etc.)
+    """
+    try:
+        # Enforce pilot tenant only
+        if tenant_id != "ocb_titan":
+            raise HTTPException(
+                status_code=403, 
+                detail="Historical import only allowed on pilot tenant: ocb_titan"
+            )
+        
+        db = get_db()
+        importer = HistoricalTransactionImporter(db, tenant_id)
+        
+        result = await importer.dry_run_sales_import()
+        
+        # Save dry-run report
+        report_path = f"/app/test_reports/sales_dryrun_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.json"
+        with open(report_path, 'w') as f:
+            json.dump(result, f, indent=2)
+        
+        result["report_saved_to"] = report_path
+        
+        return result
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in sales dry-run: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/import/historical/dry-run/purchases")
+async def dry_run_purchases_import(tenant_id: str = Depends(get_current_tenant)):
+    """
+    DRY-RUN: Validate purchase import without committing
+    """
+    try:
+        if tenant_id != "ocb_titan":
+            raise HTTPException(
+                status_code=403, 
+                detail="Historical import only allowed on pilot tenant: ocb_titan"
+            )
+        
+        db = get_db()
+        importer = HistoricalTransactionImporter(db, tenant_id)
+        
+        result = await importer.dry_run_purchase_import()
+        
+        # Save dry-run report
+        report_path = f"/app/test_reports/purchase_dryrun_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.json"
+        with open(report_path, 'w') as f:
+            json.dump(result, f, indent=2)
+        
+        result["report_saved_to"] = report_path
+        
+        return result
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in purchase dry-run: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/import/historical/execute/sales")
+async def execute_sales_import(
+    skip_stock_update: bool = Query(default=True, description="Skip stock update (already imported from iPOS)"),
+    skip_journal: bool = Query(default=True, description="Skip journal creation (already in staging)"),
+    tenant_id: str = Depends(get_current_tenant)
+):
+    """
+    COMMIT: Execute historical sales import
+    
+    WARNING: This will modify production data!
+    
+    Steps:
+    1. Creates sales_invoices from iPOS staging
+    2. Each invoice has import_batch_id for rollback tracking
+    3. Skips transactions with missing products
+    
+    Args:
+        skip_stock_update: Don't update stock (already imported from iPOS)
+        skip_journal: Don't create journals (will import from iPOS journals)
+    """
+    try:
+        if tenant_id != "ocb_titan":
+            raise HTTPException(
+                status_code=403, 
+                detail="Historical import only allowed on pilot tenant: ocb_titan"
+            )
+        
+        db = get_db()
+        importer = HistoricalTransactionImporter(db, tenant_id)
+        
+        # Execute import
+        result = await importer.import_sales(
+            skip_stock_update=skip_stock_update,
+            skip_journal=skip_journal
+        )
+        
+        # Save result report
+        report_path = f"/app/test_reports/sales_import_{result['batch_id']}.json"
+        with open(report_path, 'w') as f:
+            json.dump(result, f, indent=2, default=str)
+        
+        result["report_saved_to"] = report_path
+        
+        logger.info(f"Sales import completed: batch={result['batch_id']}, imported={result['imported']}, skipped={result['skipped']}")
+        
+        return result
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error executing sales import: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/import/historical/execute/purchases")
+async def execute_purchases_import(
+    skip_stock_update: bool = Query(default=True, description="Skip stock update (already imported from iPOS)"),
+    skip_journal: bool = Query(default=True, description="Skip journal creation (already in staging)"),
+    tenant_id: str = Depends(get_current_tenant)
+):
+    """
+    COMMIT: Execute historical purchase import
+    """
+    try:
+        if tenant_id != "ocb_titan":
+            raise HTTPException(
+                status_code=403, 
+                detail="Historical import only allowed on pilot tenant: ocb_titan"
+            )
+        
+        db = get_db()
+        importer = HistoricalTransactionImporter(db, tenant_id)
+        
+        result = await importer.import_purchases(
+            skip_stock_update=skip_stock_update,
+            skip_journal=skip_journal
+        )
+        
+        # Save result report
+        report_path = f"/app/test_reports/purchase_import_{result['batch_id']}.json"
+        with open(report_path, 'w') as f:
+            json.dump(result, f, indent=2, default=str)
+        
+        result["report_saved_to"] = report_path
+        
+        logger.info(f"Purchase import completed: batch={result['batch_id']}, imported={result['imported']}, skipped={result['skipped']}")
+        
+        return result
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error executing purchase import: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/import/historical/rollback/{batch_id}")
+async def rollback_import_batch(
+    batch_id: str,
+    tenant_id: str = Depends(get_current_tenant)
+):
+    """
+    ROLLBACK: Undo an entire import batch
+    
+    Deletes all records that were created with the specified import_batch_id
+    """
+    try:
+        if tenant_id != "ocb_titan":
+            raise HTTPException(
+                status_code=403, 
+                detail="Rollback only allowed on pilot tenant: ocb_titan"
+            )
+        
+        db = get_db()
+        importer = HistoricalTransactionImporter(db, tenant_id)
+        
+        result = await importer.rollback_batch(batch_id)
+        
+        logger.info(f"Rollback completed for batch {batch_id}: {result}")
+        
+        return result
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error rolling back batch: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/import/historical/validate")
+async def validate_historical_import(tenant_id: str = Depends(get_current_tenant)):
+    """
+    Validate historical import by comparing staging vs production
+    
+    Checks:
+    - Sales count and total
+    - Purchase count and total
+    """
+    try:
+        if tenant_id != "ocb_titan":
+            raise HTTPException(
+                status_code=403, 
+                detail="Validation only allowed on pilot tenant: ocb_titan"
+            )
+        
+        db = get_db()
+        importer = HistoricalTransactionImporter(db, tenant_id)
+        
+        result = await importer.validate_import()
+        
+        # Save validation report
+        report_path = f"/app/test_reports/historical_import_validation_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.json"
+        with open(report_path, 'w') as f:
+            json.dump(result, f, indent=2)
+        
+        result["report_saved_to"] = report_path
+        
+        return result
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error validating import: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/import/historical/batches")
+async def list_import_batches(
+    limit: int = Query(default=20, le=100),
+    tenant_id: str = Depends(get_current_tenant)
+):
+    """
+    List all historical import batches
+    """
+    try:
+        db = get_db()
+        importer = HistoricalTransactionImporter(db, tenant_id)
+        
+        batches = await importer.get_import_batches(limit)
+        
+        return {
+            "count": len(batches),
+            "batches": batches
+        }
+        
+    except Exception as e:
+        logger.error(f"Error listing batches: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/import/historical/batches/{batch_id}")
+async def get_import_batch_details(
+    batch_id: str,
+    tenant_id: str = Depends(get_current_tenant)
+):
+    """
+    Get details of a specific import batch
+    """
+    try:
+        db = get_db()
+        importer = HistoricalTransactionImporter(db, tenant_id)
+        
+        batch = await importer.get_batch_details(batch_id)
+        
+        if not batch:
+            raise HTTPException(status_code=404, detail="Batch not found")
+        
+        return batch
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting batch details: {e}")
         raise HTTPException(status_code=500, detail=str(e))

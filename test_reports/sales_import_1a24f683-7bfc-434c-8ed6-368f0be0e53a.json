@@ -1,0 +1,10 @@
+{
+  "batch_id": "1a24f683-7bfc-434c-8ed6-368f0be0e53a",
+  "type": "SALES_IMPORT",
+  "started_at": "2026-03-19T00:28:27.633925+00:00",
+  "status": "COMPLETED",
+  "imported": 20000,
+  "skipped": 0,
+  "errors": [],
+  "completed_at": "2026-03-19T00:28:40.552281+00:00"
+}

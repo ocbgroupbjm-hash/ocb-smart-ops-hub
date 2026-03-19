@@ -8,6 +8,7 @@ from .staging import StagingService
 from .mapping import MappingService
 from .reconciliation import ReconciliationEngine
 from .importer import IPOSDataImporter
+from .historical_importer import HistoricalTransactionImporter
 
 __all__ = [
     'IPOSAdapter',
@@ -15,5 +16,6 @@ __all__ = [
     'StagingService',
     'MappingService',
     'ReconciliationEngine',
-    'IPOSDataImporter'
+    'IPOSDataImporter',
+    'HistoricalTransactionImporter'
 ]
