@@ -1,0 +1,10 @@
+{
+  "batch_id": "ce154ebe-29c6-4779-a762-7310959e82b0",
+  "type": "JOURNAL_IMPORT",
+  "started_at": "2026-03-19T00:39:18.888770+00:00",
+  "status": "COMPLETED",
+  "imported": 145073,
+  "skipped": 0,
+  "errors": [],
+  "completed_at": "2026-03-19T00:39:22.687953+00:00"
+}

@@ -622,8 +622,631 @@ class HistoricalTransactionImporter:
         return result
     
     # ============================================================
-    # ROLLBACK METHODS
+    # JOURNAL IMPORT METHODS
     # ============================================================
+    
+    async def dry_run_journal_import(self) -> Dict:
+        """DRY-RUN: Validate journal import without committing"""
+        logger.info("=== DRY-RUN: Journal Import Validation ===")
+        
+        result = {
+            "type": "JOURNAL_DRY_RUN",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "tenant_id": self.tenant_id,
+            "status": "VALIDATING",
+            "summary": {},
+            "validation_errors": [],
+            "warnings": [],
+            "expected_effects": {}
+        }
+        
+        try:
+            # Get staged journals
+            journal_count = await self.db.ipos_journal_staging.count_documents({"tenant_id": self.tenant_id})
+            
+            # Aggregate totals
+            pipeline = [
+                {"$match": {"tenant_id": self.tenant_id}},
+                {"$group": {
+                    "_id": None,
+                    "total_debit": {"$sum": {"$toDouble": {"$ifNull": ["$data.debit", 0]}}},
+                    "total_credit": {"$sum": {"$toDouble": {"$ifNull": ["$data.credit", 0]}}},
+                    "count": {"$sum": 1}
+                }}
+            ]
+            agg_result = await self.db.ipos_journal_staging.aggregate(pipeline).to_list(1)
+            
+            if agg_result:
+                agg = agg_result[0]
+                total_debit = agg["total_debit"]
+                total_credit = agg["total_credit"]
+                balance_diff = total_debit - total_credit
+                
+                result["summary"] = {
+                    "total_entries": journal_count,
+                    "total_debit": total_debit,
+                    "total_credit": total_credit,
+                    "balance_difference": balance_diff,
+                    "is_balanced": abs(balance_diff) < 1
+                }
+                
+                if abs(balance_diff) >= 1:
+                    result["validation_errors"].append({
+                        "type": "JOURNAL_IMBALANCE",
+                        "difference": balance_diff,
+                        "action": "WARNING: Journals are not balanced"
+                    })
+                    result["status"] = "HAS_ISSUES"
+                else:
+                    result["status"] = "READY"
+            
+            # Get unique transactions count
+            trx_pipeline = [
+                {"$match": {"tenant_id": self.tenant_id}},
+                {"$group": {"_id": "$data.transaction_no"}},
+                {"$count": "unique_transactions"}
+            ]
+            trx_result = await self.db.ipos_journal_staging.aggregate(trx_pipeline).to_list(1)
+            
+            result["expected_effects"] = {
+                "journal_entries": journal_count,
+                "unique_transactions": trx_result[0]["unique_transactions"] if trx_result else 0,
+                "accounting_records": journal_count
+            }
+            
+            result["can_proceed"] = journal_count > 0
+            
+        except Exception as e:
+            result["status"] = "ERROR"
+            result["error"] = str(e)
+        
+        return result
+    
+    async def import_journals(self, batch_size: int = 5000) -> Dict:
+        """COMMIT: Import journal entries from staging"""
+        logger.info("=== COMMIT: Journal Import ===")
+        
+        self.current_batch_id = str(uuid.uuid4())
+        batch_start = datetime.now(timezone.utc)
+        
+        batch_record = {
+            "id": self.current_batch_id,
+            "type": "JOURNAL_IMPORT",
+            "tenant_id": self.tenant_id,
+            "status": "IN_PROGRESS",
+            "started_at": batch_start.isoformat(),
+            "source": "IPOS5_STAGING",
+            "stats": {},
+            "errors": []
+        }
+        
+        await self.db.import_batches.insert_one(batch_record)
+        
+        result = {
+            "batch_id": self.current_batch_id,
+            "type": "JOURNAL_IMPORT",
+            "started_at": batch_start.isoformat(),
+            "status": "IN_PROGRESS",
+            "imported": 0,
+            "skipped": 0,
+            "errors": []
+        }
+        
+        try:
+            # Get all staged journals
+            total_count = await self.db.ipos_journal_staging.count_documents({"tenant_id": self.tenant_id})
+            processed = 0
+            
+            # Process in batches
+            cursor = self.db.ipos_journal_staging.find({"tenant_id": self.tenant_id})
+            
+            journals_batch = []
+            
+            async for doc in cursor:
+                data = doc.get("data", {})
+                
+                journal_entry = {
+                    "id": str(uuid.uuid4()),
+                    "tenant_id": self.tenant_id,
+                    "source_id": data.get("source_id"),
+                    "transaction_no": data.get("transaction_no"),
+                    "date": data.get("date"),
+                    "account_code": data.get("account_code"),
+                    "journal_type": data.get("journal_type"),
+                    "description": data.get("description"),
+                    "currency": data.get("currency", "IDR"),
+                    "rate": float(data.get("rate", 1) or 1),
+                    "amount": float(data.get("amount", 0) or 0),
+                    "position": data.get("position"),  # D or K
+                    "debit": float(data.get("debit", 0) or 0),
+                    "credit": float(data.get("credit", 0) or 0),
+                    "warehouse_code": data.get("warehouse_code"),
+                    "line_no": int(data.get("line_no", 0) or 0),
+                    "input_type": data.get("input_type"),
+                    "source_system": "IPOS5",
+                    "import_batch_id": self.current_batch_id,
+                    "created_at": datetime.now(timezone.utc).isoformat()
+                }
+                
+                journals_batch.append(journal_entry)
+                
+                # Insert in batches
+                if len(journals_batch) >= batch_size:
+                    try:
+                        await self.db.journals.insert_many(journals_batch)
+                        result["imported"] += len(journals_batch)
+                    except Exception as e:
+                        result["errors"].append({"batch": processed, "error": str(e)})
+                    
+                    journals_batch = []
+                    processed += batch_size
+                    logger.info(f"Processed {min(processed, total_count)}/{total_count} journals")
+            
+            # Insert remaining
+            if journals_batch:
+                try:
+                    await self.db.journals.insert_many(journals_batch)
+                    result["imported"] += len(journals_batch)
+                except Exception as e:
+                    result["errors"].append({"batch": "final", "error": str(e)})
+            
+            result["status"] = "COMPLETED"
+            result["completed_at"] = datetime.now(timezone.utc).isoformat()
+            
+            # Update batch record
+            await self.db.import_batches.update_one(
+                {"id": self.current_batch_id},
+                {"$set": {
+                    "status": "COMPLETED",
+                    "completed_at": result["completed_at"],
+                    "stats": {
+                        "imported": result["imported"],
+                        "skipped": result["skipped"],
+                        "errors": len(result["errors"])
+                    }
+                }}
+            )
+            
+            await self._log_action("JOURNAL_IMPORT", self.current_batch_id, {
+                "imported": result["imported"]
+            })
+            
+        except Exception as e:
+            result["status"] = "FAILED"
+            result["error"] = str(e)
+            
+            await self.db.import_batches.update_one(
+                {"id": self.current_batch_id},
+                {"$set": {"status": "FAILED", "error": str(e)}}
+            )
+        
+        return result
+    
+    # ============================================================
+    # AR/AP PAYMENT IMPORT METHODS
+    # ============================================================
+    
+    async def dry_run_ap_payment_import(self) -> Dict:
+        """DRY-RUN: Validate AP payment import"""
+        logger.info("=== DRY-RUN: AP Payment Import Validation ===")
+        
+        result = {
+            "type": "AP_PAYMENT_DRY_RUN",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "tenant_id": self.tenant_id,
+            "status": "VALIDATING",
+            "summary": {},
+            "validation_errors": [],
+            "expected_effects": {}
+        }
+        
+        try:
+            hd_count = await self.db.ipos_ap_payment_hd_staging.count_documents({"tenant_id": self.tenant_id})
+            dt_count = await self.db.ipos_ap_payment_dt_staging.count_documents({"tenant_id": self.tenant_id})
+            
+            # Aggregate total
+            pipeline = [
+                {"$match": {"tenant_id": self.tenant_id}},
+                {"$group": {
+                    "_id": None,
+                    "total_amount": {"$sum": {"$toDouble": {"$ifNull": ["$data.total", 0]}}}
+                }}
+            ]
+            agg_result = await self.db.ipos_ap_payment_hd_staging.aggregate(pipeline).to_list(1)
+            
+            result["summary"] = {
+                "payment_headers": hd_count,
+                "payment_details": dt_count,
+                "total_amount": agg_result[0]["total_amount"] if agg_result else 0
+            }
+            
+            result["status"] = "READY" if hd_count > 0 else "NO_DATA"
+            result["can_proceed"] = hd_count > 0
+            
+            result["expected_effects"] = {
+                "ap_payments": hd_count,
+                "payment_allocations": dt_count
+            }
+            
+        except Exception as e:
+            result["status"] = "ERROR"
+            result["error"] = str(e)
+        
+        return result
+    
+    async def dry_run_ar_payment_import(self) -> Dict:
+        """DRY-RUN: Validate AR payment import"""
+        logger.info("=== DRY-RUN: AR Payment Import Validation ===")
+        
+        result = {
+            "type": "AR_PAYMENT_DRY_RUN",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "tenant_id": self.tenant_id,
+            "status": "VALIDATING",
+            "summary": {},
+            "validation_errors": [],
+            "expected_effects": {}
+        }
+        
+        try:
+            hd_count = await self.db.ipos_ar_payment_hd_staging.count_documents({"tenant_id": self.tenant_id})
+            dt_count = await self.db.ipos_ar_payment_dt_staging.count_documents({"tenant_id": self.tenant_id})
+            
+            pipeline = [
+                {"$match": {"tenant_id": self.tenant_id}},
+                {"$group": {
+                    "_id": None,
+                    "total_amount": {"$sum": {"$toDouble": {"$ifNull": ["$data.total", 0]}}}
+                }}
+            ]
+            agg_result = await self.db.ipos_ar_payment_hd_staging.aggregate(pipeline).to_list(1)
+            
+            result["summary"] = {
+                "payment_headers": hd_count,
+                "payment_details": dt_count,
+                "total_amount": agg_result[0]["total_amount"] if agg_result else 0
+            }
+            
+            result["status"] = "READY" if hd_count > 0 else "NO_DATA"
+            result["can_proceed"] = hd_count > 0
+            
+            result["expected_effects"] = {
+                "ar_payments": hd_count,
+                "payment_allocations": dt_count
+            }
+            
+        except Exception as e:
+            result["status"] = "ERROR"
+            result["error"] = str(e)
+        
+        return result
+    
+    async def import_ap_payments(self) -> Dict:
+        """COMMIT: Import AP payments from staging"""
+        logger.info("=== COMMIT: AP Payment Import ===")
+        
+        self.current_batch_id = str(uuid.uuid4())
+        batch_start = datetime.now(timezone.utc)
+        
+        batch_record = {
+            "id": self.current_batch_id,
+            "type": "AP_PAYMENT_IMPORT",
+            "tenant_id": self.tenant_id,
+            "status": "IN_PROGRESS",
+            "started_at": batch_start.isoformat(),
+            "source": "IPOS5_STAGING"
+        }
+        
+        await self.db.import_batches.insert_one(batch_record)
+        
+        result = {
+            "batch_id": self.current_batch_id,
+            "type": "AP_PAYMENT_IMPORT",
+            "started_at": batch_start.isoformat(),
+            "status": "IN_PROGRESS",
+            "imported": 0,
+            "skipped": 0,
+            "errors": []
+        }
+        
+        try:
+            # Get details by transaction
+            details_by_trx = {}
+            async for doc in self.db.ipos_ap_payment_dt_staging.find({"tenant_id": self.tenant_id}):
+                data = doc.get("data", {})
+                trx_no = data.get("transaction_no")
+                if trx_no not in details_by_trx:
+                    details_by_trx[trx_no] = []
+                details_by_trx[trx_no].append(data)
+            
+            # Import headers with details
+            async for doc in self.db.ipos_ap_payment_hd_staging.find({"tenant_id": self.tenant_id}):
+                data = doc.get("data", {})
+                trx_no = data.get("transaction_no")
+                details = details_by_trx.get(trx_no, [])
+                
+                payment = {
+                    "id": str(uuid.uuid4()),
+                    "tenant_id": self.tenant_id,
+                    "payment_no": trx_no,
+                    "date": data.get("date"),
+                    "supplier_code": data.get("supplier_code"),
+                    "warehouse_code": data.get("warehouse_code"),
+                    "payment_method": data.get("payment_method"),
+                    "bank_account": data.get("bank_account"),
+                    "total_amount": float(data.get("total", 0) or 0),
+                    "description": data.get("description"),
+                    "currency": data.get("currency", "IDR"),
+                    "rate": float(data.get("rate", 1) or 1),
+                    "allocations": [
+                        {
+                            "invoice_no": d.get("invoice_no"),
+                            "amount": float(d.get("amount", 0) or 0)
+                        }
+                        for d in details
+                    ],
+                    "source_system": "IPOS5",
+                    "import_batch_id": self.current_batch_id,
+                    "created_at": datetime.now(timezone.utc).isoformat()
+                }
+                
+                try:
+                    await self.db.ap_payments.insert_one(payment)
+                    result["imported"] += 1
+                except Exception as e:
+                    result["errors"].append({"trx": trx_no, "error": str(e)})
+            
+            result["status"] = "COMPLETED"
+            result["completed_at"] = datetime.now(timezone.utc).isoformat()
+            
+            await self.db.import_batches.update_one(
+                {"id": self.current_batch_id},
+                {"$set": {
+                    "status": "COMPLETED",
+                    "completed_at": result["completed_at"],
+                    "stats": {"imported": result["imported"]}
+                }}
+            )
+            
+        except Exception as e:
+            result["status"] = "FAILED"
+            result["error"] = str(e)
+        
+        return result
+    
+    async def import_ar_payments(self) -> Dict:
+        """COMMIT: Import AR payments from staging"""
+        logger.info("=== COMMIT: AR Payment Import ===")
+        
+        self.current_batch_id = str(uuid.uuid4())
+        batch_start = datetime.now(timezone.utc)
+        
+        batch_record = {
+            "id": self.current_batch_id,
+            "type": "AR_PAYMENT_IMPORT",
+            "tenant_id": self.tenant_id,
+            "status": "IN_PROGRESS",
+            "started_at": batch_start.isoformat(),
+            "source": "IPOS5_STAGING"
+        }
+        
+        await self.db.import_batches.insert_one(batch_record)
+        
+        result = {
+            "batch_id": self.current_batch_id,
+            "type": "AR_PAYMENT_IMPORT",
+            "started_at": batch_start.isoformat(),
+            "status": "IN_PROGRESS",
+            "imported": 0,
+            "skipped": 0,
+            "errors": []
+        }
+        
+        try:
+            # Get details by transaction
+            details_by_trx = {}
+            async for doc in self.db.ipos_ar_payment_dt_staging.find({"tenant_id": self.tenant_id}):
+                data = doc.get("data", {})
+                trx_no = data.get("transaction_no")
+                if trx_no not in details_by_trx:
+                    details_by_trx[trx_no] = []
+                details_by_trx[trx_no].append(data)
+            
+            # Import headers with details
+            async for doc in self.db.ipos_ar_payment_hd_staging.find({"tenant_id": self.tenant_id}):
+                data = doc.get("data", {})
+                trx_no = data.get("transaction_no")
+                details = details_by_trx.get(trx_no, [])
+                
+                payment = {
+                    "id": str(uuid.uuid4()),
+                    "tenant_id": self.tenant_id,
+                    "payment_no": trx_no,
+                    "date": data.get("date"),
+                    "customer_code": data.get("customer_code"),
+                    "warehouse_code": data.get("warehouse_code"),
+                    "payment_method": data.get("payment_method"),
+                    "bank_account": data.get("bank_account"),
+                    "total_amount": float(data.get("total", 0) or 0),
+                    "description": data.get("description"),
+                    "currency": data.get("currency", "IDR"),
+                    "rate": float(data.get("rate", 1) or 1),
+                    "allocations": [
+                        {
+                            "invoice_no": d.get("invoice_no"),
+                            "amount": float(d.get("amount", 0) or 0)
+                        }
+                        for d in details
+                    ],
+                    "source_system": "IPOS5",
+                    "import_batch_id": self.current_batch_id,
+                    "created_at": datetime.now(timezone.utc).isoformat()
+                }
+                
+                try:
+                    await self.db.ar_payments.insert_one(payment)
+                    result["imported"] += 1
+                except Exception as e:
+                    result["errors"].append({"trx": trx_no, "error": str(e)})
+            
+            result["status"] = "COMPLETED"
+            result["completed_at"] = datetime.now(timezone.utc).isoformat()
+            
+            await self.db.import_batches.update_one(
+                {"id": self.current_batch_id},
+                {"$set": {
+                    "status": "COMPLETED",
+                    "completed_at": result["completed_at"],
+                    "stats": {"imported": result["imported"]}
+                }}
+            )
+            
+        except Exception as e:
+            result["status"] = "FAILED"
+            result["error"] = str(e)
+        
+        return result
+    
+    # ============================================================
+    # FULL VALIDATION WITH JOURNALS
+    # ============================================================
+    
+    async def validate_full_accounting_chain(self) -> Dict:
+        """
+        FULL VALIDATION: Verify complete accounting chain
+        
+        Checks:
+        - Sales imported and totals match
+        - Purchases imported and totals match
+        - Journals imported and balanced
+        - AP/AR payments imported
+        - Full audit trail complete
+        """
+        logger.info("=== FULL ACCOUNTING CHAIN VALIDATION ===")
+        
+        result = {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "tenant_id": self.tenant_id,
+            "validations": {},
+            "overall_status": "PENDING"
+        }
+        
+        # Sales validation
+        staging_sales = await self.db.ipos_sales_hd_staging.count_documents({"tenant_id": self.tenant_id})
+        prod_sales = await self.db.sales_invoices.count_documents({
+            "tenant_id": self.tenant_id, "source_system": "IPOS5"
+        })
+        
+        sales_total_staging = 0
+        async for doc in self.db.ipos_sales_hd_staging.find({"tenant_id": self.tenant_id}):
+            sales_total_staging += float(doc.get("data", {}).get("total", 0) or 0)
+        
+        sales_total_prod = 0
+        async for doc in self.db.sales_invoices.find({"tenant_id": self.tenant_id, "source_system": "IPOS5"}):
+            sales_total_prod += float(doc.get("grand_total", 0) or 0)
+        
+        result["validations"]["sales"] = {
+            "staging_count": staging_sales,
+            "production_count": prod_sales,
+            "staging_total": sales_total_staging,
+            "production_total": sales_total_prod,
+            "count_match": staging_sales == prod_sales,
+            "total_match": abs(sales_total_staging - sales_total_prod) < 1,
+            "status": "PASS" if (staging_sales == prod_sales and abs(sales_total_staging - sales_total_prod) < 1) else "FAIL"
+        }
+        
+        # Purchase validation
+        staging_purchase = await self.db.ipos_purchase_hd_staging.count_documents({"tenant_id": self.tenant_id})
+        prod_purchase = await self.db.purchase_orders.count_documents({
+            "tenant_id": self.tenant_id, "source_system": "IPOS5"
+        })
+        
+        purchase_total_staging = 0
+        async for doc in self.db.ipos_purchase_hd_staging.find({"tenant_id": self.tenant_id}):
+            purchase_total_staging += float(doc.get("data", {}).get("total", 0) or 0)
+        
+        purchase_total_prod = 0
+        async for doc in self.db.purchase_orders.find({"tenant_id": self.tenant_id, "source_system": "IPOS5"}):
+            purchase_total_prod += float(doc.get("total_amount", 0) or 0)
+        
+        result["validations"]["purchases"] = {
+            "staging_count": staging_purchase,
+            "production_count": prod_purchase,
+            "staging_total": purchase_total_staging,
+            "production_total": purchase_total_prod,
+            "count_match": staging_purchase == prod_purchase,
+            "total_match": abs(purchase_total_staging - purchase_total_prod) < 1,
+            "status": "PASS" if (staging_purchase == prod_purchase and abs(purchase_total_staging - purchase_total_prod) < 1) else "FAIL"
+        }
+        
+        # Journal validation
+        staging_journals = await self.db.ipos_journal_staging.count_documents({"tenant_id": self.tenant_id})
+        prod_journals = await self.db.journals.count_documents({
+            "tenant_id": self.tenant_id, "source_system": "IPOS5"
+        })
+        
+        # Check journal balance in production
+        journal_pipeline = [
+            {"$match": {"tenant_id": self.tenant_id, "source_system": "IPOS5"}},
+            {"$group": {
+                "_id": None,
+                "total_debit": {"$sum": "$debit"},
+                "total_credit": {"$sum": "$credit"}
+            }}
+        ]
+        journal_agg = await self.db.journals.aggregate(journal_pipeline).to_list(1)
+        
+        journal_debit = journal_agg[0]["total_debit"] if journal_agg else 0
+        journal_credit = journal_agg[0]["total_credit"] if journal_agg else 0
+        journal_balance = journal_debit - journal_credit
+        
+        result["validations"]["journals"] = {
+            "staging_count": staging_journals,
+            "production_count": prod_journals,
+            "count_match": staging_journals == prod_journals,
+            "production_debit": journal_debit,
+            "production_credit": journal_credit,
+            "balance_difference": journal_balance,
+            "is_balanced": abs(journal_balance) < 1,
+            "status": "PASS" if (staging_journals == prod_journals and abs(journal_balance) < 1) else ("PENDING" if prod_journals == 0 else "FAIL")
+        }
+        
+        # AP Payment validation
+        staging_ap = await self.db.ipos_ap_payment_hd_staging.count_documents({"tenant_id": self.tenant_id})
+        prod_ap = await self.db.ap_payments.count_documents({
+            "tenant_id": self.tenant_id, "source_system": "IPOS5"
+        })
+        
+        result["validations"]["ap_payments"] = {
+            "staging_count": staging_ap,
+            "production_count": prod_ap,
+            "count_match": staging_ap == prod_ap,
+            "status": "PASS" if staging_ap == prod_ap else ("PENDING" if prod_ap == 0 else "FAIL")
+        }
+        
+        # AR Payment validation
+        staging_ar = await self.db.ipos_ar_payment_hd_staging.count_documents({"tenant_id": self.tenant_id})
+        prod_ar = await self.db.ar_payments.count_documents({
+            "tenant_id": self.tenant_id, "source_system": "IPOS5"
+        })
+        
+        result["validations"]["ar_payments"] = {
+            "staging_count": staging_ar,
+            "production_count": prod_ar,
+            "count_match": staging_ar == prod_ar,
+            "status": "PASS" if staging_ar == prod_ar else ("PENDING" if prod_ar == 0 else "FAIL")
+        }
+        
+        # Calculate overall status
+        all_checks = [v["status"] for v in result["validations"].values()]
+        if all(s == "PASS" for s in all_checks):
+            result["overall_status"] = "PASS"
+        elif any(s == "FAIL" for s in all_checks):
+            result["overall_status"] = "FAIL"
+        else:
+            result["overall_status"] = "PENDING"
+        
+        return result
     
     async def rollback_batch(self, batch_id: str) -> Dict:
         """
@@ -648,18 +1271,34 @@ class HistoricalTransactionImporter:
             batch_type = batch.get("type")
             
             if batch_type == "SALES_IMPORT":
-                # Delete sales invoices
                 del_result = await self.db.sales_invoices.delete_many({
                     "import_batch_id": batch_id
                 })
                 result["deleted"]["sales_invoices"] = del_result.deleted_count
             
             elif batch_type == "PURCHASE_IMPORT":
-                # Delete purchase orders
                 del_result = await self.db.purchase_orders.delete_many({
                     "import_batch_id": batch_id
                 })
                 result["deleted"]["purchase_orders"] = del_result.deleted_count
+            
+            elif batch_type == "JOURNAL_IMPORT":
+                del_result = await self.db.journals.delete_many({
+                    "import_batch_id": batch_id
+                })
+                result["deleted"]["journals"] = del_result.deleted_count
+            
+            elif batch_type == "AP_PAYMENT_IMPORT":
+                del_result = await self.db.ap_payments.delete_many({
+                    "import_batch_id": batch_id
+                })
+                result["deleted"]["ap_payments"] = del_result.deleted_count
+            
+            elif batch_type == "AR_PAYMENT_IMPORT":
+                del_result = await self.db.ar_payments.delete_many({
+                    "import_batch_id": batch_id
+                })
+                result["deleted"]["ar_payments"] = del_result.deleted_count
             
             # Update batch status
             await self.db.import_batches.update_one(

@@ -1002,3 +1002,244 @@ async def get_import_batch_details(
     except Exception as e:
         logger.error(f"Error getting batch details: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+
+# ============================================================
+# JOURNAL IMPORT ENDPOINTS
+# ============================================================
+
+@router.post("/import/historical/dry-run/journals")
+async def dry_run_journal_import(tenant_id: str = Depends(get_current_tenant)):
+    """
+    DRY-RUN: Validate journal import without committing
+    
+    Checks journal balance and counts
+    """
+    try:
+        if tenant_id != "ocb_titan":
+            raise HTTPException(
+                status_code=403, 
+                detail="Historical import only allowed on pilot tenant: ocb_titan"
+            )
+        
+        db = get_db()
+        importer = HistoricalTransactionImporter(db, tenant_id)
+        
+        result = await importer.dry_run_journal_import()
+        
+        report_path = f"/app/test_reports/journal_dryrun_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.json"
+        with open(report_path, 'w') as f:
+            json.dump(result, f, indent=2)
+        
+        result["report_saved_to"] = report_path
+        
+        return result
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in journal dry-run: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/import/historical/execute/journals")
+async def execute_journal_import(
+    batch_size: int = Query(default=5000, le=10000, description="Batch size for processing"),
+    tenant_id: str = Depends(get_current_tenant)
+):
+    """
+    COMMIT: Execute historical journal import
+    
+    WARNING: This will import all journal entries from iPOS staging
+    """
+    try:
+        if tenant_id != "ocb_titan":
+            raise HTTPException(
+                status_code=403, 
+                detail="Historical import only allowed on pilot tenant: ocb_titan"
+            )
+        
+        db = get_db()
+        importer = HistoricalTransactionImporter(db, tenant_id)
+        
+        result = await importer.import_journals(batch_size=batch_size)
+        
+        report_path = f"/app/test_reports/journal_import_{result['batch_id']}.json"
+        with open(report_path, 'w') as f:
+            json.dump(result, f, indent=2, default=str)
+        
+        result["report_saved_to"] = report_path
+        
+        logger.info(f"Journal import completed: batch={result['batch_id']}, imported={result['imported']}")
+        
+        return result
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error executing journal import: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================================
+# AR/AP PAYMENT IMPORT ENDPOINTS
+# ============================================================
+
+@router.post("/import/historical/dry-run/ap-payments")
+async def dry_run_ap_payment_import(tenant_id: str = Depends(get_current_tenant)):
+    """
+    DRY-RUN: Validate AP payment import
+    """
+    try:
+        if tenant_id != "ocb_titan":
+            raise HTTPException(
+                status_code=403, 
+                detail="Historical import only allowed on pilot tenant: ocb_titan"
+            )
+        
+        db = get_db()
+        importer = HistoricalTransactionImporter(db, tenant_id)
+        
+        result = await importer.dry_run_ap_payment_import()
+        
+        return result
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in AP payment dry-run: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/import/historical/dry-run/ar-payments")
+async def dry_run_ar_payment_import(tenant_id: str = Depends(get_current_tenant)):
+    """
+    DRY-RUN: Validate AR payment import
+    """
+    try:
+        if tenant_id != "ocb_titan":
+            raise HTTPException(
+                status_code=403, 
+                detail="Historical import only allowed on pilot tenant: ocb_titan"
+            )
+        
+        db = get_db()
+        importer = HistoricalTransactionImporter(db, tenant_id)
+        
+        result = await importer.dry_run_ar_payment_import()
+        
+        return result
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in AR payment dry-run: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/import/historical/execute/ap-payments")
+async def execute_ap_payment_import(tenant_id: str = Depends(get_current_tenant)):
+    """
+    COMMIT: Execute AP payment import
+    """
+    try:
+        if tenant_id != "ocb_titan":
+            raise HTTPException(
+                status_code=403, 
+                detail="Historical import only allowed on pilot tenant: ocb_titan"
+            )
+        
+        db = get_db()
+        importer = HistoricalTransactionImporter(db, tenant_id)
+        
+        result = await importer.import_ap_payments()
+        
+        report_path = f"/app/test_reports/ap_payment_import_{result['batch_id']}.json"
+        with open(report_path, 'w') as f:
+            json.dump(result, f, indent=2, default=str)
+        
+        result["report_saved_to"] = report_path
+        
+        return result
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error executing AP payment import: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/import/historical/execute/ar-payments")
+async def execute_ar_payment_import(tenant_id: str = Depends(get_current_tenant)):
+    """
+    COMMIT: Execute AR payment import
+    """
+    try:
+        if tenant_id != "ocb_titan":
+            raise HTTPException(
+                status_code=403, 
+                detail="Historical import only allowed on pilot tenant: ocb_titan"
+            )
+        
+        db = get_db()
+        importer = HistoricalTransactionImporter(db, tenant_id)
+        
+        result = await importer.import_ar_payments()
+        
+        report_path = f"/app/test_reports/ar_payment_import_{result['batch_id']}.json"
+        with open(report_path, 'w') as f:
+            json.dump(result, f, indent=2, default=str)
+        
+        result["report_saved_to"] = report_path
+        
+        return result
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error executing AR payment import: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================================
+# FULL ACCOUNTING CHAIN VALIDATION
+# ============================================================
+
+@router.post("/import/historical/validate-full")
+async def validate_full_accounting_chain(tenant_id: str = Depends(get_current_tenant)):
+    """
+    FULL VALIDATION: Verify complete accounting chain
+    
+    Validates:
+    - Sales (count, total)
+    - Purchases (count, total)
+    - Journals (count, balance)
+    - AP Payments (count)
+    - AR Payments (count)
+    """
+    try:
+        if tenant_id != "ocb_titan":
+            raise HTTPException(
+                status_code=403, 
+                detail="Validation only allowed on pilot tenant: ocb_titan"
+            )
+        
+        db = get_db()
+        importer = HistoricalTransactionImporter(db, tenant_id)
+        
+        result = await importer.validate_full_accounting_chain()
+        
+        report_path = f"/app/test_reports/full_accounting_validation_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.json"
+        with open(report_path, 'w') as f:
+            json.dump(result, f, indent=2)
+        
+        result["report_saved_to"] = report_path
+        
+        return result
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error validating full accounting chain: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

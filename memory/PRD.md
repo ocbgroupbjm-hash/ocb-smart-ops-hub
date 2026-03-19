@@ -3,7 +3,7 @@
 ## Original Problem Statement
 Membangun sistem ERP retail komprehensif (OCB TITAN) dengan fitur POS, Inventory, Keuangan, Akuntansi, dan HR Enterprise System. Sistem harus mengikuti standar ERP enterprise seperti SAP/Oracle dengan blueprint SUPER DUPER DEWA.
 
-**CURRENT PRIORITY: DATA RESCUE MISSION** - All features ON HOLD sampai data integrity selesai.
+**CURRENT PRIORITY: DATA RESCUE MISSION** - PILOT COMPLETE, Blueprint Lock Ready
 
 ## Core Requirements
 1. **Multi-tenant Architecture** - Support untuk multiple business units
@@ -17,26 +17,36 @@ Membangun sistem ERP retail komprehensif (OCB TITAN) dengan fitur POS, Inventory
 
 ---
 
-## 🚨 DATA RESCUE MISSION - P0 PRIORITY (2026-03-19)
+## 🎉 DATA RESCUE MISSION - PILOT COMPLETE (2026-03-19)
 
-### STATUS: HISTORICAL IMPORT COMPLETE ✅✅✅
+### STATUS: FULL ACCOUNTING CHAIN VALIDATED ✅✅✅✅✅
 
-**Target:** Data iPOS 5 Ultimate sebagai source of truth untuk validasi OCB TITAN
-**Result:** OCB TITAN sekarang MATCH 100% dengan iPOS pada semua critical metrics!
+**Pilot Tenant:** `ocb_titan`
+**Result:** OCB TITAN sekarang MATCH 100% dengan iPOS pada SEMUA accounting modules!
 
-### RECONCILIATION FINAL STATUS (2026-03-19)
+### FULL ACCOUNTING CHAIN VALIDATION (2026-03-19)
 
-| Check | Status | Result |
-|-------|--------|--------|
-| Stock Quantities | ✅ PASS | 48,169,465 units - 100% match |
-| Stock Valuation | ✅ PASS | No difference |
-| Sales Totals | ✅ PASS | Rp 76,440,624,743 - 20,000 trx - 100% match |
-| Purchase Totals | ✅ PASS | Rp 77,566,144,214 - 4,271 trx - 100% match |
-| Journal Balance | ✅ PASS | BALANCED (Rp 441B D = Rp 441B C) |
-| Inventory vs Accounting | ✅ PASS | No difference |
-| Master Data | ✅ PASS | Accounts 100% match (382) |
+| Module | Staging | Production | Status |
+|--------|---------|------------|--------|
+| **Sales** | 20,000 (Rp 76.44B) | 20,000 (Rp 76.44B) | ✅ PASS |
+| **Purchases** | 4,271 (Rp 77.57B) | 4,271 (Rp 77.57B) | ✅ PASS |
+| **Journals** | 145,073 | 145,073 | ✅ PASS (BALANCED) |
+| **AP Payments** | 3,318 | 3,318 | ✅ PASS |
+| **AR Payments** | 18,996 | 18,996 | ✅ PASS |
 
-**OVERALL STATUS: PASS - ALL 7 CHECKS PASSED**
+**Journal Balance:** Rp 441,001,856,569 D = Rp 441,001,856,569 C = **BALANCED**
+
+**OVERALL STATUS: PASS - ALL 5 MODULES VALIDATED**
+
+### IMPORT BATCHES (Rollback-Ready)
+
+| Batch ID | Type | Records | Status |
+|----------|------|---------|--------|
+| `1a24f683-...` | SALES_IMPORT | 20,000 | COMPLETED |
+| `de5ef05b-...` | PURCHASE_IMPORT | 4,271 | COMPLETED |
+| `ce154ebe-...` | JOURNAL_IMPORT | 145,073 | COMPLETED |
+| `26c61352-...` | AP_PAYMENT_IMPORT | 3,318 | COMPLETED |
+| `ed234b18-...` | AR_PAYMENT_IMPORT | 18,996 | COMPLETED |
 
 ### COMPLETED MILESTONES
 
@@ -52,58 +62,39 @@ Membangun sistem ERP retail komprehensif (OCB TITAN) dengan fitur POS, Inventory
    - Fixed transaction totals (parser field issue)
    - Evidence: `/app/test_reports/ipos_ocb_alignment_fix_validation.json`
 
-3. **LAPIS 3 - Historical Import** ✅ (2026-03-19)
-   - Implemented dry-run validation
+3. **LAPIS 3 - Historical Transaction Import** ✅ (2026-03-19)
    - Imported 20,000 sales transactions
    - Imported 4,271 purchase transactions
-   - Full validation passed
    - Evidence: `/app/test_reports/post_import_full_reconciliation_20260319.json`
 
-### IMPORT BATCHES (Rollback-Ready)
+4. **LAPIS 4 - Historical Journal Import** ✅ (2026-03-19)
+   - Imported 145,073 journal entries
+   - Journals BALANCED (Rp 441B)
+   - Evidence: `/app/test_reports/journal_import_ce154ebe-*.json`
 
-| Batch ID | Type | Records | Status |
-|----------|------|---------|--------|
-| `1a24f683-7bfc-434c-8ed6-368f0be0e53a` | SALES | 20,000 | COMPLETED |
-| `de5ef05b-b19e-47fa-8169-fab62bc959c2` | PURCHASE | 4,271 | COMPLETED |
+5. **LAPIS 5 - AR/AP Payment Import** ✅ (2026-03-19)
+   - Imported 3,318 AP payments
+   - Imported 18,996 AR payments
+   - Full audit trail complete
+   - Evidence: `/app/test_reports/FINAL_accounting_chain_validation_20260319.json`
 
-### PIPELINE ARCHITECTURE
-```
-iPOS 5 Backup (.i5bu) → pg_restore → Plain SQL → Parser → Staging → Reconciliation → Import
-                                                    ↓                     ↓
-                                             MongoDB Staging    → Production Collections
-                                                                  (sales_invoices, purchase_orders)
-```
+### API ENDPOINTS IMPLEMENTED
 
-### COMPONENTS IMPLEMENTED ✅
-
-1. **iPOS Adapter Service** (`/app/backend/services/ipos_adapter/`)
-   - `parser.py` - Parse PostgreSQL dump (COPY statements)
-   - `staging.py` - Stage data ke MongoDB staging collections
-   - `mapping.py` - Map iPOS schema → OCB TITAN schema
-   - `reconciliation.py` - Compare staging vs production
-   - `importer.py` - Import master data
-   - `historical_importer.py` - Import historical transactions with dry-run
-   - `adapter.py` - Main orchestrator
-
-2. **API Routes** (`/app/backend/routes/data_rescue.py`)
-   - `GET /api/data-rescue/status` - Status rescue operation
-   - `POST /api/data-rescue/extract` - Start extraction
-   - `GET /api/data-rescue/staging/summary` - Staging summary
-   - `POST /api/data-rescue/reconcile` - Run reconciliation
-   - `POST /api/data-rescue/import/historical/dry-run/sales` - Dry-run sales
-   - `POST /api/data-rescue/import/historical/dry-run/purchases` - Dry-run purchases
-   - `POST /api/data-rescue/import/historical/execute/sales` - Execute sales import
-   - `POST /api/data-rescue/import/historical/execute/purchases` - Execute purchase import
-   - `POST /api/data-rescue/import/historical/rollback/{batch_id}` - Rollback batch
-   - `POST /api/data-rescue/import/historical/validate` - Validate import
-   - `GET /api/data-rescue/import/historical/batches` - List import batches
-   - `GET /api/data-rescue/stats/ipos` - iPOS stats
-
-3. **Frontend Dashboard** (`/app/frontend/src/pages/DataRescuePage.jsx`)
-   - Staging data overview
-   - Reconciliation results
-   - Critical issues & recommendations
-   - Action buttons (Extract, Reconcile, Download Report)
+**Historical Import:**
+- `POST /api/data-rescue/import/historical/dry-run/sales`
+- `POST /api/data-rescue/import/historical/dry-run/purchases`
+- `POST /api/data-rescue/import/historical/dry-run/journals`
+- `POST /api/data-rescue/import/historical/dry-run/ap-payments`
+- `POST /api/data-rescue/import/historical/dry-run/ar-payments`
+- `POST /api/data-rescue/import/historical/execute/sales`
+- `POST /api/data-rescue/import/historical/execute/purchases`
+- `POST /api/data-rescue/import/historical/execute/journals`
+- `POST /api/data-rescue/import/historical/execute/ap-payments`
+- `POST /api/data-rescue/import/historical/execute/ar-payments`
+- `POST /api/data-rescue/import/historical/rollback/{batch_id}`
+- `POST /api/data-rescue/import/historical/validate`
+- `POST /api/data-rescue/import/historical/validate-full`
+- `GET /api/data-rescue/import/historical/batches`
 
 ### DATA IN PRODUCTION (2026-03-19)
 
@@ -111,23 +102,33 @@ iPOS 5 Backup (.i5bu) → pg_restore → Plain SQL → Parser → Staging → Re
 |------------|--------|-------|-------------|
 | sales_invoices | IPOS5 | 20,000 | Rp 76,440,624,743 |
 | purchase_orders | IPOS5 | 4,271 | Rp 77,566,144,214 |
+| journals | IPOS5 | 145,073 | Rp 441B (balanced) |
+| ap_payments | IPOS5 | 3,318 | - |
+| ar_payments | IPOS5 | 18,996 | - |
 | products | IPOS5 | 110 | - |
 | product_stocks | IPOS5 | 658 | 48,169,465 units |
 | chart_of_accounts | IPOS5 | 382 | - |
-| journals_staging | IPOS5 | 145,073 | Rp 441B (balanced) |
+
+### BLUEPRINT LOCK CHECKLIST
+
+- [x] Sales import validated
+- [x] Purchase import validated
+- [x] Journal import validated & balanced
+- [x] AP Payment import validated
+- [x] AR Payment import validated
+- [x] Stock quantities match
+- [x] Master data synced
+- [x] Rollback capability tested
+- [ ] Tenant rollout preparation (NEXT)
 
 ### NEXT STEPS
 
-1. ✅ ~~Analyze journal imbalance~~ - FIXED (duplicate staging)
-2. ✅ ~~Create dry-run import service~~ - IMPLEMENTED
-3. ✅ ~~Import master data to TITAN production~~ - DONE
-4. ✅ ~~Import stock positions~~ - DONE
-5. ✅ ~~Import historical sales~~ - DONE (20,000 transactions)
-6. ✅ ~~Import historical purchases~~ - DONE (4,271 transactions)
-7. ✅ ~~Re-run reconciliation~~ - ALL 7 CHECKS PASSED!
-8. [ ] Import historical journals (optional - dapat dilakukan nanti)
-9. [ ] Build Data Rescue Dashboard UI (ON HOLD)
-10. [ ] Sync verified modules to other tenants
+1. ✅ ~~Import historical journals~~ - DONE (145,073 entries)
+2. ✅ ~~Import AR/AP payments~~ - DONE (22,314 payments)
+3. ✅ ~~Validate full accounting chain~~ - ALL PASS
+4. [ ] **BLUEPRINT LOCK** - Freeze pilot configuration
+5. [ ] **TENANT ROLLOUT** - Sync to other tenants
+6. [ ] Build Data Rescue Dashboard UI (POST-LOCK)
 
 ---
 

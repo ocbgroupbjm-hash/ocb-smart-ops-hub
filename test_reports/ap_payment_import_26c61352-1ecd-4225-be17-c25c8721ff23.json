@@ -1,0 +1,10 @@
+{
+  "batch_id": "26c61352-1ecd-4225-be17-c25c8721ff23",
+  "type": "AP_PAYMENT_IMPORT",
+  "started_at": "2026-03-19T00:39:36.472455+00:00",
+  "status": "COMPLETED",
+  "imported": 3318,
+  "skipped": 0,
+  "errors": [],
+  "completed_at": "2026-03-19T00:39:37.664428+00:00"
+}

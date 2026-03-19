@@ -1,0 +1,21 @@
+{
+  "type": "JOURNAL_DRY_RUN",
+  "timestamp": "2026-03-19T00:39:12.392931+00:00",
+  "tenant_id": "ocb_titan",
+  "status": "READY",
+  "summary": {
+    "total_entries": 145073,
+    "total_debit": 441001856569.0,
+    "total_credit": 441001856569.0,
+    "balance_difference": 0.0,
+    "is_balanced": true
+  },
+  "validation_errors": [],
+  "warnings": [],
+  "expected_effects": {
+    "journal_entries": 145073,
+    "unique_transactions": 49791,
+    "accounting_records": 145073
+  },
+  "can_proceed": true
+}

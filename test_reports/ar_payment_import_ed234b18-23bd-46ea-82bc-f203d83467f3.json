@@ -1,0 +1,10 @@
+{
+  "batch_id": "ed234b18-23bd-46ea-82bc-f203d83467f3",
+  "type": "AR_PAYMENT_IMPORT",
+  "started_at": "2026-03-19T00:39:43.226613+00:00",
+  "status": "COMPLETED",
+  "imported": 18996,
+  "skipped": 0,
+  "errors": [],
+  "completed_at": "2026-03-19T00:39:49.954425+00:00"
+}
