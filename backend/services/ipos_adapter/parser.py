@@ -422,6 +422,9 @@ class IPOSBackupParser:
         # Map headers
         sales_headers = []
         for row in headers:
+            # iPOS uses 'totalakhir' for final total (after discount/tax)
+            total = self._parse_decimal(row.get('totalakhir')) or self._parse_decimal(row.get('subtotal'))
+            
             header = {
                 "source_id": row.get('notransaksi'),
                 "transaction_no": row.get('notransaksi'),
@@ -439,12 +442,14 @@ class IPOSBackupParser:
                 "subtotal": self._parse_decimal(row.get('subtotal')),
                 "discount": self._parse_decimal(row.get('potfaktur')),
                 "tax": self._parse_decimal(row.get('pajak')),
-                "total": self._parse_decimal(row.get('total')),
-                "paid": self._parse_decimal(row.get('bayar')),
+                "total": total,  # Use totalakhir as the final total
+                "paid": self._parse_decimal(row.get('jmltunai')),  # Cash paid
+                "paid_credit": self._parse_decimal(row.get('jmlkredit')),  # Credit amount
                 "change": self._parse_decimal(row.get('kembalian')),
                 "remaining": self._parse_decimal(row.get('sisa')),
                 "status": row.get('ststransaksi'),
                 "payment_status": row.get('statusbyr'),
+                "payment_method": "TUNAI" if self._parse_decimal(row.get('jmltunai')) > 0 else "KREDIT",
                 "source_system": "IPOS5",
                 "raw_data": row
             }
@@ -486,6 +491,9 @@ class IPOSBackupParser:
         # Map headers
         purchase_headers = []
         for row in headers:
+            # iPOS uses 'totalakhir' for final total (after discount/tax)
+            total = self._parse_decimal(row.get('totalakhir')) or self._parse_decimal(row.get('subtotal'))
+            
             header = {
                 "source_id": row.get('notransaksi'),
                 "transaction_no": row.get('notransaksi'),
@@ -502,10 +510,13 @@ class IPOSBackupParser:
                 "subtotal": self._parse_decimal(row.get('subtotal')),
                 "discount": self._parse_decimal(row.get('potfaktur')),
                 "tax": self._parse_decimal(row.get('pajak')),
-                "total": self._parse_decimal(row.get('total')),
+                "total": total,  # Use totalakhir as the final total
+                "paid": self._parse_decimal(row.get('jmltunai')),  # Cash paid
+                "paid_credit": self._parse_decimal(row.get('jmlkredit')),  # Credit amount
                 "due_date": row.get('jatuhtempo'),
                 "status": row.get('ststransaksi'),
                 "payment_status": row.get('statusbyr'),
+                "payment_method": "TUNAI" if self._parse_decimal(row.get('jmltunai')) > 0 else "KREDIT",
                 "source_system": "IPOS5",
                 "raw_data": row
             }

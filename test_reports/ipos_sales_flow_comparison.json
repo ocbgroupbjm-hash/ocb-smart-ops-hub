@@ -1,0 +1,89 @@
+{
+  "report_type": "IPOS_SALES_FLOW_COMPARISON",
+  "generated_at": "2026-03-19",
+  "tenant_id": "ocb_titan",
+  "status": "STAGING_COMPLETE",
+
+  "EXECUTIVE_SUMMARY": {
+    "ipos_sales_transactions": 20000,
+    "ipos_sales_total": 76440624743,
+    "ipos_sales_details": 28058,
+    "titan_sales_transactions": 0,
+    "titan_sales_total": 0,
+    "import_status": "PENDING"
+  },
+
+  "PARSER_FIX": {
+    "issue": "Parser was using 'total' field which was 0 in iPOS",
+    "root_cause": "iPOS stores final total in 'totalakhir' field, not 'total'",
+    "fix_applied": "Updated parser to use 'totalakhir' for sales and purchase totals",
+    "before_fix_total": 0,
+    "after_fix_total": 76440624743
+  },
+
+  "iPOS_SALES_STRUCTURE": {
+    "header_table": "tbl_ikhd",
+    "detail_table": "tbl_ikdt",
+    "key_fields": {
+      "transaction_no": "notransaksi",
+      "date": "tanggal",
+      "customer": "kodesupel",
+      "warehouse": "kodekantor",
+      "subtotal": "subtotal",
+      "discount": "potfaktur",
+      "tax": "pajak",
+      "total": "totalakhir",
+      "paid_cash": "jmltunai",
+      "paid_credit": "jmlkredit"
+    },
+    "transaction_types": {
+      "JL": "Penjualan Biasa (19921)",
+      "KSR": "Konsinyasi Retur (13)",
+      "IK": "Other (66)"
+    }
+  },
+
+  "iPOS_PURCHASE_STRUCTURE": {
+    "header_table": "tbl_imhd",
+    "detail_table": "tbl_imdt",
+    "total_field": "totalakhir",
+    "transactions": 4271,
+    "total_value": 77566144214
+  },
+
+  "STAGING_RESULTS": {
+    "sales_headers": {"staged": 20000, "status": "SUCCESS"},
+    "sales_details": {"staged": 28058, "status": "SUCCESS"},
+    "purchase_headers": {"staged": 4271, "status": "SUCCESS"},
+    "purchase_details": {"staged": 4846, "status": "SUCCESS"}
+  },
+
+  "NEXT_STEPS": {
+    "immediate": [
+      "Import sales transactions to TITAN (sales_invoices collection)",
+      "Validate stock-out effect matches iPOS",
+      "Validate HPP/COGS calculation matches iPOS",
+      "Validate AR creation matches iPOS"
+    ],
+    "deferred": [
+      "Import purchase transactions to TITAN",
+      "Validate AP creation",
+      "Full journal reconciliation after transaction import"
+    ]
+  },
+
+  "IMPORT_REQUIREMENTS": {
+    "sales_import": {
+      "source_collection": "ipos_sales_hd_staging",
+      "target_collection": "sales_invoices",
+      "dependencies": ["products must exist", "customers optional", "branches must exist"],
+      "effects": ["stock decrease", "AR creation if credit", "journal posting"]
+    },
+    "purchase_import": {
+      "source_collection": "ipos_purchase_hd_staging",
+      "target_collection": "purchase_orders",
+      "dependencies": ["products must exist", "suppliers optional", "branches must exist"],
+      "effects": ["stock increase", "AP creation", "journal posting"]
+    }
+  }
+}

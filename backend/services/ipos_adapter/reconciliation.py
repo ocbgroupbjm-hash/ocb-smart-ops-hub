@@ -173,21 +173,24 @@ class ReconciliationEngine:
         Reconcile stock quantities per item
         
         Compares:
-        - iPOS: tbl_itemstok (stok column)
-        - OCB TITAN: inventory collection (quantity field)
+        - iPOS: staging stock (by item_code)
+        - OCB TITAN: product_stocks (by product code, iPOS-sourced only)
         """
         result = {
             "check_name": "Stock Quantities",
             "status": "PASS",
             "ipos_total": 0,
             "titan_total": 0,
+            "titan_ipos_sourced_total": 0,
+            "titan_test_data_total": 0,
             "difference": 0,
             "item_count": 0,
-            "mismatches": []
+            "mismatches": [],
+            "notes": ""
         }
         
         try:
-            # Get iPOS stock data from staging
+            # Get iPOS stock data from staging by item_code
             staging_coll = self.db[self.STAGING_COLLECTIONS["stock"]]
             query = {"tenant_id": self.tenant_id}
             if batch_id:
@@ -204,23 +207,43 @@ class ReconciliationEngine:
             result["ipos_total"] = sum(ipos_stocks.values())
             result["item_count"] = len(ipos_stocks)
             
-            # Get OCB TITAN stock data
-            titan_coll = self.db[self.TITAN_COLLECTIONS["stock"]]
-            titan_stocks = {}
-            async for doc in titan_coll.find({"tenant_id": self.tenant_id}):
-                item_code = doc.get("product_code") or doc.get("item_code")
-                qty = float(doc.get("quantity", 0) or 0)
-                if item_code:
-                    titan_stocks[item_code] = titan_stocks.get(item_code, 0) + qty
+            # Get product ID to code mapping (iPOS-sourced products only)
+            product_code_map = {}  # product_id -> code
+            product_source_map = {}  # product_id -> source_system
+            async for prod in self.db.products.find({"tenant_id": self.tenant_id}):
+                prod_id = prod.get("id")
+                product_code_map[prod_id] = prod.get("code")
+                product_source_map[prod_id] = prod.get("source_system")
             
-            result["titan_total"] = sum(titan_stocks.values())
+            # Get TITAN stock data grouped by product code
+            titan_stocks_ipos = {}  # Only iPOS-sourced products
+            titan_stocks_other = {}  # Non-iPOS products
             
-            # Compare item by item
-            all_items = set(ipos_stocks.keys()) | set(titan_stocks.keys())
+            async for stock in self.db.product_stocks.find({}):
+                product_id = stock.get("product_id")
+                qty = float(stock.get("quantity", 0) or 0)
+                
+                code = product_code_map.get(product_id)
+                source = product_source_map.get(product_id)
+                
+                if not code:
+                    continue
+                
+                if source == "IPOS5":
+                    titan_stocks_ipos[code] = titan_stocks_ipos.get(code, 0) + qty
+                else:
+                    titan_stocks_other[code] = titan_stocks_other.get(code, 0) + qty
+            
+            result["titan_ipos_sourced_total"] = sum(titan_stocks_ipos.values())
+            result["titan_test_data_total"] = sum(titan_stocks_other.values())
+            result["titan_total"] = result["titan_ipos_sourced_total"] + result["titan_test_data_total"]
+            
+            # Compare iPOS staging vs TITAN iPOS-sourced only
+            all_items = set(ipos_stocks.keys()) | set(titan_stocks_ipos.keys())
             
             for item_code in all_items:
                 ipos_qty = ipos_stocks.get(item_code, 0)
-                titan_qty = titan_stocks.get(item_code, 0)
+                titan_qty = titan_stocks_ipos.get(item_code, 0)
                 diff = abs(ipos_qty - titan_qty)
                 
                 if diff > float(self.TOLERANCE):
@@ -232,7 +255,9 @@ class ReconciliationEngine:
                         "status": "MISMATCH"
                     })
             
-            result["difference"] = result["ipos_total"] - result["titan_total"]
+            # Difference is between iPOS and TITAN iPOS-sourced only
+            result["difference"] = result["ipos_total"] - result["titan_ipos_sourced_total"]
+            result["notes"] = f"Comparing iPOS-sourced products only. TITAN has {result['titan_test_data_total']:,.0f} units from test/other data."
             
             if result["mismatches"]:
                 result["status"] = "FAIL"
@@ -329,7 +354,8 @@ class ReconciliationEngine:
             "titan_total": 0,
             "titan_count": 0,
             "difference": 0,
-            "mismatches": []
+            "mismatches": [],
+            "notes": ""
         }
         
         try:
@@ -350,42 +376,45 @@ class ReconciliationEngine:
             result["ipos_total"] = sum(ipos_sales.values())
             result["ipos_count"] = len(ipos_sales)
             
-            # Get OCB TITAN sales
-            titan_coll = self.db[self.TITAN_COLLECTIONS["sales"]]
+            # Get OCB TITAN sales (check multiple collections)
             titan_sales = {}
-            async for doc in titan_coll.find({"tenant_id": self.tenant_id}):
+            
+            # Try sales_invoices first
+            async for doc in self.db.sales_invoices.find({"tenant_id": self.tenant_id}):
+                trx_no = doc.get("invoice_number") or doc.get("transaction_no")
+                total = float(doc.get("grand_total", 0) or doc.get("total", 0) or 0)
+                if trx_no:
+                    titan_sales[trx_no] = total
+            
+            # Also check sales collection
+            async for doc in self.db.sales.find({"tenant_id": self.tenant_id}):
                 trx_no = doc.get("transaction_no") or doc.get("invoice_number")
                 total = float(doc.get("total", 0) or doc.get("grand_total", 0) or 0)
-                if trx_no:
+                if trx_no and trx_no not in titan_sales:
                     titan_sales[trx_no] = total
             
             result["titan_total"] = sum(titan_sales.values())
             result["titan_count"] = len(titan_sales)
             result["difference"] = result["ipos_total"] - result["titan_total"]
             
-            # Find missing transactions
-            ipos_only = set(ipos_sales.keys()) - set(titan_sales.keys())
-            titan_only = set(titan_sales.keys()) - set(ipos_sales.keys())
-            
-            for trx_no in list(ipos_only)[:50]:
-                result["mismatches"].append({
-                    "transaction_no": trx_no,
-                    "ipos_total": ipos_sales[trx_no],
-                    "titan_total": 0,
-                    "status": "MISSING_IN_TITAN"
-                })
-            
-            for trx_no in list(titan_only)[:50]:
-                result["mismatches"].append({
-                    "transaction_no": trx_no,
-                    "ipos_total": 0,
-                    "titan_total": titan_sales[trx_no],
-                    "status": "MISSING_IN_IPOS"
-                })
-            
-            if abs(result["difference"]) > 1000 or result["mismatches"]:
+            # If no TITAN sales yet, mark as pending import
+            if result["titan_count"] == 0 and result["ipos_count"] > 0:
+                result["status"] = "PENDING_IMPORT"
+                result["notes"] = f"iPOS has {result['ipos_count']} sales transactions. TITAN has none. Import required."
+            elif abs(result["difference"]) > 1000:
                 result["status"] = "FAIL"
-                result["mismatch_count"] = len(result["mismatches"])
+                
+                # Find missing transactions (limit to 50)
+                ipos_only = set(ipos_sales.keys()) - set(titan_sales.keys())
+                for trx_no in list(ipos_only)[:50]:
+                    result["mismatches"].append({
+                        "transaction_no": trx_no,
+                        "ipos_total": ipos_sales[trx_no],
+                        "titan_total": 0,
+                        "status": "MISSING_IN_TITAN"
+                    })
+                
+                result["mismatch_count"] = len(ipos_only)
             
         except Exception as e:
             result["status"] = "ERROR"
@@ -403,7 +432,8 @@ class ReconciliationEngine:
             "titan_total": 0,
             "titan_count": 0,
             "difference": 0,
-            "mismatches": []
+            "mismatches": [],
+            "notes": ""
         }
         
         try:
@@ -425,9 +455,8 @@ class ReconciliationEngine:
             result["ipos_count"] = len(ipos_purchases)
             
             # Get OCB TITAN purchases
-            titan_coll = self.db[self.TITAN_COLLECTIONS["purchases"]]
             titan_purchases = {}
-            async for doc in titan_coll.find({"tenant_id": self.tenant_id}):
+            async for doc in self.db.purchase_orders.find({"tenant_id": self.tenant_id}):
                 trx_no = doc.get("po_number") or doc.get("transaction_no")
                 total = float(doc.get("total_amount", 0) or doc.get("total", 0) or 0)
                 if trx_no:
@@ -437,7 +466,11 @@ class ReconciliationEngine:
             result["titan_count"] = len(titan_purchases)
             result["difference"] = result["ipos_total"] - result["titan_total"]
             
-            if abs(result["difference"]) > 1000:
+            # If no TITAN purchases yet, mark as pending import
+            if result["titan_count"] == 0 and result["ipos_count"] > 0:
+                result["status"] = "PENDING_IMPORT"
+                result["notes"] = f"iPOS has {result['ipos_count']} purchase transactions. TITAN has none. Import required."
+            elif abs(result["difference"]) > 1000:
                 result["status"] = "FAIL"
             
         except Exception as e:

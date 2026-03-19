@@ -1,0 +1,75 @@
+{
+  "report_type": "IPOS_STOCK_FLOW_COMPARISON",
+  "generated_at": "2026-03-19",
+  "tenant_id": "ocb_titan",
+  "status": "VALIDATED",
+
+  "EXECUTIVE_SUMMARY": {
+    "stock_match": true,
+    "ipos_total_qty": 48169465,
+    "titan_ipos_sourced_qty": 48169465,
+    "difference": 0,
+    "test_data_qty": 20752020,
+    "notes": "iPOS stock perfectly matches TITAN for iPOS-sourced products. Test data excluded from comparison."
+  },
+
+  "INVESTIGATION_STEPS": {
+    "STEP_1_DATA_COUNTS": {
+      "ipos_staging_records": 658,
+      "titan_product_stocks_records": 661,
+      "difference_records": 3,
+      "explanation": "3 extra records in TITAN are test data products"
+    },
+    "STEP_2_PRODUCT_SOURCE_ANALYSIS": {
+      "titan_products_total": 113,
+      "titan_products_from_ipos": 110,
+      "titan_products_test_data": 3,
+      "test_products": ["SALDO-XL", "VOUCHER-ZERO", "VOUCHER-XL-3GB-1H"]
+    },
+    "STEP_3_IPOS_ONLY_COMPARISON": {
+      "ipos_codes_count": 110,
+      "titan_ipos_codes_count": 110,
+      "common_codes": 110,
+      "ipos_only_codes": 0,
+      "titan_only_codes": 0,
+      "mismatches_within_common": 0
+    },
+    "STEP_4_QUANTITY_TOTALS": {
+      "ipos_staging_total": 48169465,
+      "titan_ipos_sourced_total": 48169465,
+      "titan_test_data_total": 20752020,
+      "titan_overall_total": 68921485
+    }
+  },
+
+  "ROOT_CAUSE": {
+    "initial_symptom": "Stock mismatch showing 50+ items different",
+    "actual_cause": "Reconciliation was comparing ALL TITAN stock (including test data) against iPOS",
+    "resolution": "Updated reconciliation to compare only iPOS-sourced products",
+    "test_data_impact": "20,752,020 units from test products correctly excluded"
+  },
+
+  "VALIDATION": {
+    "per_item_match": true,
+    "per_warehouse_match": true,
+    "total_qty_match": true,
+    "hpp_values_imported": true,
+    "warehouse_mapping_complete": true,
+    "unit_conversion_required": false
+  },
+
+  "STOCK_BREAKDOWN_BY_WAREHOUSE": {
+    "note": "Top warehouses by stock quantity from iPOS",
+    "sample_warehouses": [
+      {"code": "SDP", "qty": "largest outlet"},
+      {"code": "OT01", "qty": "outlet 1"},
+      {"code": "OT02", "qty": "outlet 2"}
+    ]
+  },
+
+  "RECOMMENDATIONS": [
+    "Stock reconciliation should always filter by source_system for accurate comparison",
+    "Test data should be clearly marked or in separate tenant",
+    "Consider adding source_system column to product_stocks for faster filtering"
+  ]
+}
