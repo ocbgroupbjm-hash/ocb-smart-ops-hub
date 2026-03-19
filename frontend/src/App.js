@@ -370,6 +370,9 @@ function App() {
             <Route path="inventory/kartu-stok" element={<KartuStok />} />
             <Route path="inventory/adjustment" element={<StockOpname />} />
             
+            {/* POS Screen - iPOS Style Quick Sales */}
+            <Route path="pos" element={<POSScreen />} />
+            
             {/* Sales Routes - iPOS Style */}
             <Route path="sales/orders" element={<SalesOrderList />} />
             <Route path="sales/orders/add" element={<SalesOrderAdd />} />

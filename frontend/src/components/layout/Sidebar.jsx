@@ -12,7 +12,7 @@ import {
   Activity, Bot, MessageSquare, Target, Megaphone, Banknote, UserPlus,
   CalendarCheck, Briefcase, BadgeDollarSign, Bell, Eye, Fingerprint, FileBarChart,
   Globe, Plus, List, ChevronsRight, Send, Table, QrCode, Calendar, Award, Grid,
-  RefreshCcw, BanknoteIcon, AlertTriangle, Puzzle
+  RefreshCcw, BanknoteIcon, AlertTriangle, Puzzle, Monitor
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { usePermission } from '../../contexts/PermissionContext';
@@ -141,6 +141,8 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       icon: ShoppingBag,
       roles: ['owner', 'admin', 'supervisor', 'cashier'],
       submenu: [
+        { name: 'POS Kasir', icon: Monitor, path: '/pos', highlight: true },
+        { divider: true },
         { name: 'Pesanan Jual List', icon: List, path: '/sales/orders' },
         { name: 'Tambah Pesanan Penjualan', icon: Plus, path: '/sales/orders/add' },
         { divider: true },
@@ -543,15 +545,22 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                       `flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
                         isActive
                           ? 'bg-gradient-to-r from-red-900/40 to-amber-900/20 text-amber-200 border border-red-700/30'
-                          : 'text-gray-400 hover:bg-red-900/10 hover:text-red-200'
+                          : subItem.highlight 
+                            ? 'text-green-400 hover:bg-green-900/20 hover:text-green-300 bg-green-900/10 border border-green-700/30'
+                            : 'text-gray-400 hover:bg-red-900/10 hover:text-red-200'
                       }`
                     }
                   >
-                    <subItem.icon className="h-4 w-4" />
+                    <subItem.icon className={`h-4 w-4 ${subItem.highlight ? 'text-green-400' : ''}`} />
                     <span>{subItem.name}</span>
                     {subItem.badge && (
                       <span className="ml-auto px-1.5 py-0.5 text-[10px] font-bold bg-green-600 text-white rounded">
                         {subItem.badge}
+                      </span>
+                    )}
+                    {subItem.highlight && (
+                      <span className="ml-auto px-1.5 py-0.5 text-[10px] font-bold bg-green-600 text-white rounded">
+                        NEW
                       </span>
                     )}
                   </NavLink>
