@@ -1,0 +1,115 @@
+{
+  "report_id": "TENANT-BIND-20260319011853",
+  "generated_at": "2026-03-19T01:18:53.430189+00:00",
+  "type": "TENANT_DATABASE_BINDING_REPORT",
+  "root_cause": {
+    "issue": "Data master (suppliers, warehouses, products) tidak memiliki tenant_id",
+    "impact": "Query dengan filter tenant_id mengembalikan 0 hasil, menyebabkan validasi gagal",
+    "affected_tenant": "ocb_titan",
+    "resolution": "Migrasi data untuk menambahkan tenant_id ke semua master data"
+  },
+  "tenant_binding_map": {
+    "suppliers": {
+      "total": 14,
+      "with_tenant_id": 14,
+      "without_tenant_id": 0,
+      "binding_status": "LOCKED"
+    },
+    "warehouses": {
+      "total": 10,
+      "with_tenant_id": 10,
+      "without_tenant_id": 0,
+      "binding_status": "LOCKED"
+    },
+    "products": {
+      "total": 176,
+      "with_tenant_id": 176,
+      "without_tenant_id": 0,
+      "binding_status": "LOCKED"
+    },
+    "categories": {
+      "total": 23,
+      "with_tenant_id": 23,
+      "without_tenant_id": 0,
+      "binding_status": "LOCKED"
+    },
+    "branches": {
+      "total": 102,
+      "with_tenant_id": 102,
+      "without_tenant_id": 0,
+      "binding_status": "LOCKED"
+    },
+    "customers": {
+      "total": 26,
+      "with_tenant_id": 26,
+      "without_tenant_id": 0,
+      "binding_status": "LOCKED"
+    },
+    "purchase_orders": {
+      "total": 4275,
+      "with_tenant_id": 4273,
+      "without_tenant_id": 2,
+      "binding_status": "NEEDS_FIX"
+    }
+  },
+  "data_verification": {
+    "new_pos": [
+      {
+        "po_number": "PO000037",
+        "tenant_id": "ocb_titan",
+        "items_count": 1,
+        "total": 650000.0,
+        "status": "VALID"
+      },
+      {
+        "po_number": "PO000038",
+        "tenant_id": "ocb_titan",
+        "items_count": 2,
+        "total": 425000.0,
+        "status": "VALID"
+      }
+    ]
+  },
+  "protection_added": [
+    "Tenant guard di create_purchase_order - query supplier dengan tenant_id",
+    "Tenant guard di create_purchase_order - query product dengan tenant_id",
+    "Tenant guard di create_purchase_order - query warehouse dengan tenant_id",
+    "Tenant_id wajib disimpan di PO document",
+    "Error message eksplisit: 'tidak ditemukan di tenant ini'"
+  ],
+  "files_changed": [
+    {
+      "file": "/app/backend/routes/purchase.py",
+      "changes": [
+        "Added tenant guard for supplier query",
+        "Added tenant guard for product query",
+        "Added tenant guard for warehouse query",
+        "Added tenant_id to PO document"
+      ]
+    },
+    {
+      "file": "/app/backend/models/titan_models.py",
+      "changes": [
+        "Added tenant_id field to PurchaseOrder model"
+      ]
+    }
+  ],
+  "test_results": [
+    {
+      "test": "PO dengan 1 item",
+      "result": "PASS",
+      "po_number": "PO000037"
+    },
+    {
+      "test": "PO dengan 2 items",
+      "result": "PASS",
+      "po_number": "PO000038"
+    },
+    {
+      "test": "Cross-tenant protection (invalid product)",
+      "result": "PASS",
+      "error": "Product tidak ditemukan di tenant ini"
+    }
+  ],
+  "overall_status": "PARTIAL"
+}

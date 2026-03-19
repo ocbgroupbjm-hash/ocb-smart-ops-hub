@@ -439,24 +439,34 @@ async def get_po_print_data(po_id: str, user: dict = Depends(require_permission(
 async def create_purchase_order(data: CreatePO, request: Request, user: dict = Depends(require_permission("purchase", "create"))):
     """Create purchase order - Requires purchase.create permission"""
     # ============================================================
+    # TENANT GUARD: Get tenant from user context
+    # ============================================================
+    tenant_id = user.get("tenant_id")
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant tidak teridentifikasi")
+    
+    # ============================================================
     # VALIDATION: Mandatory fields per System Architect requirement
     # ============================================================
     if not data.supplier_id:
         raise HTTPException(status_code=400, detail="Supplier wajib dipilih")
     
-    supplier = await suppliers.find_one({"id": data.supplier_id}, {"_id": 0})
+    # TENANT GUARD: Query supplier with tenant_id
+    supplier = await suppliers.find_one({"id": data.supplier_id, "tenant_id": tenant_id}, {"_id": 0})
     if not supplier:
-        raise HTTPException(status_code=400, detail="Supplier tidak ditemukan")
+        raise HTTPException(status_code=400, detail="Supplier tidak ditemukan di tenant ini")
     
     if not data.items or len(data.items) == 0:
         raise HTTPException(status_code=400, detail="Minimal harus ada 1 item pembelian")
     
-    # Validate warehouse if provided
+    # Validate warehouse if provided - TENANT GUARD
     warehouse_name = ""
     if data.warehouse_id:
-        warehouse = await get_db().warehouses.find_one({"id": data.warehouse_id}, {"_id": 0})
+        warehouse = await get_db().warehouses.find_one({"id": data.warehouse_id, "tenant_id": tenant_id}, {"_id": 0})
         if warehouse:
             warehouse_name = warehouse.get("name", "")
+        else:
+            raise HTTPException(status_code=400, detail="Warehouse tidak ditemukan di tenant ini")
     
     # Validate PIC if provided
     pic_name = ""
@@ -479,9 +489,10 @@ async def create_purchase_order(data: CreatePO, request: Request, user: dict = D
     subtotal = 0
     
     for item in data.items:
-        product = await products.find_one({"id": item.product_id}, {"_id": 0})
+        # TENANT GUARD: Query product with tenant_id
+        product = await products.find_one({"id": item.product_id, "tenant_id": tenant_id}, {"_id": 0})
         if not product:
-            raise HTTPException(status_code=400, detail=f"Product tidak ditemukan: {item.product_id}")
+            raise HTTPException(status_code=400, detail=f"Product tidak ditemukan di tenant ini: {item.product_id}")
         
         if item.quantity <= 0:
             raise HTTPException(status_code=400, detail=f"Jumlah item {product.get('name')} harus lebih dari 0")
@@ -529,10 +540,14 @@ async def create_purchase_order(data: CreatePO, request: Request, user: dict = D
         total=subtotal,
         expected_date=data.expected_date,
         notes=data.notes,
-        user_id=user.get("user_id", "")
+        user_id=user.get("user_id", ""),
+        tenant_id=tenant_id  # TENANT BINDING
     )
     
-    await purchase_orders.insert_one(po.model_dump())
+    # TENANT GUARD: Insert with explicit tenant_id
+    po_data = po.model_dump()
+    po_data["tenant_id"] = tenant_id  # Ensure tenant_id is set
+    await purchase_orders.insert_one(po_data)
     
     # Audit log
     db = get_db()

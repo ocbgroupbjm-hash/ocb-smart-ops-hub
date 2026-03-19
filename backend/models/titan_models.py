@@ -354,6 +354,7 @@ class PurchaseOrder(BaseModel):
     
     notes: str = ""
     user_id: str
+    tenant_id: str = ""  # TENANT BINDING - Required for multi-tenant isolation
     created_at: str = Field(default_factory=now_iso)
     updated_at: str = Field(default_factory=now_iso)
 
