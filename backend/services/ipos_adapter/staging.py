@@ -123,7 +123,7 @@ class StagingService:
         """
         Stage records in bulk (faster than one-by-one)
         
-        Uses bulk insert for new records
+        Uses upsert to prevent duplicates based on source_record_id
         """
         if not records:
             return {"inserted": 0, "updated": 0, "skipped": 0, "errors": []}
@@ -131,13 +131,29 @@ class StagingService:
         collection = self._get_collection(collection_name)
         now = datetime.now(timezone.utc).isoformat()
         
-        # Prepare all records
-        staging_records = []
+        # Ensure index exists for duplicate prevention
+        try:
+            await collection.create_index(
+                [("tenant_id", 1), ("source_record_id", 1)],
+                unique=True,
+                background=True
+            )
+        except Exception:
+            pass  # Index may already exist
+        
+        inserted = 0
+        skipped = 0
+        errors = []
+        
+        # Use bulk upsert operations
+        from pymongo import UpdateOne
+        operations = []
+        
         for record in records:
             source_id = record.get("source_id") or record.get("code") or str(uuid.uuid4())
             checksum = self._compute_checksum(record)
             
-            staging_records.append({
+            doc = {
                 "staging_id": str(uuid.uuid4()),
                 "tenant_id": self.tenant_id,
                 "batch_id": batch_id,
@@ -149,32 +165,32 @@ class StagingService:
                 "validated": False,
                 "imported_to_final": False,
                 "data": record
-            })
+            }
+            
+            # Upsert - only insert if not exists
+            operations.append(UpdateOne(
+                {"tenant_id": self.tenant_id, "source_record_id": source_id},
+                {"$setOnInsert": doc},
+                upsert=True
+            ))
         
-        # Bulk insert
-        try:
-            result = await collection.insert_many(staging_records, ordered=False)
-            return {
-                "inserted": len(result.inserted_ids),
-                "updated": 0,
-                "skipped": 0,
-                "errors": []
-            }
-        except Exception as e:
-            # Handle duplicate key errors
-            if "duplicate key" in str(e).lower():
-                return {
-                    "inserted": 0,
-                    "updated": 0,
-                    "skipped": len(records),
-                    "errors": []
-                }
-            return {
-                "inserted": 0,
-                "updated": 0,
-                "skipped": 0,
-                "errors": [{"error": str(e)}]
-            }
+        # Execute bulk operations in batches
+        batch_size = 5000
+        for i in range(0, len(operations), batch_size):
+            batch_ops = operations[i:i+batch_size]
+            try:
+                result = await collection.bulk_write(batch_ops, ordered=False)
+                inserted += result.upserted_count
+                skipped += (len(batch_ops) - result.upserted_count)
+            except Exception as e:
+                errors.append({"batch": i // batch_size, "error": str(e)})
+        
+        return {
+            "inserted": inserted,
+            "updated": 0,
+            "skipped": skipped,
+            "errors": errors
+        }
 
     async def stage_records(self, collection_name: str, records: List[Dict], batch_id: str) -> Dict:
         """

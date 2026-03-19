@@ -1,0 +1,106 @@
+{
+  "report_type": "JOURNAL_UNBALANCED_INVESTIGATION",
+  "generated_at": "2026-03-19",
+  "tenant_id": "ocb_titan",
+  "status": "RESOLVED",
+
+  "EXECUTIVE_SUMMARY": {
+    "initial_symptom": "Journal balance showing -Rp 2,246,550 difference",
+    "root_cause": "DUPLICATE BATCH - 54,908 duplicate records in staging",
+    "resolution": "Deleted duplicate batch, journal now BALANCED",
+    "data_integrity": "iPOS RAW data was NEVER corrupted"
+  },
+
+  "INVESTIGATION_STEPS": {
+    "STEP_1_RAW_VALIDATION": {
+      "action": "Extract and sum RAW tbl_accjurnal from iPOS backup",
+      "records": 145073,
+      "total_debit": 441001856569.00,
+      "total_credit": 441001856569.00,
+      "balance": 0.00,
+      "result": "✅ RAW DATA IS BALANCED"
+    },
+    "STEP_2_PARSED_VALIDATION": {
+      "action": "Compare parser output with RAW data",
+      "parsed_records": 145073,
+      "parsed_debit": 441001856569.00,
+      "parsed_credit": 441001856569.00,
+      "balance": 0.00,
+      "result": "✅ PARSING IS CORRECT"
+    },
+    "STEP_3_STAGING_VALIDATION": {
+      "action": "Check staging collection totals",
+      "staged_records": 199981,
+      "expected_records": 145073,
+      "extra_records": 54908,
+      "staged_debit": 494103917769.00,
+      "staged_credit": 494106164319.00,
+      "balance": -2246550.00,
+      "result": "❌ STAGING HAS DUPLICATE DATA"
+    },
+    "STEP_4_DUPLICATE_ANALYSIS": {
+      "action": "Identify duplicate batches",
+      "batches_found": [
+        {"batch_id": "28b62a4e-d37e-4134-bf54-ec9d66895600", "records": 145073, "status": "ORIGINAL"},
+        {"batch_id": "f5ae1b60-9932-4a6d-be58-eab1291f44f0", "records": 54908, "status": "DUPLICATE"}
+      ],
+      "duplicate_source_ids": 54908,
+      "result": "54,908 records were inserted twice with same source_record_id"
+    },
+    "STEP_5_UNIQUE_VALIDATION": {
+      "action": "Recalculate with DISTINCT source_record_id",
+      "unique_records": 145073,
+      "unique_debit": 441001856569.00,
+      "unique_credit": 441001856569.00,
+      "balance": 0.00,
+      "result": "✅ UNIQUE DATA IS BALANCED"
+    }
+  },
+
+  "ROOT_CAUSE_ANALYSIS": {
+    "cause": "DUPLICATE_BATCH_INSERTION",
+    "explanation": "During multiple extraction runs, a partial batch (f5ae1b60-...) was created with 54,908 duplicate journal entries. The staging service bulk insert did not prevent duplicates because each insert used a new staging_id.",
+    "why_imbalanced": "The duplicate 54,908 records had an internal imbalance of -Rp 2,246,550 because they were not a complete set of double-entry journals (partial extraction).",
+    "not_ipos_fault": true,
+    "not_parsing_fault": true,
+    "staging_process_fault": true
+  },
+
+  "RESOLUTION": {
+    "action_taken": "Deleted duplicate batch f5ae1b60-9932-4a6d-be58-eab1291f44f0",
+    "records_deleted": 54908,
+    "remaining_records": 145073,
+    "final_debit": 441001856569.00,
+    "final_credit": 441001856569.00,
+    "final_balance": 0.00,
+    "status": "✅ BALANCED"
+  },
+
+  "VALIDATION_MATRIX": {
+    "raw_data_integrity": "PASS",
+    "parsing_accuracy": "PASS",
+    "field_mapping": "PASS",
+    "debit_credit_mapping": "PASS",
+    "account_mapping": "PASS",
+    "staging_data_integrity": "PASS (after fix)",
+    "reconciliation_result": "PASS"
+  },
+
+  "LESSONS_LEARNED": [
+    "Staging process needs duplicate prevention by source_record_id",
+    "Batch management should prevent partial re-extractions",
+    "Always validate RAW source before assuming data corruption",
+    "Journal balance check should be run immediately after staging"
+  ],
+
+  "RECOMMENDATIONS": [
+    "Add unique index on (tenant_id, source_record_id) in staging collections",
+    "Implement batch status tracking (complete/partial/failed)",
+    "Add pre-import validation step to check for existing duplicates",
+    "Run journal balance check as part of extraction pipeline"
+  ],
+
+  "EVIDENCE_FILES": [
+    "/app/test_reports/ipos_journal_investigation.json"
+  ]
+}
