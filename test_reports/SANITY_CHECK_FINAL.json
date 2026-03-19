@@ -1,0 +1,59 @@
+{
+  "sanity_check_id": "SANITY-20260319004622",
+  "timestamp": "2026-03-19T00:46:22.773526+00:00",
+  "tenant_id": "ocb_titan",
+  "checks": {
+    "sales": {
+      "count": 20000,
+      "expected": 20000,
+      "total": 76440624743.0,
+      "expected_total": 76440624743.0,
+      "status": "PASS"
+    },
+    "purchases": {
+      "count": 4271,
+      "expected": 4271,
+      "total": 77566144214.0,
+      "expected_total": 77566144214.0,
+      "status": "PASS"
+    },
+    "journals": {
+      "count": 145073,
+      "expected": 145073,
+      "debit": 441001856569.0,
+      "credit": 441001856569.0,
+      "balanced": true,
+      "status": "PASS"
+    },
+    "ap_payments": {
+      "count": 3318,
+      "expected": 3318,
+      "status": "PASS"
+    },
+    "ar_payments": {
+      "count": 18996,
+      "expected": 18996,
+      "status": "PASS"
+    },
+    "stock": {
+      "staging": 48169465.0,
+      "production": 48169465,
+      "expected": 48169465,
+      "status": "PASS"
+    },
+    "import_batches": {
+      "count": 5,
+      "expected": 5,
+      "status": "PASS"
+    },
+    "staging_match": {
+      "sales": true,
+      "purchases": true,
+      "journals": true,
+      "status": "PASS"
+    }
+  },
+  "overall_status": "PASS",
+  "pass_count": 8,
+  "total_checks": 8
+}

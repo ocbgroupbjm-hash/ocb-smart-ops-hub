@@ -1,0 +1,96 @@
+{
+  "blueprint_id": "BP-20260319004657",
+  "version": "v1.0.0-PILOT-20260319",
+  "locked_at": "2026-03-19T00:46:57.863655+00:00",
+  "tenant_id": "ocb_titan",
+  "status": "LOCKED",
+  "source": "IPOS5_ULTIMATE",
+  "source_file": "/app/ipos_data/12.03.i5bu",
+  "data_summary": {
+    "sales": {
+      "count": 20000,
+      "total": 76440624743.0
+    },
+    "purchases": {
+      "count": 4271,
+      "total": 77566144214.0
+    },
+    "journals": {
+      "count": 145073,
+      "debit": 441001856569.0,
+      "credit": 441001856569.0,
+      "balanced": true
+    },
+    "ap_payments": {
+      "count": 3318
+    },
+    "ar_payments": {
+      "count": 18996
+    },
+    "total_records": 191658
+  },
+  "checksums": {
+    "sales": "a81b8a0b09ba0fd8",
+    "purchases": "6f158a4a9da27e2a",
+    "journals": "fa0f648d9921470d",
+    "ap_payments": "831b1ac54cc8db48",
+    "ar_payments": "9c16a45c187ff93c"
+  },
+  "master_checksum": "e9baa1f6fa178146c255a04b0764bcfc",
+  "import_batches": [
+    {
+      "id": "1a24f683-7bfc-434c-8ed6-368f0be0e53a",
+      "type": "SALES_IMPORT",
+      "stats": {
+        "imported": 20000,
+        "skipped": 0,
+        "errors": 0
+      }
+    },
+    {
+      "id": "de5ef05b-b19e-47fa-8169-fab62bc959c2",
+      "type": "PURCHASE_IMPORT",
+      "stats": {
+        "imported": 4271,
+        "skipped": 0
+      }
+    },
+    {
+      "id": "ce154ebe-29c6-4779-a762-7310959e82b0",
+      "type": "JOURNAL_IMPORT",
+      "stats": {
+        "imported": 145073,
+        "skipped": 0,
+        "errors": 0
+      }
+    },
+    {
+      "id": "26c61352-1ecd-4225-be17-c25c8721ff23",
+      "type": "AP_PAYMENT_IMPORT",
+      "stats": {
+        "imported": 3318
+      }
+    },
+    {
+      "id": "ed234b18-23bd-46ea-82bc-f203d83467f3",
+      "type": "AR_PAYMENT_IMPORT",
+      "stats": {
+        "imported": 18996
+      }
+    }
+  ],
+  "validation_status": {
+    "sanity_check": "PASS",
+    "accounting_chain": "VALIDATED",
+    "journal_balance": "BALANCED",
+    "staging_match": "100%"
+  },
+  "lock_rules": {
+    "no_core_logic_changes": true,
+    "no_new_features": true,
+    "no_schema_modifications": true,
+    "rollout_ready": true
+  },
+  "created_by": "system",
+  "notes": "Data Rescue Pilot Complete - Ready for Tenant Rollout"
+}

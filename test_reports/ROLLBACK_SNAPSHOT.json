@@ -1,0 +1,87 @@
+{
+  "snapshot_id": "SNAP-20260319004711",
+  "created_at": "2026-03-19T00:47:11.475774+00:00",
+  "tenant_id": "ocb_titan",
+  "type": "ROLLBACK_SNAPSHOT",
+  "rollback_batches": [
+    {
+      "batch_id": "1a24f683-7bfc-434c-8ed6-368f0be0e53a",
+      "type": "SALES_IMPORT",
+      "records": 20000,
+      "rollback_collection": "sales_invoices",
+      "rollback_query": {
+        "import_batch_id": "1a24f683-7bfc-434c-8ed6-368f0be0e53a"
+      }
+    },
+    {
+      "batch_id": "de5ef05b-b19e-47fa-8169-fab62bc959c2",
+      "type": "PURCHASE_IMPORT",
+      "records": 4271,
+      "rollback_collection": "purchase_orders",
+      "rollback_query": {
+        "import_batch_id": "de5ef05b-b19e-47fa-8169-fab62bc959c2"
+      }
+    },
+    {
+      "batch_id": "ce154ebe-29c6-4779-a762-7310959e82b0",
+      "type": "JOURNAL_IMPORT",
+      "records": 145073,
+      "rollback_collection": "journals",
+      "rollback_query": {
+        "import_batch_id": "ce154ebe-29c6-4779-a762-7310959e82b0"
+      }
+    },
+    {
+      "batch_id": "26c61352-1ecd-4225-be17-c25c8721ff23",
+      "type": "AP_PAYMENT_IMPORT",
+      "records": 3318,
+      "rollback_collection": "ap_payments",
+      "rollback_query": {
+        "import_batch_id": "26c61352-1ecd-4225-be17-c25c8721ff23"
+      }
+    },
+    {
+      "batch_id": "ed234b18-23bd-46ea-82bc-f203d83467f3",
+      "type": "AR_PAYMENT_IMPORT",
+      "records": 18996,
+      "rollback_collection": "ar_payments",
+      "rollback_query": {
+        "import_batch_id": "ed234b18-23bd-46ea-82bc-f203d83467f3"
+      }
+    }
+  ],
+  "rollback_order": [
+    "AR_PAYMENT_IMPORT",
+    "AP_PAYMENT_IMPORT",
+    "JOURNAL_IMPORT",
+    "PURCHASE_IMPORT",
+    "SALES_IMPORT"
+  ],
+  "rollback_commands": [
+    {
+      "order": 1,
+      "command": "POST /api/data-rescue/import/historical/rollback/ed234b18-23bd-46ea-82bc-f203d83467f3",
+      "description": "Rollback AR_PAYMENT_IMPORT (18996 records)"
+    },
+    {
+      "order": 2,
+      "command": "POST /api/data-rescue/import/historical/rollback/26c61352-1ecd-4225-be17-c25c8721ff23",
+      "description": "Rollback AP_PAYMENT_IMPORT (3318 records)"
+    },
+    {
+      "order": 3,
+      "command": "POST /api/data-rescue/import/historical/rollback/ce154ebe-29c6-4779-a762-7310959e82b0",
+      "description": "Rollback JOURNAL_IMPORT (145073 records)"
+    },
+    {
+      "order": 4,
+      "command": "POST /api/data-rescue/import/historical/rollback/de5ef05b-b19e-47fa-8169-fab62bc959c2",
+      "description": "Rollback PURCHASE_IMPORT (4271 records)"
+    },
+    {
+      "order": 5,
+      "command": "POST /api/data-rescue/import/historical/rollback/1a24f683-7bfc-434c-8ed6-368f0be0e53a",
+      "description": "Rollback SALES_IMPORT (20000 records)"
+    }
+  ]
+}
