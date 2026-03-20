@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { X, Loader2, TrendingUp, TrendingDown, Package, Calendar, FileText } from 'lucide-react';
+import { X, Loader2, TrendingUp, TrendingDown, Package, Calendar, FileText, Clock, History } from 'lucide-react';
 import { toast } from 'sonner';
 
 /**
@@ -8,6 +8,10 @@ import { toast } from 'sonner';
  * 
  * Menampilkan history pergerakan stok dari collection stock_movements
  * sebagai Single Source of Truth (SSOT)
+ * 
+ * PENTING: 
+ * - Default = SEMUA PERIODE (stok saat ini / current stock)
+ * - Filter tanggal = berdasarkan periode (period-based stock)
  * 
  * @param {Object} props
  * @param {boolean} props.isOpen - Status modal terbuka
@@ -22,6 +26,8 @@ const StockCardModal = ({ isOpen, onClose, item, branchId = '' }) => {
   const [summary, setSummary] = useState({ total_in: 0, total_out: 0, balance: 0 });
   const [branches, setBranches] = useState([]);
   const [selectedBranch, setSelectedBranch] = useState(branchId);
+  // Mode: 'all' = Semua Periode (Stok Saat Ini), 'period' = Berdasarkan Periode
+  const [viewMode, setViewMode] = useState('all');
   const [dateRange, setDateRange] = useState({
     from: '',
     to: ''
@@ -35,8 +41,13 @@ const StockCardModal = ({ isOpen, onClose, item, branchId = '' }) => {
     try {
       const params = new URLSearchParams({ item_id: item.id });
       if (selectedBranch) params.append('branch_id', selectedBranch);
-      if (dateRange.from) params.append('date_from', dateRange.from);
-      if (dateRange.to) params.append('date_to', dateRange.to);
+      
+      // Hanya kirim date filter jika mode = 'period' DAN tanggal diisi
+      if (viewMode === 'period') {
+        if (dateRange.from) params.append('date_from', dateRange.from);
+        if (dateRange.to) params.append('date_to', dateRange.to);
+      }
+      // mode 'all' = tidak kirim date filter = semua periode = stok saat ini
       
       // Try the new modal endpoint first
       const res = await api(`/api/inventory/stock-card-modal?${params}`);
@@ -86,7 +97,7 @@ const StockCardModal = ({ isOpen, onClose, item, branchId = '' }) => {
     } finally {
       setLoading(false);
     }
-  }, [api, item?.id, selectedBranch, dateRange]);
+  }, [api, item?.id, selectedBranch, dateRange, viewMode]);
 
   // Load branches for filter
   const loadBranches = useCallback(async () => {
@@ -177,6 +188,47 @@ const StockCardModal = ({ isOpen, onClose, item, branchId = '' }) => {
 
         {/* Filters */}
         <div className="px-4 py-3 border-b border-red-900/30 bg-[#0a0608]/50">
+          {/* Mode Selector - PENTING untuk UX */}
+          <div className="flex items-center gap-4 mb-3">
+            <span className="text-xs text-gray-400 font-medium">Mode Tampilan:</span>
+            <div className="flex gap-1">
+              <button
+                onClick={() => { setViewMode('all'); setDateRange({ from: '', to: '' }); }}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-l border transition-colors ${
+                  viewMode === 'all'
+                    ? 'bg-green-600 text-white border-green-600'
+                    : 'bg-[#0a0608] text-gray-300 border-red-900/30 hover:bg-red-900/20'
+                }`}
+                data-testid="btn-view-all-period"
+              >
+                <Package className="h-3.5 w-3.5" />
+                Semua Periode (Stok Saat Ini)
+              </button>
+              <button
+                onClick={() => setViewMode('period')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-r border transition-colors ${
+                  viewMode === 'period'
+                    ? 'bg-amber-600 text-white border-amber-600'
+                    : 'bg-[#0a0608] text-gray-300 border-red-900/30 hover:bg-red-900/20'
+                }`}
+                data-testid="btn-view-period"
+              >
+                <History className="h-3.5 w-3.5" />
+                Berdasarkan Periode
+              </button>
+            </div>
+            {viewMode === 'all' && (
+              <span className="text-xs text-green-400 bg-green-900/20 px-2 py-1 rounded">
+                Menampilkan semua transaksi = Stok Saat Ini
+              </span>
+            )}
+            {viewMode === 'period' && (
+              <span className="text-xs text-amber-400 bg-amber-900/20 px-2 py-1 rounded">
+                Stok dihitung dari rentang tanggal yang dipilih
+              </span>
+            )}
+          </div>
+          
           <div className="flex items-center gap-4 flex-wrap">
             <div className="flex items-center gap-2">
               <label className="text-xs text-gray-400">Cabang:</label>
@@ -192,29 +244,38 @@ const StockCardModal = ({ isOpen, onClose, item, branchId = '' }) => {
                 ))}
               </select>
             </div>
-            <div className="flex items-center gap-2">
-              <label className="text-xs text-gray-400">Dari:</label>
-              <input
-                type="date"
-                value={dateRange.from}
-                onChange={(e) => setDateRange(prev => ({ ...prev, from: e.target.value }))}
-                className="px-2 py-1 text-sm bg-[#0a0608] border border-red-900/30 rounded text-gray-200"
-              />
-            </div>
-            <div className="flex items-center gap-2">
-              <label className="text-xs text-gray-400">Sampai:</label>
-              <input
-                type="date"
-                value={dateRange.to}
-                onChange={(e) => setDateRange(prev => ({ ...prev, to: e.target.value }))}
-                className="px-2 py-1 text-sm bg-[#0a0608] border border-red-900/30 rounded text-gray-200"
-              />
-            </div>
+            
+            {/* Date filters - hanya aktif jika mode = period */}
+            {viewMode === 'period' && (
+              <>
+                <div className="flex items-center gap-2">
+                  <label className="text-xs text-gray-400">Dari:</label>
+                  <input
+                    type="date"
+                    value={dateRange.from}
+                    onChange={(e) => setDateRange(prev => ({ ...prev, from: e.target.value }))}
+                    className="px-2 py-1 text-sm bg-[#0a0608] border border-red-900/30 rounded text-gray-200"
+                    data-testid="filter-date-from"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <label className="text-xs text-gray-400">Sampai:</label>
+                  <input
+                    type="date"
+                    value={dateRange.to}
+                    onChange={(e) => setDateRange(prev => ({ ...prev, to: e.target.value }))}
+                    className="px-2 py-1 text-sm bg-[#0a0608] border border-red-900/30 rounded text-gray-200"
+                    data-testid="filter-date-to"
+                  />
+                </div>
+              </>
+            )}
             <button
               onClick={loadStockMovements}
               className="px-3 py-1 bg-amber-600 text-white text-sm rounded hover:bg-amber-700"
+              data-testid="btn-filter-stock-card"
             >
-              Filter
+              {viewMode === 'all' ? 'Refresh' : 'Filter'}
             </button>
           </div>
         </div>
@@ -235,12 +296,21 @@ const StockCardModal = ({ isOpen, onClose, item, branchId = '' }) => {
             </div>
             <p className="text-xl font-bold text-red-300">{summary.total_out.toLocaleString('id-ID')}</p>
           </div>
-          <div className="bg-amber-900/20 border border-amber-900/30 rounded-lg p-3 text-center">
-            <div className="flex items-center justify-center gap-2 text-amber-400 mb-1">
-              <Package className="h-4 w-4" />
-              <span className="text-xs font-medium">Saldo Akhir</span>
+          <div className={`${viewMode === 'all' ? 'bg-green-900/30 border-green-600' : 'bg-amber-900/20 border-amber-900/30'} border rounded-lg p-3 text-center`}>
+            <div className={`flex items-center justify-center gap-2 ${viewMode === 'all' ? 'text-green-400' : 'text-amber-400'} mb-1`}>
+              {viewMode === 'all' ? <Package className="h-4 w-4" /> : <Clock className="h-4 w-4" />}
+              <span className="text-xs font-medium">
+                {viewMode === 'all' ? 'STOK SAAT INI' : 'Saldo Periode'}
+              </span>
             </div>
-            <p className="text-xl font-bold text-amber-300">{summary.balance.toLocaleString('id-ID')}</p>
+            <p className={`text-xl font-bold ${viewMode === 'all' ? 'text-green-300' : 'text-amber-300'}`} data-testid="stock-balance">
+              {summary.balance.toLocaleString('id-ID')}
+            </p>
+            {viewMode === 'period' && (dateRange.from || dateRange.to) && (
+              <p className="text-[10px] text-gray-500 mt-1">
+                {dateRange.from || '...'} s/d {dateRange.to || '...'}
+              </p>
+            )}
           </div>
         </div>
 
@@ -336,11 +406,18 @@ const StockCardModal = ({ isOpen, onClose, item, branchId = '' }) => {
         {/* Footer */}
         <div className="px-4 py-3 border-t border-red-900/30 bg-[#0a0608]/50 flex items-center justify-between">
           <div className="text-xs text-gray-500">
-            Data dari <span className="text-amber-400 font-medium">stock_movements</span> (Single Source of Truth)
+            <span>Data dari <span className="text-amber-400 font-medium">stock_movements</span> (SSOT)</span>
+            {viewMode === 'all' && (
+              <span className="ml-2 text-green-400">| Mode: Semua Periode = Stok Saat Ini</span>
+            )}
+            {viewMode === 'period' && (
+              <span className="ml-2 text-amber-400">| Mode: Berdasarkan Periode</span>
+            )}
           </div>
           <button
             onClick={onClose}
             className="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600"
+            data-testid="btn-close-stock-card-bottom"
           >
             Tutup
           </button>

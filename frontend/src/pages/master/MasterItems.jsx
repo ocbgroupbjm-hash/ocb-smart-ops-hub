@@ -746,7 +746,7 @@ const MasterItems = () => {
                 <th className="px-2 py-2 text-right text-amber-200 font-semibold">H.BELI</th>
                 <th className="px-2 py-2 text-right text-amber-200 font-semibold">H.JUAL</th>
                 <th className="px-2 py-2 text-center text-amber-200 font-semibold">MODE HARGA</th>
-                <th className="px-2 py-2 text-right text-amber-200 font-semibold">STOK</th>
+                <th className="px-2 py-2 text-right text-amber-200 font-semibold" title="Stok Saat Ini (dari Semua Periode)">STOK SAAT INI</th>
                 <th className="px-2 py-2 text-center text-amber-200 font-semibold">STATUS</th>
                 <th className="px-2 py-2 text-center text-amber-200 font-semibold">AKSI</th>
               </tr>
