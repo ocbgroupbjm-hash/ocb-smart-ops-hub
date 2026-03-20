@@ -7,6 +7,63 @@ Membangun sistem ERP retail komprehensif (OCB TITAN) dengan fitur POS, Inventory
 
 ---
 
+
+## 🟢 P0: ARSITEKTUR FINAL OCB TITAN - QUICK PURCHASE DIRECT STOCK IN (2026-03-20) ✅ DONE
+
+### ARSITEKTUR FINAL (TIDAK BOLEH MENYIMPANG)
+| Rule | Source of Truth |
+|------|-----------------|
+| CABANG = GUDANG | Unified concept |
+| Lokasi | `branches` collection |
+| Item Master | `products` collection |
+| Stok | `product_stocks` collection |
+| Histori Stok | `stock_movements` collection |
+| Accounting | `journals` collection |
+
+### FLOW FINAL
+| Flow | Endpoint | Status Akhir | Stok | PO Prefix |
+|------|----------|--------------|------|-----------|
+| **Quick Purchase** | POST `/api/purchase/quick` | `posted` | ✅ LANGSUNG MASUK | `QPO` |
+| **Buat PO** | POST `/api/purchase/orders` | `draft` | ❌ Menunggu Receive | `PO` |
+
+### Root Cause (Problem Lama)
+- Quick Purchase sebelumnya memanggil `/api/purchase/orders` (sama dengan Buat PO)
+- Stok hanya masuk saat "Terima Barang" → User bingung karena stok tidak langsung muncul
+
+### Fix Applied
+1. **Backend**: Endpoint baru `POST /api/purchase/quick`
+   - Validasi supplier dan items
+   - Create PO dengan status `posted` (bukan draft)
+   - LANGSUNG update `product_stocks` (SOURCE OF TRUTH)
+   - Create `stock_movement` dengan `reference_type='quick_purchase'`
+   - Update product `cost_price` dengan weighted average HPP
+   
+2. **Frontend**: QuickPurchase.jsx updated
+   - Endpoint diubah ke `/api/purchase/quick`
+   - Button label: `SIMPAN & STOK MASUK` (warna hijau)
+   - Badge: `STOK LANGSUNG`
+   - Message: `Stok langsung bertambah setelah simpan`
+
+### Files Modified
+| File | Changes |
+|------|---------|
+| `/app/backend/routes/purchase.py` | + `QuickPurchaseInput` class, + `POST /api/purchase/quick` endpoint |
+| `/app/frontend/src/pages/purchase/QuickPurchase.jsx` | New endpoint, UI labels, green button |
+
+### Test Results
+- **Backend**: 100% (12/12 tests passed)
+- **Frontend**: 100% (all UI features verified)
+- **Test Report**: `/app/test_reports/iteration_101.json`
+
+### DELETE/REVERSE RULE (BERLAKU GLOBAL)
+| Status | Action |
+|--------|--------|
+| draft | ✅ Boleh hard delete |
+| received/posted/paid | ❌ WAJIB reverse (buat counter-transaction) |
+
+---
+
+
 ## 🟢 P0: IPOS UX ALIGNMENT - QUICK STOCK VIEW (2026-03-20) ✅ DONE
 
 ### Summary
