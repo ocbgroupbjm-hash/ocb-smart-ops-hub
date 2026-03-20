@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { Plus, Search, Edit, Phone, Mail, MapPin, Loader2, X, Save, Users, Star, Gift } from 'lucide-react';
+import { Plus, Search, Edit, Phone, Mail, MapPin, Loader2, X, Save, Users, Star, Gift, Zap, ChevronDown, ChevronUp } from 'lucide-react';
 import { toast } from 'sonner';
 
 const Customers = () => {
@@ -12,6 +12,8 @@ const Customers = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [quickMode, setQuickMode] = useState(true); // NEW: Quick Mode default ON
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [form, setForm] = useState({ name: '', phone: '', email: '', address: '', city: '', segment: 'regular', notes: '' });
 
   useEffect(() => { loadCustomers(); }, [search, segment]);
@@ -29,8 +31,18 @@ const Customers = () => {
   };
 
   const openModal = (customer = null) => {
-    if (customer) { setEditingCustomer(customer); setForm({ ...customer }); }
-    else { setEditingCustomer(null); setForm({ name: '', phone: '', email: '', address: '', city: '', segment: 'regular', notes: '' }); }
+    if (customer) { 
+      setEditingCustomer(customer); 
+      setForm({ ...customer }); 
+      setQuickMode(false);
+      setShowAdvanced(true);
+    }
+    else { 
+      setEditingCustomer(null); 
+      setForm({ name: '', phone: '', email: '', address: '', city: '', segment: 'regular', notes: '' }); 
+      setQuickMode(true);
+      setShowAdvanced(false);
+    }
     setShowModal(true);
   };
 
@@ -150,43 +162,85 @@ const Customers = () => {
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
           <div className="bg-[#1a1214] border border-red-900/30 rounded-xl w-full max-w-md">
             <div className="p-6 border-b border-red-900/30 flex justify-between items-center">
-              <h2 className="text-xl font-bold">{editingCustomer ? 'Edit Pelanggan' : 'Tambah Pelanggan'}</h2>
+              <div>
+                <h2 className="text-xl font-bold">{editingCustomer ? 'Edit Pelanggan' : 'Tambah Pelanggan'}</h2>
+                {!editingCustomer && (
+                  <div className="flex items-center gap-2 mt-1">
+                    <button
+                      type="button"
+                      onClick={() => { setQuickMode(true); setShowAdvanced(false); }}
+                      className={`text-xs px-2 py-1 rounded flex items-center gap-1 ${quickMode ? 'bg-green-600 text-white' : 'bg-gray-800 text-gray-400'}`}
+                    >
+                      <Zap className="h-3 w-3" /> Quick
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setQuickMode(false); setShowAdvanced(true); }}
+                      className={`text-xs px-2 py-1 rounded ${!quickMode ? 'bg-amber-600 text-white' : 'bg-gray-800 text-gray-400'}`}
+                    >
+                      Lengkap
+                    </button>
+                  </div>
+                )}
+              </div>
               <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-white"><X className="h-6 w-6" /></button>
             </div>
             
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
+              {/* ESSENTIAL FIELDS */}
               <div>
                 <label className="block text-sm text-gray-400 mb-1">Nama *</label>
-                <input type="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full px-3 py-2 bg-[#0a0608] border border-red-900/30 rounded-lg" required />
+                <input type="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full px-3 py-2 bg-[#0a0608] border border-red-900/30 rounded-lg" required placeholder="Nama pelanggan" data-testid="customer-name-input" />
               </div>
               <div>
                 <label className="block text-sm text-gray-400 mb-1">Nomor HP *</label>
-                <input type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="w-full px-3 py-2 bg-[#0a0608] border border-red-900/30 rounded-lg" required />
+                <input type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="w-full px-3 py-2 bg-[#0a0608] border border-red-900/30 rounded-lg" required placeholder="081234567890" data-testid="customer-phone-input" />
               </div>
-              <div>
-                <label className="block text-sm text-gray-400 mb-1">Email</label>
-                <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="w-full px-3 py-2 bg-[#0a0608] border border-red-900/30 rounded-lg" />
-              </div>
-              <div>
-                <label className="block text-sm text-gray-400 mb-1">Segmen</label>
-                <select value={form.segment} onChange={(e) => setForm({ ...form, segment: e.target.value })} className="w-full px-3 py-2 bg-[#0a0608] border border-red-900/30 rounded-lg">
-                  {segments.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm text-gray-400 mb-1">Kota</label>
-                <input type="text" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} className="w-full px-3 py-2 bg-[#0a0608] border border-red-900/30 rounded-lg" />
-              </div>
-              <div>
-                <label className="block text-sm text-gray-400 mb-1">Alamat</label>
-                <textarea value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} className="w-full px-3 py-2 bg-[#0a0608] border border-red-900/30 rounded-lg" rows={2} />
-              </div>
+
+              {/* Quick Mode hint */}
+              {quickMode && !editingCustomer && (
+                <div className="bg-green-900/20 border border-green-700/30 rounded-lg p-3 text-center">
+                  <p className="text-green-400 text-sm mb-2">Mode Cepat: 2 field sudah cukup!</p>
+                  <button
+                    type="button"
+                    onClick={() => setShowAdvanced(!showAdvanced)}
+                    className="text-xs text-gray-400 hover:text-white flex items-center gap-1 mx-auto"
+                  >
+                    {showAdvanced ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                    {showAdvanced ? 'Sembunyikan detail' : 'Tambah detail lainnya'}
+                  </button>
+                </div>
+              )}
+
+              {/* ADVANCED FIELDS */}
+              {(showAdvanced || !quickMode) && (
+                <>
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-1">Email</label>
+                    <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="w-full px-3 py-2 bg-[#0a0608] border border-red-900/30 rounded-lg" />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-1">Segmen</label>
+                    <select value={form.segment} onChange={(e) => setForm({ ...form, segment: e.target.value })} className="w-full px-3 py-2 bg-[#0a0608] border border-red-900/30 rounded-lg">
+                      {segments.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-1">Kota</label>
+                    <input type="text" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} className="w-full px-3 py-2 bg-[#0a0608] border border-red-900/30 rounded-lg" />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-1">Alamat</label>
+                    <textarea value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} className="w-full px-3 py-2 bg-[#0a0608] border border-red-900/30 rounded-lg" rows={2} />
+                  </div>
+                </>
+              )}
               
               <div className="flex gap-3 pt-4">
                 <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-2 border border-red-900/30 rounded-lg hover:bg-red-900/20">Batal</button>
-                <button type="submit" disabled={saving} className="flex-1 py-2 bg-gradient-to-r from-red-600 to-amber-600 text-white rounded-lg disabled:opacity-50 flex items-center justify-center gap-2">
+                <button type="submit" disabled={saving} className="flex-1 py-2 bg-gradient-to-r from-red-600 to-amber-600 text-white rounded-lg disabled:opacity-50 flex items-center justify-center gap-2" data-testid="save-customer-btn">
                   {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
-                  {saving ? 'Menyimpan...' : 'Simpan'}
+                  {saving ? 'Menyimpan...' : (quickMode ? 'Simpan Cepat' : 'Simpan')}
                 </button>
               </div>
             </form>
