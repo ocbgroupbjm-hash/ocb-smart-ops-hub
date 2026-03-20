@@ -43,11 +43,31 @@ const ARPaymentsList = () => {
 
   const handleEdit = (item) => { window.location.href = `/sales/ar-payments/edit/${item.id}`; };
   const handleDelete = async (item) => {
-    if (!confirm(`Hapus pembayaran ${item.payment_number}?`)) return;
+    // Check status before delete
+    if (item.status === 'posted') {
+      toast.error('Payment POSTED tidak bisa dihapus. Gunakan fitur Reverse.');
+      return;
+    }
+    if (item.status === 'reversed') {
+      toast.error('Payment yang sudah di-REVERSE tidak bisa dihapus.');
+      return;
+    }
+    
+    if (!confirm(`Hapus pembayaran ${item.payment_number || item.payment_no}?`)) return;
     try {
-      const res = await api(`/api/ar/payments/${item.id}`, { method: 'DELETE' });
-      if (res.ok) { toast.success('Pembayaran berhasil dihapus'); setSelectedItem(null); loadData(); }
-    } catch { toast.error('Gagal menghapus'); }
+      const res = await api(`/api/payment-allocation/ar/payments/${item.id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (res.ok) { 
+        toast.success('Pembayaran berhasil dihapus'); 
+        setSelectedItem(null); 
+        loadData(); 
+      } else {
+        toast.error(data.detail || 'Gagal menghapus');
+      }
+    } catch (err) { 
+      console.error(err);
+      toast.error('Gagal menghapus pembayaran'); 
+    }
   };
   const handlePrint = (item) => { toast.info(`Mencetak ${item.payment_number}...`); };
   const handleRowSelect = (item) => { setSelectedItem(selectedItem?.id === item.id ? null : item); };

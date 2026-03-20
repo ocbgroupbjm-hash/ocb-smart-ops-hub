@@ -1141,3 +1141,120 @@ async def check_ar_payment_reversible(
         "current_status": payment.get("status"),
         "total_amount": payment.get("total_amount", 0)
     }
+
+
+# ==================== DELETE PAYMENT (DRAFT ONLY) ====================
+
+@router.delete("/ar/payments/{payment_id}")
+async def delete_ar_payment(
+    payment_id: str,
+    request: Request,
+    user: dict = Depends(get_current_user)
+):
+    """
+    DELETE AR PAYMENT - HANYA UNTUK STATUS DRAFT
+    
+    Rules:
+    - draft = boleh hapus (hard delete)
+    - posted = TIDAK boleh hapus, gunakan reverse
+    - reversed = TIDAK boleh hapus
+    """
+    user_id = user.get("user_id", "")
+    user_name = user.get("name", "System")
+    
+    payment = await ar_payments.find_one({"id": payment_id}, {"_id": 0})
+    if not payment:
+        raise HTTPException(status_code=404, detail="Payment tidak ditemukan")
+    
+    status = payment.get("status", "draft")
+    
+    if status == "posted":
+        raise HTTPException(
+            status_code=400, 
+            detail="Payment dengan status POSTED tidak bisa dihapus. Gunakan fitur REVERSE untuk membatalkan."
+        )
+    
+    if status == "reversed":
+        raise HTTPException(
+            status_code=400, 
+            detail="Payment yang sudah di-REVERSE tidak bisa dihapus."
+        )
+    
+    # Delete allocations if any
+    await ar_allocations.delete_many({"payment_header_id": payment_id})
+    
+    # Delete payment
+    result = await ar_payments.delete_one({"id": payment_id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=500, detail="Gagal menghapus payment")
+    
+    await log_activity(
+        db, user_id, user_name,
+        "ar_payment_delete",
+        f"Hapus Payment AR {payment.get('payment_no')} (Draft)",
+        "ar_payments",
+        payment_id,
+        request.client.host if request.client else "",
+        severity="info"
+    )
+    
+    return {"message": f"Payment {payment.get('payment_no')} berhasil dihapus"}
+
+
+@router.delete("/ap/payments/{payment_id}")
+async def delete_ap_payment(
+    payment_id: str,
+    request: Request,
+    user: dict = Depends(get_current_user)
+):
+    """
+    DELETE AP PAYMENT - HANYA UNTUK STATUS DRAFT
+    
+    Rules:
+    - draft = boleh hapus (hard delete)
+    - posted = TIDAK boleh hapus, gunakan reverse
+    - reversed = TIDAK boleh hapus
+    """
+    user_id = user.get("user_id", "")
+    user_name = user.get("name", "System")
+    
+    payment = await ap_payments.find_one({"id": payment_id}, {"_id": 0})
+    if not payment:
+        raise HTTPException(status_code=404, detail="Payment tidak ditemukan")
+    
+    status = payment.get("status", "draft")
+    
+    if status == "posted":
+        raise HTTPException(
+            status_code=400, 
+            detail="Payment dengan status POSTED tidak bisa dihapus. Gunakan fitur REVERSE untuk membatalkan."
+        )
+    
+    if status == "reversed":
+        raise HTTPException(
+            status_code=400, 
+            detail="Payment yang sudah di-REVERSE tidak bisa dihapus."
+        )
+    
+    # Delete allocations if any
+    await ap_allocations.delete_many({"payment_header_id": payment_id})
+    
+    # Delete payment
+    result = await ap_payments.delete_one({"id": payment_id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=500, detail="Gagal menghapus payment")
+    
+    await log_activity(
+        db, user_id, user_name,
+        "ap_payment_delete",
+        f"Hapus Payment AP {payment.get('payment_no')} (Draft)",
+        "ap_payments",
+        payment_id,
+        request.client.host if request.client else "",
+        severity="info"
+    )
+    
+    return {"message": f"Payment {payment.get('payment_no')} berhasil dihapus"}
+

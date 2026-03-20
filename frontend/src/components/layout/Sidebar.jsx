@@ -134,7 +134,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     },
 
     // ============================================================
-    // PENJUALAN - iPOS Style (FULL)
+    // PENJUALAN - iPOS Style (CLEANED UP)
     // ============================================================
     {
       name: 'Penjualan',
@@ -142,33 +142,20 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       roles: ['owner', 'admin', 'supervisor', 'cashier'],
       submenu: [
         { name: 'POS Kasir', icon: Monitor, path: '/pos', highlight: true },
-        { divider: true },
-        { name: 'Pesanan Jual List', icon: List, path: '/sales/orders' },
-        { name: 'Tambah Pesanan Penjualan', icon: Plus, path: '/sales/orders/add' },
-        { divider: true },
+        { divider: true, label: 'Transaksi Penjualan' },
         { name: 'Daftar Penjualan', icon: FileText, path: '/sales/list' },
         { name: 'Tambah Penjualan', icon: Plus, path: '/sales/add' },
-        { divider: true },
+        { divider: true, label: 'Pesanan & Kasir' },
+        { name: 'Pesanan Penjualan', icon: List, path: '/sales/orders' },
         { name: 'Daftar Kasir', icon: ShoppingCart, path: '/sales/cashier-list' },
-        { name: 'Tambah Kasir', icon: Plus, path: '/kasir' },
-        { divider: true },
+        { divider: true, label: 'Retur & Tukar Tambah' },
+        { name: 'Retur Penjualan', icon: RotateCcw, path: '/sales/returns' },
+        { name: 'Tukar Tambah', icon: ArrowLeftRight, path: '/sales/trade-in' },
+        { divider: true, label: 'Lainnya' },
         { name: 'History Harga Jual', icon: History, path: '/sales/price-history' },
-        { divider: true },
-        { name: 'Daftar Tukar Tambah', icon: ArrowLeftRight, path: '/sales/trade-in' },
-        { name: 'Tambah Tukar Tambah', icon: Plus, path: '/sales/trade-in/add' },
-        { divider: true },
-        { name: 'Daftar Pembayaran Piutang', icon: Wallet, path: '/sales/ar-payments' },
-        { name: 'Tambah Pembayaran Piutang', icon: Plus, path: '/sales/ar-payments/add' },
-        { divider: true },
-        { name: 'Daftar Retur Penjualan', icon: RotateCcw, path: '/sales/returns' },
-        { name: 'Tambah Retur Penjualan', icon: Plus, path: '/sales/returns/add' },
-        { divider: true },
         { name: 'Point Transaksi', icon: Star, path: '/sales/points' },
-        { divider: true },
-        // Pembayaran Piutang dipindahkan ke menu Piutang (menghindari duplicate)
-        { name: 'Daftar Pengiriman', icon: Send, path: '/sales/deliveries' },
-        { divider: true },
-        { name: 'Laporan CSV/XML Faktur Pajak', icon: FileSpreadsheet, path: '/sales/tax-export' },
+        { name: 'Pengiriman', icon: Send, path: '/sales/deliveries' },
+        { name: 'Export Faktur Pajak', icon: FileSpreadsheet, path: '/sales/tax-export' },
       ]
     },
 
@@ -241,7 +228,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     },
 
     // ============================================================
-    // HUTANG (AP) - iPOS Style - PRIMARY MENU untuk Hutang
+    // HUTANG (AP) - iPOS Style - SINGLE SOURCE OF TRUTH
     // ============================================================
     {
       name: 'Hutang',
@@ -250,13 +237,12 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       submenu: [
         { name: 'Daftar Hutang', icon: List, path: '/hutang/list' },
         { name: 'Pembayaran Hutang', icon: CreditCard, path: '/purchase/ap-payments' },
-        { name: 'Tambah Pembayaran Hutang', icon: Plus, path: '/purchase/ap-payments/add' },
         { name: 'Umur Hutang', icon: Clock, path: '/hutang/aging' },
       ]
     },
 
     // ============================================================
-    // PIUTANG (AR) - iPOS Style - PRIMARY MENU untuk Piutang
+    // PIUTANG (AR) - iPOS Style - SINGLE SOURCE OF TRUTH
     // ============================================================
     {
       name: 'Piutang',
@@ -265,7 +251,6 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       submenu: [
         { name: 'Daftar Piutang', icon: List, path: '/piutang/list' },
         { name: 'Pembayaran Piutang', icon: Wallet, path: '/sales/ar-payments' },
-        { name: 'Tambah Pembayaran Piutang', icon: Plus, path: '/sales/ar-payments/add' },
         { name: 'Umur Piutang', icon: Clock, path: '/piutang/aging' },
       ]
     },
