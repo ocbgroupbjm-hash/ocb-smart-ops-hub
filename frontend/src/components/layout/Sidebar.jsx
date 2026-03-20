@@ -181,6 +181,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       icon: Truck,
       roles: ['owner', 'admin', 'supervisor', 'inventory'],
       submenu: [
+        { name: 'Quick Purchase', icon: Monitor, path: '/purchase/quick', highlight: true },
         // A. PO / Procurement
         { divider: true, label: 'PO / Procurement' },
         { name: 'Daftar PO Pembelian', icon: List, path: '/purchase/orders' },

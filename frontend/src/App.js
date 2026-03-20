@@ -125,6 +125,7 @@ import {
   PurchaseOrders, PurchaseList, PurchaseReceiving, 
   PurchasePayments, PurchaseReturns, PurchasePriceHistory 
 } from './pages/purchase';
+import QuickPurchase from './pages/purchase/QuickPurchase';
 
 // Sales Pages - iPOS Style
 import SalesOrderList from './pages/sales/SalesOrderList';
@@ -333,6 +334,7 @@ function App() {
             <Route path="purchase" element={<PurchaseModule />} />
             <Route path="purchase/orders" element={<PurchaseOrders />} />
             <Route path="purchase/orders/add" element={<PurchaseEnterprise />} />
+            <Route path="purchase/quick" element={<QuickPurchase />} />
             <Route path="purchase/receiving" element={<PurchaseReceiving />} />
             {/* B. Histori Pembelian Aktual */}
             <Route path="purchase/history" element={<PurchaseList />} />
