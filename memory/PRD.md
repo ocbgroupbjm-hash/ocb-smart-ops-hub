@@ -7,6 +7,66 @@ Membangun sistem ERP retail komprehensif (OCB TITAN) dengan fitur POS, Inventory
 
 ---
 
+## ✅ P0: REVERSAL ENGINE - DELETE DENGAN REVERSAL (2026-03-20) ✅ DONE
+
+### Issue Reported
+- Delete transaksi TIDAK melakukan reversal → stok tidak kembali → data tidak konsisten
+- Orphan stock movements
+- Audit trail tidak lengkap
+- Bisa manipulasi stok dan bikin laporan salah
+
+### Solution Implemented
+
+#### 1. REVERSAL ENGINE (`execute_stock_reversal()`)
+- Core function untuk membalikkan semua stock movements
+- Membuat reversal entries (qty negatif)
+- Mark original movements sebagai `is_reversed: true`
+- Update product_stocks otomatis
+
+#### 2. DELETE dengan AUTO REVERSAL
+- Endpoint `DELETE /api/purchase/orders/{po_id}` sekarang:
+  - Cek apakah ada stock movements
+  - Jika ada → WAJIB REVERSAL (delete_mode: REVERSAL_DELETE)
+  - Stok otomatis kembali
+
+#### 3. Explicit REVERSE Endpoint
+- `POST /api/purchase/orders/{po_id}/reverse`
+- Untuk transaksi POSTED yang perlu dibatalkan
+- Tanpa hard delete
+
+#### 4. Preview Endpoints
+- `GET /api/purchase/orders/{po_id}/delete-preview`
+- `GET /api/purchase/orders/{po_id}/reversal-preview`
+
+### Verification
+| Test Case | Before | After | Status |
+|-----------|--------|-------|--------|
+| QPO +100 → Delete | 108 | 108 | ✅ |
+| QPO +100 → Reverse | 208 | 108 | ✅ |
+
+### 3 Layar Konsisten
+| Layar | Stock | Status |
+|-------|-------|--------|
+| Daftar Item | 108 | ✅ |
+| Stok Barang | 108 | ✅ |
+| Kartu Stok | 108 | ✅ |
+
+### Aturan Baru (ENFORCED)
+1. ❌ Tidak boleh hard delete jika ada efek stok
+2. ✅ Semua koreksi HARUS lewat reversal
+3. ✅ Semua reversal HARUS masuk stock_movements
+4. ✅ Tidak ada perubahan stok tanpa movement
+
+### Files Modified
+| File | Changes |
+|------|---------|
+| `/app/backend/routes/purchase.py` | Reversal engine, updated DELETE, new REVERSE endpoint |
+
+### Test Report
+- `/app/test_reports/REVERSAL_ENGINE_IMPLEMENTATION_REPORT.md`
+
+---
+
 ## ✅ P0: KARTU STOK MODE FILTER - HALAMAN UTAMA (2026-03-20) ✅ DONE
 
 ### Issue Reported

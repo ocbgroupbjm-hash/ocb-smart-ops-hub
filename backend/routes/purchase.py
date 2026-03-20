@@ -917,7 +917,123 @@ async def cancel_purchase_order(po_id: str, request: Request, user: dict = Depen
     return {"message": "Purchase order cancelled"}
 
 
-# ==================== SAFE DELETE POLICY ====================
+# ==================== REVERSAL ENGINE (WAJIB) ====================
+# ATURAN: Tidak boleh hard delete jika sudah ada efek stok
+# Semua koreksi HARUS lewat reversal
+# Semua reversal HARUS masuk stock_movements
+
+async def execute_stock_reversal(
+    db,
+    reference_id: str,
+    reference_types: list,
+    reversal_type: str,
+    reversal_note: str,
+    user_id: str,
+    user_name: str
+) -> dict:
+    """
+    REVERSAL ENGINE - Core function untuk membalikkan stock movements
+    
+    Args:
+        db: Database instance
+        reference_id: ID transaksi yang akan di-reverse
+        reference_types: List of reference_type yang akan di-reverse (e.g., ["purchase_order", "quick_purchase"])
+        reversal_type: Type untuk reversal entry (e.g., "purchase_reversal")
+        reversal_note: Catatan untuk reversal
+        user_id: User yang melakukan reversal
+        user_name: Nama user
+    
+    Returns:
+        dict dengan info reversal yang dilakukan
+    """
+    now = datetime.now(timezone.utc).isoformat()
+    
+    # Find all movements to reverse
+    movements = await db["stock_movements"].find({
+        "reference_id": reference_id,
+        "reference_type": {"$in": reference_types},
+        # Exclude already reversed movements
+        "is_reversed": {"$ne": True}
+    }).to_list(1000)
+    
+    if not movements:
+        return {
+            "success": True,
+            "message": "No movements to reverse",
+            "movements_reversed": 0,
+            "total_qty_reversed": 0
+        }
+    
+    reversals_created = []
+    total_qty_reversed = 0
+    
+    for mov in movements:
+        original_qty = mov.get("quantity", mov.get("qty", 0))
+        product_id = mov.get("product_id") or mov.get("item_id")
+        branch_id = mov.get("branch_id")
+        
+        # Create reversal entry (qty dibalikkan)
+        reversal = {
+            "id": str(uuid.uuid4()),
+            "product_id": product_id,
+            "item_id": mov.get("item_id"),  # Backward compatibility
+            "product_name": mov.get("product_name", ""),
+            "branch_id": branch_id,
+            "movement_type": "reversal",
+            "quantity": -original_qty,  # BALIKKAN QTY
+            "reference_type": reversal_type,
+            "reference_id": reference_id,
+            "reference_number": f"REV-{mov.get('reference_number', mov.get('reference_no', str(mov.get('_id'))[:8]))}",
+            "reversed_movement_id": str(mov.get("_id")),
+            "notes": reversal_note,
+            "is_reversal": True,
+            "created_by": user_id,
+            "created_by_name": user_name,
+            "created_at": now
+        }
+        
+        await db["stock_movements"].insert_one(reversal)
+        
+        # Mark original movement as reversed
+        await db["stock_movements"].update_one(
+            {"_id": mov.get("_id")},
+            {"$set": {
+                "is_reversed": True,
+                "reversed_at": now,
+                "reversed_by": user_id,
+                "reversal_id": reversal["id"]
+            }}
+        )
+        
+        # Update product_stocks (kurangi stok)
+        if product_id and branch_id:
+            await db["product_stocks"].update_one(
+                {"product_id": product_id, "branch_id": branch_id},
+                {"$inc": {"quantity": -original_qty, "available": -original_qty}},
+                upsert=True
+            )
+        
+        reversals_created.append({
+            "original_movement_id": str(mov.get("_id")),
+            "reversal_id": reversal["id"],
+            "product_id": product_id,
+            "branch_id": branch_id,
+            "original_qty": original_qty,
+            "reversed_qty": -original_qty
+        })
+        
+        total_qty_reversed += abs(original_qty)
+    
+    return {
+        "success": True,
+        "message": f"Reversed {len(reversals_created)} movements",
+        "movements_reversed": len(reversals_created),
+        "total_qty_reversed": total_qty_reversed,
+        "reversals": reversals_created
+    }
+
+
+# ==================== SAFE DELETE WITH REVERSAL ====================
 
 @router.delete("/orders/{po_id}")
 async def delete_purchase_order(
@@ -927,91 +1043,120 @@ async def delete_purchase_order(
     user: dict = Depends(require_permission("purchase", "delete"))
 ):
     """
-    Safe Delete Purchase Order - Requires purchase.delete permission
+    REVERSAL-BASED Delete Purchase Order
     
-    DELETE POLICY:
-    - PO without receiving/AP/journal → SOFT_DELETE (is_deleted=true, status=deleted)
-    - PO with receiving/AP/journal → CANCEL_HIDE (is_deleted=true, status=cancelled, preserves trail)
+    ⚠️ ATURAN BARU:
+    - Jika PO sudah memiliki efek stok → WAJIB REVERSAL
+    - Tidak boleh hard delete jika sudah ada stock_movements
+    - Semua perubahan stok harus melalui reversal entries
     
-    Both cases: PO will NOT appear in default list anymore
+    DELETE FLOW:
+    1. Cek apakah ada stock movements terkait
+    2. Jika ada → Execute REVERSAL ENGINE
+    3. Update status PO menjadi "reversed" atau "deleted"
+    4. Log audit trail
     """
     db = get_db()
     user_id = user.get("user_id", user.get("id", ""))
     user_name = user.get("name", "")
+    now = datetime.now(timezone.utc).isoformat()
     
     # Get PO
     po = await purchase_orders.find_one({"id": po_id}, {"_id": 0})
     if not po:
         raise HTTPException(status_code=404, detail="Purchase order tidak ditemukan")
     
-    # Check if already deleted
+    # Check if already deleted/reversed
     if po.get("is_deleted"):
         raise HTTPException(status_code=400, detail="Purchase order sudah dihapus sebelumnya")
     
+    if po.get("status") == "reversed":
+        raise HTTPException(status_code=400, detail="Purchase order sudah di-reverse sebelumnya")
+    
     old_status = po.get("status")
     po_number = po.get("po_number", po_id)
+    is_quick_purchase = po.get("is_quick_purchase", False)
     
-    # ============ CHECK TRANSACTION IMPACT ============
-    has_receiving = False
-    has_stock_movement = False
-    has_ap_record = False
-    has_journal = False
+    # ============ CHECK STOCK IMPACT ============
+    # Cek movements dari PO biasa DAN Quick Purchase
+    reference_types = ["purchase_order", "purchase_receive"]
+    if is_quick_purchase:
+        reference_types.append("quick_purchase")
     
-    # Check if any item has been received
-    for item in po.get("items", []):
-        if item.get("received_qty", 0) > 0:
-            has_receiving = True
-            break
-    
-    # Check stock movements related to this PO
     movement_count = await stock_movements.count_documents({
         "reference_id": po_id,
-        "reference_type": "purchase_order"
+        "reference_type": {"$in": reference_types},
+        "is_reversed": {"$ne": True}  # Exclude already reversed
     })
+    
     has_stock_movement = movement_count > 0
     
-    # Check AP records
+    # Check other impacts
+    has_receiving = any(item.get("received_qty", 0) > 0 for item in po.get("items", []))
+    
     ap_collection = db["accounts_payable"]
     ap_count = await ap_collection.count_documents({"po_id": po_id})
     has_ap_record = ap_count > 0
     
-    # Check journal entries
     journal_collection = db["journal_entries"]
     journal_count = await journal_collection.count_documents({
-        "$or": [
-            {"reference_id": po_id},
-            {"reference_no": po_number}
-        ]
+        "$or": [{"reference_id": po_id}, {"reference_no": po_number}]
     })
     has_journal = journal_count > 0
     
-    # ============ DETERMINE DELETE MODE ============
-    has_any_impact = has_receiving or has_stock_movement or has_ap_record or has_journal
+    # ============ EXECUTE REVERSAL IF NEEDED ============
+    reversal_result = None
     
-    if has_any_impact:
-        # CASE 2: PO with transaction impact → CANCEL_HIDE
-        delete_mode = DeleteMode.CANCEL_HIDE
+    if has_stock_movement:
+        # WAJIB REVERSAL - tidak boleh delete tanpa reversal
+        reversal_result = await execute_stock_reversal(
+            db=db,
+            reference_id=po_id,
+            reference_types=reference_types,
+            reversal_type="purchase_reversal",
+            reversal_note=f"AUTO REVERSAL DELETE {'Quick Purchase' if is_quick_purchase else 'PO'}: {po_number}. Reason: {reason or 'Deleted by user'}",
+            user_id=user_id,
+            user_name=user_name
+        )
+        
+        new_status = "reversed"
+        delete_mode = "REVERSAL_DELETE"
+        audit_action = "PO_REVERSAL_DELETE"
+        message = f"{'Quick Purchase' if is_quick_purchase else 'PO'} {po_number} berhasil di-reverse dan dihapus. {reversal_result.get('movements_reversed', 0)} movements reversed, total qty: {reversal_result.get('total_qty_reversed', 0)}"
+    
+    elif has_receiving or has_ap_record or has_journal:
+        # Ada impact lain selain stock → CANCEL_HIDE
         new_status = "cancelled"
+        delete_mode = "CANCEL_HIDE"
         audit_action = "PO_CANCEL_HIDE"
-        message = f"PO {po_number} dihapus dari daftar aktif (cancel_hide - transaksi tetap tersimpan)"
+        message = f"PO {po_number} dibatalkan (cancel_hide - transaksi tetap tersimpan untuk audit)"
+    
     else:
-        # CASE 1: PO without transaction impact → SOFT_DELETE
-        delete_mode = DeleteMode.SOFT_DELETE
+        # Tidak ada impact → SOFT_DELETE
         new_status = "deleted"
+        delete_mode = "SOFT_DELETE"
         audit_action = "PO_SOFT_DELETED"
         message = f"PO {po_number} berhasil dihapus"
     
     # ============ UPDATE PO ============
     update_data = {
         "is_deleted": True,
-        "deleted_at": datetime.now(timezone.utc).isoformat(),
+        "status": new_status,
+        "delete_mode": delete_mode,
+        "delete_reason": reason,
+        "deleted_at": now,
         "deleted_by": user_id,
         "deleted_by_name": user_name,
-        "delete_reason": reason,
-        "delete_mode": delete_mode,
-        "status": new_status,
-        "updated_at": datetime.now(timezone.utc).isoformat()
+        "updated_at": now
     }
+    
+    if reversal_result:
+        update_data["reversal_info"] = {
+            "executed_at": now,
+            "executed_by": user_id,
+            "movements_reversed": reversal_result.get("movements_reversed", 0),
+            "total_qty_reversed": reversal_result.get("total_qty_reversed", 0)
+        }
     
     await purchase_orders.update_one({"id": po_id}, {"$set": update_data})
     
@@ -1019,7 +1164,7 @@ async def delete_purchase_order(
     await log_security_event(
         db, user_id, user_name,
         "delete", "purchase",
-        f"{audit_action}: {po_number} | Mode: {delete_mode} | Old Status: {old_status} | Reason: {reason or 'No reason provided'}",
+        f"{audit_action}: {po_number} | Mode: {delete_mode} | Old Status: {old_status} | Reason: {reason or 'No reason provided'} | Movements Reversed: {reversal_result.get('movements_reversed', 0) if reversal_result else 0}",
         request.client.host if request.client else "",
         document_no=po_number,
         severity="warning"
@@ -1032,9 +1177,10 @@ async def delete_purchase_order(
         "tenant_id": db.name,
         "po_id": po_id,
         "po_number": po_number,
+        "is_quick_purchase": is_quick_purchase,
         "user_id": user_id,
         "user_name": user_name,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": now,
         "old_status": old_status,
         "new_status": new_status,
         "delete_mode": delete_mode,
@@ -1045,6 +1191,7 @@ async def delete_purchase_order(
             "has_ap_record": has_ap_record,
             "has_journal": has_journal
         },
+        "reversal_info": reversal_result,
         "ip_address": request.client.host if request.client else ""
     }
     
@@ -1055,10 +1202,12 @@ async def delete_purchase_order(
         "success": True,
         "message": message,
         "po_number": po_number,
+        "is_quick_purchase": is_quick_purchase,
         "delete_mode": delete_mode,
         "old_status": old_status,
         "new_status": new_status,
-        "impact_preserved": has_any_impact
+        "reversal_info": reversal_result,
+        "impact_preserved": has_receiving or has_ap_record or has_journal
     }
 
 
@@ -1068,8 +1217,11 @@ async def preview_delete_po(
     user: dict = Depends(require_permission("purchase", "view"))
 ):
     """
-    Preview what will happen if PO is deleted
+    Preview what will happen if PO is deleted/reversed
     Shows impact analysis before actual deletion
+    
+    ⚠️ PENTING: Jika ada stock movements, sistem akan otomatis
+    melakukan REVERSAL saat delete
     """
     db = get_db()
     
@@ -1078,14 +1230,24 @@ async def preview_delete_po(
         raise HTTPException(status_code=404, detail="Purchase order tidak ditemukan")
     
     po_number = po.get("po_number", po_id)
+    is_quick_purchase = po.get("is_quick_purchase", False)
     
     # Check impacts
     has_receiving = any(item.get("received_qty", 0) > 0 for item in po.get("items", []))
     
-    movement_count = await stock_movements.count_documents({
+    # Check movements - termasuk quick_purchase
+    reference_types = ["purchase_order", "purchase_receive"]
+    if is_quick_purchase:
+        reference_types.append("quick_purchase")
+    
+    movements = await stock_movements.find({
         "reference_id": po_id,
-        "reference_type": "purchase_order"
-    })
+        "reference_type": {"$in": reference_types},
+        "is_reversed": {"$ne": True}
+    }).to_list(100)
+    
+    movement_count = len(movements)
+    total_movement_qty = sum(m.get("quantity", m.get("qty", 0)) for m in movements)
     
     ap_collection = db["accounts_payable"]
     ap_count = await ap_collection.count_documents({"po_id": po_id})
@@ -1097,29 +1259,236 @@ async def preview_delete_po(
     
     has_any_impact = has_receiving or movement_count > 0 or ap_count > 0 or journal_count > 0
     
+    # Determine what will happen
+    if movement_count > 0:
+        delete_mode = "REVERSAL_DELETE"
+        action_description = f"Sistem akan membuat {movement_count} REVERSAL entries untuk mengembalikan stok. Total qty yang akan di-reverse: {total_movement_qty}"
+        warning = "⚠️ STOK AKAN DIKEMBALIKAN KE KONDISI SEBELUM TRANSAKSI INI"
+    elif has_receiving or ap_count > 0 or journal_count > 0:
+        delete_mode = "CANCEL_HIDE"
+        action_description = "PO akan di-cancel dan disembunyikan dari daftar aktif. Data tetap tersimpan untuk audit."
+        warning = None
+    else:
+        delete_mode = "SOFT_DELETE"
+        action_description = "PO akan dihapus karena tidak memiliki efek transaksi apapun."
+        warning = None
+    
+    # Detail movements yang akan di-reverse
+    movements_detail = []
+    for m in movements:
+        movements_detail.append({
+            "product_id": m.get("product_id") or m.get("item_id"),
+            "product_name": m.get("product_name", ""),
+            "branch_id": m.get("branch_id"),
+            "quantity": m.get("quantity", m.get("qty", 0)),
+            "reference_type": m.get("reference_type"),
+            "created_at": str(m.get("created_at", ""))
+        })
+    
     return {
         "po_id": po_id,
         "po_number": po_number,
         "current_status": po.get("status"),
-        "is_already_deleted": po.get("is_deleted", False),
-        "impact_analysis": {
+        "is_quick_purchase": is_quick_purchase,
+        "can_delete": True,
+        "delete_mode": delete_mode,
+        "action_description": action_description,
+        "warning": warning,
+        "impacts": {
             "has_receiving": has_receiving,
-            "stock_movements_count": movement_count,
-            "ap_records_count": ap_count,
-            "journal_entries_count": journal_count,
-            "has_any_impact": has_any_impact
+            "has_stock_movement": movement_count > 0,
+            "movement_count": movement_count,
+            "total_movement_qty": total_movement_qty,
+            "has_ap_record": ap_count > 0,
+            "ap_count": ap_count,
+            "has_journal": journal_count > 0,
+            "journal_count": journal_count
         },
-        "delete_preview": {
-            "delete_mode": DeleteMode.CANCEL_HIDE if has_any_impact else DeleteMode.SOFT_DELETE,
-            "new_status": "cancelled" if has_any_impact else "deleted",
-            "data_preserved": has_any_impact,
-            "will_appear_in_default_list": False,
-            "message": "PO akan disembunyikan dari daftar aktif. Jejak transaksi tetap aman." if has_any_impact else "PO akan dihapus secara soft delete."
-        }
+        "movements_to_reverse": movements_detail if delete_mode == "REVERSAL_DELETE" else []
     }
 
 
-# ==================== FULL PURCHASE REVERSAL SYSTEM ====================
+@router.post("/orders/{po_id}/reverse")
+async def reverse_purchase_order(
+    po_id: str,
+    request: Request,
+    reason: str = "",
+    user: dict = Depends(require_permission("purchase", "delete"))
+):
+    """
+    EXPLICIT REVERSAL - Membalikkan semua efek stok dari PO/Quick Purchase
+    
+    Gunakan endpoint ini untuk:
+    1. Membatalkan transaksi yang sudah posted
+    2. Mengembalikan stok ke kondisi sebelumnya
+    3. Menjaga audit trail yang lengkap
+    
+    ⚠️ ATURAN:
+    - PO dengan status "posted" TIDAK boleh dihapus, HARUS di-reverse
+    - Semua reversal masuk ke stock_movements
+    - Stok akan dikembalikan otomatis
+    """
+    db = get_db()
+    user_id = user.get("user_id", user.get("id", ""))
+    user_name = user.get("name", "")
+    now = datetime.now(timezone.utc).isoformat()
+    
+    # Get PO
+    po = await purchase_orders.find_one({"id": po_id}, {"_id": 0})
+    if not po:
+        raise HTTPException(status_code=404, detail="Purchase order tidak ditemukan")
+    
+    # Check if already reversed
+    if po.get("status") == "reversed":
+        raise HTTPException(status_code=400, detail="Purchase order sudah di-reverse sebelumnya")
+    
+    old_status = po.get("status")
+    po_number = po.get("po_number", po_id)
+    is_quick_purchase = po.get("is_quick_purchase", False)
+    
+    # Determine reference types to reverse
+    reference_types = ["purchase_order", "purchase_receive"]
+    if is_quick_purchase:
+        reference_types.append("quick_purchase")
+    
+    # Check if there are movements to reverse
+    movement_count = await stock_movements.count_documents({
+        "reference_id": po_id,
+        "reference_type": {"$in": reference_types},
+        "is_reversed": {"$ne": True}
+    })
+    
+    if movement_count == 0:
+        raise HTTPException(
+            status_code=400, 
+            detail="Tidak ada stock movements untuk di-reverse. Gunakan endpoint delete untuk menghapus PO ini."
+        )
+    
+    # Execute reversal
+    reversal_result = await execute_stock_reversal(
+        db=db,
+        reference_id=po_id,
+        reference_types=reference_types,
+        reversal_type="purchase_reversal",
+        reversal_note=f"MANUAL REVERSAL {'Quick Purchase' if is_quick_purchase else 'PO'}: {po_number}. Reason: {reason or 'User requested reversal'}",
+        user_id=user_id,
+        user_name=user_name
+    )
+    
+    # Update PO status
+    update_data = {
+        "status": "reversed",
+        "reversed_at": now,
+        "reversed_by": user_id,
+        "reversed_by_name": user_name,
+        "reversal_reason": reason,
+        "reversal_info": {
+            "executed_at": now,
+            "executed_by": user_id,
+            "movements_reversed": reversal_result.get("movements_reversed", 0),
+            "total_qty_reversed": reversal_result.get("total_qty_reversed", 0)
+        },
+        "updated_at": now
+    }
+    
+    await purchase_orders.update_one({"id": po_id}, {"$set": update_data})
+    
+    # Audit log
+    await log_security_event(
+        db, user_id, user_name,
+        "reverse", "purchase",
+        f"PO_REVERSED: {po_number} | Old Status: {old_status} | Movements Reversed: {reversal_result.get('movements_reversed', 0)} | Total Qty: {reversal_result.get('total_qty_reversed', 0)} | Reason: {reason or 'User requested'}",
+        request.client.host if request.client else "",
+        document_no=po_number,
+        severity="warning"
+    )
+    
+    return {
+        "success": True,
+        "message": f"{'Quick Purchase' if is_quick_purchase else 'PO'} {po_number} berhasil di-reverse",
+        "po_number": po_number,
+        "is_quick_purchase": is_quick_purchase,
+        "old_status": old_status,
+        "new_status": "reversed",
+        "reversal_info": reversal_result
+    }
+
+
+@router.get("/orders/{po_id}/reversal-preview")
+async def preview_reversal_po(
+    po_id: str,
+    user: dict = Depends(require_permission("purchase", "view"))
+):
+    """
+    Preview what will happen if PO is reversed
+    Shows impact analysis and movements that will be reversed
+    
+    PENTING: Endpoint ini menampilkan preview sebelum melakukan reversal
+    """
+    db = get_db()
+    
+    po = await purchase_orders.find_one({"id": po_id}, {"_id": 0})
+    if not po:
+        raise HTTPException(status_code=404, detail="Purchase order tidak ditemukan")
+    
+    po_number = po.get("po_number", po_id)
+    is_quick_purchase = po.get("is_quick_purchase", False)
+    
+    # Check if already reversed
+    if po.get("status") == "reversed":
+        return {
+            "po_id": po_id,
+            "po_number": po_number,
+            "can_reverse": False,
+            "message": "PO sudah di-reverse sebelumnya",
+            "current_status": "reversed"
+        }
+    
+    # Check movements - termasuk quick_purchase
+    reference_types = ["purchase_order", "purchase_receive"]
+    if is_quick_purchase:
+        reference_types.append("quick_purchase")
+    
+    movements = await stock_movements.find({
+        "reference_id": po_id,
+        "reference_type": {"$in": reference_types},
+        "is_reversed": {"$ne": True}
+    }).to_list(100)
+    
+    movement_count = len(movements)
+    total_movement_qty = sum(m.get("quantity", m.get("qty", 0)) for m in movements)
+    
+    # Detail movements
+    movements_detail = []
+    for m in movements:
+        movements_detail.append({
+            "movement_id": str(m.get("_id")),
+            "product_id": m.get("product_id") or m.get("item_id"),
+            "product_name": m.get("product_name", ""),
+            "branch_id": m.get("branch_id"),
+            "quantity": m.get("quantity", m.get("qty", 0)),
+            "reference_type": m.get("reference_type"),
+            "will_reverse_to": -(m.get("quantity", m.get("qty", 0))),
+            "created_at": str(m.get("created_at", ""))
+        })
+    
+    return {
+        "po_id": po_id,
+        "po_number": po_number,
+        "current_status": po.get("status"),
+        "is_quick_purchase": is_quick_purchase,
+        "can_reverse": movement_count > 0,
+        "message": f"Ada {movement_count} movements yang akan di-reverse dengan total qty {total_movement_qty}" if movement_count > 0 else "Tidak ada movements untuk di-reverse",
+        "preview": {
+            "movements_to_reverse": movement_count,
+            "total_qty_to_reverse": total_movement_qty,
+            "new_status_after_reverse": "reversed"
+        },
+        "movements_detail": movements_detail
+    }
+
+
+# ==================== FULL PURCHASE REVERSAL SYSTEM - EXTENDED ====================
 # ENTERPRISE RULE: Transaksi Posted TIDAK boleh di-delete, harus di-REVERSE
 # Reversal mengembalikan semua efek bisnis ke kondisi sebelum transaksi terjadi
 
@@ -1129,7 +1498,7 @@ class PurchaseReversalRequest(BaseModel):
     notes: Optional[str] = None
 
 
-@router.get("/orders/{po_id}/reversal-preview")
+@router.get("/orders/{po_id}/reversal-impact")
 async def preview_purchase_reversal(
     po_id: str,
     user: dict = Depends(require_permission("purchase", "delete"))
@@ -1265,8 +1634,8 @@ async def preview_purchase_reversal(
     }
 
 
-@router.post("/orders/{po_id}/reverse")
-async def reverse_purchase_order(
+@router.post("/orders/{po_id}/full-reverse")
+async def full_reverse_purchase_order(
     po_id: str,
     data: PurchaseReversalRequest,
     request: Request,
