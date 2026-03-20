@@ -7,54 +7,52 @@ Membangun sistem ERP retail komprehensif (OCB TITAN) dengan fitur POS, Inventory
 
 ---
 
-
-
-## 🟢 P0: STOCK CARD UX FIX - "Stok Saat Ini" vs "Berdasarkan Periode" (2026-03-20) ✅ DONE
+## ✅ P0: KARTU STOK MODE FILTER - HALAMAN UTAMA (2026-03-20) ✅ DONE
 
 ### Issue Reported
-User melaporkan item `001002` menunjukkan stok 18 di "Daftar Item" tapi 0 di "Kartu Stok" untuk Maret 2026.
+User melaporkan di **HALAMAN Kartu Stok** (`/inventory/kartu-stok`) TIDAK ADA opsi "Semua Periode":
+- Hanya ada filter bulan
+- Daftar Item = 18, Kartu Stok (Maret) = 0
+- User menganggap sistem salah
 
-### Root Cause Analysis
-1. **Backend API sudah benar** - API `/api/inventory/stock-card-modal` mengembalikan data yang benar (stok 18)
-2. **Masalah adalah UX di Frontend** - Default behavior tidak jelas apakah menampilkan "stok saat ini" atau "stok berdasarkan periode"
+### Solution Implemented
 
-### Fix Applied
-1. **Mode Toggle UI** - Ditambahkan toggle "Semua Periode (Stok Saat Ini)" vs "Berdasarkan Periode"
-   - Default = "Semua Periode" → menampilkan STOK SAAT INI
-   - Mode "Berdasarkan Periode" → filter tanggal aktif
-   
-2. **Date Filter Logic Fix**
-   - Sebelum: date filter selalu dikirim meskipun kosong
-   - Sesudah: date filter HANYA dikirim jika mode = 'period' DAN tanggal diisi
-   
-3. **UX Label Updates**
-   - Header kolom: "STOK" → "STOK SAAT INI" dengan tooltip
-   - Summary card: Warna hijau untuk stok saat ini, amber untuk periode
+#### 1. MODE FILTER TOGGLE di KartuStok.jsx
+| Mode | Warna | Fungsi |
+|------|-------|--------|
+| **Semua Periode (Stok Saat Ini)** | HIJAU | DEFAULT - Semua transaksi = STOK SAAT INI |
+| **Berdasarkan Periode** | AMBER | Filter bulan/tahun tertentu |
+
+#### 2. Backend Fix (stock_card.py)
+- Bug: Query menggunakan `item_id` tapi collection menggunakan `product_id`
+- Fix: Added `$or` pattern untuk backward compatibility
+
+#### 3. UI/UX Updates
+- Toggle buttons dengan warna berbeda
+- Filter bulan/tahun conditional (hanya muncul di mode period)
+- Button: "LIHAT STOK SAAT INI" vs "PROSES PERIODE"
+- Summary cards mode-aware dengan warna berbeda
+
+### Verification (testing_agent_v3_fork)
+- **Backend Tests:** 11/11 PASSED (100%)
+- **Item 001002:** Semua Periode = 18, Period Mar 2026 = 18, Period Jan 2026 = 0
+- **Konsisten dengan Daftar Item**
 
 ### Files Modified
 | File | Changes |
 |------|---------|
-| `/app/frontend/src/components/StockCardModal.jsx` | Mode toggle UI, date filter logic fix, UX labels |
-| `/app/frontend/src/pages/master/MasterItems.jsx` | Column header updated to "STOK SAAT INI" |
+| `/app/frontend/src/pages/inventory/KartuStok.jsx` | Mode toggle, conditional filters, API logic |
+| `/app/frontend/src/components/StockCardModal.jsx` | Mode toggle untuk modal |
+| `/app/frontend/src/pages/master/MasterItems.jsx` | Column "STOK SAAT INI" |
+| `/app/backend/routes/stock_card.py` | $or pattern fix, transaction labels |
 
-### Verification
-```
-=== Item 001002: Semua Periode ===
-Balance (STOK SAAT INI): 18 ✅
-
-=== Item 001000: Semua Periode ===
-Balance: 141 ✅
-
-=== Item 001000: Periode Jan 2025 (empty) ===
-Balance: 0 ✅ (expected, no transactions in that period)
-```
-
-### Test Report
-- `/app/test_reports/STOCK_CARD_UX_FIX_REPORT.md`
+### Test Reports
+- `/app/test_reports/iteration_107.json`
+- `/app/test_reports/KARTU_STOK_MODE_FILTER_FINAL_REPORT.md`
 
 ---
 
-## 🟢 P0: ARSITEKTUR FINAL OCB TITAN - QUICK PURCHASE DIRECT STOCK IN (2026-03-20) ✅ DONE
+## ✅ P0: ARSITEKTUR FINAL OCB TITAN - QUICK PURCHASE DIRECT STOCK IN (2026-03-20) ✅ DONE
 
 ### ARSITEKTUR FINAL (TIDAK BOLEH MENYIMPANG)
 | Rule | Source of Truth |
