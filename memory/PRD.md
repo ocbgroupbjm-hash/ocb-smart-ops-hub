@@ -168,6 +168,47 @@ Kartu Stok query dengan `item_id`, Daftar Item pakai `product_stocks` → tidak 
 - **Backend**: 100% (9/10 passed, 1 skipped)
 - **Test Report**: `/app/test_reports/iteration_104.json`
 
+---
+
+## 🟢 P0: STOK BARANG MODULE SINKRONISASI (2026-03-20) ✅ DONE
+
+### Problem
+Stok Barang modul menampilkan angka berbeda dari Daftar Item dan Kartu Stok.
+
+### Root Cause
+- Stok Barang pakai `product_stocks` (bukan SSOT)
+- Default filter `branch_id = user.branch_id` (HQ)
+- Hasil: qty=50, bukan 1750
+
+### Fix Applied
+**SSOT = stock_movements untuk SEMUA 3 MODUL**
+- Stok Barang: `/api/inventory/stock` → stock_movements
+- Query: `{$or: [{product_id}, {item_id}]}`
+- Hapus default branch filter
+
+### File Modified
+- `/app/backend/routes/inventory.py` - `get_branch_stock()` uses stock_movements
+
+### Reconciliation Evidence (8/8 MATCH)
+| Code | Stok Barang | Daftar Item | Kartu Stok | Match |
+|------|-------------|-------------|------------|-------|
+| 001000 | 141 | 141 | 141 | ✅ |
+| 001001 | **1750** | **1750** | **1750** | ✅ |
+| 001002 | 18 | 18 | 18 | ✅ |
+| 001003-001007 | All MATCH | | | ✅ |
+
+### Test Results
+- **Backend**: 100% (10/10 tests passed)
+- **Test Report**: `/app/test_reports/iteration_105.json`
+
+### Architecture Finalized
+```
+SSOT: stock_movements
+    ├── Stok Barang (/api/inventory/stock)
+    ├── Daftar Item (/api/master/items)
+    └── Kartu Stok (/api/inventory/stock-card-modal)
+```
+
 ### DELETE/REVERSE RULE (BERLAKU GLOBAL)
 | Status | Action |
 |--------|--------|
