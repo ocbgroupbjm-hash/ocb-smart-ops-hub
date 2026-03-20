@@ -460,13 +460,16 @@ async def create_purchase_order(data: CreatePO, request: Request, user: dict = D
         raise HTTPException(status_code=400, detail="Minimal harus ada 1 item pembelian")
     
     # Validate warehouse if provided - TENANT GUARD
+    # KONSOLIDASI: warehouse_id sekarang merujuk ke branches collection
     warehouse_name = ""
     if data.warehouse_id:
-        warehouse = await get_db().warehouses.find_one({"id": data.warehouse_id, "tenant_id": tenant_id}, {"_id": 0})
+        # Query dari branches (source of truth setelah konsolidasi)
+        branches_col = get_db()["branches"]
+        warehouse = await branches_col.find_one({"id": data.warehouse_id}, {"_id": 0})
         if warehouse:
             warehouse_name = warehouse.get("name", "")
         else:
-            raise HTTPException(status_code=400, detail="Warehouse tidak ditemukan di tenant ini")
+            raise HTTPException(status_code=400, detail="Cabang/Gudang tidak ditemukan")
     
     # Validate PIC if provided
     pic_name = ""
