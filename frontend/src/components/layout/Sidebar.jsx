@@ -119,7 +119,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
         { divider: true, label: 'Referensi' },
         { name: 'Wilayah', icon: Globe, path: '/master/regions' },
         { name: 'Satuan', icon: Scale, path: '/master/units' },
-        { name: 'Dept/Gudang', icon: Warehouse, path: '/master/warehouses' },
+        { name: 'Cabang/Gudang', icon: Building2, path: '/settings/branches' },
         { name: 'E-Money', icon: CreditCard, path: '/master/emoney' },
         // HIDDEN: MasterItemTypes - jarang dipakai (Phase A Cleanup 2026-03-13)
         // { name: 'Jenis Barang', icon: Tags, path: '/master/item-types' },
@@ -408,7 +408,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
         { name: 'Data User', icon: UserCog, path: '/settings/users' },
         { name: 'Hak Akses', icon: Shield, path: '/settings/roles' },
         { name: 'Data Perusahaan', icon: Building2, path: '/settings/company' },
-        { name: 'Cabang', icon: Building2, path: '/settings/branches' },
+        // REMOVED: Cabang - sekarang ada di Master Data > Cabang/Gudang (konsolidasi 2026-03-20)
         { name: 'Manajemen Tenant', icon: Database, path: '/settings/tenants', roles: ['owner', 'super_admin'] },
         { divider: true },
         { name: 'Printer & Struk', icon: Printer, path: '/settings/printer' },

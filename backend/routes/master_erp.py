@@ -477,64 +477,124 @@ async def delete_brand(brand_id: str, request: Request, user: dict = Depends(req
     await log_activity(db, user.get("user_id"), user.get("name", ""), "delete", "master_brand", f"Menghapus merk: {brand_id}", request.client.host if request.client else "")
     return {"message": "Merk berhasil dihapus"}
 
-# ==================== WAREHOUSES ====================
+# ==================== WAREHOUSES / GUDANG ====================
+# KEPUTUSAN ARSITEKTUR (2026-03-20):
+# Di OCB TITAN, CABANG = GUDANG (Single Source of Truth)
+# Collection "branches" adalah PRIMARY, "warehouses" adalah ALIAS
+# Endpoint ini tetap ada untuk backward compatibility, tapi mengembalikan data dari BRANCHES
 
 class WarehouseCreate(BaseModel):
+    """Warehouse = Branch alias untuk backward compatibility"""
     code: str
     name: str
     branch_id: str = ""
     address: str = ""
     is_active: bool = True
 
+
 @router.get("/warehouses")
 async def list_warehouses(search: str = "", user: dict = Depends(get_current_user)):
-    query = {}
+    """
+    LIST WAREHOUSES - ALIAS TO BRANCHES
+    
+    Di OCB TITAN, Gudang = Cabang. Endpoint ini mengembalikan data dari
+    collection BRANCHES untuk menjaga single source of truth.
+    """
+    branches_col = db["branches"]
+    query = {"is_active": {"$ne": False}}  # Only active branches
     if search:
         query["$or"] = [
             {"name": {"$regex": search, "$options": "i"}},
             {"code": {"$regex": search, "$options": "i"}}
         ]
-    result = await warehouses.find(query, {"_id": 0}).sort("name", 1).to_list(500)
     
-    # Add branch name
-    for wh in result:
-        if wh.get("branch_id"):
-            branch = await db["branches"].find_one({"id": wh["branch_id"]}, {"_id": 0, "name": 1})
-            wh["branch_name"] = branch["name"] if branch else ""
+    # Get from BRANCHES (source of truth)
+    branches_list = await branches_col.find(query, {"_id": 0}).sort("name", 1).to_list(500)
+    
+    # Transform to warehouse format for backward compatibility
+    result = []
+    for branch in branches_list:
+        result.append({
+            "id": branch.get("id"),
+            "code": branch.get("code"),
+            "name": branch.get("name"),
+            "address": branch.get("address", ""),
+            "phone": branch.get("phone", ""),
+            "branch_id": branch.get("id"),  # Self-reference
+            "branch_name": branch.get("name"),
+            "is_active": branch.get("is_active", True),
+            "created_at": branch.get("created_at"),
+            "_source": "branches"
+        })
     
     return result
 
+
 @router.post("/warehouses")
 async def create_warehouse(data: WarehouseCreate, user: dict = Depends(get_current_user)):
-    existing = await warehouses.find_one({"code": data.code})
-    if existing:
-        raise HTTPException(status_code=400, detail="Kode gudang sudah ada")
+    """
+    CREATE WAREHOUSE - CREATES A BRANCH
     
-    warehouse = {
-        "id": str(uuid.uuid4()),
-        **data.model_dump(),
-        "created_at": datetime.now(timezone.utc).isoformat()
+    Pembuatan gudang baru akan membuat entry di collection BRANCHES.
+    """
+    branches_col = db["branches"]
+    
+    existing = await branches_col.find_one({"code": data.code})
+    if existing:
+        raise HTTPException(status_code=400, detail="Kode cabang/gudang sudah ada")
+    
+    branch_id = str(uuid.uuid4())
+    branch = {
+        "id": branch_id,
+        "code": data.code,
+        "name": data.name,
+        "address": data.address,
+        "is_active": data.is_active,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "_created_via": "warehouse_endpoint"
     }
-    await warehouses.insert_one(warehouse)
-    return {"id": warehouse["id"], "message": "Gudang berhasil ditambahkan"}
+    await branches_col.insert_one(branch)
+    
+    return {"id": branch_id, "message": "Cabang/Gudang berhasil ditambahkan"}
+
 
 @router.put("/warehouses/{warehouse_id}")
 async def update_warehouse(warehouse_id: str, data: WarehouseCreate, user: dict = Depends(get_current_user)):
-    update_data = data.model_dump()
-    update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
-    result = await warehouses.update_one({"id": warehouse_id}, {"$set": update_data})
+    """UPDATE WAREHOUSE - UPDATES A BRANCH"""
+    branches_col = db["branches"]
+    
+    update_data = {
+        "code": data.code,
+        "name": data.name,
+        "address": data.address,
+        "is_active": data.is_active,
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    result = await branches_col.update_one({"id": warehouse_id}, {"$set": update_data})
     if result.matched_count == 0:
-        raise HTTPException(status_code=404, detail="Gudang tidak ditemukan")
-    return {"message": "Gudang berhasil diupdate"}
+        raise HTTPException(status_code=404, detail="Cabang/Gudang tidak ditemukan")
+    return {"message": "Cabang/Gudang berhasil diupdate"}
+
 
 @router.delete("/warehouses/{warehouse_id}")
 async def delete_warehouse(warehouse_id: str, request: Request, user: dict = Depends(require_permission("master_warehouse", "delete"))):
-    """Delete warehouse - Requires master_warehouse.delete permission"""
-    result = await warehouses.delete_one({"id": warehouse_id})
-    if result.deleted_count == 0:
-        raise HTTPException(status_code=404, detail="Gudang tidak ditemukan")
-    await log_activity(db, user.get("user_id"), user.get("name", ""), "delete", "master_warehouse", f"Menghapus gudang: {warehouse_id}", request.client.host if request.client else "")
-    return {"message": "Gudang berhasil dihapus"}
+    """DELETE WAREHOUSE - SOFT DELETE BRANCH"""
+    branches_col = db["branches"]
+    
+    result = await branches_col.update_one(
+        {"id": warehouse_id}, 
+        {"$set": {"is_active": False, "deleted_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Cabang/Gudang tidak ditemukan")
+    
+    await log_activity(
+        db, user.get("user_id"), user.get("name", ""), 
+        "delete", "master_warehouse", 
+        f"Soft delete cabang/gudang: {warehouse_id}", 
+        request.client.host if request.client else ""
+    )
+    return {"message": "Cabang/Gudang berhasil dinonaktifkan"}
 
 # ==================== SALES PERSONS ====================
 
