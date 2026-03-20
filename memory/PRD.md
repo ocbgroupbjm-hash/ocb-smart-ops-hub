@@ -99,6 +99,33 @@ Simplified Master Data forms (Supplier, Customer) with Quick Mode for fast data 
 - **Frontend**: 100% (all UI features verified)
 - **Test Report**: `/app/test_reports/iteration_102.json`
 
+---
+
+## 🟢 P0: BRANCH FILTER BUG FIX - Daftar Item Kosong (2026-03-20) ✅ DONE
+
+### Bug Description
+Saat filter Cabang = Headquarters, daftar item menjadi 0 (kosong).
+
+### Root Cause
+File `/app/backend/routes/master_erp.py` function `list_items()`:
+- SEBELUM: `branch_id` digunakan sebagai filter query items (`query["branch_id"] = branch_id`)
+- EFEK: Items yang tidak punya branch_id tersebut tidak muncul → daftar kosong
+
+### Fix Applied
+- Hapus `branch_id` dari query filter items
+- Gunakan `branch_id` HANYA untuk stock lookup dari `product_stocks`
+- Semua items SELALU ditampilkan, stok menyesuaikan filter cabang
+
+### Test Results (100% PASS - 10/10)
+| Test | Result |
+|------|--------|
+| Items tanpa branch_id | 176 items ✅ |
+| Items dengan branch_id=HQ | 176 items ✅ |
+| Items dengan branch_id=3 FRONT | 176 items ✅ |
+| PULSA INDOSAT 5K: Semua=200, HQ=0, 3 FRONT=200 | ✅ |
+| Stok berubah sesuai cabang | ✅ |
+| **Test Report** | `/app/test_reports/iteration_103.json` |
+
 ### DELETE/REVERSE RULE (BERLAKU GLOBAL)
 | Status | Action |
 |--------|--------|
