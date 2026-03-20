@@ -206,6 +206,8 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       icon: Boxes,
       roles: ['owner', 'admin', 'supervisor', 'inventory'],
       submenu: [
+        { name: 'Quick Stock', icon: Package, path: '/inventory/quick', highlight: true },
+        { divider: true, label: 'Data Stok' },
         { name: 'Stok Barang', icon: Package, path: '/inventory/stock-list' },
         { name: 'Kartu Stok', icon: ClipboardList, path: '/inventory/kartu-stok' },
         { name: 'Mutasi Gudang', icon: History, path: '/inventory/mutations' },

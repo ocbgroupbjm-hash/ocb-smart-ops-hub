@@ -149,6 +149,7 @@ import POSScreen from './pages/sales/POSScreen';
 import { StockCards, StockMovements, StockTransfers, StockOpname, KartuStok } from './pages/inventory';
 import SerialNumbers from './pages/inventory/SerialNumbers';
 import ProductAssembly from './pages/inventory/ProductAssembly';
+import QuickStock from './pages/inventory/QuickStock';
 
 // Settings Pages
 import { PrinterSettings, RBACManagement, IntegrityMonitor } from './pages/settings';
@@ -367,6 +368,7 @@ function App() {
             <Route path="kas/mutations" element={<CashTransactions />} />
             
             {/* Inventory Routes - iPOS Style */}
+            <Route path="inventory/quick" element={<QuickStock />} />
             <Route path="inventory/stock-list" element={<Inventory />} />
             <Route path="inventory/stock-cards" element={<StockCards />} />
             <Route path="inventory/kartu-stok" element={<KartuStok />} />
