@@ -201,6 +201,44 @@ Stok Barang modul menampilkan angka berbeda dari Daftar Item dan Kartu Stok.
 - **Backend**: 100% (10/10 tests passed)
 - **Test Report**: `/app/test_reports/iteration_105.json`
 
+---
+
+## 🟢 P0: AUDIT INVENTORY MENYELURUH (2026-03-20) ✅ DONE
+
+### Summary
+Audit dan perbaikan seluruh 10 modul inventory untuk konsistensi SSOT = stock_movements.
+
+### Modul yang Diaudit
+| # | Modul | Status |
+|---|-------|--------|
+| 1 | Quick Stock | ✅ Uses stock_movements |
+| 2 | Stok Barang | ✅ FIXED |
+| 3 | Kartu Stok | ✅ FIXED |
+| 4 | Mutasi Gudang | ✅ Already OK |
+| 5 | Transfer Gudang | ✅ FIXED (validation) |
+| 6 | Stock Opname | ✅ Already OK |
+| 7 | Penyesuaian Stok | ✅ Already OK |
+| 8 | Perakitan Voucher | ✅ Already OK |
+| 9 | Low Stock Alerts | ✅ FIXED |
+| 10 | Daftar Item | ✅ FIXED |
+
+### Files Modified
+| File | Function | Change |
+|------|----------|--------|
+| `inventory.py` | `get_branch_stock()` | SSOT: stock_movements |
+| `inventory.py` | `get_low_stock_alerts()` | SSOT: stock_movements |
+| `inventory.py` | `create_transfer()` | Uses calculate_stock_from_movements |
+| `master_erp.py` | `list_items()` | SSOT: stock_movements |
+| `stock_card.py` | `get_stock_card_modal()` | $or query pattern |
+
+### Rekonsiliasi 10 Items (10/10 MATCH)
+Item 001001: Daftar Item=1750, Stok Barang=1750, Kartu Stok=1750 ✅
+
+### Test Results
+- **Backend**: 94% (16/17 tests passed)
+- **Test Report**: `/app/test_reports/iteration_106.json`
+- **SSOT Validation**: All 10 modules verified
+
 ### Architecture Finalized
 ```
 SSOT: stock_movements
