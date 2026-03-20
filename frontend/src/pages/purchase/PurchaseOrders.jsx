@@ -21,6 +21,9 @@ const PurchaseOrders = () => {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteReason, setDeleteReason] = useState('');
   const [deletePreview, setDeletePreview] = useState(null);
+  const [reversalPreview, setReversalPreview] = useState(null);
+  const [actionMode, setActionMode] = useState('delete'); // 'delete' or 'reverse'
+  const [reversing, setReversing] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [selectedItem, setSelectedItem] = useState(null); // For toolbar selection
   const [suppliers, setSuppliers] = useState([]);
@@ -210,16 +213,36 @@ const PurchaseOrders = () => {
   // Delete PO handler - Safe Delete with preview
   const handleDeleteClick = async (order) => {
     try {
-      // Get delete preview
-      const res = await api(`/api/purchase/orders/${order.id}/delete-preview`);
-      if (res.ok) {
-        const preview = await res.json();
-        setDeleteTarget(order);
-        setDeletePreview(preview);
-        setDeleteReason('');
-        setShowDeleteModal(true);
+      // Determine action based on status
+      if (order.status === 'draft') {
+        // For draft, use delete preview
+        const res = await api(`/api/purchase/orders/${order.id}/delete-preview`);
+        if (res.ok) {
+          const preview = await res.json();
+          setDeleteTarget(order);
+          setDeletePreview(preview);
+          setReversalPreview(null);
+          setActionMode('delete');
+          setDeleteReason('');
+          setShowDeleteModal(true);
+        } else {
+          toast.error('Gagal memuat preview hapus');
+        }
       } else {
-        toast.error('Gagal memuat preview hapus');
+        // For non-draft, use reversal preview
+        const res = await api(`/api/purchase/orders/${order.id}/reversal-preview`);
+        if (res.ok) {
+          const preview = await res.json();
+          setDeleteTarget(order);
+          setReversalPreview(preview);
+          setDeletePreview(null);
+          setActionMode(preview.can_delete ? 'delete' : 'reverse');
+          setDeleteReason('');
+          setShowDeleteModal(true);
+        } else {
+          const err = await res.json();
+          toast.error(err.detail || 'Gagal memuat preview');
+        }
       }
     } catch (err) {
       toast.error('Gagal memuat preview');
@@ -238,6 +261,7 @@ const PurchaseOrders = () => {
         setShowDeleteModal(false);
         setDeleteTarget(null);
         setDeletePreview(null);
+        setReversalPreview(null);
         setDeleteReason('');
         setSelectedItem(null);
         loadOrders();
@@ -247,6 +271,48 @@ const PurchaseOrders = () => {
       }
     } catch (err) {
       toast.error('Gagal menghapus PO');
+    }
+  };
+
+  const handleReverseConfirm = async () => {
+    if (!deleteTarget || !deleteReason.trim()) {
+      toast.error('Alasan reversal wajib diisi');
+      return;
+    }
+    
+    setReversing(true);
+    try {
+      const res = await api(`/api/purchase/orders/${deleteTarget.id}/reverse`, {
+        method: 'POST',
+        body: JSON.stringify({ reason: deleteReason, notes: '' })
+      });
+      
+      if (res.ok) {
+        const data = await res.json();
+        toast.success(
+          <div>
+            <div className="font-bold">PO Berhasil di-Reverse!</div>
+            <div className="text-sm">
+              {data.reversal_summary?.stock_movements_reversed || 0} stok dikembalikan, 
+              {data.reversal_summary?.journals_reversed || 0} jurnal di-reverse
+            </div>
+          </div>,
+          { duration: 5000 }
+        );
+        setShowDeleteModal(false);
+        setDeleteTarget(null);
+        setReversalPreview(null);
+        setDeleteReason('');
+        setSelectedItem(null);
+        loadOrders();
+      } else {
+        const err = await res.json();
+        toast.error(err.detail || 'Gagal reverse PO');
+      }
+    } catch (err) {
+      toast.error('Gagal reverse PO');
+    } finally {
+      setReversing(false);
     }
   };
 
@@ -934,21 +1000,123 @@ const PurchaseOrders = () => {
         </div>
       )}
       
-      {/* Delete Confirmation Modal */}
+      {/* Delete/Reverse Confirmation Modal */}
       {showDeleteModal && deleteTarget && (
         <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
-          <div className="bg-[#1a1214] border border-red-900/30 rounded-xl w-full max-w-lg" data-testid="delete-modal">
+          <div className="bg-[#1a1214] border border-red-900/30 rounded-xl w-full max-w-xl" data-testid="delete-modal">
             <div className="p-4 border-b border-red-900/30 flex items-center justify-between">
               <h2 className="text-lg font-semibold text-amber-100">
-                Hapus PO - {deleteTarget.po_number}
+                {reversalPreview?.action_recommended === 'REVERSE' || reversalPreview?.action_recommended === 'REVERSE_PAYMENTS_FIRST'
+                  ? `Reverse PO - ${deleteTarget.po_number}`
+                  : `Hapus PO - ${deleteTarget.po_number}`
+                }
               </h2>
               <button onClick={() => setShowDeleteModal(false)} className="p-1 hover:bg-red-900/20 rounded">
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <div className="p-4 space-y-4">
-              {/* Delete Preview Info */}
-              {deletePreview && (
+            <div className="p-4 space-y-4 max-h-[70vh] overflow-y-auto">
+              
+              {/* DRAFT DELETE - Simple Mode */}
+              {deleteTarget.status === 'draft' && deletePreview && (
+                <div className="space-y-3">
+                  <div className="p-3 rounded-lg bg-green-900/20 border border-green-600/30">
+                    <p className="text-sm text-green-200 font-medium mb-1">✅ PO Status: DRAFT</p>
+                    <p className="text-green-100 text-sm">
+                      PO ini dapat dihapus langsung karena belum ada transaksi terkait.
+                    </p>
+                  </div>
+                </div>
+              )}
+              
+              {/* REVERSAL MODE - Complex Mode */}
+              {reversalPreview && (
+                <div className="space-y-4">
+                  {/* Status Info */}
+                  <div className="p-3 rounded-lg bg-amber-900/20 border border-amber-600/30">
+                    <p className="text-sm text-amber-200 font-medium mb-1">
+                      ⚠️ PO Status: {deleteTarget.status?.toUpperCase()}
+                    </p>
+                    <p className="text-amber-100 text-sm">
+                      {reversalPreview.message}
+                    </p>
+                  </div>
+                  
+                  {/* Active Payments Warning */}
+                  {reversalPreview.has_active_payments && (
+                    <div className="p-3 rounded-lg bg-red-900/30 border border-red-600/50">
+                      <p className="text-sm text-red-200 font-bold mb-2">
+                        🚫 TIDAK DAPAT DI-REVERSE
+                      </p>
+                      <p className="text-red-100 text-sm mb-2">
+                        Ada {reversalPreview.summary?.blocking_payments || 0} pembayaran aktif yang harus di-reverse terlebih dahulu:
+                      </p>
+                      <ul className="text-sm text-gray-300 space-y-1 ml-4">
+                        {reversalPreview.impacts?.payments?.slice(0, 5).map((p, idx) => (
+                          <li key={idx}>• {p.payment_no} - Rp {(p.amount || 0).toLocaleString('id-ID')}</li>
+                        ))}
+                      </ul>
+                      <p className="text-xs text-gray-400 mt-2">
+                        Buka menu Hutang → Pembayaran Hutang untuk reverse pembayaran.
+                      </p>
+                    </div>
+                  )}
+                  
+                  {/* Reversal Impact Preview */}
+                  {!reversalPreview.has_active_payments && reversalPreview.impacts && (
+                    <div className="space-y-3">
+                      <p className="text-sm text-gray-300 font-medium">
+                        Berikut yang akan terjadi jika PO di-reverse:
+                      </p>
+                      
+                      {/* Stock Impact */}
+                      {reversalPreview.impacts.stock_movements?.length > 0 && (
+                        <div className="p-3 rounded-lg bg-blue-900/20 border border-blue-600/30">
+                          <p className="text-sm text-blue-200 font-medium mb-2">
+                            📦 Stok akan dikembalikan ({reversalPreview.summary?.total_stock_movements} item)
+                          </p>
+                          <ul className="text-xs text-gray-300 space-y-1 max-h-24 overflow-y-auto">
+                            {reversalPreview.impacts.stock_movements.slice(0, 5).map((s, idx) => (
+                              <li key={idx}>• {s.product_name}: -{s.quantity} pcs</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      
+                      {/* AP Impact */}
+                      {reversalPreview.impacts.ap_records?.length > 0 && (
+                        <div className="p-3 rounded-lg bg-purple-900/20 border border-purple-600/30">
+                          <p className="text-sm text-purple-200 font-medium mb-2">
+                            💳 Hutang akan di-cancel ({reversalPreview.summary?.total_ap_records} record)
+                          </p>
+                          <ul className="text-xs text-gray-300 space-y-1">
+                            {reversalPreview.impacts.ap_records.slice(0, 3).map((ap, idx) => (
+                              <li key={idx}>• {ap.ap_number}: Rp {(ap.amount || 0).toLocaleString('id-ID')}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      
+                      {/* Journal Impact */}
+                      {reversalPreview.impacts.journals?.length > 0 && (
+                        <div className="p-3 rounded-lg bg-orange-900/20 border border-orange-600/30">
+                          <p className="text-sm text-orange-200 font-medium mb-2">
+                            📒 Jurnal akan di-reverse ({reversalPreview.summary?.total_journals} jurnal)
+                          </p>
+                          <ul className="text-xs text-gray-300 space-y-1">
+                            {reversalPreview.impacts.journals.slice(0, 3).map((j, idx) => (
+                              <li key={idx}>• {j.journal_no}: Rp {(j.total_debit || 0).toLocaleString('id-ID')}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              {/* Legacy Delete Preview (for cancel_hide mode) */}
+              {deletePreview && deleteTarget.status !== 'draft' && !reversalPreview && (
                 <div className="space-y-3">
                   <div className="p-3 rounded-lg bg-amber-900/20 border border-amber-600/30">
                     <p className="text-sm text-amber-200 font-medium mb-2">Mode Penghapusan:</p>
@@ -981,28 +1149,26 @@ const PurchaseOrders = () => {
                       </p>
                     </div>
                   )}
-                  
-                  <div className="p-3 rounded-lg bg-gray-800/50 border border-gray-700">
-                    <p className="text-sm text-gray-300">
-                      {deletePreview.delete_preview?.message}
-                    </p>
-                  </div>
                 </div>
               )}
               
-              {/* Delete Reason */}
+              {/* Reason Input */}
               <div>
-                <label className="block text-sm text-gray-400 mb-1">Alasan Penghapusan (opsional)</label>
+                <label className="block text-sm text-gray-400 mb-1">
+                  Alasan {reversalPreview?.can_reverse ? 'Reversal' : 'Penghapusan'} 
+                  {reversalPreview?.can_reverse && <span className="text-red-400">*</span>}
+                </label>
                 <textarea
                   value={deleteReason}
                   onChange={(e) => setDeleteReason(e.target.value)}
-                  placeholder="Masukkan alasan penghapusan..."
+                  placeholder={reversalPreview?.can_reverse ? "Wajib isi alasan reversal..." : "Masukkan alasan penghapusan..."}
                   className="w-full px-3 py-2 bg-[#0a0608] border border-red-900/30 rounded-lg text-gray-200 resize-none"
                   rows={2}
                   data-testid="delete-reason-input"
                 />
               </div>
               
+              {/* Action Buttons */}
               <div className="flex justify-end gap-3 pt-2">
                 <button 
                   onClick={() => setShowDeleteModal(false)} 
@@ -1010,13 +1176,40 @@ const PurchaseOrders = () => {
                 >
                   Batal
                 </button>
-                <button 
-                  onClick={handleDeleteConfirm}
-                  className="px-4 py-2 bg-red-600 text-white rounded-lg flex items-center gap-2 hover:bg-red-700"
-                  data-testid="confirm-delete-btn"
-                >
-                  <Trash2 className="h-4 w-4" /> Hapus PO
-                </button>
+                
+                {/* Show REVERSE button for non-draft POs that can be reversed */}
+                {reversalPreview?.can_reverse && (
+                  <button 
+                    onClick={handleReverseConfirm}
+                    disabled={reversing || !deleteReason.trim()}
+                    className="px-4 py-2 bg-amber-600 text-white rounded-lg flex items-center gap-2 hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    data-testid="confirm-reverse-btn"
+                  >
+                    {reversing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />}
+                    Reverse PO
+                  </button>
+                )}
+                
+                {/* Show DELETE button for draft or if reversal not available */}
+                {(deleteTarget.status === 'draft' || (deletePreview && !reversalPreview)) && (
+                  <button 
+                    onClick={handleDeleteConfirm}
+                    className="px-4 py-2 bg-red-600 text-white rounded-lg flex items-center gap-2 hover:bg-red-700"
+                    data-testid="confirm-delete-btn"
+                  >
+                    <Trash2 className="h-4 w-4" /> Hapus PO
+                  </button>
+                )}
+                
+                {/* Show disabled state for blocked reversals */}
+                {reversalPreview?.has_active_payments && (
+                  <button 
+                    disabled
+                    className="px-4 py-2 bg-gray-600 text-gray-400 rounded-lg flex items-center gap-2 cursor-not-allowed"
+                  >
+                    <X className="h-4 w-4" /> Tidak Dapat Diproses
+                  </button>
+                )}
               </div>
             </div>
           </div>

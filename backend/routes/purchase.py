@@ -1099,6 +1099,442 @@ async def preview_delete_po(
     }
 
 
+# ==================== FULL PURCHASE REVERSAL SYSTEM ====================
+# ENTERPRISE RULE: Transaksi Posted TIDAK boleh di-delete, harus di-REVERSE
+# Reversal mengembalikan semua efek bisnis ke kondisi sebelum transaksi terjadi
+
+class PurchaseReversalRequest(BaseModel):
+    """Request untuk reversal purchase order"""
+    reason: str
+    notes: Optional[str] = None
+
+
+@router.get("/orders/{po_id}/reversal-preview")
+async def preview_purchase_reversal(
+    po_id: str,
+    user: dict = Depends(require_permission("purchase", "delete"))
+):
+    """
+    Preview apa saja yang akan di-reverse jika PO ini di-cancel
+    
+    Returns:
+    - stock_movements: daftar pergerakan stok yang akan di-reverse
+    - ap_records: daftar hutang yang akan di-cancel
+    - payments: daftar pembayaran yang harus di-reverse dulu
+    - journals: daftar jurnal yang akan di-reverse
+    """
+    db = get_db()
+    
+    po = await purchase_orders.find_one({"id": po_id}, {"_id": 0})
+    if not po:
+        raise HTTPException(status_code=404, detail="Purchase order tidak ditemukan")
+    
+    po_number = po.get("po_number", po_id)
+    
+    # Check if already reversed
+    if po.get("status") == "reversed":
+        raise HTTPException(status_code=400, detail="PO ini sudah di-reverse sebelumnya")
+    
+    # Check if draft - can be deleted instead of reversed
+    if po.get("status") == "draft":
+        return {
+            "po_id": po_id,
+            "po_number": po_number,
+            "current_status": po.get("status"),
+            "can_delete": True,
+            "can_reverse": False,
+            "message": "PO dengan status DRAFT dapat langsung dihapus",
+            "action_recommended": "DELETE"
+        }
+    
+    # ============ GATHER ALL IMPACTS ============
+    
+    # 1. Stock movements
+    movements = await stock_movements.find({
+        "reference_id": po_id,
+        "reference_type": "purchase_order"
+    }, {"_id": 0}).to_list(1000)
+    
+    stock_impact = []
+    for m in movements:
+        stock_impact.append({
+            "product_id": m.get("product_id"),
+            "product_name": m.get("product_name", "Unknown"),
+            "warehouse_id": m.get("warehouse_id"),
+            "quantity": m.get("quantity", 0),
+            "movement_type": m.get("movement_type"),
+            "will_reverse": f"Stok akan dikurangi {abs(m.get('quantity', 0))} untuk {m.get('product_name', 'Unknown')}"
+        })
+    
+    # 2. AP records
+    ap_collection = db["accounts_payable"]
+    ap_records = await ap_collection.find({"po_id": po_id}, {"_id": 0}).to_list(100)
+    
+    ap_impact = []
+    for ap in ap_records:
+        ap_impact.append({
+            "ap_id": ap.get("id"),
+            "ap_number": ap.get("ap_number"),
+            "amount": ap.get("amount", 0),
+            "outstanding": ap.get("outstanding", 0),
+            "status": ap.get("status"),
+            "will_reverse": "Hutang akan di-cancel"
+        })
+    
+    # 3. Payments (MUST be reversed first!)
+    ap_payments_col = db["ap_payments"]
+    payments = []
+    for ap in ap_records:
+        pmnts = await ap_payments_col.find({"ap_id": ap.get("id")}, {"_id": 0}).to_list(100)
+        for p in pmnts:
+            if p.get("status") not in ["reversed", "cancelled"]:
+                payments.append({
+                    "payment_id": p.get("id"),
+                    "payment_no": p.get("payment_no"),
+                    "amount": p.get("amount", 0),
+                    "status": p.get("status"),
+                    "must_reverse_first": True,
+                    "message": "Pembayaran ini HARUS di-reverse terlebih dahulu"
+                })
+    
+    # 4. Journals
+    journal_collection = db["journal_entries"]
+    journals = await journal_collection.find({
+        "$or": [
+            {"reference_id": po_id},
+            {"reference_no": po_number}
+        ]
+    }, {"_id": 0}).to_list(100)
+    
+    journal_impact = []
+    for j in journals:
+        if j.get("status") != "reversed":
+            journal_impact.append({
+                "journal_no": j.get("journal_no"),
+                "description": j.get("description", ""),
+                "total_debit": j.get("total_debit", 0),
+                "status": j.get("status"),
+                "will_reverse": "Jurnal akan di-reverse"
+            })
+    
+    # ============ DETERMINE ACTION ============
+    has_active_payments = len([p for p in payments if p.get("must_reverse_first")]) > 0
+    
+    return {
+        "po_id": po_id,
+        "po_number": po_number,
+        "current_status": po.get("status"),
+        "can_delete": False,
+        "can_reverse": not has_active_payments,
+        "has_active_payments": has_active_payments,
+        "action_recommended": "REVERSE_PAYMENTS_FIRST" if has_active_payments else "REVERSE",
+        "impacts": {
+            "stock_movements": stock_impact,
+            "ap_records": ap_impact,
+            "payments": payments,
+            "journals": journal_impact
+        },
+        "summary": {
+            "total_stock_movements": len(stock_impact),
+            "total_ap_records": len(ap_impact),
+            "total_payments": len(payments),
+            "total_journals": len(journal_impact),
+            "blocking_payments": len([p for p in payments if p.get("must_reverse_first")])
+        },
+        "message": "Pembayaran harus di-reverse terlebih dahulu" if has_active_payments else "PO siap untuk di-reverse"
+    }
+
+
+@router.post("/orders/{po_id}/reverse")
+async def reverse_purchase_order(
+    po_id: str,
+    data: PurchaseReversalRequest,
+    request: Request,
+    user: dict = Depends(require_permission("purchase", "delete"))
+):
+    """
+    FULL REVERSAL Purchase Order
+    
+    FLOW:
+    1. Validasi tidak ada payment aktif
+    2. Reverse semua stock movements (kembalikan stok)
+    3. Cancel semua AP records (kembalikan hutang)
+    4. Reverse semua journals (buat reversal journal)
+    5. Update status PO ke REVERSED
+    6. Create comprehensive audit trail
+    
+    HASIL:
+    - Kondisi bisnis kembali seperti sebelum PO terjadi
+    - Stok kembali ke kondisi awal
+    - Hutang dihapus
+    - Jurnal di-netralkan
+    - Audit trail lengkap tersimpan
+    """
+    db = get_db()
+    user_id = user.get("user_id", user.get("id", ""))
+    user_name = user.get("name", "System")
+    
+    # Get PO
+    po = await purchase_orders.find_one({"id": po_id}, {"_id": 0})
+    if not po:
+        raise HTTPException(status_code=404, detail="Purchase order tidak ditemukan")
+    
+    po_number = po.get("po_number", po_id)
+    old_status = po.get("status")
+    
+    # ============ VALIDATIONS ============
+    if old_status == "reversed":
+        raise HTTPException(status_code=400, detail="PO ini sudah di-reverse sebelumnya")
+    
+    if old_status == "draft":
+        raise HTTPException(
+            status_code=400, 
+            detail="PO dengan status DRAFT tidak perlu di-reverse, gunakan DELETE saja"
+        )
+    
+    # Check for active payments
+    ap_collection = db["accounts_payable"]
+    ap_payments_col = db["ap_payments"]
+    
+    ap_records = await ap_collection.find({"po_id": po_id}, {"_id": 0}).to_list(100)
+    
+    active_payments = []
+    for ap in ap_records:
+        pmnts = await ap_payments_col.find({
+            "ap_id": ap.get("id"),
+            "status": {"$nin": ["reversed", "cancelled", "draft"]}
+        }, {"_id": 0}).to_list(100)
+        active_payments.extend(pmnts)
+    
+    if active_payments:
+        payment_nos = [p.get("payment_no", p.get("id")) for p in active_payments]
+        raise HTTPException(
+            status_code=400,
+            detail=f"Tidak dapat reverse PO karena ada {len(active_payments)} pembayaran aktif yang harus di-reverse terlebih dahulu: {', '.join(payment_nos[:5])}"
+        )
+    
+    # ============ START REVERSAL PROCESS ============
+    reversal_results = {
+        "stock_reversed": [],
+        "ap_cancelled": [],
+        "journals_reversed": [],
+        "errors": []
+    }
+    
+    reversal_timestamp = datetime.now(timezone.utc).isoformat()
+    
+    # ============ 1. REVERSE STOCK MOVEMENTS ============
+    movements = await stock_movements.find({
+        "reference_id": po_id,
+        "reference_type": "purchase_order"
+    }, {"_id": 0}).to_list(1000)
+    
+    for movement in movements:
+        try:
+            product_id = movement.get("product_id")
+            warehouse_id = movement.get("warehouse_id")
+            quantity = movement.get("quantity", 0)
+            
+            # Create reversal movement
+            reversal_movement_id = str(uuid.uuid4())
+            reversal_movement = {
+                "id": reversal_movement_id,
+                "product_id": product_id,
+                "product_name": movement.get("product_name"),
+                "warehouse_id": warehouse_id,
+                "branch_id": movement.get("branch_id"),
+                "movement_type": "stock_reversal",
+                "quantity": -quantity,  # Negative to reverse
+                "reference_type": "purchase_reversal",
+                "reference_id": po_id,
+                "reference_no": f"REV-{po_number}",
+                "cost_per_unit": movement.get("cost_per_unit", 0),
+                "total_cost": -(movement.get("total_cost", 0)),
+                "notes": f"REVERSAL: {data.reason}",
+                "created_by": user_id,
+                "created_at": reversal_timestamp,
+                "original_movement_id": movement.get("id")
+            }
+            
+            await stock_movements.insert_one(reversal_movement)
+            
+            # Update product stock
+            await product_stocks.update_one(
+                {"product_id": product_id, "warehouse_id": warehouse_id},
+                {"$inc": {"quantity": -quantity}}
+            )
+            
+            # Also update main products collection if exists
+            await products.update_one(
+                {"id": product_id},
+                {"$inc": {"stock": -quantity}}
+            )
+            
+            reversal_results["stock_reversed"].append({
+                "product_id": product_id,
+                "product_name": movement.get("product_name"),
+                "quantity_reversed": quantity,
+                "reversal_movement_id": reversal_movement_id
+            })
+            
+        except Exception as e:
+            reversal_results["errors"].append(f"Stock reversal error for {product_id}: {str(e)}")
+    
+    # ============ 2. CANCEL AP RECORDS ============
+    for ap in ap_records:
+        try:
+            ap_id = ap.get("id")
+            
+            await ap_collection.update_one(
+                {"id": ap_id},
+                {"$set": {
+                    "status": "cancelled",
+                    "cancelled_at": reversal_timestamp,
+                    "cancelled_by": user_id,
+                    "cancelled_reason": f"PO Reversal: {data.reason}",
+                    "outstanding": 0
+                }}
+            )
+            
+            reversal_results["ap_cancelled"].append({
+                "ap_id": ap_id,
+                "ap_number": ap.get("ap_number"),
+                "amount": ap.get("amount", 0)
+            })
+            
+        except Exception as e:
+            reversal_results["errors"].append(f"AP cancellation error for {ap_id}: {str(e)}")
+    
+    # ============ 3. REVERSE JOURNALS ============
+    journal_collection = db["journal_entries"]
+    journals = await journal_collection.find({
+        "$or": [
+            {"reference_id": po_id},
+            {"reference_no": po_number}
+        ],
+        "status": {"$ne": "reversed"}
+    }, {"_id": 0}).to_list(100)
+    
+    for journal in journals:
+        try:
+            # Create reversal journal
+            reversal_journal_no = f"REV-{journal.get('journal_no', '')}"
+            
+            # Reverse entries (swap debit/credit)
+            reversal_entries = []
+            for entry in journal.get("entries", []):
+                reversal_entries.append({
+                    "account_code": entry.get("account_code"),
+                    "account_name": entry.get("account_name"),
+                    "debit": entry.get("credit", 0),
+                    "credit": entry.get("debit", 0),
+                    "description": f"REVERSAL: {entry.get('description', '')}"
+                })
+            
+            reversal_journal = {
+                "id": str(uuid.uuid4()),
+                "journal_no": reversal_journal_no,
+                "date": reversal_timestamp,
+                "description": f"REVERSAL - {journal.get('description', '')} | Reason: {data.reason}",
+                "entries": reversal_entries,
+                "total_debit": journal.get("total_credit", 0),
+                "total_credit": journal.get("total_debit", 0),
+                "reference_type": "purchase_reversal",
+                "reference_id": po_id,
+                "reference_no": f"REV-{po_number}",
+                "original_journal_id": journal.get("id"),
+                "original_journal_no": journal.get("journal_no"),
+                "status": "posted",
+                "is_reversal": True,
+                "created_by": user_id,
+                "created_at": reversal_timestamp
+            }
+            
+            await journal_collection.insert_one(reversal_journal)
+            
+            # Mark original journal as reversed
+            await journal_collection.update_one(
+                {"id": journal.get("id")},
+                {"$set": {
+                    "status": "reversed",
+                    "reversed_at": reversal_timestamp,
+                    "reversed_by": user_id,
+                    "reversal_journal_no": reversal_journal_no
+                }}
+            )
+            
+            reversal_results["journals_reversed"].append({
+                "original_journal_no": journal.get("journal_no"),
+                "reversal_journal_no": reversal_journal_no,
+                "total_amount": journal.get("total_debit", 0)
+            })
+            
+        except Exception as e:
+            reversal_results["errors"].append(f"Journal reversal error for {journal.get('journal_no')}: {str(e)}")
+    
+    # ============ 4. UPDATE PO STATUS ============
+    await purchase_orders.update_one(
+        {"id": po_id},
+        {"$set": {
+            "status": "reversed",
+            "reversed_at": reversal_timestamp,
+            "reversed_by": user_id,
+            "reversed_by_name": user_name,
+            "reversal_reason": data.reason,
+            "reversal_notes": data.notes,
+            "updated_at": reversal_timestamp
+        }}
+    )
+    
+    # ============ 5. COMPREHENSIVE AUDIT TRAIL ============
+    audit_detail = {
+        "id": str(uuid.uuid4()),
+        "event_type": "PURCHASE_ORDER_REVERSAL",
+        "tenant_id": db.name,
+        "po_id": po_id,
+        "po_number": po_number,
+        "user_id": user_id,
+        "user_name": user_name,
+        "timestamp": reversal_timestamp,
+        "old_status": old_status,
+        "new_status": "reversed",
+        "reason": data.reason,
+        "notes": data.notes,
+        "reversal_results": reversal_results,
+        "ip_address": request.client.host if request.client else ""
+    }
+    
+    audit_logs = db["audit_logs"]
+    await audit_logs.insert_one(audit_detail)
+    
+    await log_security_event(
+        db, user_id, user_name,
+        "reverse", "purchase",
+        f"REVERSAL PO {po_number} | Stock: {len(reversal_results['stock_reversed'])} items | AP: {len(reversal_results['ap_cancelled'])} records | Journals: {len(reversal_results['journals_reversed'])}",
+        request.client.host if request.client else "",
+        document_no=po_number,
+        severity="critical"
+    )
+    
+    return {
+        "success": True,
+        "message": f"Purchase Order {po_number} berhasil di-reverse",
+        "po_id": po_id,
+        "po_number": po_number,
+        "old_status": old_status,
+        "new_status": "reversed",
+        "reversal_timestamp": reversal_timestamp,
+        "reversal_summary": {
+            "stock_movements_reversed": len(reversal_results["stock_reversed"]),
+            "ap_records_cancelled": len(reversal_results["ap_cancelled"]),
+            "journals_reversed": len(reversal_results["journals_reversed"]),
+            "errors": len(reversal_results["errors"])
+        },
+        "reversal_details": reversal_results,
+        "reason": data.reason
+    }
+
+
 # ==================== PURCHASE PAYMENTS ====================
 
 from database import db
