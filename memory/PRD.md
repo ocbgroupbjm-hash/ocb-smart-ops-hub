@@ -126,6 +126,48 @@ File `/app/backend/routes/master_erp.py` function `list_items()`:
 | Stok berubah sesuai cabang | ✅ |
 | **Test Report** | `/app/test_reports/iteration_103.json` |
 
+---
+
+## 🟢 P0: INVENTORY INTEGRITY BUG FIX (2026-03-20) ✅ DONE
+
+### Bug Description
+Item yang sama menunjukkan angka berbeda: Daftar Item = 5, Kartu Stok = 50
+
+### Root Cause
+`stock_movements` collection punya 2 format field:
+- Legacy (35 records): field `item_id`
+- Baru (239 records): field `product_id`
+
+Kartu Stok query dengan `item_id`, Daftar Item pakai `product_stocks` → tidak sinkron!
+
+### Fix Applied
+**SSOT = stock_movements**
+- Ubah Daftar Item untuk query dari `stock_movements`
+- Ubah Kartu Stok untuk query dengan `{$or: [product_id, item_id]}`
+- Keduanya sekarang menggunakan source yang sama
+
+### Files Modified
+| File | Function | Change |
+|------|----------|--------|
+| `/app/backend/routes/master_erp.py` | `list_items()` | Stock from stock_movements |
+| `/app/backend/routes/stock_card.py` | `get_stock_card_modal()` | Query with $or pattern |
+
+### Reconciliation Evidence (8/8 MATCH)
+| Code | Daftar Item | Kartu Stok | Match |
+|------|-------------|------------|-------|
+| 001000 | 141 | 141 | ✅ |
+| 001001 | 50 | 50 | ✅ |
+| 001002 | 18 | 18 | ✅ |
+| 001003 | 18 | 18 | ✅ |
+| 001004 | 24 | 24 | ✅ |
+| 001005 | 21 | 21 | ✅ |
+| 001006 | 0 | 0 | ✅ |
+| 001007 | 24 | 24 | ✅ |
+
+### Test Results
+- **Backend**: 100% (9/10 passed, 1 skipped)
+- **Test Report**: `/app/test_reports/iteration_104.json`
+
 ### DELETE/REVERSE RULE (BERLAKU GLOBAL)
 | Status | Action |
 |--------|--------|
