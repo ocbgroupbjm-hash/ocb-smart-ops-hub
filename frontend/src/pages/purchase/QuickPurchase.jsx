@@ -685,9 +685,10 @@ const QuickPurchase = () => {
             )}
           </button>
           
-          <p className="text-center text-xs text-gray-500">
-            PO akan tersimpan dengan status Draft
-          </p>
+          <div className="text-center text-xs space-y-1">
+            <p className="text-gray-500">PO akan tersimpan dengan status Draft</p>
+            <p className="text-amber-400/70">Stok bertambah setelah Terima Barang</p>
+          </div>
         </div>
       </div>
     </div>

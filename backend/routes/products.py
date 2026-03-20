@@ -95,12 +95,26 @@ async def create_category(data: CategoryCreate, request: Request, user: dict = D
 async def list_products(
     search: str = "",
     category_id: str = "",
+    brand: str = "",
+    branch_id: str = "",
     is_active: bool = True,
+    min_stock: Optional[int] = None,
+    max_stock: Optional[int] = None,
     skip: int = 0,
     limit: int = 100,
     user: dict = Depends(require_permission("master_item", "view"))
 ):
-    """List products - Requires master_item.view permission"""
+    """
+    List products with optional branch filter
+    
+    Filters:
+    - search: kode, barcode, nama
+    - category_id: filter by category
+    - brand: filter by brand
+    - branch_id: filter stok untuk cabang tertentu (jika kosong, agregasi semua cabang)
+    - is_active: status aktif
+    - min_stock, max_stock: filter berdasarkan stok
+    """
     query = {"is_active": is_active}
     
     if search:
@@ -113,10 +127,56 @@ async def list_products(
     if category_id:
         query["category_id"] = category_id
     
+    if brand:
+        query["brand"] = {"$regex": brand, "$options": "i"}
+    
     items = await products.find(query, {"_id": 0}).skip(skip).limit(limit).to_list(limit)
     total = await products.count_documents(query)
     
-    return {"items": items, "total": total}
+    # Enrich with stock data per branch
+    result_items = []
+    for item in items:
+        product_id = item.get("id")
+        
+        if branch_id:
+            # Get stock for specific branch
+            stock_rec = await product_stocks.find_one(
+                {"product_id": product_id, "branch_id": branch_id},
+                {"_id": 0}
+            )
+            item["stock"] = stock_rec.get("quantity", 0) if stock_rec else 0
+            item["available"] = stock_rec.get("available", 0) if stock_rec else 0
+            item["branch_stock"] = stock_rec if stock_rec else None
+        else:
+            # Aggregate stock across all branches
+            pipeline = [
+                {"$match": {"product_id": product_id}},
+                {"$group": {
+                    "_id": "$product_id",
+                    "total_stock": {"$sum": "$quantity"},
+                    "total_available": {"$sum": {"$ifNull": ["$available", "$quantity"]}},
+                    "branches_count": {"$sum": 1}
+                }}
+            ]
+            agg_result = await product_stocks.aggregate(pipeline).to_list(1)
+            if agg_result:
+                item["stock"] = agg_result[0].get("total_stock", 0)
+                item["available"] = agg_result[0].get("total_available", 0)
+                item["branches_count"] = agg_result[0].get("branches_count", 0)
+            else:
+                item["stock"] = 0
+                item["available"] = 0
+                item["branches_count"] = 0
+        
+        # Apply stock filters
+        if min_stock is not None and item.get("stock", 0) < min_stock:
+            continue
+        if max_stock is not None and item.get("stock", 0) > max_stock:
+            continue
+        
+        result_items.append(item)
+    
+    return {"items": result_items, "total": len(result_items), "original_total": total}
 
 @router.get("/search")
 async def search_products(

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { Plus, Search, Edit, Trash2, Package, X, Save, Loader2, BarChart3, Upload, Image, Camera, Sparkles, Star, StarOff, Eye } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Package, X, Save, Loader2, BarChart3, Upload, Image, Camera, Sparkles, Star, StarOff, Eye, Building2, Filter } from 'lucide-react';
 import { toast } from 'sonner';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
@@ -9,9 +9,13 @@ const Products = () => {
   const { api } = useAuth();
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [branches, setBranches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
+  const [branchFilter, setBranchFilter] = useState('');
+  const [brandFilter, setBrandFilter] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
@@ -32,7 +36,7 @@ const Products = () => {
 
   const formatRupiah = (num) => `Rp ${(num || 0).toLocaleString('id-ID')}`;
 
-  useEffect(() => { loadProducts(); loadCategories(); }, [search, categoryFilter]);
+  useEffect(() => { loadProducts(); loadCategories(); loadBranches(); }, [search, categoryFilter, branchFilter, brandFilter]);
 
   const loadProducts = async () => {
     setLoading(true);
@@ -40,6 +44,8 @@ const Products = () => {
       let url = `/api/products?limit=200`;
       if (search) url += `&search=${encodeURIComponent(search)}`;
       if (categoryFilter) url += `&category_id=${categoryFilter}`;
+      if (branchFilter) url += `&branch_id=${branchFilter}`;
+      if (brandFilter) url += `&brand=${encodeURIComponent(brandFilter)}`;
       const res = await api(url);
       if (res.ok) { const data = await res.json(); setProducts(data.items || []); }
     } catch (err) { toast.error('Gagal memuat produk'); }
@@ -50,6 +56,13 @@ const Products = () => {
     try {
       const res = await api('/api/products/categories');
       if (res.ok) setCategories(await res.json());
+    } catch (err) { console.error(err); }
+  };
+
+  const loadBranches = async () => {
+    try {
+      const res = await api('/api/master/warehouses');
+      if (res.ok) setBranches(await res.json());
     } catch (err) { console.error(err); }
   };
 
@@ -302,15 +315,68 @@ const Products = () => {
         </div>
       </div>
 
-      <div className="flex gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-          <input type="text" placeholder="Cari produk..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-full pl-10 pr-4 py-2 bg-[#1a1214] border border-red-900/30 rounded-lg" />
+      {/* Filters Section */}
+      <div className="space-y-3">
+        <div className="flex gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <input type="text" placeholder="Cari kode, barcode, nama produk..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-full pl-10 pr-4 py-2 bg-[#1a1214] border border-red-900/30 rounded-lg" data-testid="product-search" />
+          </div>
+          <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} className="px-4 py-2 bg-[#1a1214] border border-red-900/30 rounded-lg" data-testid="category-filter">
+            <option value="">Semua Kategori</option>
+            {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
+          </select>
+          <button 
+            onClick={() => setShowFilters(!showFilters)} 
+            className={`px-4 py-2 border rounded-lg flex items-center gap-2 ${showFilters ? 'border-amber-500 text-amber-400 bg-amber-900/20' : 'border-red-900/30 text-gray-300 hover:bg-red-900/20'}`}
+            data-testid="toggle-filters"
+          >
+            <Filter className="h-5 w-5" /> Filter
+          </button>
         </div>
-        <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} className="px-4 py-2 bg-[#1a1214] border border-red-900/30 rounded-lg">
-          <option value="">Semua Kategori</option>
-          {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
-        </select>
+
+        {/* Extended Filters */}
+        {showFilters && (
+          <div className="grid grid-cols-4 gap-3 p-4 bg-[#1a1214] border border-red-900/30 rounded-lg">
+            <div>
+              <label className="block text-xs text-gray-400 mb-1">Cabang/Gudang</label>
+              <select 
+                value={branchFilter} 
+                onChange={(e) => setBranchFilter(e.target.value)} 
+                className="w-full px-3 py-2 bg-[#0a0608] border border-red-900/30 rounded-lg text-sm"
+                data-testid="branch-filter"
+              >
+                <option value="">Semua Cabang (Agregasi)</option>
+                {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs text-gray-400 mb-1">Merek</label>
+              <input 
+                type="text" 
+                value={brandFilter} 
+                onChange={(e) => setBrandFilter(e.target.value)} 
+                placeholder="Filter merek..."
+                className="w-full px-3 py-2 bg-[#0a0608] border border-red-900/30 rounded-lg text-sm"
+                data-testid="brand-filter"
+              />
+            </div>
+            <div className="col-span-2 flex items-end gap-2">
+              <button 
+                onClick={() => { setBranchFilter(''); setBrandFilter(''); setCategoryFilter(''); setSearch(''); }}
+                className="px-4 py-2 border border-red-900/30 rounded-lg text-gray-400 hover:bg-red-900/20 text-sm"
+              >
+                Reset Filter
+              </button>
+              {branchFilter && (
+                <span className="text-xs text-amber-400 flex items-center gap-1">
+                  <Building2 className="h-3 w-3" />
+                  Menampilkan stok untuk: {branches.find(b => b.id === branchFilter)?.name || branchFilter}
+                </span>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="bg-[#1a1214] border border-red-900/30 rounded-xl overflow-hidden">
@@ -321,55 +387,82 @@ const Products = () => {
               <th className="px-4 py-3 text-left text-sm font-semibold">Kode</th>
               <th className="px-4 py-3 text-right text-sm font-semibold">Modal</th>
               <th className="px-4 py-3 text-right text-sm font-semibold">Harga Jual</th>
-              <th className="px-4 py-3 text-right text-sm font-semibold">Min Stok</th>
+              <th className="px-4 py-3 text-right text-sm font-semibold">
+                Stok {branchFilter && <span className="text-xs text-amber-400">(Cabang)</span>}
+              </th>
+              <th className="px-4 py-3 text-center text-sm font-semibold">Status</th>
               <th className="px-4 py-3 text-center text-sm font-semibold">Aksi</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={6} className="px-4 py-8 text-center"><Loader2 className="h-8 w-8 animate-spin mx-auto text-red-400" /></td></tr>
+              <tr><td colSpan={7} className="px-4 py-8 text-center"><Loader2 className="h-8 w-8 animate-spin mx-auto text-red-400" /></td></tr>
             ) : products.length === 0 ? (
-              <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-400"><Package className="h-12 w-12 mx-auto mb-2 opacity-30" /><p>Tidak ada produk</p></td></tr>
+              <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-400"><Package className="h-12 w-12 mx-auto mb-2 opacity-30" /><p>Tidak ada produk</p></td></tr>
             ) : (
-              products.map(product => (
-                <tr key={product.id} className="border-t border-red-900/10 hover:bg-red-900/10">
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-3">
-                      {product.primary_photo_url ? (
-                        <img 
-                          src={`${API_URL}${product.primary_photo_url}`} 
-                          alt={product.name}
-                          className="w-12 h-12 rounded-lg object-cover border border-red-900/30"
-                        />
-                      ) : (
-                        <div className="w-12 h-12 rounded-lg bg-red-900/20 flex items-center justify-center border border-red-900/30">
-                          <Package className="h-6 w-6 text-gray-500" />
+              products.map(product => {
+                const stock = product.stock || 0;
+                const minStock = product.min_stock || 5;
+                const stockStatus = stock <= 0 ? 'empty' : stock <= minStock ? 'low' : 'ok';
+                
+                return (
+                  <tr key={product.id} className="border-t border-red-900/10 hover:bg-red-900/10" data-testid={`product-row-${product.id}`}>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-3">
+                        {product.primary_photo_url ? (
+                          <img 
+                            src={`${API_URL}${product.primary_photo_url}`} 
+                            alt={product.name}
+                            className="w-12 h-12 rounded-lg object-cover border border-red-900/30"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 rounded-lg bg-red-900/20 flex items-center justify-center border border-red-900/30">
+                            <Package className="h-6 w-6 text-gray-500" />
+                          </div>
+                        )}
+                        <div>
+                          <div className="font-medium">{product.name}</div>
+                          <div className="text-sm text-gray-400">{product.brand || 'Tanpa merk'}</div>
                         </div>
-                      )}
-                      <div>
-                        <div className="font-medium">{product.name}</div>
-                        <div className="text-sm text-gray-400">{product.brand || 'Tanpa merk'}</div>
                       </div>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div>{product.code}</div>
-                    <div className="text-sm text-gray-400">{product.barcode || '-'}</div>
-                  </td>
-                  <td className="px-4 py-3 text-right text-gray-400">{formatRupiah(product.cost_price)}</td>
-                  <td className="px-4 py-3 text-right text-amber-400 font-semibold">{formatRupiah(product.selling_price)}</td>
-                  <td className="px-4 py-3 text-right">{product.min_stock}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex justify-center gap-2">
-                      <button onClick={() => openPhotoModal(product)} className="p-2 text-green-400 hover:bg-green-900/20 rounded" title="Foto Produk">
-                        <Camera className="h-4 w-4" />
-                      </button>
-                      <button onClick={() => openModal(product)} className="p-2 text-blue-400 hover:bg-blue-900/20 rounded"><Edit className="h-4 w-4" /></button>
-                      <button onClick={() => deleteProduct(product.id)} className="p-2 text-red-400 hover:bg-red-900/20 rounded"><Trash2 className="h-4 w-4" /></button>
-                    </div>
-                  </td>
-                </tr>
-              ))
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="font-mono">{product.code}</div>
+                      <div className="text-sm text-gray-400">{product.barcode || '-'}</div>
+                    </td>
+                    <td className="px-4 py-3 text-right text-gray-400">{formatRupiah(product.cost_price)}</td>
+                    <td className="px-4 py-3 text-right text-amber-400 font-semibold">{formatRupiah(product.selling_price)}</td>
+                    <td className="px-4 py-3 text-right">
+                      <div className={`font-bold text-lg ${
+                        stockStatus === 'empty' ? 'text-red-400' : 
+                        stockStatus === 'low' ? 'text-yellow-400' : 'text-green-400'
+                      }`}>
+                        {stock}
+                      </div>
+                      {product.branches_count !== undefined && !branchFilter && (
+                        <div className="text-xs text-gray-500">{product.branches_count} cabang</div>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <span className={`px-2 py-1 rounded text-xs ${
+                        stockStatus === 'empty' ? 'bg-red-900/30 text-red-400' : 
+                        stockStatus === 'low' ? 'bg-yellow-900/30 text-yellow-400' : 'bg-green-900/30 text-green-400'
+                      }`}>
+                        {stockStatus === 'empty' ? 'Habis' : stockStatus === 'low' ? 'Menipis' : 'Aman'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex justify-center gap-2">
+                        <button onClick={() => openPhotoModal(product)} className="p-2 text-green-400 hover:bg-green-900/20 rounded" title="Foto Produk">
+                          <Camera className="h-4 w-4" />
+                        </button>
+                        <button onClick={() => openModal(product)} className="p-2 text-blue-400 hover:bg-blue-900/20 rounded"><Edit className="h-4 w-4" /></button>
+                        <button onClick={() => deleteProduct(product.id)} className="p-2 text-red-400 hover:bg-red-900/20 rounded"><Trash2 className="h-4 w-4" /></button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>
