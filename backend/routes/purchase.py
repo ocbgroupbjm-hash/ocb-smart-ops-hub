@@ -707,7 +707,24 @@ async def receive_purchase_order(po_id: str, data: ReceivePO, request: Request, 
                     )
                     await product_stocks.insert_one(new_stock.model_dump())
                 
-                # Record stock movement
+                # Record stock movement - PROTECTION against duplicates
+                # Check if this PO already has a quick_purchase movement (should skip for QPO)
+                if po.get('is_quick_purchase', False):
+                    # Skip creating another movement for Quick Purchase POs
+                    continue
+                
+                # Check for existing movement to prevent duplicates
+                existing_mov = await stock_movements.find_one({
+                    "reference_id": po_id,
+                    "product_id": receive_item.product_id,
+                    "branch_id": branch_id,
+                    "reference_type": "purchase_order"
+                })
+                
+                if existing_mov:
+                    # Movement already exists - skip
+                    continue
+                
                 movement = StockMovement(
                     product_id=receive_item.product_id,
                     branch_id=branch_id,
@@ -1747,6 +1764,18 @@ async def quick_purchase(
             })
         
         # ============ RECORD STOCK MOVEMENT - HISTORI ============
+        # PROTECTION: Check for existing movement to prevent duplicates
+        existing_movement = await stock_movements.find_one({
+            "reference_id": po_id,
+            "product_id": product_id,
+            "branch_id": branch_id,
+            "reference_type": "quick_purchase"
+        })
+        
+        if existing_movement:
+            # Movement already exists - skip to prevent double entry
+            continue
+        
         movement = {
             "id": str(uuid.uuid4()),
             "product_id": product_id,
@@ -1756,6 +1785,7 @@ async def quick_purchase(
             "quantity": qty,
             "reference_type": "quick_purchase",
             "reference_id": po_id,
+            "reference_number": po_number,  # Added for clarity
             "reference_no": po_number,
             "cost_per_unit": unit_cost,
             "total_cost": qty * unit_cost,
@@ -1784,7 +1814,7 @@ async def quick_purchase(
     
     return {
         "success": True,
-        "message": f"Quick Purchase berhasil! Stok langsung bertambah.",
+        "message": "Quick Purchase berhasil! Stok langsung bertambah.",
         "id": po_id,
         "po_number": po_number,
         "supplier_name": supplier.get("name", ""),
@@ -1794,6 +1824,236 @@ async def quick_purchase(
         "stock_updated": stock_results,
         "is_quick_purchase": True
     }
+
+
+# ==================== INVENTORY INTEGRITY - DUPLICATE CLEANUP ====================
+
+class DuplicateCleanupInput(BaseModel):
+    """Input for duplicate movement cleanup"""
+    product_id: str
+    dry_run: bool = True  # Default to dry run (preview only)
+
+@router.post("/inventory/audit-duplicates")
+async def audit_duplicate_movements(
+    data: DuplicateCleanupInput,
+    request: Request,
+    user: dict = Depends(require_permission("inventory", "admin"))
+):
+    """
+    AUDIT & CLEANUP DUPLICATE STOCK MOVEMENTS
+    
+    Rule:
+    - Tidak DELETE data apapun
+    - Duplikat di-fix dengan REVERSAL ENTRY (qty negatif)
+    - Unique key: (reference_id, product_id, branch_id, reference_type)
+    """
+    tenant_id = user.get("tenant_id")
+    now = datetime.now(timezone.utc).isoformat()
+    
+    # Find all movements for this product
+    all_movements = await stock_movements.find({
+        "$or": [
+            {"product_id": data.product_id},
+            {"item_id": data.product_id}
+        ]
+    }).sort("created_at", 1).to_list(1000)
+    
+    # Group by reference_id + reference_type + branch_id
+    seen = {}  # key -> first movement
+    duplicates = []
+    
+    for mov in all_movements:
+        key = (
+            mov.get("reference_id", "none"),
+            mov.get("reference_type", "none"),
+            mov.get("branch_id", "none"),
+            mov.get("product_id") or mov.get("item_id")
+        )
+        
+        if key in seen:
+            # This is a duplicate
+            duplicates.append({
+                "original": seen[key],
+                "duplicate": mov
+            })
+        else:
+            seen[key] = mov
+    
+    if not duplicates:
+        return {
+            "success": True,
+            "message": "No duplicates found",
+            "total_movements": len(all_movements),
+            "duplicates_found": 0,
+            "reversals_created": 0
+        }
+    
+    reversals_created = []
+    
+    if not data.dry_run:
+        # CREATE REVERSAL ENTRIES for each duplicate
+        for dup in duplicates:
+            original = dup["original"]
+            duplicate = dup["duplicate"]
+            
+            dup_qty = duplicate.get("quantity", 0)
+            
+            # Create reversal entry (negative qty to cancel out duplicate)
+            reversal = {
+                "id": str(uuid.uuid4()),
+                "product_id": duplicate.get("product_id") or duplicate.get("item_id"),
+                "product_name": duplicate.get("product_name", ""),
+                "branch_id": duplicate.get("branch_id"),
+                "movement_type": "reversal",
+                "quantity": -dup_qty,  # Negative to cancel
+                "reference_type": "duplicate_reversal",
+                "reference_id": str(duplicate.get("_id")),
+                "reference_number": f"REV-{duplicate.get('reference_number', duplicate.get('reference_no', 'DUP'))}",
+                "notes": f"REVERSAL: Duplicate cleanup for movement {duplicate.get('_id')}. Original ref: {duplicate.get('reference_type')}",
+                "created_by": user.get("user_id", ""),
+                "created_at": now,
+                "is_reversal": True,
+                "reversed_movement_id": str(duplicate.get("_id"))
+            }
+            
+            await stock_movements.insert_one(reversal)
+            
+            # Also update product_stocks to fix the quantity
+            await product_stocks.update_one(
+                {"product_id": reversal["product_id"], "branch_id": reversal["branch_id"]},
+                {"$inc": {"quantity": -dup_qty, "available": -dup_qty}}
+            )
+            
+            reversals_created.append({
+                "duplicate_id": str(duplicate.get("_id")),
+                "reversed_qty": dup_qty,
+                "reversal_id": reversal["id"]
+            })
+    
+    return {
+        "success": True,
+        "message": "Dry run" if data.dry_run else f"Created {len(reversals_created)} reversals",
+        "total_movements": len(all_movements),
+        "duplicates_found": len(duplicates),
+        "duplicates": [
+            {
+                "original_id": str(d["original"].get("_id")),
+                "original_qty": d["original"].get("quantity"),
+                "original_ref": d["original"].get("reference_type"),
+                "original_created": str(d["original"].get("created_at")),
+                "duplicate_id": str(d["duplicate"].get("_id")),
+                "duplicate_qty": d["duplicate"].get("quantity"),
+                "duplicate_ref": d["duplicate"].get("reference_type"),
+                "duplicate_created": str(d["duplicate"].get("created_at"))
+            }
+            for d in duplicates
+        ],
+        "reversals_created": reversals_created if not data.dry_run else [],
+        "dry_run": data.dry_run
+    }
+
+@router.post("/inventory/fix-all-duplicates")
+async def fix_all_duplicate_movements(
+    request: Request,
+    user: dict = Depends(require_permission("inventory", "admin"))
+):
+    """
+    FIX ALL DUPLICATE MOVEMENTS IN THE SYSTEM
+    
+    Finds all duplicates and creates reversal entries to fix them.
+    """
+    tenant_id = user.get("tenant_id")
+    now = datetime.now(timezone.utc).isoformat()
+    
+    # Find duplicates using aggregation
+    pipeline = [
+        {"$group": {
+            "_id": {
+                "reference_id": "$reference_id",
+                "product_id": "$product_id",
+                "branch_id": "$branch_id",
+                "reference_type": "$reference_type"
+            },
+            "count": {"$sum": 1},
+            "total_qty": {"$sum": "$quantity"},
+            "docs": {"$push": {
+                "_id": "$_id",
+                "quantity": "$quantity",
+                "created_at": "$created_at",
+                "product_name": "$product_name",
+                "notes": "$notes"
+            }}
+        }},
+        {"$match": {"count": {"$gt": 1}}}
+    ]
+    
+    duplicates = await stock_movements.aggregate(pipeline).to_list(1000)
+    
+    if not duplicates:
+        return {
+            "success": True,
+            "message": "No duplicates found in the system",
+            "duplicates_fixed": 0
+        }
+    
+    fixed_count = 0
+    fixed_details = []
+    
+    for dup_group in duplicates:
+        key = dup_group["_id"]
+        docs = dup_group["docs"]
+        
+        # Sort by created_at to keep the oldest one
+        docs_sorted = sorted(docs, key=lambda x: str(x.get("created_at", "")))
+        
+        # First one is the original, rest are duplicates
+        original = docs_sorted[0]
+        duplicates_to_reverse = docs_sorted[1:]
+        
+        for dup in duplicates_to_reverse:
+            dup_qty = dup.get("quantity", 0)
+            
+            # Create reversal entry
+            reversal = {
+                "id": str(uuid.uuid4()),
+                "product_id": key.get("product_id"),
+                "branch_id": key.get("branch_id"),
+                "movement_type": "reversal",
+                "quantity": -dup_qty,
+                "reference_type": "duplicate_reversal",
+                "reference_id": str(dup.get("_id")),
+                "reference_number": f"REV-DUP-{str(dup.get('_id'))[:8]}",
+                "notes": f"REVERSAL: Auto-cleanup duplicate. Original ref_type: {key.get('reference_type')}",
+                "created_by": user.get("user_id", ""),
+                "created_at": now,
+                "is_reversal": True
+            }
+            
+            await stock_movements.insert_one(reversal)
+            
+            # Fix product_stocks quantity
+            if key.get("product_id") and key.get("branch_id"):
+                await product_stocks.update_one(
+                    {"product_id": key.get("product_id"), "branch_id": key.get("branch_id")},
+                    {"$inc": {"quantity": -dup_qty, "available": -dup_qty}}
+                )
+            
+            fixed_count += 1
+            fixed_details.append({
+                "product_id": key.get("product_id"),
+                "branch_id": key.get("branch_id"),
+                "duplicate_id": str(dup.get("_id")),
+                "reversed_qty": dup_qty
+            })
+    
+    return {
+        "success": True,
+        "message": f"Fixed {fixed_count} duplicate movements via reversal entries",
+        "duplicates_groups_found": len(duplicates),
+        "duplicates_fixed": fixed_count,
+        "details": fixed_details[:50]  # Limit to first 50 for response size
+    }
+
 
 
 # ==================== PURCHASE PAYMENTS ====================

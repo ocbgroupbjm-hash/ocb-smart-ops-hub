@@ -52,6 +52,44 @@ User melaporkan di **HALAMAN Kartu Stok** (`/inventory/kartu-stok`) TIDAK ADA op
 
 ---
 
+## ✅ P0: INVENTORY INTEGRITY FIX - DUPLICATE MOVEMENTS (2026-03-20) ✅ DONE
+
+### Issue Reported
+- Transaksi pembelian QPO000066 dihapus tapi stock_movements masih ada
+- Terjadi DOUBLE MOVEMENT (100 + 100 = 200) padahal seharusnya 100
+- Stok salah karena duplikasi
+
+### Root Cause
+1. **QPO000066**: Quick Purchase membuat movement (`quick_purchase`), lalu endpoint receive membuat movement lagi (`purchase_order`)
+2. **PO000030**: Multiple entries untuk reference_id yang sama
+
+### Fix Implemented
+1. **Protection Code** di `purchase.py`:
+   - Check existing movement sebelum insert
+   - Skip receive movement untuk `is_quick_purchase: True`
+   
+2. **Data Cleanup via REVERSAL** (NOT DELETE):
+   - QPO000066 purchase_order: reversed -100
+   - PO000030 duplicate: reversed -7
+
+3. **New API Endpoints**:
+   - `POST /api/purchase/inventory/audit-duplicates`
+   - `POST /api/purchase/inventory/fix-all-duplicates`
+
+4. **Database Index**: `idx_ref_product_branch_type`
+
+### Verification
+| Branch | Movements | Product_Stocks | Status |
+|--------|-----------|----------------|--------|
+| HQ | 8 | 8 | ✅ OK |
+| Branch ec0bd6aa | 100 | 100 | ✅ OK |
+| **TOTAL** | **108** | **108** | ✅ **MATCH** |
+
+### Test Report
+- `/app/test_reports/INVENTORY_INTEGRITY_FIX_REPORT_AUD_PROD.md`
+
+---
+
 ## ✅ P0: ARSITEKTUR FINAL OCB TITAN - QUICK PURCHASE DIRECT STOCK IN (2026-03-20) ✅ DONE
 
 ### ARSITEKTUR FINAL (TIDAK BOLEH MENYIMPANG)
