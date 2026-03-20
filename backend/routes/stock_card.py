@@ -310,25 +310,36 @@ async def create_test_stock_movements(
 
 @router.get("/stock-card-modal")
 async def get_stock_card_modal(
-    item_id: str = Query(..., description="Item ID"),
+    item_id: str = Query(..., description="Item ID (product_id)"),
     branch_id: str = Query("", description="Branch ID (optional)"),
     date_from: str = Query("", description="Start date (YYYY-MM-DD)"),
     date_to: str = Query("", description="End date (YYYY-MM-DD)"),
     user: dict = Depends(get_current_user)
 ):
     """
-    Get stock card for modal display - more flexible date filtering.
-    Returns movements from stock_movements (SSOT) with running balance.
+    Get stock card for modal display - FIXED to use product_id.
+    
+    ARSITEKTUR FINAL:
+    - stock_movements adalah SSOT untuk inventory history
+    - Query dengan product_id (bukan item_id)
+    - Juga cek legacy data dengan item_id untuk backward compatibility
     """
     db = get_db()
     
-    # Verify item exists
+    # Verify item exists (check both products and items collections)
     item = await db["products"].find_one({"id": item_id}, {"_id": 0, "id": 1, "code": 1, "name": 1})
+    if not item:
+        item = await db["items"].find_one({"id": item_id}, {"_id": 0, "id": 1, "code": 1, "name": 1})
     if not item:
         raise HTTPException(status_code=404, detail="Item tidak ditemukan")
     
-    # Build query
-    query = {"item_id": item_id}
+    # Build query for BOTH product_id AND item_id (backward compatibility)
+    query = {
+        "$or": [
+            {"product_id": item_id},
+            {"item_id": item_id}
+        ]
+    }
     
     if branch_id:
         query["branch_id"] = branch_id
@@ -355,7 +366,10 @@ async def get_stock_card_modal(
     type_labels = {
         "purchase": "Pembelian",
         "purchase_receive": "Terima Barang",
+        "quick_purchase": "Quick Purchase",
+        "stock_in": "Stok Masuk",
         "sales": "Penjualan",
+        "sales_out": "Penjualan Keluar",
         "pos": "POS",
         "transfer_in": "Transfer Masuk",
         "transfer_out": "Transfer Keluar",
@@ -364,13 +378,15 @@ async def get_stock_card_modal(
         "opname": "Stock Opname",
         "return_in": "Retur Masuk",
         "return_out": "Retur Keluar",
-        "initial": "Stok Awal"
+        "initial": "Stok Awal",
+        "reversal": "Reversal"
     }
     
-    # Build response with enriched data
+    # Build response with enriched data and running balance
     result_movements = []
     total_in = 0
     total_out = 0
+    running_balance = 0
     
     for mov in movements:
         qty = mov.get("quantity", 0)
@@ -378,19 +394,25 @@ async def get_stock_card_modal(
             total_in += qty
         else:
             total_out += abs(qty)
+        running_balance += qty
+        
+        mov_type = mov.get("movement_type") or mov.get("type") or mov.get("reference_type") or "other"
         
         result_movements.append({
             "id": mov.get("id"),
             "created_at": mov.get("created_at"),
             "timestamp": mov.get("created_at"),
-            "reference_number": mov.get("reference_number", mov.get("reference_id", "")),
+            "reference_number": mov.get("reference_no") or mov.get("reference_number") or mov.get("reference_id", ""),
             "ref_id": mov.get("reference_id", ""),
-            "transaction_type": mov.get("movement_type", mov.get("type", "other")),
-            "transaction_label": type_labels.get(mov.get("movement_type", mov.get("type", "")), mov.get("movement_type", "Lainnya")),
+            "transaction_type": mov_type,
+            "transaction_label": type_labels.get(mov_type, mov_type.replace("_", " ").title() if mov_type else "Lainnya"),
             "branch_id": mov.get("branch_id"),
             "branch_name": branch_map.get(mov.get("branch_id"), "-"),
             "quantity": qty,
-            "notes": mov.get("notes", mov.get("description", ""))
+            "qty_in": qty if qty > 0 else 0,
+            "qty_out": abs(qty) if qty < 0 else 0,
+            "balance": running_balance,
+            "notes": mov.get("notes") or mov.get("description", "")
         })
     
     return {
@@ -398,6 +420,6 @@ async def get_stock_card_modal(
         "movements": result_movements,
         "total_in": total_in,
         "total_out": total_out,
-        "balance": total_in - total_out,
+        "balance": running_balance,
         "count": len(result_movements)
     }

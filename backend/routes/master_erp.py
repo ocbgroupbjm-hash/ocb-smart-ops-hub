@@ -131,7 +131,7 @@ async def list_items(
     result = await cursor.to_list(limit)
     total = await items.count_documents(query)
     
-    # Enrich with category/unit/brand names AND stock from product_stocks
+    # Enrich with category/unit/brand names AND stock from stock_movements (SSOT)
     for item in result:
         if item.get("category_id"):
             cat = await categories.find_one({"id": item["category_id"]}, {"_id": 0, "name": 1})
@@ -143,45 +143,56 @@ async def list_items(
             brand = await brands.find_one({"id": item["brand_id"]}, {"_id": 0, "name": 1})
             item["brand_name"] = brand["name"] if brand else ""
         
-        # OLD: Get branch name from item.branch_id (WRONG - this is item's default branch)
-        # Now we focus on STOCK lookup
+        # Get branch name from item.branch_id (default branch)
         if item.get("branch_id"):
             branch = await db["branches"].find_one({"id": item["branch_id"]}, {"_id": 0, "name": 1})
             item["branch_name"] = branch["name"] if branch else ""
         
-        # ============ STOCK LOOKUP dari product_stocks ============
-        # ARSITEKTUR FINAL: product_stocks adalah SOURCE OF TRUTH untuk stok
+        # ============ STOCK LOOKUP dari stock_movements (SSOT) ============
+        # ARSITEKTUR FINAL: stock_movements adalah SOURCE OF TRUTH
+        # Ini memastikan Daftar Item dan Kartu Stok menampilkan angka yang SAMA
         product_id = item.get("id")
+        
+        # Query stock_movements dengan KEDUA field untuk backward compatibility
+        stock_query = {
+            "$or": [
+                {"product_id": product_id},
+                {"item_id": product_id}
+            ]
+        }
         
         if branch_id:
             # Cabang tertentu: ambil stok hanya di cabang tersebut
-            stock_rec = await db["product_stocks"].find_one(
-                {"product_id": product_id, "branch_id": branch_id},
-                {"_id": 0}
-            )
-            item["stock"] = stock_rec.get("quantity", 0) if stock_rec else 0
-            item["available"] = stock_rec.get("available", item["stock"]) if stock_rec else 0
+            stock_query["branch_id"] = branch_id
+            
+            pipeline = [
+                {"$match": stock_query},
+                {"$group": {
+                    "_id": None,
+                    "total_qty": {"$sum": "$quantity"}
+                }}
+            ]
+            agg_result = await db["stock_movements"].aggregate(pipeline).to_list(1)
+            item["stock"] = agg_result[0].get("total_qty", 0) if agg_result else 0
+            item["available"] = item["stock"]
             item["stock_branch_id"] = branch_id
         else:
             # Cabang = Semua: agregat stok dari semua cabang
             pipeline = [
-                {"$match": {"product_id": product_id}},
+                {"$match": {"$or": [{"product_id": product_id}, {"item_id": product_id}]}},
                 {"$group": {
-                    "_id": "$product_id",
-                    "total_stock": {"$sum": "$quantity"},
-                    "total_available": {"$sum": {"$ifNull": ["$available", "$quantity"]}},
-                    "branches_count": {"$sum": 1}
+                    "_id": "$branch_id",
+                    "branch_stock": {"$sum": "$quantity"}
                 }}
             ]
-            agg_result = await db["product_stocks"].aggregate(pipeline).to_list(1)
-            if agg_result:
-                item["stock"] = agg_result[0].get("total_stock", 0)
-                item["available"] = agg_result[0].get("total_available", 0)
-                item["branches_count"] = agg_result[0].get("branches_count", 0)
-            else:
-                item["stock"] = 0
-                item["available"] = 0
-                item["branches_count"] = 0
+            agg_result = await db["stock_movements"].aggregate(pipeline).to_list(500)
+            
+            total_stock = sum(r.get("branch_stock", 0) for r in agg_result)
+            branches_with_stock = len([r for r in agg_result if r.get("branch_stock", 0) != 0])
+            
+            item["stock"] = total_stock
+            item["available"] = total_stock
+            item["branches_count"] = branches_with_stock
     
     # Post-filter by has_stock AFTER stock lookup
     if has_stock == "true":
