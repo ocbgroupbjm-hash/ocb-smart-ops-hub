@@ -144,13 +144,21 @@ const POSScreen = () => {
             : item
         );
       }
+      // Get price from selling_price (backend field name)
+      const itemPrice = product.selling_price || product.sell_price || 0;
+      
+      // Warning if no valid price
+      if (itemPrice <= 0) {
+        toast.warning(`Peringatan: ${product.name} tidak memiliki harga jual!`, { duration: 3000 });
+      }
+      
       return [...prev, {
         product_id: product.id,
         product_code: product.code || '-',
         product_name: product.name,
-        price: product.sell_price || 0,
+        price: itemPrice,
         qty: 1,
-        subtotal: product.sell_price || 0
+        subtotal: itemPrice
       }];
     });
     
@@ -484,7 +492,7 @@ const POSScreen = () => {
                       <span>Stok: {product.stock || 0}</span>
                     </div>
                   </div>
-                  <div className="text-green-400 font-bold text-lg">{formatRupiah(product.sell_price)}</div>
+                  <div className="text-green-400 font-bold text-lg">{formatRupiah(product.selling_price || product.sell_price)}</div>
                 </button>
               ))}
               <div className="px-4 py-2 bg-gray-900 text-xs text-gray-500 flex items-center gap-2">
