@@ -616,28 +616,34 @@ async def stock_out(data: StockInOut, request: Request, user: dict = Depends(req
 
 @router.post("/transfer")
 async def create_transfer(data: CreateTransfer, request: Request, user: dict = Depends(require_permission("stock_transfer", "create"))):
-    """Create a stock transfer request - Requires stock_transfer.create permission"""
+    """Create a stock transfer request - Requires stock_transfer.create permission
+    
+    P0: NO NEGATIVE STOCK VALIDATION
+    - Stok tidak boleh minus
+    - Error message jelas: "Stok tidak mencukupi. Saldo tersedia: X, diminta: Y"
+    """
+    from utils.stock_validation import validate_stock_for_items, StockValidationError, log_stock_validation_event
+    
     from_branch = await branches.find_one({"id": data.from_branch_id}, {"_id": 0})
     to_branch = await branches.find_one({"id": data.to_branch_id}, {"_id": 0})
     
     if not from_branch or not to_branch:
         raise HTTPException(status_code=400, detail="Invalid branch")
     
-    # Validate stock availability - USE stock_movements (SSOT)
+    # Build items list for validation
     transfer_items = []
+    items_to_validate = []
+    
     for item in data.items:
         product = await products.find_one({"id": item.product_id}, {"_id": 0})
         if not product:
             raise HTTPException(status_code=400, detail=f"Product not found: {item.product_id}")
         
-        # Calculate available stock from stock_movements (SSOT)
-        available = await calculate_stock_from_movements(item.product_id, data.from_branch_id)
-        
-        if available < item.quantity:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Insufficient stock for {product['name']}. Available: {available}"
-            )
+        items_to_validate.append({
+            "product_id": item.product_id,
+            "product_name": product.get("name", ""),
+            "quantity": item.quantity
+        })
         
         transfer_items.append({
             "product_id": item.product_id,
@@ -645,6 +651,39 @@ async def create_transfer(data: CreateTransfer, request: Request, user: dict = D
             "product_name": product.get("name", ""),
             "quantity": item.quantity
         })
+    
+    # P0 VALIDATION: NO NEGATIVE STOCK
+    try:
+        await validate_stock_for_items(
+            db=get_db(),
+            branch_id=data.from_branch_id,
+            items=items_to_validate,
+            transaction_type="transfer_out"
+        )
+    except StockValidationError as e:
+        # Log blocked action
+        await log_stock_validation_event(
+            get_db(),
+            user.get("user_id", ""),
+            user.get("name", ""),
+            "TRANSFER_BLOCKED",
+            success=False,
+            details={
+                "from_branch_id": data.from_branch_id,
+                "error_code": e.error_code,
+                "error_message": e.message,
+                "error_details": e.details
+            },
+            ip_address=request.client.host if request.client else ""
+        )
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "error": e.message,
+                "error_code": e.error_code,
+                "details": e.details
+            }
+        )
     
     transfer_number = await get_next_sequence("transfer", "TRF")
     
@@ -1279,3 +1318,92 @@ async def create_opname_v2(data: CreateOpnameV2, request: Request, user: dict = 
         "adjustment_expense": total_adjustment_expense,
         "adjustment_gain": total_adjustment_gain
     }
+
+
+
+# ==================== P0: STOCK VALIDATION TEST ENDPOINTS ====================
+
+@router.post("/validate-stock")
+async def validate_stock_availability(
+    product_id: str,
+    branch_id: str,
+    quantity: float,
+    user: dict = Depends(require_permission("inventory", "view"))
+):
+    """
+    Test endpoint untuk validasi stok.
+    
+    P0: NO NEGATIVE STOCK VALIDATION
+    - Cek apakah stok tersedia
+    - Return error jelas jika tidak mencukupi
+    """
+    from utils.stock_validation import validate_stock_available, StockValidationError
+    
+    try:
+        result = await validate_stock_available(
+            db=get_db(),
+            product_id=product_id,
+            branch_id=branch_id,
+            required_qty=quantity,
+            transaction_type="validation_test"
+        )
+        return {
+            "valid": True,
+            "message": "Stock available",
+            **result
+        }
+    except StockValidationError as e:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "error": e.message,
+                "error_code": e.error_code,
+                "details": e.details
+            }
+        )
+
+
+@router.get("/check-reversal-chain/{reference_id}")
+async def check_reversal_chain(
+    reference_id: str,
+    product_id: str = None,
+    branch_id: str = None,
+    user: dict = Depends(require_permission("inventory", "view"))
+):
+    """
+    Test endpoint untuk cek stock chain dependency.
+    
+    P0: STOCK CHAIN DELETE PROTECTION
+    - Cek apakah ada transaksi setelah reference_id
+    - Return blocking transactions jika ada
+    """
+    from utils.stock_validation import check_stock_chain_dependency, check_reversal_chain_for_transaction, StockValidationError
+    
+    db = get_db()
+    
+    try:
+        if product_id and branch_id:
+            # Check specific product/branch
+            result = await check_stock_chain_dependency(
+                db, reference_id, product_id, branch_id
+            )
+        else:
+            # Check all products/branches for this transaction
+            # Get reference_types from the movements
+            sample = await db["stock_movements"].find_one({"reference_id": reference_id})
+            ref_types = [sample.get("reference_type")] if sample else ["purchase_order", "quick_purchase", "transfer_out", "sales"]
+            
+            result = await check_reversal_chain_for_transaction(db, reference_id, ref_types)
+        
+        return {
+            "can_reverse": True,
+            "message": "No blocking transactions found",
+            **result
+        }
+    except StockValidationError as e:
+        return {
+            "can_reverse": False,
+            "error": e.message,
+            "error_code": e.error_code,
+            "details": e.details
+        }

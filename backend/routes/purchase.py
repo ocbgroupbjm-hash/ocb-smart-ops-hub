@@ -921,6 +921,18 @@ async def cancel_purchase_order(po_id: str, request: Request, user: dict = Depen
 # ATURAN: Tidak boleh hard delete jika sudah ada efek stok
 # Semua koreksi HARUS lewat reversal
 # Semua reversal HARUS masuk stock_movements
+# P0: NO NEGATIVE STOCK + STOCK CHAIN DELETE PROTECTION
+
+from utils.stock_validation import (
+    StockValidationError,
+    validate_stock_available,
+    validate_stock_for_items,
+    check_stock_chain_dependency,
+    check_reversal_chain_for_transaction,
+    validate_reversal_wont_cause_negative,
+    validate_can_reverse_transaction,
+    log_stock_validation_event
+)
 
 async def execute_stock_reversal(
     db,
@@ -929,24 +941,59 @@ async def execute_stock_reversal(
     reversal_type: str,
     reversal_note: str,
     user_id: str,
-    user_name: str
+    user_name: str,
+    skip_validation: bool = False  # For emergency use only
 ) -> dict:
     """
     REVERSAL ENGINE - Core function untuk membalikkan stock movements
     
+    P0 VALIDATIONS:
+    1. Check stock chain dependency (no subsequent transactions)
+    2. Check reversal won't cause negative stock
+    
     Args:
         db: Database instance
         reference_id: ID transaksi yang akan di-reverse
-        reference_types: List of reference_type yang akan di-reverse (e.g., ["purchase_order", "quick_purchase"])
-        reversal_type: Type untuk reversal entry (e.g., "purchase_reversal")
+        reference_types: List of reference_type yang akan di-reverse
+        reversal_type: Type untuk reversal entry
         reversal_note: Catatan untuk reversal
         user_id: User yang melakukan reversal
         user_name: Nama user
+        skip_validation: Skip validation (DANGEROUS - for emergency only)
     
     Returns:
         dict dengan info reversal yang dilakukan
+    
+    Raises:
+        HTTPException jika validasi gagal
     """
     now = datetime.now(timezone.utc).isoformat()
+    
+    # ============ P0 VALIDATION: STOCK CHAIN + NO NEGATIVE ============
+    if not skip_validation:
+        try:
+            await validate_can_reverse_transaction(db, reference_id, reference_types)
+        except StockValidationError as e:
+            # Log blocked action
+            await log_stock_validation_event(
+                db, user_id, user_name,
+                "REVERSAL_BLOCKED",
+                success=False,
+                details={
+                    "reference_id": reference_id,
+                    "error_code": e.error_code,
+                    "error_message": e.message,
+                    "error_details": e.details
+                }
+            )
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "error": e.message,
+                    "error_code": e.error_code,
+                    "details": e.details
+                }
+            )
     
     # Find all movements to reverse
     movements = await db["stock_movements"].find({
