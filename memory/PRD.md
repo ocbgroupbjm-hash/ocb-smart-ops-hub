@@ -7,6 +7,59 @@ Membangun sistem ERP retail komprehensif (OCB TITAN) dengan fitur POS, Inventory
 
 ---
 
+## 🟢 P0: IPOS UX ALIGNMENT - QUICK STOCK VIEW (2026-03-20) ✅ DONE
+
+### Summary
+Implemented a new Quick Stock View that shows inventory in a simplified split-screen layout. Product list on left, detail and movements on right. No modals, keyboard-driven navigation.
+
+### Features Implemented
+| Feature | Status |
+|---------|--------|
+| Split-screen layout | ✅ DONE |
+| Product list with stock & status | ✅ DONE |
+| Stats bar (Total/Aman/Kritis/Habis) | ✅ DONE |
+| Real-time search filter | ✅ DONE |
+| Click to see detail on right | ✅ DONE |
+| Movement history table | ✅ DONE |
+| Keyboard navigation (Arrow/Enter/Esc) | ✅ DONE |
+| Auto-select on keyboard nav | ✅ DONE |
+
+### Keyboard Shortcuts
+| Key | Action |
+|-----|--------|
+| Arrow Up/Down | Navigasi list produk |
+| Enter | Pilih produk highlighted |
+| Esc | Reset search & selection |
+
+### Files Created/Modified
+- `/app/frontend/src/pages/inventory/QuickStock.jsx` - Main Quick Stock component
+- `/app/frontend/src/App.js` - Added /inventory/quick route
+- `/app/frontend/src/components/layout/Sidebar.jsx` - Added Quick Stock menu item
+
+### Route
+- `/inventory/quick` - Full-screen Quick Stock interface
+
+### Test Results
+- **Frontend**: 100% PASS (11/11 features)
+- **Test Report**: `/app/test_reports/iteration_93.json`
+
+---
+
+## 🟢 P0: POS HARGA Rp 0 BUG FIX (2026-03-20) ✅ DONE
+
+### Root Cause
+Backend mengirim field `selling_price`, tapi POSScreen.jsx mencari `sell_price` → fallback ke 0
+
+### Fix Applied
+- `/app/frontend/src/pages/sales/POSScreen.jsx` Line 148: `const itemPrice = product.selling_price || product.sell_price || 0`
+- Added warning toast untuk produk tanpa harga valid
+
+### Test Results
+- **Backend**: 100% (8/8) | **Frontend**: 100% (5/5)
+- **Test Report**: `/app/test_reports/iteration_92.json`
+
+---
+
 ## 🟢 P0: IPOS UX ALIGNMENT - QUICK PURCHASE (2026-03-20) ✅ DONE
 
 ### Summary
