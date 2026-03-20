@@ -451,8 +451,9 @@ async def create_purchase_order(data: CreatePO, request: Request, user: dict = D
     if not data.supplier_id:
         raise HTTPException(status_code=400, detail="Supplier wajib dipilih")
     
-    # TENANT GUARD: Query supplier with tenant_id
-    supplier = await suppliers.find_one({"id": data.supplier_id, "tenant_id": tenant_id}, {"_id": 0})
+    # TENANT GUARD: Query supplier (database context already tenant-scoped via JWT)
+    # Note: Per-database multi-tenant - no tenant_id field needed in query
+    supplier = await suppliers.find_one({"id": data.supplier_id}, {"_id": 0})
     if not supplier:
         raise HTTPException(status_code=400, detail="Supplier tidak ditemukan di tenant ini")
     
@@ -492,8 +493,9 @@ async def create_purchase_order(data: CreatePO, request: Request, user: dict = D
     subtotal = 0
     
     for item in data.items:
-        # TENANT GUARD: Query product with tenant_id
-        product = await products.find_one({"id": item.product_id, "tenant_id": tenant_id}, {"_id": 0})
+        # TENANT GUARD: Query product (database context already tenant-scoped via JWT)
+        # Note: Per-database multi-tenant - no tenant_id field needed in query
+        product = await products.find_one({"id": item.product_id}, {"_id": 0})
         if not product:
             raise HTTPException(status_code=400, detail=f"Product tidak ditemukan di tenant ini: {item.product_id}")
         
@@ -2013,7 +2015,7 @@ async def quick_purchase(
     if not data.supplier_id:
         raise HTTPException(status_code=400, detail="Supplier wajib dipilih")
     
-    supplier = await suppliers.find_one({"id": data.supplier_id, "tenant_id": tenant_id}, {"_id": 0})
+    supplier = await suppliers.find_one({"id": data.supplier_id}, {"_id": 0})
     if not supplier:
         raise HTTPException(status_code=400, detail="Supplier tidak ditemukan di tenant ini")
     
@@ -2044,7 +2046,7 @@ async def quick_purchase(
     subtotal = 0
     
     for item in data.items:
-        product = await products.find_one({"id": item.product_id, "tenant_id": tenant_id}, {"_id": 0})
+        product = await products.find_one({"id": item.product_id}, {"_id": 0})
         if not product:
             raise HTTPException(status_code=400, detail=f"Product tidak ditemukan: {item.product_id}")
         

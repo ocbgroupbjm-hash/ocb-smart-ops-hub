@@ -3,7 +3,59 @@
 ## Original Problem Statement
 Membangun sistem ERP retail komprehensif (OCB TITAN) dengan fitur POS, Inventory, Keuangan, Akuntansi, dan HR Enterprise System. Sistem harus mengikuti standar ERP enterprise seperti SAP/Oracle dengan blueprint SUPER DUPER DEWA.
 
-**STATUS: 🔒 BLUEPRINT LOCKED & TENANT BINDING FIXED** - v1.0.0-PILOT-20260320
+**STATUS: 🔒 BLUEPRINT LOCKED & TENANT BINDING FIXED** - v1.0.1-MULTITENANT-20260320
+
+---
+
+## ✅ P0: MULTI-TENANT SYNC VALIDATION - UNIT 4 (2026-03-20) ✅ DONE
+
+### Issue Reported
+- Unit 4 (ocb_unit_4) tidak bisa melakukan Quick Purchase
+- Error: "Supplier tidak ditemukan di tenant ini"
+- Tenant secondary tidak sinkron dengan main tenant (ocb_titan)
+
+### Root Cause
+Query di `purchase.py` menggunakan filter `tenant_id` dalam MongoDB query:
+```python
+# BUG: Data di secondary tenant tidak punya field tenant_id
+supplier = await suppliers.find_one({"id": data.supplier_id, "tenant_id": tenant_id})
+product = await products.find_one({"id": item.product_id, "tenant_id": tenant_id})
+```
+
+Arsitektur multi-tenant OCB Titan menggunakan **per-database isolation** (setiap tenant punya database sendiri). Field `tenant_id` tidak diperlukan karena context database sudah benar dari JWT token.
+
+### Fix Applied
+```python
+# FIXED: Remove tenant_id filter - database context already tenant-scoped
+supplier = await suppliers.find_one({"id": data.supplier_id})
+product = await products.find_one({"id": item.product_id})
+```
+
+### Files Modified
+| File | Lines Fixed |
+|------|-------------|
+| `/app/backend/routes/purchase.py` | 455, 496, 2018, 2049 |
+
+### Validation Results - ocb_unit_4
+
+| No | Test | Result | Status |
+|---|---|---|---|
+| 1 | Quick Purchase | SUCCESS - PO #QPO000001 created | ✅ |
+| 2 | Stock Movement | CREATED - 2 movements recorded | ✅ |
+| 3 | Daftar Item | Stok 150 → 175 (+25) | ✅ |
+| 4 | Kartu Stok | MUNCUL - Detail transaksi lengkap | ✅ |
+
+### Evidence
+- API Response: `{"success": true, "po_number": "QPO000001"}`
+- Stock Before: 150
+- Stock After: 175
+- Screenshot: Unit 4 Dashboard, Stok Barang, Kartu Stok
+
+### Test Report
+- `/app/test_reports/P0_TENANT_SYNC_VALIDATION_UNIT4.md`
+
+### Kesimpulan
+**✅ SUDAH SYNC** - Unit 4 dapat melakukan Quick Purchase dengan benar.
 
 ---
 
