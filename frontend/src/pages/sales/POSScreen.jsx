@@ -260,9 +260,17 @@ const POSScreen = () => {
     
     setSaving(true);
     try {
+      // Validate warehouse_id
+      const warehouseId = selectedWarehouse?.id;
+      if (!warehouseId) {
+        toast.error('Pilih gudang terlebih dahulu!');
+        setSaving(false);
+        return;
+      }
+      
       const payload = {
-        customer_id: selectedCustomer?.id || '',
-        warehouse_id: selectedWarehouse?.id || '',
+        customer_id: selectedCustomer.id,
+        warehouse_id: warehouseId,
         ppn_type: 'exclude',
         ppn_percent: 0,
         notes: `POS - ${paymentType === 'cash' ? 'Tunai' : 'Transfer'}`,
@@ -279,9 +287,10 @@ const POSScreen = () => {
         other_cost: 0,
         total: totals.total,
         payment_type: paymentType === 'cash' ? 'cash' : 'credit',
-        // Send actual total as cash_amount (kembalian only for display)
         cash_amount: paymentType === 'cash' ? totals.total : 0,
         credit_amount: paymentType === 'cash' ? 0 : totals.total,
+        dp_used: 0,
+        deposit_used: 0,
       };
       
       const res = await api('/api/sales/invoices', {
@@ -289,7 +298,15 @@ const POSScreen = () => {
         body: JSON.stringify(payload)
       });
       
-      const data = await res.json();
+      // Safe JSON parsing
+      let data;
+      const responseText = await res.text();
+      try {
+        data = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error('JSON parse error:', parseError, 'Response:', responseText);
+        data = { detail: responseText || 'Response tidak valid dari server' };
+      }
       
       if (res.ok) {
         const change = paymentType === 'cash' ? paymentAmount - totals.total : 0;
@@ -317,11 +334,21 @@ const POSScreen = () => {
           }
         }, 100);
       } else {
-        toast.error(data.detail || 'Gagal menyimpan');
+        // Show actual error from backend
+        const errorMsg = data.detail?.message || data.detail || data.error || 'Gagal menyimpan';
+        toast.error(errorMsg);
+        console.error('Payment error:', data);
       }
     } catch (err) {
-      console.error(err);
-      toast.error('Terjadi kesalahan');
+      console.error('Payment exception:', err);
+      // More detailed error message
+      if (err.name === 'TypeError' && err.message.includes('fetch')) {
+        toast.error('Koneksi ke server gagal. Periksa jaringan.');
+      } else if (err.message) {
+        toast.error(`Error: ${err.message}`);
+      } else {
+        toast.error('Terjadi kesalahan sistem');
+      }
     } finally {
       setSaving(false);
     }
