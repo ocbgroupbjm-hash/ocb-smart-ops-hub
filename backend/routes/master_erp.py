@@ -63,7 +63,7 @@ async def list_items(
     search: str = "",
     category_id: str = "",
     brand_id: str = "",
-    branch_id: str = "",  # CABANG sebagai lokasi utama
+    branch_id: str = "",  # CABANG untuk filter STOK, bukan filter items
     item_type: str = "",
     rack: str = "",
     is_active: str = "",
@@ -73,6 +73,16 @@ async def list_items(
     sort_order: str = "asc",
     user: dict = Depends(get_current_user)
 ):
+    """
+    List items with stock from product_stocks.
+    
+    ARSITEKTUR FINAL OCB TITAN:
+    - Master items SELALU dari collection 'items' (products)
+    - STOK dari collection 'product_stocks'
+    - branch_id filter HANYA mempengaruhi nilai STOK, TIDAK menghilangkan items
+    - Cabang = Semua → agregat stok semua cabang
+    - Cabang tertentu → stok hanya cabang itu (0 jika tidak ada)
+    """
     query = {}
     
     # Search filter
@@ -91,9 +101,8 @@ async def list_items(
     if brand_id:
         query["brand_id"] = brand_id
     
-    # Branch filter (CABANG sebagai lokasi utama)
-    if branch_id:
-        query["branch_id"] = branch_id
+    # NOTE: branch_id NO LONGER filters items!
+    # branch_id sekarang hanya digunakan untuk lookup stok per cabang
     
     # Item type filter
     if item_type and item_type != "semua":
@@ -109,12 +118,6 @@ async def list_items(
     elif is_active == "false":
         query["is_active"] = False
     
-    # Stock filter
-    if has_stock == "true":
-        query["stock"] = {"$gt": 0}
-    elif has_stock == "false":
-        query["$or"] = query.get("$or", []) + [{"stock": {"$lte": 0}}, {"stock": {"$exists": False}}]
-    
     # Discontinued filter
     if discontinued == "true":
         query["discontinued"] = True
@@ -128,7 +131,7 @@ async def list_items(
     result = await cursor.to_list(limit)
     total = await items.count_documents(query)
     
-    # Add category/unit/brand/branch names
+    # Enrich with category/unit/brand names AND stock from product_stocks
     for item in result:
         if item.get("category_id"):
             cat = await categories.find_one({"id": item["category_id"]}, {"_id": 0, "name": 1})
@@ -139,9 +142,54 @@ async def list_items(
         if item.get("brand_id"):
             brand = await brands.find_one({"id": item["brand_id"]}, {"_id": 0, "name": 1})
             item["brand_name"] = brand["name"] if brand else ""
+        
+        # OLD: Get branch name from item.branch_id (WRONG - this is item's default branch)
+        # Now we focus on STOCK lookup
         if item.get("branch_id"):
             branch = await db["branches"].find_one({"id": item["branch_id"]}, {"_id": 0, "name": 1})
             item["branch_name"] = branch["name"] if branch else ""
+        
+        # ============ STOCK LOOKUP dari product_stocks ============
+        # ARSITEKTUR FINAL: product_stocks adalah SOURCE OF TRUTH untuk stok
+        product_id = item.get("id")
+        
+        if branch_id:
+            # Cabang tertentu: ambil stok hanya di cabang tersebut
+            stock_rec = await db["product_stocks"].find_one(
+                {"product_id": product_id, "branch_id": branch_id},
+                {"_id": 0}
+            )
+            item["stock"] = stock_rec.get("quantity", 0) if stock_rec else 0
+            item["available"] = stock_rec.get("available", item["stock"]) if stock_rec else 0
+            item["stock_branch_id"] = branch_id
+        else:
+            # Cabang = Semua: agregat stok dari semua cabang
+            pipeline = [
+                {"$match": {"product_id": product_id}},
+                {"$group": {
+                    "_id": "$product_id",
+                    "total_stock": {"$sum": "$quantity"},
+                    "total_available": {"$sum": {"$ifNull": ["$available", "$quantity"]}},
+                    "branches_count": {"$sum": 1}
+                }}
+            ]
+            agg_result = await db["product_stocks"].aggregate(pipeline).to_list(1)
+            if agg_result:
+                item["stock"] = agg_result[0].get("total_stock", 0)
+                item["available"] = agg_result[0].get("total_available", 0)
+                item["branches_count"] = agg_result[0].get("branches_count", 0)
+            else:
+                item["stock"] = 0
+                item["available"] = 0
+                item["branches_count"] = 0
+    
+    # Post-filter by has_stock AFTER stock lookup
+    if has_stock == "true":
+        result = [item for item in result if item.get("stock", 0) > 0]
+        total = len(result)
+    elif has_stock == "false":
+        result = [item for item in result if item.get("stock", 0) <= 0]
+        total = len(result)
     
     return {"items": result, "total": total, "page": page, "limit": limit}
 
