@@ -234,79 +234,89 @@ async def get_branch_stock(
     limit: int = 100,
     user: dict = Depends(require_permission("stock_card", "view"))
 ):
-    """Get stock for a branch"""
-    branch = branch_id or user.get("branch_id")
+    """
+    Get stock for a branch - SSOT: stock_movements
     
-    # Get all products with stock
-    pipeline = [
-        {"$match": {"branch_id": branch}},
-        {
-            "$lookup": {
-                "from": "products",
-                "localField": "product_id",
-                "foreignField": "id",
-                "as": "product"
-            }
-        },
-        {"$unwind": "$product"},
-        {"$match": {"product.is_active": True}}
-    ]
+    ARSITEKTUR FINAL:
+    - Source stok = stock_movements (sama dengan Daftar Item dan Kartu Stok)
+    - Query dengan $or untuk backward compatibility (product_id atau item_id)
+    - Agregasi per product
+    - branch_id filter HANYA jika explicitly provided (tidak pakai default user branch)
+    """
+    db = get_db()
     
+    # PENTING: branch_id hanya dipakai jika explicitly provided
+    # Jangan pakai default user branch - agar konsisten dengan Daftar Item
+    branch = branch_id if branch_id else ""
+    
+    # Step 1: Get all active products first
+    product_query = {"is_active": True}
     if search:
-        pipeline.append({
-            "$match": {
-                "$or": [
-                    {"product.name": {"$regex": search, "$options": "i"}},
-                    {"product.code": {"$regex": search, "$options": "i"}}
-                ]
-            }
-        })
+        product_query["$or"] = [
+            {"name": {"$regex": search, "$options": "i"}},
+            {"code": {"$regex": search, "$options": "i"}}
+        ]
     
-    if low_stock_only:
-        pipeline.append({
-            "$match": {
-                "$expr": {"$lte": ["$quantity", "$product.min_stock"]}
-            }
-        })
+    products_cursor = db["products"].find(product_query, {"_id": 0}).sort("name", 1).skip(skip).limit(limit)
+    products_list = await products_cursor.to_list(limit)
     
-    pipeline.extend([
-        {"$sort": {"product.name": 1}},
-        {"$skip": skip},
-        {"$limit": limit},
-        {
-            "$project": {
-                "_id": 0,
-                "product_id": 1,
-                "branch_id": 1,
-                "quantity": 1,
-                "available": 1,
-                "reserved": 1,
-                "product_code": "$product.code",
-                "product_name": "$product.name",
-                "min_stock": "$product.min_stock",
-                "cost_price": "$product.cost_price",
-                "selling_price": "$product.selling_price",
-                "is_low_stock": {"$lte": ["$quantity", "$product.min_stock"]}
-            }
+    # Count total products
+    total = await db["products"].count_documents(product_query)
+    
+    # Step 2: Calculate stock from stock_movements (SSOT)
+    items = []
+    for prod in products_list:
+        product_id = prod.get("id")
+        
+        # Query stock_movements dengan $or untuk backward compatibility
+        stock_query = {
+            "$or": [
+                {"product_id": product_id},
+                {"item_id": product_id}
+            ]
         }
-    ])
+        
+        # HANYA filter branch jika explicitly provided
+        if branch:
+            stock_query["branch_id"] = branch
+        
+        # Aggregate stock from movements
+        pipeline = [
+            {"$match": stock_query},
+            {"$group": {
+                "_id": None,
+                "total_qty": {"$sum": "$quantity"}
+            }}
+        ]
+        
+        agg_result = await db["stock_movements"].aggregate(pipeline).to_list(1)
+        quantity = agg_result[0].get("total_qty", 0) if agg_result else 0
+        
+        # Check low stock
+        min_stock = prod.get("min_stock", 0)
+        is_low = quantity <= min_stock if min_stock > 0 else False
+        
+        # Skip if low_stock_only filter and not low
+        if low_stock_only and not is_low:
+            continue
+        
+        items.append({
+            "product_id": product_id,
+            "branch_id": branch if branch else "all",
+            "quantity": quantity,
+            "available": quantity,
+            "reserved": 0,
+            "product_code": prod.get("code", ""),
+            "product_name": prod.get("name", ""),
+            "min_stock": min_stock,
+            "cost_price": prod.get("cost_price", 0),
+            "selling_price": prod.get("selling_price", 0),
+            "is_low_stock": is_low
+        })
     
-    items = await product_stocks.aggregate(pipeline).to_list(limit)
-    
-    # Count total
-    count_pipeline = [
-        {"$match": {"branch_id": branch}},
-        {"$lookup": {"from": "products", "localField": "product_id", "foreignField": "id", "as": "product"}},
-        {"$unwind": "$product"},
-        {"$match": {"product.is_active": True}},
-        {"$count": "total"}
-    ]
-    
+    # If low_stock_only, adjust total
     if low_stock_only:
-        count_pipeline.insert(4, {"$match": {"$expr": {"$lte": ["$quantity", "$product.min_stock"]}}})
-    
-    count_result = await product_stocks.aggregate(count_pipeline).to_list(1)
-    total = count_result[0]["total"] if count_result else 0
+        total = len(items)
     
     return {"items": items, "total": total}
 
