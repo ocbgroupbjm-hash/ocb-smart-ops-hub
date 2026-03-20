@@ -413,6 +413,10 @@ app.include_router(cash_variance_engine_router, prefix="/api")
 from routes.inventory_gl_reconciliation import router as inventory_gl_reconciliation_router
 app.include_router(inventory_gl_reconciliation_router, prefix="/api")
 
+# P0: Inventory to Accounting Reconciliation (Enhanced)
+from routes.inventory_accounting_reconciliation import router as inventory_accounting_reconciliation_router
+app.include_router(inventory_accounting_reconciliation_router, prefix="/api")
+
 # Guard System 4: Idempotency Protection
 from routes.idempotency_middleware import router as idempotency_router
 app.include_router(idempotency_router, prefix="/api")
