@@ -43,8 +43,12 @@ async def get_stock_card(
         end_date = f"{year}-{month + 1:02d}-01T00:00:00"
     
     # Query for movements in the period
+    # Use $or pattern for backward compatibility (product_id or item_id)
     query = {
-        "item_id": item_id,
+        "$or": [
+            {"product_id": item_id},
+            {"item_id": item_id}
+        ],
         "created_at": {"$gte": start_date, "$lt": end_date}
     }
     
@@ -58,8 +62,12 @@ async def get_stock_card(
     ).sort([("created_at", 1), ("reference_id", 1)]).to_list(1000)
     
     # Calculate opening balance (saldo awal) - sum of all movements before this period
+    # Use $or pattern for backward compatibility (product_id or item_id)
     opening_query = {
-        "item_id": item_id,
+        "$or": [
+            {"product_id": item_id},
+            {"item_id": item_id}
+        ],
         "created_at": {"$lt": start_date}
     }
     if branch_id:
@@ -103,10 +111,21 @@ async def get_stock_card(
         "transfer_in": "Transfer Masuk",
         "transfer_out": "Transfer Keluar",
         "opname": "Stok Opname",
+        "opname_in": "Stok Opname (+)",
+        "opname_out": "Stok Opname (-)",
         "retur_sale": "Retur Penjualan",
         "retur_purchase": "Retur Pembelian",
         "assembly": "Rakitan Produk",
-        "receive": "Penerimaan Barang"
+        "receive": "Penerimaan Barang",
+        "purchase_receive": "Terima Barang",
+        "quick_purchase": "Quick Purchase",
+        "pos": "POS",
+        "sales": "Penjualan",
+        "sales_out": "Penjualan Keluar",
+        "adjustment_in": "Penyesuaian +",
+        "adjustment_out": "Penyesuaian -",
+        "initial": "Stok Awal",
+        "reversal": "Reversal"
     }
     
     # Process each movement
@@ -127,13 +146,16 @@ async def get_stock_card(
         else:
             tanggal = "-"
         
+        # Get movement type from multiple possible fields
+        mov_type = mov.get("transaction_type") or mov.get("movement_type") or mov.get("type") or mov.get("reference_type") or ""
+        
         stock_card.append({
-            "no_transaksi": mov.get("reference_id", "-") or f"TRX-{idx:04d}",
+            "no_transaksi": mov.get("reference_id") or mov.get("reference_no") or f"TRX-{idx:04d}",
             "cabang": branch_map.get(mov.get("branch_id", ""), "-"),
             "tanggal": tanggal,
-            "tipe": type_labels.get(mov.get("transaction_type", ""), mov.get("transaction_type", "-")),
+            "tipe": type_labels.get(mov_type, mov_type.replace("_", " ").title() if mov_type else "-"),
             "baris": str(idx),
-            "keterangan": mov.get("notes", "-") or "-",
+            "keterangan": mov.get("notes", "-") or mov.get("description", "-") or "-",
             "masuk": masuk,
             "keluar": keluar,
             "saldo": running_balance,

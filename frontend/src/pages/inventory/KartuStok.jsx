@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { 
   FileText, Search, Calendar, Building2, Loader2, Download, 
-  ArrowUpCircle, ArrowDownCircle, RefreshCw
+  ArrowUpCircle, ArrowDownCircle, RefreshCw, Package, History, Clock
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -14,6 +14,8 @@ const KartuStok = () => {
   const [selectedItem, setSelectedItem] = useState(null);
   const [searchResults, setSearchResults] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
+  // MODE FILTER: 'all' = Semua Periode (Stok Saat Ini), 'period' = Berdasarkan Periode
+  const [filterMode, setFilterMode] = useState('all');
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedBranch, setSelectedBranch] = useState('');
@@ -97,23 +99,72 @@ const KartuStok = () => {
     
     setLoading(true);
     try {
-      const params = new URLSearchParams({
-        item_id: selectedItem.id,
-        month: selectedMonth,
-        year: selectedYear
-      });
-      if (selectedBranch) {
-        params.append('branch_id', selectedBranch);
-      }
-      
-      const res = await api(`/api/inventory/stock-card?${params.toString()}`);
-      if (res.ok) {
-        const data = await res.json();
-        setStockCard(data);
-        toast.success(`Kartu Stok ${data.item.code} berhasil dimuat`);
+      // Gunakan endpoint berbeda berdasarkan mode
+      if (filterMode === 'all') {
+        // MODE: Semua Periode = Stok Saat Ini
+        // Gunakan stock-card-modal endpoint tanpa date filter
+        const params = new URLSearchParams({
+          item_id: selectedItem.id
+        });
+        if (selectedBranch) {
+          params.append('branch_id', selectedBranch);
+        }
+        
+        const res = await api(`/api/inventory/stock-card-modal?${params.toString()}`);
+        if (res.ok) {
+          const data = await res.json();
+          // Transform data to match expected format
+          setStockCard({
+            item: data.item,
+            period: 'SEMUA PERIODE',
+            branch_name: selectedBranch ? branches.find(b => b.id === selectedBranch)?.name || 'Cabang Dipilih' : 'Semua Cabang',
+            opening_balance: 0,
+            closing_balance: data.balance || 0,
+            total_masuk: data.total_in || 0,
+            total_keluar: data.total_out || 0,
+            count: data.count || 0,
+            movements: (data.movements || []).map((m, idx) => ({
+              no_transaksi: m.reference_number || m.ref_id || '-',
+              cabang: m.branch_name || '-',
+              tanggal: m.created_at ? new Date(m.created_at).toLocaleString('id-ID') : '-',
+              tipe: m.transaction_label || m.transaction_type || '-',
+              baris: String(idx + 1),
+              keterangan: m.notes || '-',
+              masuk: m.qty_in || (m.quantity > 0 ? m.quantity : 0),
+              keluar: m.qty_out || (m.quantity < 0 ? Math.abs(m.quantity) : 0),
+              saldo: m.balance || 0,
+              supplier_pelanggan: '-'
+            })),
+            mode: 'all'
+          });
+          toast.success(`Kartu Stok ${data.item?.code || selectedItem.code} - SEMUA PERIODE berhasil dimuat`);
+        } else {
+          const err = await res.json();
+          toast.error(err.detail || 'Gagal memuat kartu stok');
+        }
       } else {
-        const err = await res.json();
-        toast.error(err.detail || 'Gagal memuat kartu stok');
+        // MODE: Berdasarkan Periode = Filter Bulan/Tahun
+        const params = new URLSearchParams({
+          item_id: selectedItem.id,
+          month: selectedMonth,
+          year: selectedYear
+        });
+        if (selectedBranch) {
+          params.append('branch_id', selectedBranch);
+        }
+        
+        const res = await api(`/api/inventory/stock-card?${params.toString()}`);
+        if (res.ok) {
+          const data = await res.json();
+          setStockCard({
+            ...data,
+            mode: 'period'
+          });
+          toast.success(`Kartu Stok ${data.item.code} - Periode ${selectedMonth}/${selectedYear} berhasil dimuat`);
+        } else {
+          const err = await res.json();
+          toast.error(err.detail || 'Gagal memuat kartu stok');
+        }
       }
     } catch (err) {
       toast.error('Terjadi kesalahan');
@@ -177,6 +228,47 @@ const KartuStok = () => {
 
       {/* Filter Area - ERP Style */}
       <div className="bg-[#1a1214] border border-red-900/30 rounded-lg p-4 mb-4">
+        {/* MODE FILTER TOGGLE - PENTING */}
+        <div className="flex items-center gap-4 mb-4 pb-4 border-b border-red-900/30">
+          <span className="text-sm text-gray-400 font-medium">Mode Filter:</span>
+          <div className="flex gap-1">
+            <button
+              onClick={() => { setFilterMode('all'); setStockCard(null); }}
+              className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-l-lg border-2 transition-all ${
+                filterMode === 'all'
+                  ? 'bg-green-600 text-white border-green-600 shadow-lg shadow-green-600/30'
+                  : 'bg-[#0a0608] text-gray-300 border-red-900/30 hover:bg-green-900/20 hover:border-green-600/50'
+              }`}
+              data-testid="btn-mode-all"
+            >
+              <Package className="h-4 w-4" />
+              Semua Periode (Stok Saat Ini)
+            </button>
+            <button
+              onClick={() => { setFilterMode('period'); setStockCard(null); }}
+              className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-r-lg border-2 transition-all ${
+                filterMode === 'period'
+                  ? 'bg-amber-600 text-white border-amber-600 shadow-lg shadow-amber-600/30'
+                  : 'bg-[#0a0608] text-gray-300 border-red-900/30 hover:bg-amber-900/20 hover:border-amber-600/50'
+              }`}
+              data-testid="btn-mode-period"
+            >
+              <History className="h-4 w-4" />
+              Berdasarkan Periode
+            </button>
+          </div>
+          {filterMode === 'all' && (
+            <span className="text-xs text-green-400 bg-green-900/30 px-3 py-1.5 rounded-full border border-green-600/30">
+              DEFAULT - Menampilkan semua transaksi = Stok Saat Ini
+            </span>
+          )}
+          {filterMode === 'period' && (
+            <span className="text-xs text-amber-400 bg-amber-900/30 px-3 py-1.5 rounded-full border border-amber-600/30">
+              Filter berdasarkan bulan & tahun yang dipilih
+            </span>
+          )}
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
           {/* Kode Item */}
           <div className="md:col-span-2 relative">
@@ -220,35 +312,39 @@ const KartuStok = () => {
             )}
           </div>
 
-          {/* Periode - Bulan */}
-          <div>
-            <label className="block text-xs text-gray-400 mb-1">Bulan</label>
-            <select
-              value={selectedMonth}
-              onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-              className="w-full px-3 py-2 bg-[#0a0608] border border-red-900/30 rounded text-gray-200 text-sm"
-              data-testid="select-month"
-            >
-              {months.map(m => (
-                <option key={m.value} value={m.value}>{m.label}</option>
-              ))}
-            </select>
-          </div>
+          {/* Periode - Bulan - HANYA TAMPIL JIKA MODE = PERIOD */}
+          {filterMode === 'period' && (
+            <div>
+              <label className="block text-xs text-gray-400 mb-1">Bulan</label>
+              <select
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+                className="w-full px-3 py-2 bg-[#0a0608] border border-amber-600/50 rounded text-gray-200 text-sm"
+                data-testid="select-month"
+              >
+                {months.map(m => (
+                  <option key={m.value} value={m.value}>{m.label}</option>
+                ))}
+              </select>
+            </div>
+          )}
 
-          {/* Periode - Tahun */}
-          <div>
-            <label className="block text-xs text-gray-400 mb-1">Tahun</label>
-            <select
-              value={selectedYear}
-              onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-              className="w-full px-3 py-2 bg-[#0a0608] border border-red-900/30 rounded text-gray-200 text-sm"
-              data-testid="select-year"
-            >
-              {years.map(y => (
-                <option key={y} value={y}>{y}</option>
-              ))}
-            </select>
-          </div>
+          {/* Periode - Tahun - HANYA TAMPIL JIKA MODE = PERIOD */}
+          {filterMode === 'period' && (
+            <div>
+              <label className="block text-xs text-gray-400 mb-1">Tahun</label>
+              <select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                className="w-full px-3 py-2 bg-[#0a0608] border border-amber-600/50 rounded text-gray-200 text-sm"
+                data-testid="select-year"
+              >
+                {years.map(y => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {/* Cabang */}
           <div>
@@ -272,11 +368,13 @@ const KartuStok = () => {
           <button
             onClick={processStockCard}
             disabled={loading || !selectedItem}
-            className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2 font-semibold"
+            className={`px-6 py-2 text-white rounded hover:opacity-90 disabled:opacity-50 flex items-center gap-2 font-semibold ${
+              filterMode === 'all' ? 'bg-green-600' : 'bg-blue-600'
+            }`}
             data-testid="btn-process"
           >
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-            PROSES
+            {filterMode === 'all' ? 'LIHAT STOK SAAT INI' : 'PROSES PERIODE'}
           </button>
           <button
             onClick={clearItem}
@@ -284,7 +382,7 @@ const KartuStok = () => {
           >
             Reset
           </button>
-          {selectedItem && selectedBranch && (
+          {selectedItem && selectedBranch && filterMode === 'period' && (
             <button
               onClick={createTestData}
               className="px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700 text-sm"
@@ -299,19 +397,36 @@ const KartuStok = () => {
       {stockCard && (
         <div className="bg-[#1a1214] border border-red-900/30 rounded-lg overflow-hidden">
           {/* Card Header */}
-          <div className="px-4 py-3 bg-red-900/20 border-b border-red-900/30">
+          <div className={`px-4 py-3 border-b border-red-900/30 ${
+            stockCard.mode === 'all' ? 'bg-green-900/20' : 'bg-red-900/20'
+          }`}>
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-lg font-bold text-amber-100">
                   Kartu Stok: {stockCard.item?.code} - {stockCard.item?.name}
                 </h2>
-                <p className="text-sm text-gray-400">
-                  Periode: {stockCard.period} | Cabang: {stockCard.branch_name}
+                <p className="text-sm text-gray-400 flex items-center gap-2">
+                  {stockCard.mode === 'all' ? (
+                    <>
+                      <Package className="h-4 w-4 text-green-400" />
+                      <span className="text-green-400 font-semibold">SEMUA PERIODE (STOK SAAT INI)</span>
+                    </>
+                  ) : (
+                    <>
+                      <Clock className="h-4 w-4 text-amber-400" />
+                      <span>Periode: {stockCard.period}</span>
+                    </>
+                  )}
+                  {' | '}Cabang: {stockCard.branch_name}
                 </p>
               </div>
               <div className="text-right">
-                <div className="text-sm text-gray-400">Saldo Akhir</div>
-                <div className="text-2xl font-bold text-amber-400">{formatNumber(stockCard.closing_balance)}</div>
+                <div className={`text-sm ${stockCard.mode === 'all' ? 'text-green-400' : 'text-gray-400'}`}>
+                  {stockCard.mode === 'all' ? 'STOK SAAT INI' : 'Saldo Akhir Periode'}
+                </div>
+                <div className={`text-2xl font-bold ${stockCard.mode === 'all' ? 'text-green-400' : 'text-amber-400'}`} data-testid="closing-balance">
+                  {formatNumber(stockCard.closing_balance)}
+                </div>
               </div>
             </div>
           </div>
@@ -336,9 +451,13 @@ const KartuStok = () => {
                 {formatNumber(stockCard.total_keluar)}
               </div>
             </div>
-            <div className="text-center">
-              <div className="text-xs text-gray-500">Saldo Akhir</div>
-              <div className="text-lg font-semibold text-amber-400">{formatNumber(stockCard.closing_balance)}</div>
+            <div className={`text-center p-2 rounded-lg ${stockCard.mode === 'all' ? 'bg-green-900/30 border border-green-600/30' : ''}`}>
+              <div className={`text-xs ${stockCard.mode === 'all' ? 'text-green-400 font-semibold' : 'text-gray-500'}`}>
+                {stockCard.mode === 'all' ? 'STOK SAAT INI' : 'Saldo Akhir'}
+              </div>
+              <div className={`text-lg font-bold ${stockCard.mode === 'all' ? 'text-green-400' : 'text-amber-400'}`}>
+                {formatNumber(stockCard.closing_balance)}
+              </div>
             </div>
           </div>
 
@@ -433,8 +552,11 @@ const KartuStok = () => {
           </div>
 
           {/* Footer Info */}
-          <div className="px-4 py-2 bg-[#0a0608] border-t border-red-900/30 text-xs text-gray-500">
-            Total {stockCard.count} baris | Digenerate: {new Date().toLocaleString('id-ID')}
+          <div className="px-4 py-2 bg-[#0a0608] border-t border-red-900/30 text-xs text-gray-500 flex items-center justify-between">
+            <span>Total {stockCard.count} baris | Digenerate: {new Date().toLocaleString('id-ID')}</span>
+            <span className={`px-2 py-1 rounded ${stockCard.mode === 'all' ? 'bg-green-900/30 text-green-400' : 'bg-amber-900/30 text-amber-400'}`}>
+              {stockCard.mode === 'all' ? 'Mode: SEMUA PERIODE (Stok Saat Ini)' : `Mode: PERIODE ${stockCard.period}`}
+            </span>
           </div>
         </div>
       )}
@@ -445,8 +567,19 @@ const KartuStok = () => {
           <FileText className="h-12 w-12 text-gray-600 mx-auto mb-3" />
           <h3 className="text-gray-400 mb-2">Belum Ada Data</h3>
           <p className="text-sm text-gray-500">
-            Pilih item dan periode, lalu klik <strong>PROSES</strong> untuk menampilkan kartu stok.
+            {filterMode === 'all' ? (
+              <>Pilih item, lalu klik <strong className="text-green-400">LIHAT STOK SAAT INI</strong> untuk menampilkan kartu stok.</>
+            ) : (
+              <>Pilih item dan periode, lalu klik <strong className="text-blue-400">PROSES PERIODE</strong> untuk menampilkan kartu stok.</>
+            )}
           </p>
+          <div className="mt-4 p-3 bg-blue-900/20 border border-blue-900/30 rounded-lg text-left max-w-md mx-auto">
+            <p className="text-xs text-blue-300 mb-2"><strong>Perbedaan Mode:</strong></p>
+            <ul className="text-xs text-blue-200 space-y-1">
+              <li><span className="text-green-400 font-semibold">Semua Periode</span> = Menampilkan semua transaksi = <strong>STOK SAAT INI</strong></li>
+              <li><span className="text-amber-400 font-semibold">Berdasarkan Periode</span> = Filter bulan/tahun tertentu</li>
+            </ul>
+          </div>
         </div>
       )}
     </div>

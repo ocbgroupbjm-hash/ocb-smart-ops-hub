@@ -1,0 +1,111 @@
+{
+  "summary": "Kartu Stok MODE FILTER feature test COMPLETE - 11/11 backend tests PASSED, UI verified working. Fixed critical bug in /api/inventory/stock-card endpoint that was not finding movements due to missing $or pattern for product_id/item_id.",
+  "test_date": "2026-03-20",
+  "iteration": 107,
+  "backend_issues": {
+    "critical": [],
+    "minor": [],
+    "fixed": [
+      {
+        "endpoint": "/api/inventory/stock-card",
+        "issue": "Berdasarkan Periode mode not finding movements - query used 'item_id' but stock_movements collection has 'product_id'",
+        "fix": "Added $or pattern to query both product_id and item_id for backward compatibility",
+        "priority": "HIGH"
+      },
+      {
+        "endpoint": "/api/inventory/stock-card",
+        "issue": "Transaction type label showing '-' instead of proper label",
+        "fix": "Updated to check multiple type fields: transaction_type, movement_type, type, reference_type",
+        "priority": "MEDIUM"
+      }
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_kartu_stok_mode_filter_iter107.py",
+    "/app/test_reports/pytest/pytest_kartu_stok_mode_filter_iter107.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "✅ KartuStok.jsx: MODE FILTER toggle implemented correctly with 2 options",
+    "✅ 'Semua Periode (Stok Saat Ini)' is DEFAULT mode with green color",
+    "✅ 'Berdasarkan Periode' mode shows amber color and reveals month/year selects",
+    "✅ stock-card-modal endpoint correctly uses $or pattern for backward compatibility",
+    "✅ stock-card endpoint now fixed to use $or pattern",
+    "✅ Both modes show consistent balance=18 for item 001002"
+  ],
+  "updated_files": [
+    "/app/backend/routes/stock_card.py",
+    "/app/backend/tests/test_kartu_stok_mode_filter_iter107.py"
+  ],
+  "success_rate": {
+    "backend": "100% (11/11 pytest tests passed)",
+    "frontend": "100% (UI toggle verified working)"
+  },
+  "test_credentials": {
+    "email": "ocbgroupbjm@gmail.com",
+    "password": "admin123",
+    "tenant_id": "ocb_titan"
+  },
+  "seed_data_creation": "",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Kartu Stok page now has MODE FILTER toggle. 'Semua Periode' mode uses /api/inventory/stock-card-modal and 'Berdasarkan Periode' mode uses /api/inventory/stock-card with month/year params. Both endpoints now correctly use $or pattern for product_id/item_id compatibility.",
+  "test_results": {
+    "test_01_login_success": {"status": "PASS", "detail": "Login successful"},
+    "test_02_items_search_accessible": {"status": "PASS", "detail": "GET /api/inventory/stock-card/items-search returns 200"},
+    "test_03_item_001002_found": {"status": "PASS", "detail": "Item 001002 - VOUCER ORI ISAT 2,5GB/5H found"},
+    "test_04_stock_card_modal_accessible": {"status": "PASS", "detail": "GET /api/inventory/stock-card-modal returns 200"},
+    "test_05_semua_periode_item_001002_balance": {"status": "PASS", "detail": "Item 001002 Semua Periode balance=18"},
+    "test_06_stock_card_period_accessible": {"status": "PASS", "detail": "GET /api/inventory/stock-card returns 200"},
+    "test_07_period_march_2026_item_001002_balance": {"status": "PASS", "detail": "Item 001002 Period 03/2026 closing_balance=18"},
+    "test_08_period_mode_shows_transactions": {"status": "PASS", "detail": "Period mode shows 2 movements including stock opname"},
+    "test_09_both_modes_consistent_balance": {"status": "PASS", "detail": "Both modes consistent: Semua=18, Period=18"},
+    "test_10_empty_period_returns_zero": {"status": "PASS", "detail": "Empty period (Jan 2026) returns 0 balance"},
+    "test_11_daftar_item_stock_matches": {"status": "PASS", "detail": "Daftar Item stock=18 matches Kartu Stok"}
+  },
+  "feature_validation": {
+    "mode_filter_toggle": {
+      "status": "✅ WORKING",
+      "details": [
+        "Toggle between 'Semua Periode (Stok Saat Ini)' and 'Berdasarkan Periode'",
+        "Default mode is 'Semua Periode' with green color",
+        "'Berdasarkan Periode' shows amber color and reveals month/year filters",
+        "Process button text changes based on mode"
+      ]
+    },
+    "item_001002_stock_verification": {
+      "daftar_item": {"stock": 18, "status": "✅ CORRECT"},
+      "kartu_stok_semua_periode": {"balance": 18, "status": "✅ CORRECT"},
+      "kartu_stok_period_march_2026": {"closing_balance": 18, "status": "✅ CORRECT (after fix)"}
+    }
+  },
+  "bug_fix_details": {
+    "file": "/app/backend/routes/stock_card.py",
+    "line_changes": [
+      {
+        "location": "Line 46-52",
+        "before": "query = {'item_id': item_id, 'created_at': {...}}",
+        "after": "query = {'$or': [{'product_id': item_id}, {'item_id': item_id}], 'created_at': {...}}"
+      },
+      {
+        "location": "Line 65-70 (opening_query)",
+        "before": "opening_query = {'item_id': item_id, 'created_at': {...}}",
+        "after": "opening_query = {'$or': [{'product_id': item_id}, {'item_id': item_id}], 'created_at': {...}}"
+      },
+      {
+        "location": "Line 105-118 (type_labels)",
+        "change": "Added more transaction types: opname_in, opname_out, purchase_receive, quick_purchase, etc."
+      },
+      {
+        "location": "Line 142 (mov_type)",
+        "before": "mov.get('transaction_type', '')",
+        "after": "mov.get('transaction_type') or mov.get('movement_type') or mov.get('type') or mov.get('reference_type') or ''"
+      }
+    ]
+  }
+}
