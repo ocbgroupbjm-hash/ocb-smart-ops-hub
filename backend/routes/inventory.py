@@ -322,7 +322,8 @@ async def get_branch_stock(
 
 @router.get("/stock/low")
 async def get_low_stock_alerts(user: dict = Depends(require_permission("stock_card", "view"))):
-    """Get products with low stock across all accessible branches"""
+    """Get products with low stock - SSOT: stock_movements"""
+    db = get_db()
     branch_ids = user.get("branch_ids", [])
     if user.get("branch_id"):
         branch_ids.append(user["branch_id"])
@@ -330,47 +331,54 @@ async def get_low_stock_alerts(user: dict = Depends(require_permission("stock_ca
     if not branch_ids:
         branch_ids = [b["id"] for b in await branches.find({"is_active": True}, {"_id": 0, "id": 1}).to_list(500)]
     
-    pipeline = [
-        {"$match": {"branch_id": {"$in": branch_ids}}},
-        {
-            "$lookup": {
-                "from": "products",
-                "localField": "product_id",
-                "foreignField": "id",
-                "as": "product"
-            }
-        },
-        {"$unwind": "$product"},
-        {"$match": {"product.is_active": True, "product.track_stock": True}},
-        {"$match": {"$expr": {"$lte": ["$quantity", "$product.min_stock"]}}},
-        {
-            "$lookup": {
-                "from": "branches",
-                "localField": "branch_id",
-                "foreignField": "id",
-                "as": "branch"
-            }
-        },
-        {"$unwind": "$branch"},
-        {
-            "$project": {
-                "_id": 0,
-                "product_id": 1,
-                "product_code": "$product.code",
-                "product_name": "$product.name",
-                "branch_id": 1,
-                "branch_name": "$branch.name",
-                "quantity": 1,
-                "min_stock": "$product.min_stock",
-                "shortage": {"$subtract": ["$product.min_stock", "$quantity"]}
-            }
-        },
-        {"$sort": {"shortage": -1}},
-        {"$limit": 100}
-    ]
+    # Get all products with min_stock set and track_stock enabled
+    all_products = await db["products"].find(
+        {"is_active": True, "track_stock": True, "min_stock": {"$gt": 0}},
+        {"_id": 0, "id": 1, "code": 1, "name": 1, "min_stock": 1}
+    ).to_list(1000)
     
-    items = await product_stocks.aggregate(pipeline).to_list(100)
-    return items
+    # Get branch names
+    branch_map = {}
+    for b in await branches.find({"id": {"$in": branch_ids}}, {"_id": 0, "id": 1, "name": 1}).to_list(500):
+        branch_map[b["id"]] = b.get("name", "Unknown")
+    
+    low_stock_items = []
+    
+    for prod in all_products:
+        product_id = prod["id"]
+        min_stock = prod.get("min_stock", 0)
+        
+        for branch_id in branch_ids:
+            # Calculate stock from stock_movements (SSOT)
+            pipeline = [
+                {"$match": {
+                    "$or": [
+                        {"product_id": product_id},
+                        {"item_id": product_id}
+                    ],
+                    "branch_id": branch_id
+                }},
+                {"$group": {"_id": None, "total": {"$sum": "$quantity"}}}
+            ]
+            agg = await db["stock_movements"].aggregate(pipeline).to_list(1)
+            quantity = agg[0].get("total", 0) if agg else 0
+            
+            # Check if low stock
+            if quantity <= min_stock:
+                low_stock_items.append({
+                    "product_id": product_id,
+                    "product_code": prod.get("code", ""),
+                    "product_name": prod.get("name", ""),
+                    "branch_id": branch_id,
+                    "branch_name": branch_map.get(branch_id, "Unknown"),
+                    "quantity": quantity,
+                    "min_stock": min_stock,
+                    "shortage": min_stock - quantity
+                })
+    
+    # Sort by shortage (highest first) and limit
+    low_stock_items.sort(key=lambda x: x["shortage"], reverse=True)
+    return low_stock_items[:100]
 
 # ==================== STOCK MOVEMENTS ====================
 
@@ -615,18 +623,15 @@ async def create_transfer(data: CreateTransfer, request: Request, user: dict = D
     if not from_branch or not to_branch:
         raise HTTPException(status_code=400, detail="Invalid branch")
     
-    # Validate stock availability
+    # Validate stock availability - USE stock_movements (SSOT)
     transfer_items = []
     for item in data.items:
         product = await products.find_one({"id": item.product_id}, {"_id": 0})
         if not product:
             raise HTTPException(status_code=400, detail=f"Product not found: {item.product_id}")
         
-        stock = await product_stocks.find_one(
-            {"product_id": item.product_id, "branch_id": data.from_branch_id},
-            {"_id": 0}
-        )
-        available = stock.get("available", 0) if stock else 0
+        # Calculate available stock from stock_movements (SSOT)
+        available = await calculate_stock_from_movements(item.product_id, data.from_branch_id)
         
         if available < item.quantity:
             raise HTTPException(
