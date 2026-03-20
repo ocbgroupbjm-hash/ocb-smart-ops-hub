@@ -224,7 +224,7 @@ const QuickPurchase = () => {
     };
   }, [cart]);
   
-  // Save PO
+  // Save Quick Purchase - LANGSUNG STOCK IN
   const savePO = async () => {
     if (cart.length === 0) {
       toast.error('Cart kosong!');
@@ -240,8 +240,9 @@ const QuickPurchase = () => {
     try {
       const payload = {
         supplier_id: selectedSupplier.id,
-        warehouse_id: selectedWarehouse?.id || '',
+        branch_id: selectedWarehouse?.id || '',  // CABANG = GUDANG
         notes: notes,
+        is_cash: true,  // Default tunai
         items: cart.map(item => ({
           product_id: item.product_id,
           product_name: item.product_name,
@@ -250,11 +251,11 @@ const QuickPurchase = () => {
           discount_percent: item.discount_percent,
           purchase_unit: item.unit,
           conversion_ratio: 1
-        })),
-        total_amount: totals.total
+        }))
       };
       
-      const res = await api('/api/purchase/orders', {
+      // ENDPOINT BARU: /api/purchase/quick - LANGSUNG STOCK IN
+      const res = await api('/api/purchase/quick', {
         method: 'POST',
         body: JSON.stringify(payload)
       });
@@ -264,14 +265,15 @@ const QuickPurchase = () => {
       if (res.ok) {
         toast.success(
           <div>
-            <div className="font-bold">PO Berhasil Dibuat!</div>
+            <div className="font-bold text-green-400">✓ Pembelian Berhasil!</div>
             <div className="text-sm">{data.po_number}</div>
-            <div className="text-xs text-gray-400">Total: {formatRupiah(totals.total)}</div>
+            <div className="text-xs text-green-300">Stok langsung bertambah</div>
+            <div className="text-xs text-gray-400">Total: {formatRupiah(data.total)}</div>
           </div>,
-          { duration: 3000 }
+          { duration: 4000 }
         );
         
-        // Reset for next PO
+        // Reset for next purchase
         setCart([]);
         setNotes('');
         setSelectedCartIndex(-1);
@@ -283,7 +285,7 @@ const QuickPurchase = () => {
           }
         }, 100);
       } else {
-        toast.error(data.detail || 'Gagal menyimpan PO');
+        toast.error(data.detail || 'Gagal menyimpan pembelian');
       }
     } catch (err) {
       console.error(err);
@@ -369,10 +371,14 @@ const QuickPurchase = () => {
       <div className="flex-1 flex flex-col p-4">
         {/* Header with shortcuts info */}
         <div className="flex items-center justify-between mb-3">
-          <h1 className="text-xl font-bold text-amber-100 flex items-center gap-2">
-            <Truck className="h-6 w-6 text-amber-400" />
-            Quick Purchase
-          </h1>
+          <div>
+            <h1 className="text-xl font-bold text-amber-100 flex items-center gap-2">
+              <Truck className="h-6 w-6 text-green-400" />
+              Quick Purchase
+              <span className="text-xs bg-green-600 text-white px-2 py-0.5 rounded-full">STOK LANGSUNG</span>
+            </h1>
+            <p className="text-xs text-gray-400 mt-1">Pembelian langsung masuk stok tanpa proses Terima Barang</p>
+          </div>
           <div className="flex items-center gap-4 text-xs text-gray-400">
             <span className="flex items-center gap-1">
               <Keyboard className="h-3 w-3" />
@@ -611,9 +617,9 @@ const QuickPurchase = () => {
           )}
         </div>
         
-        {/* Warehouse Selection */}
+        {/* Branch/Warehouse Selection (CABANG = GUDANG) */}
         <div className="p-4 border-b border-red-900/30">
-          <label className="block text-sm text-gray-400 mb-2">Gudang Tujuan</label>
+          <label className="block text-sm text-gray-400 mb-2">Cabang/Gudang Tujuan</label>
           <select
             value={selectedWarehouse?.id || ''}
             onChange={(e) => {
@@ -627,6 +633,7 @@ const QuickPurchase = () => {
               <option key={w.id} value={w.id}>{w.name}</option>
             ))}
           </select>
+          <p className="text-xs text-gray-500 mt-1">Lokasi penyimpanan stok masuk</p>
         </div>
         
         {/* Notes */}
@@ -670,7 +677,7 @@ const QuickPurchase = () => {
             className={`w-full py-4 rounded-lg font-bold text-lg flex items-center justify-center gap-3 transition-all ${
               cart.length === 0 || !selectedSupplier
                 ? 'bg-gray-800 text-gray-500 cursor-not-allowed' 
-                : 'bg-gradient-to-r from-red-600 to-amber-600 hover:from-red-500 hover:to-amber-500 text-white shadow-lg shadow-red-600/30'
+                : 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white shadow-lg shadow-green-600/30'
             }`}
             data-testid="save-po-btn"
           >
@@ -678,16 +685,16 @@ const QuickPurchase = () => {
               <Loader2 className="h-6 w-6 animate-spin" />
             ) : (
               <>
-                <Save className="h-6 w-6" />
-                SIMPAN PO
-                <kbd className="ml-2 px-2 py-0.5 bg-red-800/50 rounded text-sm">F1</kbd>
+                <Check className="h-6 w-6" />
+                SIMPAN & STOK MASUK
+                <kbd className="ml-2 px-2 py-0.5 bg-green-800/50 rounded text-sm">F1</kbd>
               </>
             )}
           </button>
           
           <div className="text-center text-xs space-y-1">
-            <p className="text-gray-500">PO akan tersimpan dengan status Draft</p>
-            <p className="text-amber-400/70">Stok bertambah setelah Terima Barang</p>
+            <p className="text-green-400 font-medium">✓ Stok langsung bertambah setelah simpan</p>
+            <p className="text-gray-500">Untuk PO formal, gunakan menu "Buat PO Pembelian"</p>
           </div>
         </div>
       </div>

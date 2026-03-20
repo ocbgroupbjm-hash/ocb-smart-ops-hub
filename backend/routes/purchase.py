@@ -1538,6 +1538,264 @@ async def reverse_purchase_order(
     }
 
 
+# ==================== QUICK PURCHASE - DIRECT STOCK IN ====================
+# ARSITEKTUR FINAL: Quick Purchase = purchase + stock in LANGSUNG
+# Berbeda dengan Buat PO yang status draft dan menunggu Terima Barang
+
+class QuickPurchaseInput(BaseModel):
+    """Input for Quick Purchase - direct stock in"""
+    supplier_id: str
+    branch_id: Optional[str] = None  # CABANG = GUDANG (unified)
+    items: List[POItemInput]
+    notes: str = ""
+    is_cash: bool = True  # Default tunai untuk quick purchase
+    payment_account_id: Optional[str] = None
+
+
+@router.post("/quick")
+async def quick_purchase(
+    data: QuickPurchaseInput, 
+    request: Request, 
+    user: dict = Depends(require_permission("purchase", "create"))
+):
+    """
+    QUICK PURCHASE - Direct Stock In
+    
+    FLOW FINAL (per Arsitektur OCB TITAN):
+    1. Validasi supplier dan items
+    2. Buat PO dengan status 'posted' (bukan draft)
+    3. LANGSUNG tambah stok ke product_stocks (SOURCE OF TRUTH)
+    4. Catat stock_movements (HISTORI)
+    5. (Opsional) Buat AP jika kredit
+    
+    RESULT:
+    - Stok langsung muncul di daftar item
+    - Tidak perlu proses "Terima Barang" terpisah
+    """
+    tenant_id = user.get("tenant_id")
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant tidak teridentifikasi")
+    
+    # ============ VALIDASI ============
+    if not data.supplier_id:
+        raise HTTPException(status_code=400, detail="Supplier wajib dipilih")
+    
+    supplier = await suppliers.find_one({"id": data.supplier_id, "tenant_id": tenant_id}, {"_id": 0})
+    if not supplier:
+        raise HTTPException(status_code=400, detail="Supplier tidak ditemukan di tenant ini")
+    
+    if not data.items or len(data.items) == 0:
+        raise HTTPException(status_code=400, detail="Minimal harus ada 1 item pembelian")
+    
+    # Branch = Gudang (unified concept)
+    branch_id = data.branch_id or user.get("branch_id")
+    if not branch_id:
+        # Get default branch
+        default_branch = await branches.find_one({"is_default": True}, {"_id": 0})
+        if default_branch:
+            branch_id = default_branch.get("id")
+        else:
+            # Fallback: get first branch
+            first_branch = await branches.find_one({}, {"_id": 0})
+            if first_branch:
+                branch_id = first_branch.get("id")
+            else:
+                raise HTTPException(status_code=400, detail="Tidak ada cabang terdaftar")
+    
+    # Get branch name
+    branch_doc = await branches.find_one({"id": branch_id}, {"_id": 0})
+    branch_name = branch_doc.get("name", "") if branch_doc else ""
+    
+    # ============ BUILD PO ITEMS ============
+    po_items = []
+    subtotal = 0
+    
+    for item in data.items:
+        product = await products.find_one({"id": item.product_id, "tenant_id": tenant_id}, {"_id": 0})
+        if not product:
+            raise HTTPException(status_code=400, detail=f"Product tidak ditemukan: {item.product_id}")
+        
+        if item.quantity <= 0:
+            raise HTTPException(status_code=400, detail=f"Qty {product.get('name')} harus > 0")
+        
+        item_subtotal = item.unit_cost * item.quantity
+        if item.discount_percent > 0:
+            item_subtotal -= item_subtotal * (item.discount_percent / 100)
+        
+        po_item = {
+            "product_id": item.product_id,
+            "product_code": product.get("code", ""),
+            "product_name": item.product_name or product.get("name", ""),
+            "quantity": item.quantity,
+            "received_qty": item.quantity,  # LANGSUNG DITERIMA SEMUA
+            "unit_cost": item.unit_cost,
+            "discount_percent": item.discount_percent,
+            "subtotal": item_subtotal,
+            "unit": item.purchase_unit or product.get("unit", "pcs")
+        }
+        
+        po_items.append(po_item)
+        subtotal += item_subtotal
+    
+    if subtotal <= 0:
+        raise HTTPException(status_code=400, detail="Total pembelian harus > 0")
+    
+    # ============ CREATE PO WITH POSTED STATUS ============
+    po_number = await get_next_sequence("po_number", "QPO")  # QPO = Quick Purchase Order
+    po_id = str(uuid.uuid4())
+    now = datetime.now(timezone.utc).isoformat()
+    
+    po_data = {
+        "id": po_id,
+        "po_number": po_number,
+        "supplier_id": data.supplier_id,
+        "supplier_name": supplier.get("name", ""),
+        "supplier_code": supplier.get("code", ""),
+        "branch_id": branch_id,
+        "warehouse_id": branch_id,  # CABANG = GUDANG
+        "warehouse_name": branch_name,
+        "items": po_items,
+        "total_items": len(po_items),
+        "total_qty": sum(i["quantity"] for i in po_items),
+        "subtotal": subtotal,
+        "total": subtotal,
+        "status": "posted",  # LANGSUNG POSTED (bukan draft)
+        "is_quick_purchase": True,  # Flag pembeda
+        "is_cash": data.is_cash,
+        "order_date": now,
+        "received_date": now,  # LANGSUNG DITERIMA
+        "notes": data.notes,
+        "created_by": user.get("user_id", ""),
+        "created_by_name": user.get("name", ""),
+        "created_at": now,
+        "updated_at": now,
+        "tenant_id": tenant_id
+    }
+    
+    await purchase_orders.insert_one(po_data)
+    
+    # ============ DIRECT STOCK IN - SOURCE OF TRUTH: product_stocks ============
+    stock_results = []
+    
+    for item in po_items:
+        product_id = item["product_id"]
+        qty = item["quantity"]
+        unit_cost = item["unit_cost"]
+        
+        # Get or create product_stocks record
+        stock_rec = await product_stocks.find_one(
+            {"product_id": product_id, "branch_id": branch_id}
+        )
+        
+        if stock_rec:
+            # WEIGHTED AVERAGE HPP calculation
+            old_qty = stock_rec.get("quantity", 0)
+            old_hpp = stock_rec.get("unit_cost", 0)
+            
+            if old_qty + qty > 0:
+                new_hpp = ((old_qty * old_hpp) + (qty * unit_cost)) / (old_qty + qty)
+            else:
+                new_hpp = unit_cost
+            
+            new_qty = old_qty + qty
+            new_total_value = new_qty * new_hpp
+            
+            await product_stocks.update_one(
+                {"product_id": product_id, "branch_id": branch_id},
+                {"$set": {
+                    "quantity": new_qty,
+                    "available": new_qty,
+                    "unit_cost": round(new_hpp, 2),
+                    "total_value": round(new_total_value, 2),
+                    "last_restock": now,
+                    "updated_at": now
+                }}
+            )
+            
+            stock_results.append({
+                "product_id": product_id,
+                "product_name": item["product_name"],
+                "old_stock": old_qty,
+                "added": qty,
+                "new_stock": new_qty,
+                "hpp": round(new_hpp, 2)
+            })
+        else:
+            # Create new stock record
+            new_stock = {
+                "id": str(uuid.uuid4()),
+                "product_id": product_id,
+                "branch_id": branch_id,
+                "quantity": qty,
+                "available": qty,
+                "reserved": 0,
+                "unit_cost": unit_cost,
+                "total_value": qty * unit_cost,
+                "last_restock": now,
+                "created_at": now,
+                "updated_at": now
+            }
+            await product_stocks.insert_one(new_stock)
+            
+            stock_results.append({
+                "product_id": product_id,
+                "product_name": item["product_name"],
+                "old_stock": 0,
+                "added": qty,
+                "new_stock": qty,
+                "hpp": unit_cost
+            })
+        
+        # ============ RECORD STOCK MOVEMENT - HISTORI ============
+        movement = {
+            "id": str(uuid.uuid4()),
+            "product_id": product_id,
+            "product_name": item["product_name"],
+            "branch_id": branch_id,
+            "movement_type": "stock_in",
+            "quantity": qty,
+            "reference_type": "quick_purchase",
+            "reference_id": po_id,
+            "reference_no": po_number,
+            "cost_per_unit": unit_cost,
+            "total_cost": qty * unit_cost,
+            "notes": f"Quick Purchase: {po_number}",
+            "created_by": user.get("user_id", ""),
+            "created_at": now
+        }
+        await stock_movements.insert_one(movement)
+        
+        # Update product cost_price (HPP terakhir)
+        await products.update_one(
+            {"id": product_id},
+            {"$set": {"cost_price": unit_cost, "updated_at": now}}
+        )
+    
+    # ============ AUDIT LOG ============
+    db_conn = get_db()
+    await log_security_event(
+        db_conn, user.get("user_id", ""), user.get("name", ""),
+        "create", "purchase",
+        f"QUICK PURCHASE {po_number} | Supplier: {supplier.get('name')} | Total: Rp {subtotal:,.0f} | Items: {len(po_items)} | STOK LANGSUNG MASUK",
+        request.client.host if request.client else "",
+        document_no=po_number,
+        severity="normal"
+    )
+    
+    return {
+        "success": True,
+        "message": f"Quick Purchase berhasil! Stok langsung bertambah.",
+        "id": po_id,
+        "po_number": po_number,
+        "supplier_name": supplier.get("name", ""),
+        "branch_name": branch_name,
+        "total": subtotal,
+        "items_count": len(po_items),
+        "stock_updated": stock_results,
+        "is_quick_purchase": True
+    }
+
+
 # ==================== PURCHASE PAYMENTS ====================
 
 from database import db
