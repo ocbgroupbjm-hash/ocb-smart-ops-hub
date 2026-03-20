@@ -139,8 +139,8 @@ async def get_all_tenants_from_registry() -> List[Dict]:
                     "ai_enabled": metadata.get("ai_enabled", False),
                     "initialized_at": metadata.get("initialized_at"),
                     "last_migrated_at": metadata.get("last_migrated_at"),
-                    "is_active": metadata.get("status") == "active",
-                    "show_in_login_selector": metadata.get("status") == "active"
+                    "is_active": metadata.get("status") in ["active", "ready"],
+                    "show_in_login_selector": metadata.get("status") in ["active", "ready"]
                 }
                 tenants.append(tenant)
             else:
@@ -176,19 +176,19 @@ async def get_all_tenants_from_registry() -> List[Dict]:
 @router.get("/list")
 async def list_tenants_for_login():
     """
-    List all ACTIVE tenants for login page.
+    List all ACTIVE/READY tenants for login page.
     
     This is the PRIMARY endpoint for login page tenant selection.
-    Only returns tenants with status = 'active'.
+    Returns tenants with status = 'active' OR 'ready'.
     
     Source of Truth: _tenant_metadata collection in each database
     """
     all_tenants = await get_all_tenants_from_registry()
     
-    # Filter only active tenants for login page
+    # Filter only active/ready tenants for login page
     active_tenants = [
         t for t in all_tenants 
-        if t.get("status") == "active" and t.get("show_in_login_selector", True)
+        if t.get("status") in ["active", "ready"] and t.get("show_in_login_selector", True)
     ]
     
     # Get current active database

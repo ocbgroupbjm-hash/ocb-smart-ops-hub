@@ -183,38 +183,47 @@ async def get_next_sequence(name: str, prefix: str = "") -> str:
 async def init_indexes():
     """Create database indexes for performance"""
     db = get_db()
+    
+    # Helper to safely create index (ignore conflicts)
+    async def safe_create_index(collection, keys, **kwargs):
+        try:
+            await db[collection].create_index(keys, **kwargs)
+        except Exception as e:
+            if "IndexKeySpecsConflict" not in str(e) and "already exists" not in str(e).lower():
+                print(f"Warning: Failed to create index on {collection}: {e}")
+    
     # Users
-    await db['users'].create_index("email", unique=True)
-    await db['users'].create_index("branch_id")
+    await safe_create_index('users', "email", unique=True)
+    await safe_create_index('users', "branch_id")
     
     # Products
-    await db['products'].create_index("code", unique=True)
-    await db['products'].create_index("barcode")
-    await db['products'].create_index("category_id")
-    await db['products'].create_index("name")
+    await safe_create_index('products', "code", unique=True)
+    await safe_create_index('products', "barcode")
+    await safe_create_index('products', "category_id")
+    await safe_create_index('products', "name")
     
     # Product Stocks
-    await db['product_stocks'].create_index([("product_id", 1), ("branch_id", 1)], unique=True)
-    await db['product_stocks'].create_index("branch_id")
+    await safe_create_index('product_stocks', [("product_id", 1), ("branch_id", 1)], unique=True)
+    await safe_create_index('product_stocks', "branch_id")
     
     # Transactions
-    await db['transactions'].create_index("invoice_number", unique=True)
-    await db['transactions'].create_index("branch_id")
-    await db['transactions'].create_index("created_at")
-    await db['transactions'].create_index("customer_id")
-    await db['transactions'].create_index([("branch_id", 1), ("created_at", -1)])
+    await safe_create_index('transactions', "invoice_number", unique=True)
+    await safe_create_index('transactions', "branch_id")
+    await safe_create_index('transactions', "created_at")
+    await safe_create_index('transactions', "customer_id")
+    await safe_create_index('transactions', [("branch_id", 1), ("created_at", -1)])
     
     # Customers
-    await db['customers'].create_index("phone")
-    await db['customers'].create_index("code")
+    await safe_create_index('customers', "phone")
+    await safe_create_index('customers', "code")
     
     # Audit logs
-    await db['audit_logs'].create_index("timestamp")
-    await db['audit_logs'].create_index([("user_id", 1), ("timestamp", -1)])
+    await safe_create_index('audit_logs', "timestamp")
+    await safe_create_index('audit_logs', [("user_id", 1), ("timestamp", -1)])
     
     # Stock movements
-    await db['stock_movements'].create_index([("product_id", 1), ("created_at", -1)])
-    await db['stock_movements'].create_index("branch_id")
+    await safe_create_index('stock_movements', [("product_id", 1), ("created_at", -1)])
+    await safe_create_index('stock_movements', "branch_id")
     
     # Cash movements
-    await db['cash_movements'].create_index([("branch_id", 1), ("created_at", -1)])
+    await safe_create_index('cash_movements', [("branch_id", 1), ("created_at", -1)])

@@ -73,5 +73,14 @@
     "is_internal": false,
     "created_at": "2026-03-13T16:57:38.741618+00:00",
     "updated_at": "2026-03-13T16:57:38.741618+00:00"
+  },
+  {
+    "id": "ocb_test_new",
+    "name": "OCB TEST BARU",
+    "db_name": "ocb_test_new",
+    "description": "Tenant test baru untuk validasi provisioning",
+    "icon": "store",
+    "color": "#059669",
+    "created_at": "2026-03-20T19:39:20.535205+00:00"
   }
 ]

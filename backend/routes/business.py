@@ -80,17 +80,17 @@ async def list_businesses():
     This endpoint now reads from _tenant_metadata in each database,
     NOT from businesses.json file.
     
-    Only returns tenants with status = 'active'.
+    Returns tenants with status = 'active' OR 'ready'.
     """
     from routes.tenant_registry import get_all_tenants_from_registry
     
     # Get tenants from registry (source of truth)
     all_tenants = await get_all_tenants_from_registry()
     
-    # Filter only active tenants for login page
+    # Filter only active/ready tenants for login page
     visible_businesses = [
         t for t in all_tenants 
-        if t.get("status") == "active" 
+        if t.get("status") in ["active", "ready"]
         and t.get("show_in_login_selector", True)
     ]
     
@@ -164,52 +164,77 @@ async def delete_business(business_id: str):
 @router.post("/switch/{db_name}")
 async def switch_business(db_name: str):
     """Switch to a different business/database"""
-    businesses = load_businesses()
     
-    # Verify business exists
-    business = next((b for b in businesses if b['db_name'] == db_name), None)
-    if not business:
-        raise HTTPException(status_code=404, detail="Database bisnis tidak ditemukan")
-    
-    # Update active database in memory for this request context
-    set_active_db_name(db_name)
-    
-    # Also update default database for new logins
-    from database import set_default_db_name
-    set_default_db_name(db_name)
-    
-    # Also update .env file for persistence across restarts
-    env_path = "/app/backend/.env"
+    # First check tenant_metadata (source of truth)
+    from motor.motor_asyncio import AsyncIOMotorClient
+    mongo_url = os.environ.get("MONGO_URL", "mongodb://localhost:27017")
+    mongo_client = AsyncIOMotorClient(mongo_url)
     
     try:
-        with open(env_path, 'r') as f:
-            lines = f.readlines()
+        target_db = mongo_client[db_name]
+        metadata = await target_db["_tenant_metadata"].find_one({})
         
-        new_lines = []
-        db_found = False
-        for line in lines:
-            if line.startswith('DB_NAME='):
+        # Check if tenant exists and is ready
+        if metadata:
+            status = metadata.get("status", "unknown")
+            if status not in ["ready", "active"]:
+                raise HTTPException(
+                    status_code=400, 
+                    detail=f"Tenant {db_name} status: {status}. Hanya tenant READY yang bisa dipilih."
+                )
+        else:
+            # Fallback: check businesses.json for backward compatibility
+            businesses = load_businesses()
+            business = next((b for b in businesses if b['db_name'] == db_name), None)
+            if not business:
+                raise HTTPException(
+                    status_code=404, 
+                    detail=f"Database bisnis {db_name} tidak ditemukan atau belum siap"
+                )
+        
+        # Update active database in memory for this request context
+        set_active_db_name(db_name)
+        
+        # Also update default database for new logins
+        from database import set_default_db_name
+        set_default_db_name(db_name)
+        
+        # Also update .env file for persistence across restarts
+        env_path = "/app/backend/.env"
+        
+        try:
+            with open(env_path, 'r') as f:
+                lines = f.readlines()
+            
+            new_lines = []
+            db_found = False
+            for line in lines:
+                if line.startswith('DB_NAME='):
+                    new_lines.append(f'DB_NAME={db_name}\n')
+                    db_found = True
+                else:
+                    new_lines.append(line)
+            
+            if not db_found:
                 new_lines.append(f'DB_NAME={db_name}\n')
-                db_found = True
-            else:
-                new_lines.append(line)
-        
-        if not db_found:
-            new_lines.append(f'DB_NAME={db_name}\n')
-        
-        with open(env_path, 'w') as f:
-            f.writelines(new_lines)
-        
-        return {
-            "message": f"Berhasil switch ke bisnis '{business['name']}'",
-            "db_name": db_name,
-            "tenant_id": db_name,  # Include tenant_id in response
-            "business": business,
-            "restart_required": False,
-            "note": "Token baru akan berisi tenant_id setelah login ulang"
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Gagal switch database: {str(e)}")
+            
+            with open(env_path, 'w') as f:
+                f.writelines(new_lines)
+            
+            company_name = metadata.get("company_name", db_name) if metadata else db_name
+            
+            return {
+                "message": f"Berhasil switch ke bisnis '{company_name}'",
+                "db_name": db_name,
+                "tenant_id": db_name,
+                "status": metadata.get("status") if metadata else "legacy",
+                "restart_required": False,
+                "note": "Token baru akan berisi tenant_id setelah login ulang"
+            }
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Gagal switch database: {str(e)}")
+    finally:
+        mongo_client.close()
 
 
 @router.post("/ensure-admin/{db_name}")
