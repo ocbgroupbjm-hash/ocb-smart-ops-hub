@@ -68,6 +68,37 @@ Membangun sistem ERP retail komprehensif (OCB TITAN) dengan fitur POS, Inventory
 | Stock Movement Recorded | +100 (reference_type: quick_purchase) ✅ |
 | **Validation Report** | `/app/test_reports/E2E_VALIDATION_QUICK_PURCHASE_FINAL.md` |
 
+---
+
+## 🟢 P0: GENERAL FORM SIMPLIFICATION (2026-03-20) ✅ DONE
+
+### Summary
+Simplified Master Data forms (Supplier, Customer) with Quick Mode for fast data entry. Advanced fields are collapsible.
+
+### Forms Simplified
+| Form | Before | After (Quick Mode) | Status |
+|------|--------|-------------------|--------|
+| Suppliers.jsx | 12 fields | 3 essential (code, name, phone) | ✅ DONE |
+| Customers.jsx | 7 fields | 2 essential (name, phone) | ✅ DONE |
+
+### UX Improvements
+- Quick/Lengkap toggle at modal header
+- "Mode Cepat: X field sudah cukup!" green hint
+- Collapsible advanced fields
+- "Simpan Cepat" vs "Simpan" button label
+- Edit mode = auto full form, New entry = auto quick mode
+
+### Routes
+| Route | Component | Quick Mode |
+|-------|-----------|------------|
+| /supplier | Suppliers.jsx | ✅ Yes |
+| /pelanggan | Customers.jsx | ✅ Yes |
+
+### Test Results
+- **Backend**: 100% (10/10 tests passed)
+- **Frontend**: 100% (all UI features verified)
+- **Test Report**: `/app/test_reports/iteration_102.json`
+
 ### DELETE/REVERSE RULE (BERLAKU GLOBAL)
 | Status | Action |
 |--------|--------|
