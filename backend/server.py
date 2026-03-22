@@ -462,6 +462,12 @@ app.include_router(ai_engine_router)
 app.include_router(payment_allocation_router)
 
 # =============================================================
+# CASHFLOW & PAYMENT ENGINE - P1 Full Cash/Bank Integration
+# =============================================================
+from routes.cashflow_engine import router as cashflow_engine_router
+app.include_router(cashflow_engine_router)
+
+# =============================================================
 # HR ENTERPRISE SYSTEM - SUPER DUPER DEWA Blueprint
 # =============================================================
 app.include_router(hr_employees_router)

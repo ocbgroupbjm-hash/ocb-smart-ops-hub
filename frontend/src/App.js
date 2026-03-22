@@ -183,6 +183,11 @@ import PurchaseEnterprise from './pages/PurchaseEnterprise';
 // Data Rescue - iPOS Migration & Reconciliation
 import DataRescuePage from './pages/DataRescuePage';
 
+// Cashflow & Payment Engine - P1
+import APPaymentPage from './pages/cashflow/APPaymentPage';
+import ARReceiptPage from './pages/cashflow/ARReceiptPage';
+import CashBankLedgerPage from './pages/cashflow/CashBankLedgerPage';
+
 import './index.css';
 
 const PrivateRoute = ({ children }) => {
@@ -354,18 +359,18 @@ function App() {
             
             {/* Hutang (AP) Routes - iPOS Style */}
             <Route path="hutang/list" element={<AccountsPayable />} />
-            <Route path="hutang/payments" element={<PurchasePayments />} />
+            <Route path="hutang/payments" element={<APPaymentPage />} />
             <Route path="hutang/aging" element={<AccountsPayable />} />
             
             {/* Piutang (AR) Routes - iPOS Style */}
             <Route path="piutang/list" element={<AccountsReceivable />} />
-            <Route path="piutang/payments" element={<ARPaymentsList />} />
+            <Route path="piutang/payments" element={<ARReceiptPage />} />
             <Route path="piutang/aging" element={<AccountsReceivable />} />
             
-            {/* Kas / Bank Routes - iPOS Style */}
-            <Route path="kas/in" element={<CashTransactions />} />
-            <Route path="kas/out" element={<CashTransactions />} />
-            <Route path="kas/mutations" element={<CashTransactions />} />
+            {/* Kas / Bank Routes - iPOS Style - P1 Cashflow Engine */}
+            <Route path="kas/in" element={<CashBankLedgerPage />} />
+            <Route path="kas/out" element={<CashBankLedgerPage />} />
+            <Route path="kas/mutations" element={<CashBankLedgerPage />} />
             
             {/* Inventory Routes - iPOS Style */}
             <Route path="inventory/quick" element={<QuickStock />} />
@@ -451,6 +456,13 @@ function App() {
             
             {/* Cash Control Routes - Phase 3 */}
             <Route path="cash-control" element={<CashControl />} />
+            
+            {/* Cashflow & Payment Engine - P1 */}
+            <Route path="kas/ledger" element={<CashBankLedgerPage />} />
+            <Route path="hutang/bayar" element={<APPaymentPage />} />
+            <Route path="piutang/terima" element={<ARReceiptPage />} />
+            <Route path="purchase/ap-payments" element={<APPaymentPage />} />
+            <Route path="ar-payments" element={<ARReceiptPage />} />
             
             {/* Report Center Routes - Phase 4 */}
             <Route path="report-center" element={<ReportCenter />} />

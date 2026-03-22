@@ -236,7 +236,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       roles: ['owner', 'admin', 'finance'],
       submenu: [
         { name: 'Daftar Hutang', icon: List, path: '/hutang/list' },
-        { name: 'Pembayaran Hutang', icon: CreditCard, path: '/purchase/ap-payments' },
+        { name: 'Pembayaran Hutang', icon: CreditCard, path: '/hutang/bayar' },
         { name: 'Umur Hutang', icon: Clock, path: '/hutang/aging' },
       ]
     },
@@ -250,7 +250,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       roles: ['owner', 'admin', 'finance'],
       submenu: [
         { name: 'Daftar Piutang', icon: List, path: '/piutang/list' },
-        { name: 'Pembayaran Piutang', icon: Wallet, path: '/sales/ar-payments' },
+        { name: 'Pembayaran Piutang', icon: Wallet, path: '/piutang/terima' },
         { name: 'Umur Piutang', icon: Clock, path: '/piutang/aging' },
       ]
     },
