@@ -1,9 +1,32 @@
-# OCB TITAN AI - ERP System PRD
+# PT OCB GROUP AI - ERP System PRD
 
 ## Original Problem Statement
-Membangun sistem ERP retail komprehensif (OCB TITAN) dengan fitur POS, Inventory, Keuangan, Akuntansi, dan HR Enterprise System. Sistem harus mengikuti standar ERP enterprise seperti SAP/Oracle dengan blueprint SUPER DUPER DEWA.
+Membangun sistem ERP retail komprehensif (PT OCB GROUP AI) dengan fitur POS, Inventory, Keuangan, Akuntansi, dan HR Enterprise System. Sistem harus mengikuti standar ERP enterprise seperti SAP/Oracle dengan blueprint SUPER DUPER DEWA.
 
-**STATUS: 🔒 ENTERPRISE ERP STABLE** - v1.0.4-PURCHASE-AP-20260322
+**STATUS: 🔒 ENTERPRISE ERP STABLE** - v1.0.5-BRANDING-20260322
+
+---
+
+## ✅ P0: UI/UX & BRANDING REVISION (2026-03-22) ✅ DONE
+
+### Changes Implemented
+1. **Logo Update**: Circular emblem "OSCAR CENTER OCB BISNIS" menggantikan ikon Sparkles
+2. **Brand Name**: "OCB SUPER AI" → "PT OCB GROUP AI" (Login, Sidebar, Mobile)
+3. **Feature Text**: "Warroom Dashboard" → "KPI Performa dan HR"
+4. **Branch Scale**: "40+ cabang" → "1000+ cabang++"
+5. **Page Title**: Updated to "PT OCB GROUP AI | Enterprise Retail System"
+
+### Files Modified
+| File | Changes |
+|------|---------|
+| `/app/frontend/src/pages/Login.jsx` | Logo, titles, feature cards |
+| `/app/frontend/src/components/layout/Sidebar.jsx` | Logo, app name |
+| `/app/frontend/public/index.html` | Page title |
+
+### Verification
+- ✅ Desktop Login Page - Branding correct
+- ✅ Mobile Login Page - Responsive circular logo
+- ✅ Dashboard Sidebar - Logo and name updated
 
 ---
 

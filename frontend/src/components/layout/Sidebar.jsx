@@ -630,12 +630,20 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
         }`}
       >
         <div className="flex flex-col h-full">
-          {/* Logo */}
+          {/* Logo - PT OCB GROUP */}
           <div className="p-4 border-b border-red-900/20">
-            <h1 className="text-xl font-bold bg-gradient-to-r from-red-400 via-amber-400 to-yellow-300 bg-clip-text text-transparent">
-              OCB AI TITAN
-            </h1>
-            <p className="text-[10px] text-red-300/50 mt-0.5">Enterprise Retail System - iPOS Style</p>
+            <div className="flex items-center gap-3">
+              {/* Circular Logo Emblem */}
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-600 via-yellow-500 to-amber-400 flex items-center justify-center shadow-lg border-2 border-amber-300/30">
+                <span className="text-xs font-black text-amber-900">OCB</span>
+              </div>
+              <div>
+                <h1 className="text-lg font-bold bg-gradient-to-r from-red-400 via-amber-400 to-yellow-300 bg-clip-text text-transparent">
+                  PT OCB GROUP AI
+                </h1>
+                <p className="text-[10px] text-red-300/50">Enterprise Retail System</p>
+              </div>
+            </div>
           </div>
 
           {/* Navigation */}

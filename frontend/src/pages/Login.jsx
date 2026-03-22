@@ -125,12 +125,17 @@ const Login = () => {
         <div className="absolute bottom-20 right-20 w-72 h-72 bg-amber-600/10 rounded-full blur-3xl" />
         
         <div className="relative z-10 text-center max-w-lg">
-          <div className="inline-flex items-center justify-center w-24 h-24 bg-gradient-to-br from-red-600 to-amber-500 rounded-2xl mb-6 shadow-2xl shadow-red-900/50">
-            <Sparkles className="h-12 w-12 text-white" />
+          {/* Circular Logo Emblem - PT OCB GROUP */}
+          <div className="inline-flex items-center justify-center w-28 h-28 rounded-full bg-gradient-to-br from-amber-600 via-yellow-500 to-amber-400 mb-6 shadow-2xl shadow-amber-900/50 border-4 border-amber-300/30">
+            <div className="flex flex-col items-center justify-center">
+              <span className="text-[10px] font-bold text-amber-900 tracking-wider">OSCAR CENTER</span>
+              <span className="text-2xl font-black text-amber-900">OCB</span>
+              <span className="text-[10px] font-bold text-amber-900 tracking-wider">BISNIS</span>
+            </div>
           </div>
           
-          <h1 className="text-5xl font-bold bg-gradient-to-r from-red-400 via-amber-400 to-yellow-300 bg-clip-text text-transparent mb-4">
-            OCB SUPER AI
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-red-400 via-amber-400 to-yellow-300 bg-clip-text text-transparent mb-4">
+            PT OCB GROUP AI
           </h1>
           <p className="text-xl text-amber-100/80 mb-8">Enterprise AI Operating System</p>
           
@@ -150,8 +155,8 @@ const Login = () => {
                 <BarChart3 className="h-6 w-6 text-white" />
               </div>
               <div>
-                <div className="font-semibold text-amber-100">Warroom Dashboard</div>
-                <div className="text-sm text-gray-400">Monitor 40+ cabang real-time</div>
+                <div className="font-semibold text-amber-100">KPI Performa dan HR</div>
+                <div className="text-sm text-gray-400">Monitor 1000+ cabang++ real-time</div>
               </div>
             </div>
             
@@ -173,11 +178,15 @@ const Login = () => {
         <div className="w-full max-w-md">
           {/* Mobile Logo */}
           <div className="text-center mb-8 lg:hidden">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-red-600 to-amber-500 rounded-xl mb-4 shadow-lg shadow-red-900/50">
-              <Sparkles className="h-8 w-8 text-white" />
+            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-amber-600 via-yellow-500 to-amber-400 mb-4 shadow-lg shadow-amber-900/50 border-4 border-amber-300/30">
+              <div className="flex flex-col items-center justify-center">
+                <span className="text-[8px] font-bold text-amber-900 tracking-wider">OSCAR CENTER</span>
+                <span className="text-lg font-black text-amber-900">OCB</span>
+                <span className="text-[8px] font-bold text-amber-900 tracking-wider">BISNIS</span>
+              </div>
             </div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-red-400 via-amber-400 to-yellow-300 bg-clip-text text-transparent">
-              OCB SUPER AI
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-red-400 via-amber-400 to-yellow-300 bg-clip-text text-transparent">
+              PT OCB GROUP AI
             </h1>
           </div>
 
@@ -274,7 +283,7 @@ const Login = () => {
               )}
 
               <h2 className="text-2xl font-bold text-amber-100 mb-2">Masuk</h2>
-              <p className="text-gray-400 mb-6">Login ke {selectedBusiness?.name || 'OCB SUPER AI'}</p>
+              <p className="text-gray-400 mb-6">Login ke {selectedBusiness?.name || 'PT OCB GROUP AI'}</p>
 
               <form onSubmit={handleLogin} className="space-y-4">
                 <div>
