@@ -1,4 +1,5 @@
 # OCB TITAN - Dashboard & Analytics API
+# OPTIMIZED: Fixed N+1 query issue in /api/dashboard/owner
 from fastapi import APIRouter, HTTPException, Depends
 from database import (
     transactions, products, product_stocks, customers, branches, 
@@ -11,14 +12,21 @@ router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
 
 @router.get("/owner")
 async def get_owner_dashboard(user: dict = Depends(get_current_user)):
-    """Executive dashboard for owners - real-time business overview"""
+    """
+    Executive dashboard for owners - real-time business overview
+    
+    OPTIMIZED (2026-03-22):
+    - Replaced N+1 branch queries with single $lookup aggregation
+    - Parallel count queries using asyncio.gather
+    - Reduced total queries from ~111 to ~9
+    """
     today = datetime.now(timezone.utc).isoformat()[:10]
     
-    # Get all active branches
+    # Get all active branches (single query)
     all_branches = await branches.find({"is_active": True}, {"_id": 0}).to_list(500)
-    branch_ids = [b["id"] for b in all_branches]
+    branch_lookup = {b["id"]: b for b in all_branches}  # Create lookup dict for O(1) access
     
-    # Today's Sales
+    # Today's Sales (single aggregate)
     today_sales_pipeline = [
         {
             "$match": {
@@ -39,7 +47,7 @@ async def get_owner_dashboard(user: dict = Depends(get_current_user)):
     today_result = await transactions.aggregate(today_sales_pipeline).to_list(1)
     today_data = today_result[0] if today_result else {"total_sales": 0, "total_profit": 0, "transaction_count": 0}
     
-    # Sales by Branch (Today)
+    # Sales by Branch (Today) - OPTIMIZED: Use $lookup instead of N individual queries
     branch_sales_pipeline = [
         {
             "$match": {
@@ -55,18 +63,30 @@ async def get_owner_dashboard(user: dict = Depends(get_current_user)):
                 "transactions": {"$sum": 1}
             }
         },
+        {
+            "$lookup": {
+                "from": "branches",
+                "localField": "_id",
+                "foreignField": "id",
+                "as": "branch_info"
+            }
+        },
+        {
+            "$project": {
+                "_id": 1,
+                "sales": 1,
+                "profit": 1,
+                "transactions": 1,
+                "branch_name": {"$ifNull": [{"$arrayElemAt": ["$branch_info.name", 0]}, "Unknown"]},
+                "branch_code": {"$ifNull": [{"$arrayElemAt": ["$branch_info.code", 0]}, ""]}
+            }
+        },
         {"$sort": {"sales": -1}}
     ]
     
     branch_sales = await transactions.aggregate(branch_sales_pipeline).to_list(100)
     
-    # Enrich with branch names
-    for item in branch_sales:
-        branch = await branches.find_one({"id": item["_id"]}, {"_id": 0, "name": 1, "code": 1})
-        item["branch_name"] = branch.get("name", "Unknown") if branch else "Unknown"
-        item["branch_code"] = branch.get("code", "") if branch else ""
-    
-    # Best Selling Products (Today)
+    # Best Selling Products (Today) - single aggregate
     best_selling_pipeline = [
         {
             "$match": {
@@ -128,7 +148,7 @@ async def get_owner_dashboard(user: dict = Depends(get_current_user)):
     
     low_stock = await product_stocks.aggregate(low_stock_pipeline).to_list(20)
     
-    # Total Cash Balance (All Branches)
+    # Total Cash Balance (All Branches) - O(1) from cached list
     total_cash = sum(b.get("cash_balance", 0) for b in all_branches)
     
     # Today's Expenses
@@ -149,10 +169,13 @@ async def get_owner_dashboard(user: dict = Depends(get_current_user)):
     expense_result = await expenses.aggregate(today_expenses_pipeline).to_list(1)
     today_expenses = expense_result[0]["total"] if expense_result else 0
     
-    # Counts
-    total_products = await products.count_documents({"is_active": True})
-    total_customers = await customers.count_documents({"is_active": True})
-    total_employees = await users.count_documents({"is_active": True})
+    # OPTIMIZED: Run count queries in parallel using asyncio.gather
+    import asyncio
+    total_products, total_customers, total_employees = await asyncio.gather(
+        products.count_documents({"is_active": True}),
+        customers.count_documents({"is_active": True}),
+        users.count_documents({"is_active": True})
+    )
     
     return {
         "date": today,
