@@ -780,29 +780,46 @@ async def receive_purchase_order(po_id: str, data: ReceivePO, request: Request, 
     
     # =============== AUTO-CREATE AP FOR CREDIT PURCHASES ===============
     ap_id = None
+    ap_no = None
     if all_received and po.get("is_credit", True):  # Default to credit
         from datetime import timedelta
+        from routes.ap_system import generate_ap_number
         
         po_total = po.get("total", 0)
         credit_due_days = po.get("credit_due_days", 30)
         due_date = datetime.now(timezone.utc) + timedelta(days=credit_due_days)
         
+        # Get branch code for AP number
+        branch = await get_db()["branches"].find_one({"id": branch_id}, {"_id": 0})
+        branch_code = branch.get("code", "HQ") if branch else "HQ"
+        
+        # Generate standardized AP number
+        ap_no = await generate_ap_number(branch_code)
+        
+        # STANDARDIZED AP FORMAT (compatible with ap_system.py)
         ap_entry = {
             "id": str(uuid.uuid4()),
-            "ap_number": f"AP-{po.get('po_number')}",
+            "ap_no": ap_no,
+            "ap_date": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+            "due_date": due_date.strftime("%Y-%m-%d"),
             "supplier_id": po.get("supplier_id"),
             "supplier_name": po.get("supplier_name", "Unknown"),
+            "supplier_invoice_no": po.get("supplier_invoice_no", ""),
+            "branch_id": branch_id,
             "source_type": "purchase",
             "source_id": po_id,
-            "source_number": po.get("po_number"),
-            "branch_id": branch_id,
-            "amount": po_total,
+            "source_no": po.get("po_number"),
+            "currency": "IDR",
+            "original_amount": po_total,
             "paid_amount": 0,
-            "due_date": due_date.isoformat(),
-            "status": "unpaid",
+            "outstanding_amount": po_total,
+            "status": "open",
+            "payment_term_days": credit_due_days,
             "notes": f"Hutang dari pembelian {po.get('po_number')}",
             "created_by": user.get("user_id", ""),
-            "created_at": datetime.now(timezone.utc).isoformat()
+            "created_by_name": user.get("name", "System"),
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat()
         }
         
         db = get_db()
@@ -2219,6 +2236,109 @@ async def quick_purchase(
             {"$set": {"cost_price": unit_cost, "updated_at": now}}
         )
     
+    # ============ CREATE AP INVOICE (HUTANG) FOR CREDIT PURCHASE ============
+    ap_id = None
+    ap_no = None
+    
+    if not data.is_cash:  # Only create AP for credit purchases
+        from datetime import timedelta
+        from routes.ap_system import generate_ap_number
+        
+        credit_due_days = 30  # Default payment term
+        due_date = datetime.now(timezone.utc) + timedelta(days=credit_due_days)
+        
+        # Get branch code for AP number
+        branch_doc = await branches.find_one({"id": branch_id}, {"_id": 0})
+        branch_code = branch_doc.get("code", "HQ") if branch_doc else "HQ"
+        
+        # Generate standardized AP number
+        ap_no = await generate_ap_number(branch_code)
+        
+        # STANDARDIZED AP FORMAT (compatible with ap_system.py)
+        ap_entry = {
+            "id": str(uuid.uuid4()),
+            "ap_no": ap_no,
+            "ap_date": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+            "due_date": due_date.strftime("%Y-%m-%d"),
+            "supplier_id": data.supplier_id,
+            "supplier_name": supplier.get("name", ""),
+            "supplier_invoice_no": "",
+            "branch_id": branch_id,
+            "source_type": "purchase",
+            "source_id": po_id,
+            "source_no": po_number,
+            "currency": "IDR",
+            "original_amount": subtotal,
+            "paid_amount": 0,
+            "outstanding_amount": subtotal,
+            "status": "open",
+            "payment_term_days": credit_due_days,
+            "notes": f"Hutang dari Quick Purchase {po_number}",
+            "created_by": user.get("user_id", ""),
+            "created_by_name": user.get("name", "System"),
+            "created_at": now,
+            "updated_at": now
+        }
+        
+        db_conn = get_db()
+        await db_conn["accounts_payable"].insert_one(ap_entry)
+        ap_id = ap_entry["id"]
+        
+        # ============ CREATE JOURNAL ENTRY ============
+        # Debit: Persediaan, Credit: Hutang Dagang
+        from utils.number_generator import generate_transaction_number
+        
+        journal_id = str(uuid.uuid4())
+        journal_number = await generate_transaction_number(db_conn, "JV-PUR")
+        
+        # Derive accounts
+        inventory_account = await derive_purchase_account(
+            db_conn, "persediaan_barang",
+            branch_id=branch_id
+        )
+        ap_account = await derive_purchase_account(
+            db_conn, "pembayaran_kredit_pembelian",
+            branch_id=branch_id
+        )
+        
+        journal_entries_list = [
+            {
+                "account_code": inventory_account["code"],
+                "account_name": inventory_account["name"],
+                "debit": subtotal,
+                "credit": 0,
+                "description": f"Persediaan dari {po_number}"
+            },
+            {
+                "account_code": ap_account["code"],
+                "account_name": ap_account["name"],
+                "debit": 0,
+                "credit": subtotal,
+                "description": f"Hutang ke {supplier.get('name', '')}"
+            }
+        ]
+        
+        journal_entry = {
+            "id": journal_id,
+            "journal_number": journal_number,
+            "journal_date": now,
+            "reference_type": "quick_purchase",
+            "reference_id": po_id,
+            "reference_number": po_number,
+            "description": f"Pembelian {po_number} - {supplier.get('name', '')}",
+            "entries": journal_entries_list,
+            "total_debit": subtotal,
+            "total_credit": subtotal,
+            "is_auto": True,
+            "status": "posted",
+            "branch_id": branch_id,
+            "created_by": user.get("user_id", ""),
+            "created_by_name": user.get("name", "System"),
+            "created_at": now
+        }
+        
+        await db_conn["journal_entries"].insert_one(journal_entry)
+    
     # ============ AUDIT LOG ============
     db_conn = get_db()
     await log_security_event(
@@ -2240,7 +2360,10 @@ async def quick_purchase(
         "total": subtotal,
         "items_count": len(po_items),
         "stock_updated": stock_results,
-        "is_quick_purchase": True
+        "is_quick_purchase": True,
+        "ap_created": ap_no is not None,
+        "ap_no": ap_no,
+        "is_credit": not data.is_cash
     }
 
 

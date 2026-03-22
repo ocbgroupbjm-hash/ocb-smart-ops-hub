@@ -14,6 +14,7 @@ class LoginRequest(BaseModel):
     email: str
     password: str
     db_name: Optional[str] = None  # Optional tenant database name
+    tenant_id: Optional[str] = None  # Alias for db_name (used by frontend)
 
 class RegisterRequest(BaseModel):
     email: str
@@ -33,14 +34,15 @@ async def login(data: LoginRequest):
     
     # ============================================================
     # MULTI-TENANT DATABASE SWITCH
-    # If db_name is provided, switch to that database before login
+    # If db_name or tenant_id is provided, switch to that database before login
     # ============================================================
-    if data.db_name:
+    target_db = data.db_name or data.tenant_id
+    if target_db:
         from database import set_active_db_name, get_active_db_name
         current_db = get_active_db_name()
-        if current_db != data.db_name:
-            print(f"[DEBUG] Switching database from {current_db} to {data.db_name}")
-            set_active_db_name(data.db_name)
+        if current_db != target_db:
+            print(f"[DEBUG] Switching database from {current_db} to {target_db}")
+            set_active_db_name(target_db)
     
     user = await users.find_one({"email": data.email}, {"_id": 0})
     if not user:

@@ -421,6 +421,16 @@ app.include_router(inventory_accounting_reconciliation_router, prefix="/api")
 from routes.tenant_provisioning import router as tenant_provisioning_router
 app.include_router(tenant_provisioning_router, prefix="")  # Already has /api prefix
 
+# P0: Purchase ↔ AP Integration
+from routes.purchase_return import router as purchase_return_router
+app.include_router(purchase_return_router, prefix="")  # Already has /api prefix
+
+from routes.sales_return import router as sales_return_router
+app.include_router(sales_return_router, prefix="")  # Already has /api prefix
+
+from routes.purchase_ap_reconciliation import router as purchase_ap_reconciliation_router
+app.include_router(purchase_ap_reconciliation_router, prefix="")  # Already has /api prefix
+
 # Guard System 4: Idempotency Protection
 from routes.idempotency_middleware import router as idempotency_router
 app.include_router(idempotency_router, prefix="/api")
