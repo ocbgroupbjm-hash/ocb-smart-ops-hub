@@ -134,6 +134,7 @@ async def list_products(
     total = await products.count_documents(query)
     
     # OPTIMIZED: Batch query untuk stock data (menghilangkan N+1)
+    print("USING NEW BATCH QUERY VERSION - /api/products")
     product_ids = [item.get("id") for item in items]
     
     if branch_id:
@@ -206,14 +207,19 @@ async def search_products(
     
     items = await products.find(query, {"_id": 0}).limit(20).to_list(20)
     
-    # Get stock for branch if specified
+    # OPTIMIZED: Batch query untuk stock (menghilangkan N+1)
+    print("USING NEW BATCH QUERY VERSION - /search")
     branch = branch_id or user.get("branch_id")
-    if branch:
+    if branch and items:
+        product_ids = [item["id"] for item in items]
+        stock_records = await product_stocks.find(
+            {"product_id": {"$in": product_ids}, "branch_id": branch},
+            {"_id": 0, "product_id": 1, "quantity": 1, "available": 1}
+        ).to_list(None)
+        stock_map = {s["product_id"]: s for s in stock_records}
+        
         for item in items:
-            stock = await product_stocks.find_one(
-                {"product_id": item["id"], "branch_id": branch},
-                {"_id": 0, "quantity": 1, "available": 1}
-            )
+            stock = stock_map.get(item["id"])
             item["stock"] = stock.get("quantity", 0) if stock else 0
             item["available"] = stock.get("available", 0) if stock else 0
     
@@ -355,16 +361,25 @@ async def delete_product(product_id: str, request: Request, user: dict = Depends
 @router.get("/{product_id}/stock")
 async def get_product_stock(product_id: str, user: dict = Depends(require_permission("stock_card", "view"))):
     """Get product stock - Requires stock_card.view permission"""
+    print("USING NEW BATCH QUERY VERSION - /{product_id}/stock")
     stocks = await product_stocks.find(
         {"product_id": product_id},
         {"_id": 0}
     ).to_list(500)
     
-    # Enrich with branch names
-    for stock in stocks:
-        branch = await branches.find_one({"id": stock["branch_id"]}, {"_id": 0, "name": 1, "code": 1})
-        stock["branch_name"] = branch.get("name", "Unknown") if branch else "Unknown"
-        stock["branch_code"] = branch.get("code", "") if branch else ""
+    # OPTIMIZED: Batch query untuk branch names (menghilangkan N+1)
+    if stocks:
+        branch_ids = [s["branch_id"] for s in stocks]
+        branch_records = await branches.find(
+            {"id": {"$in": branch_ids}},
+            {"_id": 0, "id": 1, "name": 1, "code": 1}
+        ).to_list(None)
+        branch_map = {b["id"]: b for b in branch_records}
+        
+        for stock in stocks:
+            branch = branch_map.get(stock["branch_id"])
+            stock["branch_name"] = branch.get("name", "Unknown") if branch else "Unknown"
+            stock["branch_code"] = branch.get("code", "") if branch else ""
     
     return stocks
 
