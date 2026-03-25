@@ -133,36 +133,46 @@ async def list_products(
     items = await products.find(query, {"_id": 0}).skip(skip).limit(limit).to_list(limit)
     total = await products.count_documents(query)
     
-    # Enrich with stock data per branch
+    # OPTIMIZED: Batch query untuk stock data (menghilangkan N+1)
+    product_ids = [item.get("id") for item in items]
+    
+    if branch_id:
+        # Single batch query untuk stock per branch
+        stock_records = await product_stocks.find(
+            {"product_id": {"$in": product_ids}, "branch_id": branch_id},
+            {"_id": 0}
+        ).to_list(None)
+        stock_map = {s["product_id"]: s for s in stock_records}
+    else:
+        # Single aggregate query untuk total stock semua branch
+        stock_pipeline = [
+            {"$match": {"product_id": {"$in": product_ids}}},
+            {"$group": {
+                "_id": "$product_id",
+                "total_stock": {"$sum": "$quantity"},
+                "total_available": {"$sum": {"$ifNull": ["$available", "$quantity"]}},
+                "branches_count": {"$sum": 1}
+            }}
+        ]
+        stock_agg = await product_stocks.aggregate(stock_pipeline).to_list(None)
+        stock_map = {s["_id"]: s for s in stock_agg}
+    
+    # Enrich items dengan stock data dari map (O(1) lookup, tanpa query)
     result_items = []
     for item in items:
         product_id = item.get("id")
         
         if branch_id:
-            # Get stock for specific branch
-            stock_rec = await product_stocks.find_one(
-                {"product_id": product_id, "branch_id": branch_id},
-                {"_id": 0}
-            )
+            stock_rec = stock_map.get(product_id)
             item["stock"] = stock_rec.get("quantity", 0) if stock_rec else 0
             item["available"] = stock_rec.get("available", 0) if stock_rec else 0
             item["branch_stock"] = stock_rec if stock_rec else None
         else:
-            # Aggregate stock across all branches
-            pipeline = [
-                {"$match": {"product_id": product_id}},
-                {"$group": {
-                    "_id": "$product_id",
-                    "total_stock": {"$sum": "$quantity"},
-                    "total_available": {"$sum": {"$ifNull": ["$available", "$quantity"]}},
-                    "branches_count": {"$sum": 1}
-                }}
-            ]
-            agg_result = await product_stocks.aggregate(pipeline).to_list(1)
-            if agg_result:
-                item["stock"] = agg_result[0].get("total_stock", 0)
-                item["available"] = agg_result[0].get("total_available", 0)
-                item["branches_count"] = agg_result[0].get("branches_count", 0)
+            stock_data = stock_map.get(product_id)
+            if stock_data:
+                item["stock"] = stock_data.get("total_stock", 0)
+                item["available"] = stock_data.get("total_available", 0)
+                item["branches_count"] = stock_data.get("branches_count", 0)
             else:
                 item["stock"] = 0
                 item["available"] = 0
