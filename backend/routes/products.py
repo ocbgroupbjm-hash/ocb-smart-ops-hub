@@ -283,16 +283,19 @@ async def create_product(data: ProductCreate, request: Request, user: dict = Dep
     
     await products.insert_one(product.model_dump())
     
-    # Initialize stock for all branches
+    # Initialize stock for all branches - BATCH INSERT (no N+1)
     all_branches = await branches.find({"is_active": True}, {"_id": 0, "id": 1}).to_list(500)
-    for branch in all_branches:
-        stock = ProductStock(
-            product_id=product.id,
-            branch_id=branch["id"],
-            quantity=0,
-            available=0
-        )
-        await product_stocks.insert_one(stock.model_dump())
+    if all_branches:
+        stock_docs = []
+        for branch in all_branches:
+            stock = ProductStock(
+                product_id=product.id,
+                branch_id=branch["id"],
+                quantity=0,
+                available=0
+            )
+            stock_docs.append(stock.model_dump())
+        await product_stocks.insert_many(stock_docs)  # Single batch insert
     
     # Audit log
     db = get_db()
