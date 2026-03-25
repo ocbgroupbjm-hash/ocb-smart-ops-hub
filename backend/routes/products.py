@@ -1,5 +1,9 @@
 # OCB TITAN - Products API
 # SECURITY: All destructive operations require RBAC validation
+# VERSION: BATCH_QUERY_V2 - 2026-03-23
+print(f">>> LOADING PRODUCTS MODULE: {__file__}")
+print(">>> VERSION CHECK: NEW BATCH VERSION ACTIVE")
+
 from fastapi import APIRouter, HTTPException, Depends, Query, Request
 from pydantic import BaseModel
 from typing import Optional, List
