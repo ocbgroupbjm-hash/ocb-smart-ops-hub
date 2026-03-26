@@ -102,10 +102,60 @@ TENANT_DISPLAY_CONFIG = {
 }
 
 
+async def auto_init_default_tenant(client):
+    """
+    Auto-initialize default tenant (ocb_titan) if no ocb_* databases exist.
+    This ensures LIVE deployments have at least one functional tenant.
+    """
+    from datetime import datetime, timezone
+    from utils.auth import hash_password
+    
+    db_name = "ocb_titan"
+    db = client[db_name]
+    
+    # Create tenant metadata
+    metadata = {
+        "id": "ocb_titan",
+        "database_key": "ocb_titan",
+        "company_name": "OCB GROUP",
+        "notes": "Database utama - Auto-initialized",
+        "status": "active",
+        "show_in_login_selector": True,
+        "tenant_type": "retail",
+        "timezone": "Asia/Jakarta",
+        "currency": "IDR",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "auto_initialized": True
+    }
+    
+    await db["_tenant_metadata"].delete_many({})
+    await db["_tenant_metadata"].insert_one(metadata)
+    
+    # Create default admin user
+    admin_user = {
+        "id": "admin-default",
+        "email": "ocbgroupbjm@gmail.com",
+        "password": hash_password("admin123"),
+        "full_name": "Administrator",
+        "role": "admin",
+        "is_active": True,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    existing = await db["users"].find_one({"email": admin_user["email"]})
+    if not existing:
+        await db["users"].insert_one(admin_user)
+    
+    print(f"[TENANT_REGISTRY] Auto-initialized {db_name} with admin user")
+    return True
+
+
 async def get_all_tenants_from_registry() -> List[Dict]:
     """
     Read tenant list from _tenant_metadata collection in all databases.
     This is the SINGLE SOURCE OF TRUTH for tenant information.
+    
+    AUTO-INIT: If no ocb_* databases found, creates default ocb_titan tenant.
     """
     client = get_mongo_client()
     tenants = []
@@ -113,6 +163,13 @@ async def get_all_tenants_from_registry() -> List[Dict]:
     try:
         all_dbs = await client.list_database_names()
         ocb_dbs = sorted([d for d in all_dbs if d.startswith("ocb_")])
+        
+        # AUTO-INIT: If no ocb_* databases exist, create default tenant
+        if not ocb_dbs:
+            print("[TENANT_REGISTRY] No ocb_* databases found. Auto-initializing ocb_titan...")
+            await auto_init_default_tenant(client)
+            all_dbs = await client.list_database_names()
+            ocb_dbs = sorted([d for d in all_dbs if d.startswith("ocb_")])
         
         for db_name in ocb_dbs:
             db = client[db_name]

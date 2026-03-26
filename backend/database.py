@@ -234,3 +234,4 @@ async def init_indexes():
     
     # Cash movements
     await safe_create_index('cash_movements', [("branch_id", 1), ("created_at", -1)])
+# Build timestamp: 2026-03-26T08:29:57Z
