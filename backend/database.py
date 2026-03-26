@@ -12,7 +12,14 @@ mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
 client = AsyncIOMotorClient(mongo_url)
 
 # Default database name from environment
-_default_db_name = os.environ.get('DB_NAME', 'ocb_titan')
+# PRODUCTION FIX: If DB_NAME contains 'test_database', use 'ocb_titan' instead
+_env_db_name = os.environ.get('DB_NAME', 'ocb_titan')
+if 'test_database' in _env_db_name.lower() or 'test-database' in _env_db_name.lower():
+    _default_db_name = 'ocb_titan'
+    print(f"[DATABASE] Overriding test database '{_env_db_name}' -> 'ocb_titan'")
+else:
+    _default_db_name = _env_db_name
+print(f"[DATABASE] Active default database: {_default_db_name}")
 
 # ============================================================
 # MULTI-TENANT ISOLATION FIX
