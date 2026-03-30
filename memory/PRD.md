@@ -7,6 +7,12 @@ Membangun sistem ERP retail komprehensif (PT OCB GROUP AI) dengan fitur POS, Inv
 
 ## ✅ PRODUCTION DEPLOYMENT COMPLETE (2026-03-30) ✅ DONE
 
+### P0 HOTFIX (2026-03-30) ✅ APPLIED
+- **BUG 1 - Menu Penjualan:** NOT A BUG - Menu sudah ada dan berfungsi
+- **BUG 2 - Custom Domain:** FIXED - Dynamic API URL implemented
+- **Files Changed:** 20+ frontend files updated to use centralized apiConfig.js
+- **Evidence:** `/app/test_reports/P0_HOTFIX_REPORT.md`
+
 ### PHASE 1: LIVE STABILIZATION ✅
 - **Issue Fixed:** DB_NAME=ocb_unit_4 → ocb_titan
 - **File Modified:** `/app/backend/.env`

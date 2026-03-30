@@ -11,7 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { AlertCircle, Calculator, Receipt, CheckCircle2, XCircle, AlertTriangle, RefreshCw, FileText, Percent } from 'lucide-react';
 import { toast } from 'sonner';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL;
+import { getApiUrl } from '../utils/apiConfig';
+const API_URL = getApiUrl();
 
 const FinancialControl = () => {
   const [activeTab, setActiveTab] = useState('tax');

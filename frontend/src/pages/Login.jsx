@@ -3,8 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Loader2, Eye, EyeOff, Sparkles, Brain, BarChart3, ShoppingCart, Lock, Building2, ChevronRight, Store, Shirt, Smartphone, Coffee, ShoppingBag, Briefcase, CheckCircle, Truck, Monitor } from 'lucide-react';
 import { toast } from 'sonner';
+import { getApiUrl } from '../utils/apiConfig';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL;
+const API_URL = getApiUrl();
 
 const iconMap = {
   building: Building2,

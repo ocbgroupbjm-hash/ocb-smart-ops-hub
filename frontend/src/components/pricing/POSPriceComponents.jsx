@@ -5,7 +5,8 @@ import {
   ChevronDown, Check, AlertTriangle, Lock
 } from 'lucide-react';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL;
+import { getApiUrl } from '../../utils/apiConfig';
+const API_URL = getApiUrl();
 
 // Format currency
 const formatCurrency = (value) => {

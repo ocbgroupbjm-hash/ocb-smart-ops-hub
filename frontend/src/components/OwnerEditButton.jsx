@@ -7,7 +7,8 @@ import { Edit, Loader2, Check, X, AlertTriangle, History } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'sonner';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL;
+import { getApiUrl } from '../utils/apiConfig';
+const API_URL = getApiUrl();
 
 // ==================== PERMISSION CHECK ====================
 const OWNER_ROLES = ['owner', 'pemilik', 'super_admin'];

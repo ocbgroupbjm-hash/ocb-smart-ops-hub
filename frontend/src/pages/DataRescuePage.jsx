@@ -23,7 +23,8 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL;
+import { getApiUrl } from '../utils/apiConfig';
+const API_URL = getApiUrl();
 
 export default function DataRescuePage() {
   const [status, setStatus] = useState(null);

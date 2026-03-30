@@ -25,7 +25,8 @@ import {
 } from '../../utils/rbacHelper';
 import axios from 'axios';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL;
+import { getApiUrl } from '../../utils/apiConfig';
+const API_URL = getApiUrl();
 
 const Sidebar = ({ isOpen, setIsOpen }) => {
   const { user, logout } = useAuth();

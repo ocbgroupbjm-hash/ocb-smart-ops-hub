@@ -10,7 +10,8 @@ import {
   Calculator, ArrowRight, Ban, Lock, Printer, BookOpen
 } from 'lucide-react';
 
-const API = process.env.REACT_APP_BACKEND_URL;
+import { getApiUrl } from '../../utils/apiConfig';
+const API = getApiUrl();
 
 const STATUS_CONFIG = {
   draft: { label: 'Draft', color: 'bg-blue-100 text-blue-800', icon: FileText },

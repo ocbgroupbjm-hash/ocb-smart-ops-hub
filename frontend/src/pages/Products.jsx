@@ -3,7 +3,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { Plus, Search, Edit, Trash2, Package, X, Save, Loader2, BarChart3, Upload, Image, Camera, Sparkles, Star, StarOff, Eye, Building2, Filter } from 'lucide-react';
 import { toast } from 'sonner';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL;
+import { getApiUrl } from '../utils/apiConfig';
+const API_URL = getApiUrl();
 
 const Products = () => {
   const { api } = useAuth();

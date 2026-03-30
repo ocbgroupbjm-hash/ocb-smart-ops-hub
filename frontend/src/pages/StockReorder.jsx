@@ -8,7 +8,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { SearchableEnumSelect, URGENCY_OPTIONS } from '../components/ui/searchable-enum-select';
 import { useToast } from '../hooks/use-toast';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL;
+import { getApiUrl } from '../utils/apiConfig';
+const API_URL = getApiUrl();
 
 // Urgency options for reorder
 const reorderUrgencyOptions = [

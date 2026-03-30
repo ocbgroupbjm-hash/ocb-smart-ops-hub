@@ -8,7 +8,8 @@ import { SearchableSelect } from '../ui/searchable-select';
 import { SearchableEnumSelect } from '../ui/searchable-enum-select';
 import { SearchableSelectWithCreate } from './QuickCreateModal';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL;
+import { getApiUrl } from '../../utils/apiConfig';
+const API_URL = getApiUrl();
 
 // Pricing modes
 const PRICING_MODES = [

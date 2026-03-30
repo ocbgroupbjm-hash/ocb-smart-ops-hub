@@ -12,7 +12,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { AlertCircle, Calendar, Lock, Unlock, DollarSign, RefreshCw, Plus, Check, X, ArrowRightLeft, Shield } from 'lucide-react';
 import { toast } from 'sonner';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL;
+import { getApiUrl } from '../utils/apiConfig';
+const API_URL = getApiUrl();
 
 const ERPHardening = () => {
   const [activeTab, setActiveTab] = useState('fiscal');

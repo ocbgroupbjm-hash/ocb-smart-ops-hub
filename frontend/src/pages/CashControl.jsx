@@ -6,7 +6,8 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL;
+import { getApiUrl } from '../utils/apiConfig';
+const API_URL = getApiUrl();
 
 // Status Badge
 const StatusBadge = ({ status }) => {

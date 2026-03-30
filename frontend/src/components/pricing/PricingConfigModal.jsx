@@ -5,7 +5,8 @@ import {
   Tag, Percent, ShoppingCart, Check, AlertCircle
 } from 'lucide-react';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL;
+import { getApiUrl } from '../../utils/apiConfig';
+const API_URL = getApiUrl();
 
 // Pricing modes configuration
 const PRICING_MODES = [

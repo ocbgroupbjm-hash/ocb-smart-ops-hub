@@ -4,7 +4,8 @@ import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { X, Calendar, Building2, FileText, DollarSign, Wallet, RefreshCw } from 'lucide-react';
 
-const API = process.env.REACT_APP_BACKEND_URL;
+import { getApiUrl } from '../../utils/apiConfig';
+const API = getApiUrl();
 
 // OCB TITAN Design Tokens - Dark Enterprise Theme
 const DESIGN = {

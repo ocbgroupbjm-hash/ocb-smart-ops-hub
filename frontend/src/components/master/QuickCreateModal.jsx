@@ -9,7 +9,8 @@ import React, { useState, useMemo } from 'react';
 import { X, Plus, AlertCircle, Check, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL;
+import { getApiUrl } from '../../utils/apiConfig';
+const API_URL = getApiUrl();
 
 // ============ QUICK CREATE MODAL ============
 

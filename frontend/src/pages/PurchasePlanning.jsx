@@ -7,7 +7,8 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { SearchableEnumSelect, STATUS_OPTIONS, URGENCY_OPTIONS } from '../components/ui/searchable-enum-select';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL;
+import { getApiUrl } from '../utils/apiConfig';
+const API_URL = getApiUrl();
 
 // Status options for planning
 const planningStatusOptions = [

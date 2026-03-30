@@ -7,7 +7,8 @@ import { useAuth } from '../contexts/AuthContext';
 import axios from 'axios';
 import { AlertTriangle, Clock } from 'lucide-react';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL;
+import { getApiUrl } from '../utils/apiConfig';
+const API_URL = getApiUrl();
 
 // Routes yang kasir boleh akses TANPA shift aktif
 const NO_SHIFT_ALLOWED_ROUTES = [

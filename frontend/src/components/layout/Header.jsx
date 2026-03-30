@@ -11,7 +11,8 @@ import {
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL;
+import { getApiUrl } from '../../utils/apiConfig';
+const API_URL = getApiUrl();
 
 // Icon mapping for tenant types
 const tenantIconMap = {

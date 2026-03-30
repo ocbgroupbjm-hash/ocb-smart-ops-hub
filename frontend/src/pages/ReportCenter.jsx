@@ -9,7 +9,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { SearchableEnumSelect } from '../components/ui/searchable-enum-select';
 import { DatePickerWithDefault, DateRangePickerWithDefault } from '../components/ui/date-picker-default';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL;
+import { getApiUrl } from '../utils/apiConfig';
+const API_URL = getApiUrl();
 
 // Format helpers
 const formatRupiah = (num) => `Rp ${(num || 0).toLocaleString('id-ID')}`;

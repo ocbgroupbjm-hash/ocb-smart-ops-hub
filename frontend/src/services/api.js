@@ -1,6 +1,27 @@
 import axios from 'axios';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL;
+// Dynamic API URL configuration for custom domain support
+// If running on custom domain (not preview), use relative path
+// Otherwise use the environment variable
+const getApiBaseUrl = () => {
+  const envUrl = process.env.REACT_APP_BACKEND_URL;
+  
+  // If no env URL, use relative path
+  if (!envUrl) return '';
+  
+  // Check if we're on the preview domain
+  const isPreviewDomain = window.location.hostname.includes('preview.emergentagent.com');
+  
+  // If on custom domain (not preview), use relative path for API calls
+  // This allows the proxy/ingress to handle routing
+  if (!isPreviewDomain) {
+    return '';
+  }
+  
+  return envUrl;
+};
+
+const API_URL = getApiBaseUrl();
 
 const api = axios.create({
   baseURL: API_URL,

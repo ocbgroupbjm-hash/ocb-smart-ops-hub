@@ -6,7 +6,8 @@ import { Textarea } from '../ui/textarea';
 import { X, DollarSign, Wallet, RefreshCw, CheckCircle, Building2, CreditCard } from 'lucide-react';
 import { toast } from 'sonner';
 
-const API = process.env.REACT_APP_BACKEND_URL;
+import { getApiUrl } from '../../utils/apiConfig';
+const API = getApiUrl();
 
 // OCB TITAN Design Tokens - Dark Enterprise Theme
 const DESIGN = {
