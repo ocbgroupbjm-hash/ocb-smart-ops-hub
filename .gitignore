@@ -164,21 +164,5 @@ frontend/node_modules/.cache/default-development/96.pack
 frontend/node_modules/.cache/default-development/98.pack
 frontend/node_modules/.cache/default-development/83.pack
 frontend/node_modules/.cache/default-development/101.pack
--e 
-# Environment files
-*.env
-*.env.*
 frontend/node_modules/.cache/default-development/102.pack
--e 
-# Environment files
-*.env
-*.env.*
--e 
-# Environment files
-*.env
-*.env.*
--e 
-# Environment files
-*.env
-*.env.*
 backups/production_deployment_20260330/ocb_titan/ipos_journal_staging.bson
