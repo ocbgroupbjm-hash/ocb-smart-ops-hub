@@ -156,6 +156,7 @@ async def get_all_tenants_from_registry() -> List[Dict]:
     This is the SINGLE SOURCE OF TRUTH for tenant information.
     
     AUTO-INIT: If no ocb_* databases found, creates default ocb_titan tenant.
+    FALLBACK: If MongoDB unavailable, return default tenant config.
     """
     client = get_mongo_client()
     tenants = []
@@ -224,8 +225,36 @@ async def get_all_tenants_from_registry() -> List[Dict]:
                     "show_in_login_selector": False
                 }
                 tenants.append(tenant)
+    except Exception as e:
+        # FALLBACK: If MongoDB is unavailable, return hardcoded default tenants
+        print(f"[TENANT_REGISTRY] MongoDB error: {e}. Returning fallback tenants.")
+        # Return default tenants from TENANT_DISPLAY_CONFIG
+        for db_name, display in TENANT_DISPLAY_CONFIG.items():
+            tenants.append({
+                "id": display.get("id", db_name),
+                "tenant_id": db_name,
+                "name": display.get("name", db_name.replace("_", " ").title()),
+                "db_name": db_name,
+                "description": display.get("description", ""),
+                "tenant_type": display.get("tenant_type", "retail"),
+                "business_type": display.get("business_type", "Retail"),
+                "icon": display.get("icon", "building"),
+                "color": display.get("color", "#991B1B"),
+                "status": "active",
+                "blueprint_version": "v2.4.3",
+                "timezone": "Asia/Jakarta",
+                "currency": "IDR",
+                "ai_enabled": False,
+                "initialized_at": None,
+                "last_migrated_at": None,
+                "is_active": True,
+                "show_in_login_selector": True
+            })
     finally:
-        client.close()
+        try:
+            client.close()
+        except:
+            pass
     
     return tenants
 
