@@ -1,0 +1,1 @@
+{"indexes":[{"v":{"$numberInt":"2"},"key":{"_id":{"$numberInt":"1"}},"name":"_id_"}],"uuid":"c65832242b60467c8cfd3bd61b5dd725","collectionName":"warroom_alerts","type":"collection"}

@@ -1,0 +1,1 @@
+{"indexes":[{"v":{"$numberInt":"2"},"key":{"_id":{"$numberInt":"1"}},"name":"_id_"},{"v":{"$numberInt":"2"},"key":{"branch_id":{"$numberInt":"1"}},"name":"branch_id_1","unique":true}],"uuid":"19979bf5f6a647a7929065c9b02fc7e9","collectionName":"account_mapping_settings","type":"collection"}

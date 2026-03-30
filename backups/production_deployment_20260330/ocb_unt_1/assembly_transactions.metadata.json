@@ -1,0 +1,1 @@
+{"indexes":[{"v":{"$numberInt":"2"},"key":{"_id":{"$numberInt":"1"}},"name":"_id_"}],"uuid":"3cce7e82aec64bf395d0f574e7255017","collectionName":"assembly_transactions","type":"collection"}

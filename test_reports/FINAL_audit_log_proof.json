@@ -1,0 +1,40 @@
+{
+  "report_type": "AUDIT_LOG_PROOF",
+  "generated_at": "2026-03-30T10:34:30Z",
+  
+  "audit_logs": [
+    {
+      "tenant": "ocb_titan",
+      "total_logs": 875,
+      "recent_actions": [
+        {"action": "PO_REVERSAL_DELETE", "timestamp": "2026-03-20T18:41:41"},
+        {"action": "PURCHASE_ORDER_REVERSAL", "timestamp": "2026-03-20T18:14:55"},
+        {"action": "PURCHASE_ORDER_REVERSAL", "timestamp": "2026-03-20T18:10:10"}
+      ],
+      "status": "ACTIVE"
+    },
+    {
+      "tenant": "ocb_unit_4",
+      "total_logs": 21,
+      "recent_actions": [
+        {"action": "create", "timestamp": "2026-03-13T16:52:03"},
+        {"action": "create", "timestamp": "2026-03-13T16:51:58"},
+        {"action": "create", "timestamp": "2026-03-13T16:50:43"}
+      ],
+      "status": "ACTIVE"
+    },
+    {
+      "tenant": "ocb_unt_1",
+      "total_logs": 313,
+      "recent_actions": [
+        {"action": "PO_CANCEL_HIDE", "timestamp": "2026-03-18T22:52:34"},
+        {"action": "PO_CANCEL_HIDE", "timestamp": "2026-03-17T23:22:00"},
+        {"action": "PO_SOFT_DELETED", "timestamp": "2026-03-17T23:17:36"}
+      ],
+      "status": "ACTIVE"
+    }
+  ],
+  
+  "total_audit_records": 1209,
+  "audit_trail_status": "APPEND-ONLY ENFORCED"
+}

@@ -1,0 +1,1 @@
+{"indexes":[{"v":{"$numberInt":"2"},"key":{"_id":{"$numberInt":"1"}},"name":"_id_"},{"v":{"$numberInt":"2"},"key":{"branch_id":{"$numberInt":"1"},"created_at":{"$numberInt":"-1"}},"name":"branch_id_1_created_at_-1"}],"uuid":"8151e77f23924b8bb3ee29d6cfe471b2","collectionName":"cash_movements","type":"collection"}

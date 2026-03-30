@@ -1,0 +1,1 @@
+{"indexes":[{"v":{"$numberInt":"2"},"key":{"_id":{"$numberInt":"1"}},"name":"_id_"}],"uuid":"40144044412e46308e4605163bd81e9b","collectionName":"ipos_units_staging","type":"collection"}

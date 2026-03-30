@@ -1,0 +1,1 @@
+{"indexes":[{"v":{"$numberInt":"2"},"key":{"_id":{"$numberInt":"1"}},"name":"_id_"}],"uuid":"23a22effc2a24eb2ad051cccbc7f5272","collectionName":"ipos_stock_staging","type":"collection"}

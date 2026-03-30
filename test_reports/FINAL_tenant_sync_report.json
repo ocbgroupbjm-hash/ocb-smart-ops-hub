@@ -1,0 +1,38 @@
+{
+  "report_type": "TENANT_SYNC_REPORT",
+  "generated_at": "2026-03-30T10:35:00Z",
+  "blueprint_version": "v2.4.3",
+  "lock_id": "BP-LOCK-1774866673409",
+  
+  "pilot_tenant": {
+    "id": "ocb_titan",
+    "status": "LOCKED",
+    "collections": 179,
+    "total_records": 170458
+  },
+  
+  "synced_tenants": [
+    {
+      "id": "ocb_unit_4",
+      "status": "SYNCED",
+      "collections_synced": ["_blueprint_lock", "_tenant_metadata", "system_config", "sequences", "chart_of_accounts"],
+      "coa_records": 411,
+      "sync_timestamp": "2026-03-30T10:31:13.409Z"
+    },
+    {
+      "id": "ocb_unt_1",
+      "status": "SYNCED",
+      "collections_synced": ["_blueprint_lock", "_tenant_metadata", "system_config", "sequences", "chart_of_accounts"],
+      "coa_records": 411,
+      "sync_timestamp": "2026-03-30T10:31:13.409Z"
+    }
+  ],
+  
+  "sync_rules_applied": {
+    "config_collections": "SYNCED",
+    "master_data_if_empty": "SYNCED",
+    "transaction_data": "NOT_SYNCED (preserved)"
+  },
+  
+  "status": "SUCCESS"
+}

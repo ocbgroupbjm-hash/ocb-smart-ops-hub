@@ -1,0 +1,42 @@
+{
+  "report_type": "SMOKE_TEST_REPORT",
+  "generated_at": "2026-03-30T10:33:00Z",
+  "api_url": "https://smart-ops-hub-6.preview.emergentagent.com",
+  
+  "tests": {
+    "ocb_titan": {
+      "switch_db": "PASS",
+      "login": "PASS",
+      "health_check": "PASS - active_database: ocb_titan",
+      "products": "PASS - 176 items",
+      "branches": "PASS - 102 branches",
+      "coa": "PASS - 411 accounts",
+      "overall": "ALL PASS"
+    },
+    "ocb_unit_4": {
+      "switch_db": "PASS",
+      "login": "PASS",
+      "health_check": "PASS - active_database: ocb_unit_4",
+      "products": "PASS - 1 item",
+      "branches": "PASS - 1 branch",
+      "coa": "PASS - 411 accounts",
+      "overall": "ALL PASS"
+    },
+    "ocb_unt_1": {
+      "switch_db": "PASS",
+      "login": "PASS",
+      "health_check": "PASS - active_database: ocb_unt_1",
+      "products": "PASS - 23 items",
+      "branches": "PASS - 37 branches",
+      "coa": "PASS - 411 accounts",
+      "overall": "ALL PASS"
+    }
+  },
+  
+  "test_account": {
+    "email": "ocbgroupbjm@gmail.com",
+    "password": "admin123"
+  },
+  
+  "status": "ALL TENANTS PASS"
+}

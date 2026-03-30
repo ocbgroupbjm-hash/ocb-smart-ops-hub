@@ -1,0 +1,1 @@
+{"indexes":[{"v":{"$numberInt":"2"},"key":{"_id":{"$numberInt":"1"}},"name":"_id_"},{"v":{"$numberInt":"2"},"key":{"ar_id":{"$numberInt":"1"}},"name":"ar_id_1"},{"v":{"$numberInt":"2"},"key":{"payment_date":{"$numberInt":"1"}},"name":"payment_date_1"}],"uuid":"d0475b4c917f4d1a87ca06f3e3c02c56","collectionName":"ar_payments","type":"collection"}

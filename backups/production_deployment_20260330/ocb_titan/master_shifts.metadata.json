@@ -1,0 +1,1 @@
+{"indexes":[{"v":{"$numberInt":"2"},"key":{"_id":{"$numberInt":"1"}},"name":"_id_"}],"uuid":"e46ca350385f411699a35694f9104685","collectionName":"master_shifts","type":"collection"}

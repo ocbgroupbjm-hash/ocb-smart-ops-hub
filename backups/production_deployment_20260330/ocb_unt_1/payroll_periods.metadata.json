@@ -1,0 +1,1 @@
+{"indexes":[{"v":{"$numberInt":"2"},"key":{"_id":{"$numberInt":"1"}},"name":"_id_"}],"uuid":"0c941df7a587485d89f9e3b0cfca4975","collectionName":"payroll_periods","type":"collection"}

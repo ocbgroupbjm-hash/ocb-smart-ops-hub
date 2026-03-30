@@ -1,0 +1,43 @@
+{
+  "report_type": "BACKUP_REPORT",
+  "generated_at": "2026-03-30T10:31:22Z",
+  "backup_location": "/app/backups/production_deployment_20260330/",
+  
+  "backups": [
+    {
+      "tenant": "ocb_titan",
+      "collections": 179,
+      "size": "494M",
+      "status": "VALID",
+      "restore_tested": true
+    },
+    {
+      "tenant": "ocb_unit_4",
+      "collections": 68,
+      "size": "520K",
+      "status": "VALID",
+      "restore_tested": true
+    },
+    {
+      "tenant": "ocb_unt_1",
+      "collections": 79,
+      "size": "49M",
+      "status": "VALID",
+      "restore_tested": true
+    },
+    {
+      "tenant": "ocb_test_new",
+      "collections": 26,
+      "size": "276K",
+      "status": "VALID",
+      "restore_tested": true
+    }
+  ],
+  
+  "validation_method": "Restore to temp database and compare collection counts",
+  "validation_result": "ALL PASS",
+  
+  "restore_command": "mongorestore --db {tenant} --dir /app/backups/production_deployment_20260330/{tenant}/",
+  
+  "status": "SUCCESS"
+}

@@ -1,0 +1,1 @@
+{"indexes":[{"v":{"$numberInt":"2"},"key":{"_id":{"$numberInt":"1"}},"name":"_id_"}],"uuid":"935b4d164a414958962d33e1f6c8c3e6","collectionName":"cashier_shifts","type":"collection"}

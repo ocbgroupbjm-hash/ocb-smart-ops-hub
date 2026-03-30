@@ -1,0 +1,1 @@
+{"indexes":[{"v":{"$numberInt":"2"},"key":{"_id":{"$numberInt":"1"}},"name":"_id_"}],"uuid":"b6c314d77d7948d583e918c02a762ae9","collectionName":"ar_payment_allocations","type":"collection"}

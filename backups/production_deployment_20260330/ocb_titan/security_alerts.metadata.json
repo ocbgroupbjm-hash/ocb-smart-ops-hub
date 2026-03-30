@@ -1,0 +1,1 @@
+{"indexes":[{"v":{"$numberInt":"2"},"key":{"_id":{"$numberInt":"1"}},"name":"_id_"},{"v":{"$numberInt":"2"},"key":{"created_at":{"$numberInt":"1"}},"name":"created_at_1"},{"v":{"$numberInt":"2"},"key":{"acknowledged":{"$numberInt":"1"}},"name":"acknowledged_1"}],"uuid":"e4567f6876584a658e852908be5e2f2c","collectionName":"security_alerts","type":"collection"}

@@ -1,0 +1,1 @@
+{"indexes":[{"v":{"$numberInt":"2"},"key":{"_id":{"$numberInt":"1"}},"name":"_id_"},{"v":{"$numberInt":"2"},"key":{"reference_id":{"$numberInt":"1"},"reference_type":{"$numberInt":"1"}},"name":"idx_reference","background":true}],"uuid":"cd4a35c7a1bf4750a073fa49457d1530","collectionName":"journal_entries","type":"collection"}

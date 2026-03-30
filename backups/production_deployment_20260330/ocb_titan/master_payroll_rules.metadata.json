@@ -1,0 +1,1 @@
+{"indexes":[{"v":{"$numberInt":"2"},"key":{"_id":{"$numberInt":"1"}},"name":"_id_"}],"uuid":"36ec0250404d45b7a765bd17dd46f4e3","collectionName":"master_payroll_rules","type":"collection"}

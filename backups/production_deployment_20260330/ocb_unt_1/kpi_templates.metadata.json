@@ -1,0 +1,1 @@
+{"indexes":[{"v":{"$numberInt":"2"},"key":{"_id":{"$numberInt":"1"}},"name":"_id_"}],"uuid":"7c5437f974864bc796dbb84e825fa1b1","collectionName":"kpi_templates","type":"collection"}

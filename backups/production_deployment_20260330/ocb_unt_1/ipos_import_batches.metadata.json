@@ -1,0 +1,1 @@
+{"indexes":[{"v":{"$numberInt":"2"},"key":{"_id":{"$numberInt":"1"}},"name":"_id_"}],"uuid":"c60885d70b2948d29af85f46c176c4db","collectionName":"ipos_import_batches","type":"collection"}

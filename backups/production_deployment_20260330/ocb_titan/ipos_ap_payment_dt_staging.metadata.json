@@ -1,0 +1,1 @@
+{"indexes":[{"v":{"$numberInt":"2"},"key":{"_id":{"$numberInt":"1"}},"name":"_id_"}],"uuid":"ea28a12b76f94c8586f7c464894905ee","collectionName":"ipos_ap_payment_dt_staging","type":"collection"}

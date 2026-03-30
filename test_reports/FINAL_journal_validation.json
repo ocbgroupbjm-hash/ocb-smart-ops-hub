@@ -1,0 +1,36 @@
+{
+  "report_type": "JOURNAL_VALIDATION",
+  "generated_at": "2026-03-30T10:34:00Z",
+  
+  "validations": [
+    {
+      "tenant": "ocb_titan",
+      "collection": "journals",
+      "record_count": 145073,
+      "total_debit": 441001856569,
+      "total_credit": 441001856569,
+      "difference": 0,
+      "status": "BALANCED"
+    },
+    {
+      "tenant": "ocb_unit_4",
+      "collection": "journal_entries",
+      "entry_count": 18,
+      "total_debit": 3300833.3,
+      "total_credit": 3300833.3,
+      "difference": 0,
+      "status": "BALANCED"
+    },
+    {
+      "tenant": "ocb_unt_1",
+      "collection": "journal_entries",
+      "entry_count": 10,
+      "total_debit": 10012195000,
+      "total_credit": 10012195000,
+      "difference": 0,
+      "status": "BALANCED"
+    }
+  ],
+  
+  "overall_status": "ALL TENANTS BALANCED"
+}

@@ -1,0 +1,1 @@
+{"indexes":[{"v":{"$numberInt":"2"},"key":{"_id":{"$numberInt":"1"}},"name":"_id_"}],"uuid":"7ef80c8fdae54470a4b003871f76f046","collectionName":"payroll_items","type":"collection"}

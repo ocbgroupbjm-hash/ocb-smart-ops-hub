@@ -1,0 +1,1 @@
+{"indexes":[{"v":{"$numberInt":"2"},"key":{"_id":{"$numberInt":"1"}},"name":"_id_"},{"v":{"$numberInt":"2"},"key":{"deposit_id":{"$numberInt":"1"}},"name":"deposit_id_1"},{"v":{"$numberInt":"2"},"key":{"transaction_id":{"$numberInt":"1"}},"name":"transaction_id_1"}],"uuid":"c246320980fa41b8986a119d864f147c","collectionName":"deposit_details","type":"collection"}

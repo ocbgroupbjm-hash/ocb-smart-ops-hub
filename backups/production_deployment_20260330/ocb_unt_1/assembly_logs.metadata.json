@@ -1,0 +1,1 @@
+{"indexes":[{"v":{"$numberInt":"2"},"key":{"_id":{"$numberInt":"1"}},"name":"_id_"}],"uuid":"ccd6e464158c49be970e955af7c028b3","collectionName":"assembly_logs","type":"collection"}

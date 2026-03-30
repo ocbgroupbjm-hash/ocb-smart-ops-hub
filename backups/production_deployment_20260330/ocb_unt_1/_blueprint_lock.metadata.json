@@ -1,0 +1,1 @@
+{"indexes":[{"v":{"$numberInt":"2"},"key":{"_id":{"$numberInt":"1"}},"name":"_id_"}],"uuid":"5399da5186b54009a408a202749e0041","collectionName":"_blueprint_lock","type":"collection"}

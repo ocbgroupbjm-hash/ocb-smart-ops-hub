@@ -1,0 +1,1 @@
+{"indexes":[{"v":{"$numberInt":"2"},"key":{"_id":{"$numberInt":"1"}},"name":"_id_"}],"uuid":"357f9abf376f4d01a13098c10c4f7da5","collectionName":"ipos_reconciliation_results","type":"collection"}
