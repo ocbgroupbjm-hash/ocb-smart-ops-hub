@@ -174,3 +174,7 @@ backups/production_deployment_20260330/ocb_titan/ipos_journal_staging.bson
 # Environment files
 *.env
 *.env.*
+-e 
+# Environment files
+*.env
+*.env.*
